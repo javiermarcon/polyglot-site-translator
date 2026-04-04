@@ -1,0 +1,69 @@
+exclude: '^(\.venv/|build/|dist/|\.buildozer/|docs/_site/|site/|__pycache__/|.*\.egg-info/|legacy/)'
+default_stages: [pre-commit]
+minimum_pre_commit_version: "3.2.0"
+
+default_language_version:
+  python: python3.12
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-ast
+      - id: check-json
+      - id: check-toml
+      - id: check-xml
+      - id: check-yaml
+      - id: debug-statements
+      - id: check-builtin-literals
+      - id: check-case-conflict
+      - id: check-docstring-first
+      - id: detect-private-key
+      - id: check-merge-conflict
+      - id: check-added-large-files
+      - id: mixed-line-ending
+        args: [--fix=lf]
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.11.13
+    hooks:
+      - id: ruff
+        args: [--fix, --exit-non-zero-on-fix]
+      - id: ruff-format
+
+  - repo: local
+    hooks:
+      - id: mypy
+        name: mypy
+        entry: python -m mypy src tests features/steps
+        language: system
+        pass_filenames: false
+        stages: [manual]
+
+      - id: pytest-unit
+        name: pytest unit
+        entry: python -m pytest tests/unit
+        language: system
+        pass_filenames: false
+        stages: [manual]
+
+      - id: pytest-integration
+        name: pytest integration
+        entry: python -m pytest tests/integration
+        language: system
+        pass_filenames: false
+        stages: [manual]
+
+      - id: behave
+        name: behave
+        entry: python -m behave
+        language: system
+        pass_filenames: false
+        stages: [manual]
+
+ci:
+  autoupdate_schedule: weekly
+  skip: []
+  submodules: false
