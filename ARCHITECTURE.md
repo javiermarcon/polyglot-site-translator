@@ -1,0 +1,214 @@
+# ARCHITECTURE.md
+
+## Project purpose
+
+This repository contains a Kivy-based graphical application for managing translation and localization workflows across multiple frameworks and site/application types.
+
+The application is expected to support:
+
+- registration of sites/projects in SQLite
+- FTP-based site download/synchronization
+- auditing of source trees
+- processing and synchronization of `.po/.mo`
+- detection of untranslated or hardcoded strings
+- generation of reports
+- framework-specific extraction and discovery logic
+- future cross-platform packaging considerations
+
+---
+
+## High-level architecture
+
+The codebase should be organized around these layers:
+
+1. **Presentation**
+   - Kivy app
+   - screens
+   - widgets
+   - user interaction
+   - progress and feedback display
+
+2. **Application services**
+   - orchestrate workflows
+   - coordinate repositories, scanners, translators, reporters, and adapters
+   - expose use cases to the UI
+
+3. **Domain logic**
+   - shared PO processing
+   - finding detection
+   - report-ready normalization
+   - site/project models
+   - adapter contracts
+
+4. **Framework adapters / plugins**
+   - WordPress-specific discovery and extraction
+   - Django-specific discovery and extraction
+   - Flask-specific discovery and extraction
+   - future target-specific behavior
+
+5. **Infrastructure**
+   - SQLite persistence
+   - FTP access
+   - filesystem IO
+   - optional translation providers
+   - serialization/export
+
+---
+
+## Main domains
+
+### 1. Site registry
+
+Stores user-managed site or project definitions and related metadata in SQLite.
+
+Examples:
+- site/project name
+- local working directory
+- framework type
+- FTP host/user/path settings
+- preferred locales
+- audit/translation options
+
+### 2. FTP synchronization
+
+Downloads or synchronizes site content from FTP sources into a local workspace suitable for scanning/auditing.
+
+### 3. Shared PO processing
+
+Responsible for:
+- discovering `.po`
+- extracting locales
+- grouping families
+- synchronizing existing translations
+- reusing known translations
+- optionally translating missing values
+- optionally compiling `.mo`
+
+This logic must remain reusable across framework adapters.
+
+### 4. Framework adapters / plugins
+
+Responsible for target-specific behavior such as:
+- how to identify project type
+- where to scan
+- how to infer source roots
+- how to extract database configuration
+- how to discover framework conventions
+- how to enrich findings with target-specific meaning
+
+Examples:
+- WordPress may parse `wp-config.php`
+- Django may inspect `settings.py`, settings modules, or environment-backed settings
+- Flask may rely on config modules, app factories, or environment conventions
+
+### 5. Source auditing
+
+Responsible for scanning source files such as:
+- `.php`
+- `.py`
+- `.js`
+- `.json`
+- `.twig`
+- `.tpl`
+- `.html`
+- `.jinja`
+- other supported formats
+
+for:
+- hardcoded strings
+- gettext misuse
+- localization candidates
+- textdomain or equivalent domain issues
+- JSON i18n files
+- template override or customization candidates where relevant
+
+### 6. Reporting
+
+Responsible for rendering normalized findings and summaries into:
+- Markdown
+- JSON
+- CSV
+- optional generated fallback snippets
+
+---
+
+## Architectural boundaries
+
+### Presentation must not own domain logic
+
+Kivy screens/widgets should never directly implement:
+- FTP workflows
+- SQLite queries
+- parsing heuristics
+- source scanners
+- report formatting
+- translation synchronization rules
+- framework-specific extraction rules
+
+### Shared services must remain target-agnostic where feasible
+
+Common services must not hardcode WordPress, Django, or Flask assumptions when those belong in adapters/plugins.
+
+### Adapters must isolate framework behavior
+
+Framework-specific discovery, config parsing, and conventions belong in adapter/plugin modules.
+
+### Infrastructure must not format UI
+
+Repositories, FTP clients, and scanner backends must return structured data rather than UI-ready text.
+
+### Reporting must not discover data
+
+Report modules must render findings produced by scanners/services, not scan files directly.
+
+---
+
+## Typical workflow: audit
+
+1. User selects a site/project from the UI.
+2. UI invokes an application service.
+3. The service resolves site configuration from SQLite.
+4. The service loads the appropriate framework adapter/plugin.
+5. The service scans the local working directory or synchronized copy.
+6. Domain scanners and the adapter produce normalized findings.
+7. Report services aggregate and export findings.
+8. UI displays summary and export location.
+
+---
+
+## Typical workflow: PO sync/translation
+
+1. User selects a site/project and locales.
+2. UI invokes a PO processing service.
+3. The service optionally asks the adapter for relevant scan roots or conventions.
+4. The service discovers relevant `.po` files.
+5. Files are grouped by family and locale.
+6. Existing translations are synchronized across variants.
+7. Missing entries are reused or translated through configured providers.
+8. `.po` and optionally `.mo` outputs are written.
+9. UI presents stats and outputs.
+
+---
+
+## Typical workflow: target-specific extraction
+
+1. User selects a site/project.
+2. UI or service resolves the project framework type.
+3. The matching adapter/plugin runs extraction logic.
+4. Adapter returns normalized data for use by shared services.
+5. Shared services continue from normalized contracts rather than raw framework-specific structures.
+
+---
+
+## Future-oriented architectural expectations
+
+The repository should be able to evolve toward:
+- multiple translation providers
+- multiple storage backends if needed
+- background job execution
+- richer site/project metadata
+- platform-aware packaging workflows
+- additional framework adapters/plugins
+- additional scanners
+
+Any such change must preserve existing boundaries.

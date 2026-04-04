@@ -1,0 +1,114 @@
+# AI_CONTEXT.md
+
+## Repository summary
+
+This repository contains a Kivy-based application for localization workflows across multiple frameworks and site/application types.
+
+It combines:
+
+- site registration
+- SQLite persistence
+- FTP download/synchronization
+- shared translation services
+- source auditing
+- framework-specific adapters
+- report generation
+
+The project is intended to remain cross-platform friendly and maintainable over time.
+
+---
+
+## What matters most
+
+When changing this codebase, prioritize:
+
+1. separation of concerns
+2. explicit typing
+3. testability
+4. framework-agnostic shared services
+5. isolated framework-specific adapters
+6. Kivy UI thinness
+7. explicit error handling
+8. documentation consistency
+
+---
+
+## Conceptual domains
+
+- **Site registry**: local records for managed sites
+- **FTP sync**: remote site download/update workflows
+- **Common translation services**: PO discovery, sync, translation, compilation, reporting-ready outputs
+- **Framework adapters**: WordPress, Django, Flask, and future target-specific discovery/parsing rules
+- **Source auditing**: scan code/templates/assets for localization issues
+- **Reporting**: turn normalized findings into usable outputs
+- **Presentation**: Kivy screens and user interactions
+
+---
+
+## Practical rules for future changes
+
+- Keep the Kivy layer thin.
+- Push business/domain logic into services and dedicated modules.
+- Push IO/integration concerns into infrastructure modules.
+- Model findings and important records explicitly.
+- Keep shared services framework-agnostic when feasible.
+- Put target-specific rules into adapters/plugins.
+- Add tests with every meaningful feature or bugfix.
+- Update architectural docs whenever structure or flows change.
+
+---
+
+## Expected implementation style
+
+- small modules
+- typed models
+- explicit services
+- clean repository boundaries
+- separate reporting layer
+- pluggable adapter architecture
+- repository documentation kept current
+
+---
+
+## Common mistakes to avoid
+
+- embedding FTP logic in screens
+- embedding SQL in views/widgets
+- generating reports inside scanners
+- hardcoding WordPress assumptions in shared modules
+- adding new target frameworks without adapter boundaries
+- adding new formats without tests
+- changing architecture without updating docs
+
+---
+
+## Entry points to inspect first
+
+Before making changes, inspect at least:
+
+- the main application entrypoint
+- service orchestration modules
+- framework adapter interfaces/registries
+- domain models/findings
+- persistence layer
+- existing tests
+- `ARCHITECTURE.md`
+- `REPO_MAP.md`
+- `CODEBASE_ENTRYPOINTS.md`
+
+---
+
+## Development workflow summary
+
+This repository follows a strict BDD + TDD workflow:
+
+1. define the use case
+2. define acceptance criteria
+3. write BDD scenarios
+4. write unit/integration tests
+5. confirm tests fail
+6. implement the minimum code
+7. refactor after reaching green
+8. update docs if architecture or contracts changed
+
+Agents must not skip directly to implementation for non-trivial functionality.
