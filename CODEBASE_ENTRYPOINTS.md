@@ -27,6 +27,10 @@ It must not contain:
 - framework-specific extraction internals
 - report formatting internals
 
+Current entrypoints:
+- `polyglot_site_translator.app:create_kivy_app`
+- `polyglot_site_translator.__main__:main`
+
 ---
 
 ## Service-level entrypoints
@@ -40,6 +44,13 @@ The application should expose use-case-oriented services such as:
 - adapter selection/dispatch
 
 These services are the correct integration layer for the UI.
+
+Current frontend-facing service entrypoints:
+- `ProjectCatalogService.list_projects`
+- `ProjectCatalogService.get_project_detail`
+- `ProjectWorkflowService.start_sync`
+- `ProjectWorkflowService.start_audit`
+- `ProjectWorkflowService.start_po_processing`
 
 ---
 
@@ -67,6 +78,12 @@ Examples of domain entrypoints:
 - finding classifier
 - report summary builder
 - framework adapter contract definitions
+
+Current presentation orchestration entrypoint:
+- `polyglot_site_translator.bootstrap:create_frontend_shell`
+
+Current navigation entrypoint:
+- `polyglot_site_translator.presentation.frontend_shell.FrontendShell`
 
 ---
 
@@ -110,6 +127,14 @@ Important test-covered entrypoints should include:
 - repository APIs
 - report writers
 - CLI commands if present
+
+Current frontend test-covered entrypoints:
+- `FrontendShell.open_dashboard`
+- `FrontendShell.open_projects`
+- `FrontendShell.select_project`
+- `FrontendShell.start_sync`
+- `FrontendShell.start_audit`
+- `FrontendShell.start_po_processing`
 
 ---
 

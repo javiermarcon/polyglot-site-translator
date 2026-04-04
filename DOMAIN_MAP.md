@@ -142,6 +142,10 @@ Provide the graphical user experience through Kivy.
 ### Includes
 - screens
 - widgets
+- navigation router
+- selected-project UI context
+- presentation shell/controller orchestration
+- typed screen state and workflow summaries
 - user-triggered actions
 - display of progress, summaries, errors, and outputs
 
@@ -176,6 +180,7 @@ Store and retrieve application-owned data locally.
 ## Boundary rules
 
 - Presentation talks to services, not directly to domain internals or infrastructure internals.
+- Presentation may use fake/mock service implementations for local shell development and tests, but those fakes must still respect the same contracts.
 - Reporting consumes findings; it does not discover them.
 - Persistence stores application data; it does not implement UI flows.
 - FTP is infrastructure and must stay isolated behind service boundaries.

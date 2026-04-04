@@ -87,6 +87,7 @@ When changing this codebase, prioritize:
 Before making changes, inspect at least:
 
 - the main application entrypoint
+- the presentation shell / router
 - service orchestration modules
 - framework adapter interfaces/registries
 - domain models/findings
@@ -112,3 +113,19 @@ This repository follows a strict BDD + TDD workflow:
 8. update docs if architecture or contracts changed
 
 Agents must not skip directly to implementation for non-trivial functionality.
+
+---
+
+## Current frontend baseline
+
+The current Kivy frontend base is organized around:
+
+- `polyglot_site_translator/app.py` as the public GUI factory
+- `polyglot_site_translator/bootstrap.py` for shell wiring
+- `polyglot_site_translator/presentation/frontend_shell.py` for stateful UI orchestration
+- `polyglot_site_translator/presentation/contracts.py` for UI-facing protocols
+- `polyglot_site_translator/presentation/view_models.py` for typed screen state
+- `polyglot_site_translator/presentation/fakes.py` for deterministic in-memory services
+- `polyglot_site_translator/presentation/kivy/` for thin screen rendering
+
+When extending the frontend, keep new behavior behind those boundaries unless the architecture docs are intentionally updated.

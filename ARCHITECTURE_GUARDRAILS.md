@@ -61,6 +61,17 @@ If CLI, service entrypoints, UI navigation entrypoints, or adapter registration 
 - update docs
 - update `CODEBASE_ENTRYPOINTS.md`
 
+### 10. Do not bypass the presentation shell from Kivy screens
+
+Screens and widgets must use the presentation shell or another explicit presentation boundary for:
+
+- navigation
+- selected-project context
+- controlled error display
+- workflow invocation
+
+Do not call repositories, FTP clients, scanners, PO processors, or adapter internals directly from Kivy widgets.
+
 ---
 
 ## Documentation guardrails

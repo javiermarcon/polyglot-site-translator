@@ -140,3 +140,19 @@ This project is intended to be extended iteratively, including by coding agents.
 - Structural changes require doc updates in the same patch.
 - New modules/services/adapters need repository map updates.
 - Agent behavior is constrained by repo docs.
+
+---
+
+## AD-010: Frontend shell depends on contracts and typed presentation models
+
+**Decision**
+Introduce a presentation shell between Kivy widgets and future application services, using typed view models and explicit UI-facing service protocols.
+
+**Why**
+The repository needs a usable Kivy base now, but real SQLite, FTP, adapter, scanning, and PO services are intentionally postponed. A presentation shell allows the UI to be built and tested without coupling widgets to infrastructure or domain implementations.
+
+**Implications**
+- Screens stay thin and render precomputed state.
+- Navigation and selected-project context live outside widgets.
+- Fake in-memory services can drive BDD and unit tests.
+- Future real services can replace fakes through dependency injection without rewriting the frontend structure.

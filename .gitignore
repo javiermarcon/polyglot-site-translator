@@ -288,3 +288,6 @@ apps/media/*
 *.cer
 *.mobileprovision
 *.p12
+
+# codex
+.codex

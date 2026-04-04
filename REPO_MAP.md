@@ -14,6 +14,7 @@ Update it whenever the structure changes.
 ### Root
 - `src/`
   Main Python package(s) for the application.
+  Current package: `polyglot_site_translator/`
 
 - `tests/`
   Automated tests.
@@ -53,6 +54,32 @@ Possible areas under `src/`:
   - Kivy screens
   - widgets
   - presentation glue only
+
+Current frontend base:
+
+- `polyglot_site_translator/app.py`
+  Public Kivy app factory.
+
+- `polyglot_site_translator/__main__.py`
+  Executable GUI module.
+
+- `polyglot_site_translator/bootstrap.py`
+  Presentation-shell wiring and injectable service bundle assembly.
+
+- `polyglot_site_translator/presentation/contracts.py`
+  UI-facing service protocols.
+
+- `polyglot_site_translator/presentation/view_models.py`
+  Typed dataclasses for dashboard, project list/detail, sync, audit, and PO processing.
+
+- `polyglot_site_translator/presentation/frontend_shell.py`
+  Navigation and orchestration state independent from Kivy rendering.
+
+- `polyglot_site_translator/presentation/fakes.py`
+  In-memory fake services used by the frontend shell and tests.
+
+- `polyglot_site_translator/presentation/kivy/`
+  Thin Kivy `ScreenManager`, screens, and reusable widget area.
 
 - `services/`
   - use-case orchestration
@@ -100,6 +127,11 @@ Recommended structure:
 - `tests/unit/`
 - `tests/integration/`
 - `tests/fixtures/`
+
+Current frontend coverage:
+
+- `tests/unit/presentation/`
+- `tests/integration/presentation/`
 
 If UI tests are added, they should remain isolated and clearly labeled.
 
@@ -168,3 +200,8 @@ Any structural change must keep:
 - documentation aligned
 - tests discoverable
 - entrypoints documented
+
+Current BDD frontend coverage lives in:
+
+- `features/presentation/`
+- `features/steps/`

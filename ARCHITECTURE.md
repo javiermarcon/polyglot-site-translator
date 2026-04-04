@@ -23,6 +23,9 @@ The codebase should be organized around these layers:
 
 1. **Presentation**
    - Kivy app
+   - presentation shell / UI orchestrator
+   - typed view models for screens and workflow panels
+   - navigation router and selected-project context
    - screens
    - widgets
    - user interaction
@@ -145,6 +148,12 @@ Kivy screens/widgets should never directly implement:
 - translation synchronization rules
 - framework-specific extraction rules
 
+The presentation layer may contain:
+- typed screen state and workflow summaries
+- a thin router for navigation state
+- a presentation shell/controller that coordinates service contracts
+- fake or mockable service bundles for local UI development and tests
+
 ### Shared services must remain target-agnostic where feasible
 
 Common services must not hardcode WordPress, Django, or Flask assumptions when those belong in adapters/plugins.
@@ -166,7 +175,7 @@ Report modules must render findings produced by scanners/services, not scan file
 ## Typical workflow: audit
 
 1. User selects a site/project from the UI.
-2. UI invokes an application service.
+2. The presentation shell resolves the selected project context and invokes an application service contract.
 3. The service resolves site configuration from SQLite.
 4. The service loads the appropriate framework adapter/plugin.
 5. The service scans the local working directory or synchronized copy.
@@ -179,7 +188,7 @@ Report modules must render findings produced by scanners/services, not scan file
 ## Typical workflow: PO sync/translation
 
 1. User selects a site/project and locales.
-2. UI invokes a PO processing service.
+2. The presentation shell invokes a PO processing service contract.
 3. The service optionally asks the adapter for relevant scan roots or conventions.
 4. The service discovers relevant `.po` files.
 5. Files are grouped by family and locale.
@@ -212,3 +221,19 @@ The repository should be able to evolve toward:
 - additional scanners
 
 Any such change must preserve existing boundaries.
+
+---
+
+## Current frontend base
+
+The current repository baseline includes a first Kivy frontend shell under `src/polyglot_site_translator/`.
+
+Key responsibilities:
+
+- `app.py` and `__main__.py` expose the graphical entrypoint.
+- `bootstrap.py` wires the presentation shell with injectable service contracts.
+- `presentation/contracts.py` defines UI-facing protocols for project catalog and workflow actions.
+- `presentation/view_models.py` defines typed dataclasses for dashboard, projects, project detail, sync, audit, and PO processing states.
+- `presentation/frontend_shell.py` centralizes navigation-safe orchestration without embedding infrastructure logic in widgets.
+- `presentation/fakes.py` provides deterministic in-memory services for the initial frontend shell, BDD scenarios, and unit tests.
+- `presentation/kivy/` contains thin `ScreenManager` wiring and screen classes that render already-prepared state.

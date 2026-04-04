@@ -96,6 +96,7 @@ extend-exclude = [
   "build",
   "dist",
   ".venv",
+  "legacy",
 ]
 
 [tool.ruff.format]
