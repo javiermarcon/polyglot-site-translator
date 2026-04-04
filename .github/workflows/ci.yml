@@ -1,0 +1,56 @@
+name: CI
+
+on:
+  pull_request:
+    branches: ["main", "master", "dev"]
+    paths-ignore:
+      - "docs/**"
+  push:
+    branches: ["main", "master", "dev"]
+    paths-ignore:
+      - "docs/**"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint-type-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f requirements/dev.txt ]; then
+            python -m pip install -r requirements/dev.txt
+          elif [ -f requirements/base.txt ]; then
+            python -m pip install -r requirements/base.txt
+            python -m pip install pytest mypy ruff coverage
+          else
+            python -m pip install pytest mypy ruff coverage
+          fi
+
+      - name: Ruff lint
+        run: python -m ruff check .
+
+      - name: Ruff format check
+        run: python -m ruff format --check .
+
+      - name: Mypy
+        run: python -m mypy src
+
+      - name: Pytest
+        run: python -m pytest
+
+      - name: Coverage report
+        run: python -m coverage run -m pytest && python -m coverage report
