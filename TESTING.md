@@ -224,6 +224,12 @@ python -m pytest tests/unit
 python -m pytest tests/integration
 ```
 
+For headless Linux CI or local headless validation of Kivy tests, use a virtual display:
+
+```bash
+xvfb-run -a python -m pytest
+```
+
 If the project later formalizes dedicated commands, update this file and the repository maps.
 
 ---
