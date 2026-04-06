@@ -40,7 +40,22 @@ Avoid tests that depend on:
 
 ### 1. Unit tests
 
-Must cover isolated logic such as:
+Unit tests are mandatory for all non-trivial domain, service, adapter, persistence, reporting, and presentation-orchestration logic.
+
+Unit tests must cover, at minimum:
+
+- happy path behavior
+- important edge cases
+- invalid input
+- validation failures
+- expected operational failures
+- expected exceptions
+- regression scenarios for known bugs
+
+They must not only verify “success cases”.
+They must also prove that the code behaves correctly under failure and boundary conditions.
+
+Unit tests must cover isolated logic such as:
 
 - PO discovery
 - locale/family grouping
@@ -230,6 +245,48 @@ Widget rendering internals are a lower priority than domain correctness and orch
 
 ---
 
+## Unit test coverage policy
+
+Unit test coverage is a mandatory quality gate.
+
+### Minimum required coverage
+
+As a rule, unit tests must achieve **at least 95% coverage** for the code they are responsible for validating.
+
+This applies especially to:
+
+- shared services
+- domain logic
+- adapters
+- repositories
+- report generation
+- CLI behavior
+- presentation orchestration / view-model logic
+
+### What “95% coverage” means in practice
+
+Coverage is not just about line execution.
+Tests must also exercise meaningful behavioral branches, including:
+
+- success paths
+- boundary conditions
+- invalid states
+- validation failures
+- controlled operational failures
+- expected exceptions
+
+### Forbidden anti-pattern
+
+It is not acceptable to reach coverage through shallow tests that only touch lines without asserting meaningful behavior.
+
+Coverage must reflect real behavioral verification, not artificial execution.
+
+### Exceptions
+
+If a specific area cannot reasonably reach 95% due to platform/runtime/UI constraints, that exception must be explicitly justified in the task output and should be limited to narrow UI/platform glue, not core logic.
+
+---
+
 ## Before merging or concluding a task
 
 Verify:
@@ -239,6 +296,8 @@ Verify:
 - adapter-specific changes have adapter tests
 - no new untested report/export path was introduced
 - no new persistence or FTP behavior was added without tests
+- unit tests cover happy path, edge cases, errors, and expected exceptions
+- the affected unit-tested logic meets or exceeds the minimum required coverage target
 
 ---
 
@@ -293,16 +352,18 @@ Recommended areas for BDD coverage:
 
 Unit and integration tests must be written before implementation.
 
-At minimum, tests should cover:
+At minimum, tests must cover:
 
 - core happy path
 - edge conditions
 - validation failures
 - expected operational exceptions
+- expected domain exceptions
 - regression cases for known bugs
 
-Do not add implementation first and “backfill” tests afterward except for purely mechanical refactors that do not change behavior.
+For unit-tested logic, the test suite must be sufficiently complete to support the repository’s minimum unit-test coverage target of **95%**.
 
+Do not add implementation first and “backfill” tests afterward except for purely mechanical refactors that do not change behavior
 ---
 
 ## Refactoring rule

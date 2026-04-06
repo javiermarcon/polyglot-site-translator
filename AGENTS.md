@@ -226,3 +226,18 @@ When reporting work, explicitly state:
 - which unit/integration tests were added first
 - which failures were observed before implementation
 - what refactors were done after reaching green
+
+---
+
+## Coverage and test completeness rule
+
+For any non-trivial new or modified logic, unit tests must:
+
+- cover happy path behavior
+- cover important edge cases
+- cover expected errors and exceptions
+- include regression tests for bug fixes
+- reach at least 95% coverage for the relevant unit-tested logic unless a narrow, explicit exception is justified
+
+Do not treat “some tests exist” as sufficient completion.
+A task is not done if meaningful branches and failure modes remain untested.
