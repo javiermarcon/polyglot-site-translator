@@ -15,6 +15,7 @@ class RouteName(StrEnum):
     SYNC = "sync"
     AUDIT = "audit"
     PO_PROCESSING = "po-processing"
+    SETTINGS = "settings"
 
 
 @dataclass(frozen=True)

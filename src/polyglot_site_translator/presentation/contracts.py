@@ -6,10 +6,12 @@ from dataclasses import dataclass
 from typing import Protocol
 
 from polyglot_site_translator.presentation.view_models import (
+    AppSettingsViewModel,
     AuditSummaryViewModel,
     POProcessingSummaryViewModel,
     ProjectDetailViewModel,
     ProjectSummaryViewModel,
+    SettingsStateViewModel,
     SyncStatusViewModel,
 )
 
@@ -37,9 +39,23 @@ class ProjectWorkflowService(Protocol):
         """Start a PO processing workflow for a project."""
 
 
+class SettingsService(Protocol):
+    """Settings operations exposed to the UI."""
+
+    def load_settings(self) -> SettingsStateViewModel:
+        """Return the current settings state."""
+
+    def save_settings(self, app_settings: AppSettingsViewModel) -> SettingsStateViewModel:
+        """Persist frontend settings and return the saved state."""
+
+    def reset_settings(self) -> SettingsStateViewModel:
+        """Restore frontend settings defaults."""
+
+
 @dataclass(frozen=True)
 class FrontendServices:
     """Injectable service bundle consumed by the presentation layer."""
 
     catalog: ProjectCatalogService
     workflows: ProjectWorkflowService
+    settings: SettingsService

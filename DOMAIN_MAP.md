@@ -146,6 +146,7 @@ Provide the graphical user experience through Kivy.
 - selected-project UI context
 - presentation shell/controller orchestration
 - typed screen state and workflow summaries
+- typed settings sections and editable draft settings
 - user-triggered actions
 - display of progress, summaries, errors, and outputs
 

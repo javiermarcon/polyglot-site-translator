@@ -67,19 +67,22 @@ Current frontend base:
   Presentation-shell wiring and injectable service bundle assembly.
 
 - `polyglot_site_translator/presentation/contracts.py`
-  UI-facing service protocols.
+  UI-facing service protocols, including frontend settings operations.
 
 - `polyglot_site_translator/presentation/view_models.py`
-  Typed dataclasses for dashboard, project list/detail, sync, audit, and PO processing.
+  Typed dataclasses for dashboard, project list/detail, sync, audit, PO processing, and settings.
 
 - `polyglot_site_translator/presentation/frontend_shell.py`
-  Navigation and orchestration state independent from Kivy rendering.
+  Navigation, settings editing, and orchestration state independent from Kivy rendering.
 
 - `polyglot_site_translator/presentation/fakes.py`
   In-memory fake services used by the frontend shell and tests.
 
 - `polyglot_site_translator/presentation/kivy/`
   Thin Kivy `ScreenManager`, screens, and reusable widget area.
+
+- `polyglot_site_translator/presentation/kivy/screens/settings.py`
+  Extensible settings screen with the initial App / UI / Kivy section.
 
 - `services/`
   - use-case orchestration

@@ -128,4 +128,11 @@ The current Kivy frontend base is organized around:
 - `polyglot_site_translator/presentation/fakes.py` for deterministic in-memory services
 - `polyglot_site_translator/presentation/kivy/` for thin screen rendering
 
+The frontend baseline now also includes:
+
+- an extensible settings screen
+- a dedicated settings contract for frontend configuration
+- typed App / UI / Kivy settings state
+- fake in-memory settings persistence for tests and local UI behavior
+
 When extending the frontend, keep new behavior behind those boundaries unless the architecture docs are intentionally updated.

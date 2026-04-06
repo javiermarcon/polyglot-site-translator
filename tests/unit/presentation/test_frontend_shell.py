@@ -22,6 +22,7 @@ def test_dashboard_sections_are_available_on_startup() -> None:
         "sync",
         "audit",
         "po-processing",
+        "settings",
     ]
 
 

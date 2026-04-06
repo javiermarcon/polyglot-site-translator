@@ -156,3 +156,18 @@ The repository needs a usable Kivy base now, but real SQLite, FTP, adapter, scan
 - Navigation and selected-project context live outside widgets.
 - Fake in-memory services can drive BDD and unit tests.
 - Future real services can replace fakes through dependency injection without rewriting the frontend structure.
+
+---
+
+## AD-011: Frontend settings use an extensible section-based contract
+
+**Decision**
+Model frontend configuration through a dedicated settings contract, typed settings view models, and a section-based settings screen.
+
+**Why**
+The current task only needs App / UI / Kivy settings, but the repository will later need settings for translation, adapters, FTP, reporting, and broader system behavior. A section-based contract avoids hardcoding the screen around a single future-incompatible form.
+
+**Implications**
+- Settings persistence remains behind a dedicated service contract.
+- The Kivy screen edits a typed draft and delegates saving/resetting to the presentation shell.
+- Future settings sections can extend the same structure without rewriting navigation or mixing persistence into widgets.

@@ -20,6 +20,7 @@ class DashboardScreen(BaseShellScreen):
             manager_ref=manager_ref,
         )
         self.add_nav_button("Open Projects", self._open_projects)
+        self.add_nav_button("Open Settings", self._open_settings)
         self._sections_label = Label(halign="left", valign="top")
         self._content.add_widget(self._sections_label)
         self.refresh()
@@ -27,6 +28,10 @@ class DashboardScreen(BaseShellScreen):
     def _open_projects(self, *_args: object) -> None:
         self._shell.open_projects()
         self.show_route("projects")
+
+    def _open_settings(self, *_args: object) -> None:
+        self._shell.open_settings()
+        self.show_route("settings")
 
     def refresh(self) -> None:
         self._sections_label.text = "\n".join(

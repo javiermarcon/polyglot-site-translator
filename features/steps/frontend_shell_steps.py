@@ -10,6 +10,8 @@ import behave as behave_module  # type: ignore[import-untyped]
 from polyglot_site_translator.bootstrap import create_frontend_shell
 from polyglot_site_translator.presentation.fakes import (
     build_empty_services,
+    build_failing_settings_load_services,
+    build_failing_settings_save_services,
     build_failing_sync_services,
     build_seeded_services,
 )
@@ -18,6 +20,8 @@ from polyglot_site_translator.presentation.router import RouteName
 
 SYNCED_FILES = 12
 PROCESSED_FAMILIES = 4
+DEFAULT_WINDOW_WIDTH = 1280
+DEFAULT_WINDOW_HEIGHT = 720
 StepFunction = TypeVar("StepFunction", bound=Callable[..., object])
 
 given = cast(Callable[[str], Callable[[StepFunction], StepFunction]], behave_module.given)
@@ -53,11 +57,39 @@ def step_failing_sync_shell(context: object) -> None:
     typed_context.shell = create_frontend_shell(build_failing_sync_services())
 
 
+@given("the frontend shell is wired with a failing settings load service")
+def step_failing_settings_load_shell(context: object) -> None:
+    typed_context = _context_with_shell(context)
+    typed_context.shell = create_frontend_shell(build_failing_settings_load_services())
+
+
+@given("the frontend shell is wired with a failing settings save service")
+def step_failing_settings_save_shell(context: object) -> None:
+    typed_context = _context_with_shell(context)
+    typed_context.shell = create_frontend_shell(build_failing_settings_save_services())
+
+
 @given('the operator has opened the detail for project "{project_id}"')
 def step_open_project_detail(context: object, project_id: str) -> None:
     typed_context = _context_with_shell(context)
     typed_context.shell.open_projects()
     typed_context.shell.select_project(project_id)
+
+
+@given("the operator has opened the settings screen")
+def step_open_settings_screen(context: object) -> None:
+    typed_context = _context_with_shell(context)
+    typed_context.shell.open_settings()
+
+
+@given("the operator has saved custom settings")
+def step_saved_custom_settings(context: object) -> None:
+    typed_context = _context_with_shell(context)
+    typed_context.shell.open_settings()
+    typed_context.shell.set_settings_theme_mode("dark")
+    typed_context.shell.toggle_remember_last_screen()
+    typed_context.shell.toggle_developer_mode()
+    typed_context.shell.save_settings()
 
 
 @when("the operator opens the application")
@@ -96,6 +128,42 @@ def step_start_po_processing(context: object) -> None:
     typed_context.shell.start_po_processing()
 
 
+@when("the operator opens the settings screen")
+def step_open_settings(context: object) -> None:
+    typed_context = _context_with_shell(context)
+    typed_context.shell.open_settings()
+
+
+@when("the operator enables remember last screen")
+def step_enable_remember_last_screen(context: object) -> None:
+    typed_context = _context_with_shell(context)
+    typed_context.shell.toggle_remember_last_screen()
+
+
+@when("the operator enables developer mode")
+def step_enable_developer_mode(context: object) -> None:
+    typed_context = _context_with_shell(context)
+    typed_context.shell.toggle_developer_mode()
+
+
+@when('the operator sets the theme mode to "{theme_mode}"')
+def step_set_theme_mode(context: object, theme_mode: str) -> None:
+    typed_context = _context_with_shell(context)
+    typed_context.shell.set_settings_theme_mode(theme_mode)
+
+
+@when("the operator applies the settings changes")
+def step_apply_settings(context: object) -> None:
+    typed_context = _context_with_shell(context)
+    typed_context.shell.save_settings()
+
+
+@when("the operator restores the default settings")
+def step_restore_settings(context: object) -> None:
+    typed_context = _context_with_shell(context)
+    typed_context.shell.restore_default_settings()
+
+
 @then("the dashboard is the active route")
 def step_assert_dashboard_route(context: object) -> None:
     typed_context = _context_with_shell(context)
@@ -106,7 +174,7 @@ def step_assert_dashboard_route(context: object) -> None:
 def step_assert_dashboard_sections(context: object) -> None:
     typed_context = _context_with_shell(context)
     section_keys = [section.key for section in typed_context.shell.dashboard_state.sections]
-    assert section_keys == ["projects", "sync", "audit", "po-processing"]
+    assert section_keys == ["projects", "sync", "audit", "po-processing", "settings"]
 
 
 @then('the project detail route is active for "{project_id}"')
@@ -191,3 +259,71 @@ def step_assert_sync_failed(context: object) -> None:
 def step_assert_error_message(context: object) -> None:
     typed_context = _context_with_shell(context)
     assert typed_context.shell.latest_error == "Sync preview is unavailable for this project."
+
+
+@then("the settings route is active")
+def step_assert_settings_route(context: object) -> None:
+    typed_context = _context_with_shell(context)
+    assert typed_context.shell.router.current.name is RouteName.SETTINGS
+
+
+@then("the settings screen shows the App / UI / Kivy section")
+def step_assert_settings_section(context: object) -> None:
+    typed_context = _context_with_shell(context)
+    assert typed_context.shell.settings_state is not None
+    section_keys = [section.key for section in typed_context.shell.settings_state.sections]
+    assert "app-ui-kivy" in section_keys
+
+
+@then("the settings draft uses the default window size")
+def step_assert_default_window_size(context: object) -> None:
+    typed_context = _context_with_shell(context)
+    assert typed_context.shell.settings_state is not None
+    assert typed_context.shell.settings_state.app_settings.window_width == DEFAULT_WINDOW_WIDTH
+    assert typed_context.shell.settings_state.app_settings.window_height == DEFAULT_WINDOW_HEIGHT
+
+
+@then("the settings draft keeps remember last screen disabled")
+def step_assert_default_remember_last_screen(context: object) -> None:
+    typed_context = _context_with_shell(context)
+    assert typed_context.shell.settings_state is not None
+    assert typed_context.shell.settings_state.app_settings.remember_last_screen is False
+
+
+@then("the settings screen shows the changes as saved")
+def step_assert_settings_saved(context: object) -> None:
+    typed_context = _context_with_shell(context)
+    assert typed_context.shell.settings_state is not None
+    assert typed_context.shell.settings_state.status == "saved"
+
+
+@then("the saved settings keep remember last screen enabled")
+def step_assert_saved_remember_last_screen(context: object) -> None:
+    typed_context = _context_with_shell(context)
+    assert typed_context.shell.settings_state is not None
+    assert typed_context.shell.settings_state.app_settings.remember_last_screen is True
+
+
+@then("the settings draft shows the persisted custom values")
+def step_assert_persisted_settings(context: object) -> None:
+    typed_context = _context_with_shell(context)
+    assert typed_context.shell.settings_state is not None
+    assert typed_context.shell.settings_state.app_settings.theme_mode == "dark"
+    assert typed_context.shell.settings_state.app_settings.developer_mode is True
+    assert typed_context.shell.settings_state.app_settings.remember_last_screen is True
+
+
+@then("the settings screen shows a failed status")
+def step_assert_settings_failed(context: object) -> None:
+    typed_context = _context_with_shell(context)
+    assert typed_context.shell.settings_state is not None
+    assert typed_context.shell.settings_state.status == "failed"
+
+
+@then("the frontend shell shows the controlled settings error message")
+def step_assert_settings_error_message(context: object) -> None:
+    typed_context = _context_with_shell(context)
+    assert typed_context.shell.latest_error in {
+        "App settings are temporarily unavailable.",
+        "App settings could not be saved.",
+    }

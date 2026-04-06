@@ -51,6 +51,9 @@ Current frontend-facing service entrypoints:
 - `ProjectWorkflowService.start_sync`
 - `ProjectWorkflowService.start_audit`
 - `ProjectWorkflowService.start_po_processing`
+- `SettingsService.load_settings`
+- `SettingsService.save_settings`
+- `SettingsService.reset_settings`
 
 ---
 
@@ -84,6 +87,11 @@ Current presentation orchestration entrypoint:
 
 Current navigation entrypoint:
 - `polyglot_site_translator.presentation.frontend_shell.FrontendShell`
+
+Current settings orchestration entrypoints:
+- `FrontendShell.open_settings`
+- `FrontendShell.save_settings`
+- `FrontendShell.restore_default_settings`
 
 ---
 
@@ -135,6 +143,12 @@ Current frontend test-covered entrypoints:
 - `FrontendShell.start_sync`
 - `FrontendShell.start_audit`
 - `FrontendShell.start_po_processing`
+- `FrontendShell.open_settings`
+- `FrontendShell.set_settings_theme_mode`
+- `FrontendShell.toggle_remember_last_screen`
+- `FrontendShell.toggle_developer_mode`
+- `FrontendShell.save_settings`
+- `FrontendShell.restore_default_settings`
 
 ---
 

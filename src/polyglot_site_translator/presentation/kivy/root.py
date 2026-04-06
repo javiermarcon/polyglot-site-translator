@@ -10,6 +10,7 @@ from polyglot_site_translator.presentation.kivy.screens.dashboard import Dashboa
 from polyglot_site_translator.presentation.kivy.screens.po_processing import POProcessingScreen
 from polyglot_site_translator.presentation.kivy.screens.project_detail import ProjectDetailScreen
 from polyglot_site_translator.presentation.kivy.screens.projects import ProjectsScreen
+from polyglot_site_translator.presentation.kivy.screens.settings import SettingsScreen
 from polyglot_site_translator.presentation.kivy.screens.sync import SyncScreen
 
 
@@ -23,6 +24,7 @@ def build_root_widget(shell: FrontendShell) -> ScreenManager:
         SyncScreen(shell=shell, manager_ref=manager),
         AuditScreen(shell=shell, manager_ref=manager),
         POProcessingScreen(shell=shell, manager_ref=manager),
+        SettingsScreen(shell=shell, manager_ref=manager),
     ]
     for screen in screens:
         manager.add_widget(screen)

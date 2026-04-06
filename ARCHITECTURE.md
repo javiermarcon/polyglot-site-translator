@@ -25,6 +25,7 @@ The codebase should be organized around these layers:
    - Kivy app
    - presentation shell / UI orchestrator
    - typed view models for screens and workflow panels
+   - typed settings state and editable draft settings
    - navigation router and selected-project context
    - screens
    - widgets
@@ -150,6 +151,7 @@ Kivy screens/widgets should never directly implement:
 
 The presentation layer may contain:
 - typed screen state and workflow summaries
+- typed settings sections and draft frontend settings
 - a thin router for navigation state
 - a presentation shell/controller that coordinates service contracts
 - fake or mockable service bundles for local UI development and tests
@@ -237,3 +239,6 @@ Key responsibilities:
 - `presentation/frontend_shell.py` centralizes navigation-safe orchestration without embedding infrastructure logic in widgets.
 - `presentation/fakes.py` provides deterministic in-memory services for the initial frontend shell, BDD scenarios, and unit tests.
 - `presentation/kivy/` contains thin `ScreenManager` wiring and screen classes that render already-prepared state.
+- `presentation/contracts.py` now also defines a settings contract for frontend configuration workflows.
+- `presentation/view_models.py` now includes extensible settings sections and typed app/UI/Kivy settings.
+- `presentation/kivy/screens/settings.py` exposes the initial configuration screen for frontend behavior.

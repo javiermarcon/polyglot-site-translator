@@ -7,12 +7,16 @@ from dataclasses import dataclass
 from polyglot_site_translator.presentation.contracts import FrontendServices
 from polyglot_site_translator.presentation.errors import ControlledServiceError
 from polyglot_site_translator.presentation.view_models import (
+    AppSettingsViewModel,
     AuditSummaryViewModel,
     POProcessingSummaryViewModel,
     ProjectActionViewModel,
     ProjectDetailViewModel,
     ProjectSummaryViewModel,
+    SettingsStateViewModel,
     SyncStatusViewModel,
+    build_default_app_settings,
+    build_settings_state,
 )
 
 
@@ -96,6 +100,47 @@ class FakeProjectWorkflowService:
         )
 
 
+@dataclass
+class InMemorySettingsService:
+    """Fake settings persistence kept in memory for the frontend shell."""
+
+    _saved_settings: AppSettingsViewModel
+    fail_load: bool = False
+    fail_save: bool = False
+
+    def load_settings(self) -> SettingsStateViewModel:
+        """Return the currently saved settings state."""
+        if self.fail_load:
+            msg = "App settings are temporarily unavailable."
+            raise ControlledServiceError(msg)
+        return build_settings_state(
+            app_settings=self._saved_settings,
+            status="loaded",
+            status_message="Settings loaded.",
+        )
+
+    def save_settings(self, app_settings: AppSettingsViewModel) -> SettingsStateViewModel:
+        """Persist settings in memory and return the saved state."""
+        if self.fail_save:
+            msg = "App settings could not be saved."
+            raise ControlledServiceError(msg)
+        self._saved_settings = app_settings
+        return build_settings_state(
+            app_settings=self._saved_settings,
+            status="saved",
+            status_message="Settings saved.",
+        )
+
+    def reset_settings(self) -> SettingsStateViewModel:
+        """Restore in-memory settings to the frontend defaults."""
+        self._saved_settings = build_default_app_settings()
+        return build_settings_state(
+            app_settings=self._saved_settings,
+            status="defaults-restored",
+            status_message="Settings restored to defaults.",
+        )
+
+
 def build_seeded_services() -> FrontendServices:
     """Return a fake service bundle with sample projects."""
     projects = [
@@ -117,6 +162,7 @@ def build_seeded_services() -> FrontendServices:
     return FrontendServices(
         catalog=InMemoryProjectCatalogService(projects=projects),
         workflows=FakeProjectWorkflowService(),
+        settings=InMemorySettingsService(_saved_settings=build_default_app_settings()),
     )
 
 
@@ -125,6 +171,7 @@ def build_empty_services() -> FrontendServices:
     return FrontendServices(
         catalog=InMemoryProjectCatalogService(projects=[]),
         workflows=FakeProjectWorkflowService(),
+        settings=InMemorySettingsService(_saved_settings=build_default_app_settings()),
     )
 
 
@@ -134,4 +181,31 @@ def build_failing_sync_services() -> FrontendServices:
     return FrontendServices(
         catalog=services.catalog,
         workflows=FakeProjectWorkflowService(fail_sync=True),
+        settings=services.settings,
+    )
+
+
+def build_failing_settings_load_services() -> FrontendServices:
+    """Return a fake service bundle that fails when loading settings."""
+    services = build_seeded_services()
+    return FrontendServices(
+        catalog=services.catalog,
+        workflows=services.workflows,
+        settings=InMemorySettingsService(
+            _saved_settings=build_default_app_settings(),
+            fail_load=True,
+        ),
+    )
+
+
+def build_failing_settings_save_services() -> FrontendServices:
+    """Return a fake service bundle that fails when saving settings."""
+    services = build_seeded_services()
+    return FrontendServices(
+        catalog=services.catalog,
+        workflows=services.workflows,
+        settings=InMemorySettingsService(
+            _saved_settings=build_default_app_settings(),
+            fail_save=True,
+        ),
     )
