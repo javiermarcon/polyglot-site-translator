@@ -8,9 +8,11 @@ from polyglot_site_translator.presentation.contracts import FrontendServices
 from polyglot_site_translator.presentation.errors import ControlledServiceError
 from polyglot_site_translator.presentation.router import FrontendRouter, RouteName
 from polyglot_site_translator.presentation.view_models import (
+    AppSettingsViewModel,
     AuditSummaryViewModel,
     DashboardSectionViewModel,
     DashboardStateViewModel,
+    NavigationMenuStateViewModel,
     POProcessingSummaryViewModel,
     ProjectActionViewModel,
     ProjectDetailStateViewModel,
@@ -18,6 +20,7 @@ from polyglot_site_translator.presentation.view_models import (
     SettingsStateViewModel,
     SyncStatusViewModel,
     build_default_app_settings,
+    build_navigation_menu_state,
     build_settings_state,
 )
 
@@ -67,6 +70,7 @@ class FrontendShell:
     audit_state: AuditSummaryViewModel | None
     po_processing_state: POProcessingSummaryViewModel | None
     settings_state: SettingsStateViewModel | None
+    navigation_menu: NavigationMenuStateViewModel
     latest_error: str | None
 
     def __init__(self, router: FrontendRouter, services: FrontendServices) -> None:
@@ -79,12 +83,17 @@ class FrontendShell:
         self.audit_state = None
         self.po_processing_state = None
         self.settings_state = None
+        self.navigation_menu = build_navigation_menu_state(
+            active_route_key=RouteName.DASHBOARD.value,
+            operations_enabled=False,
+            is_open=False,
+        )
         self.latest_error = None
 
     def open_dashboard(self) -> None:
         """Open the dashboard route."""
         self.latest_error = None
-        self.router.go_to(RouteName.DASHBOARD)
+        self._set_route(RouteName.DASHBOARD)
 
     def open_projects(self) -> None:
         """Load project summaries and open the projects route."""
@@ -94,7 +103,7 @@ class FrontendShell:
         if not projects:
             empty_message = "No projects registered yet."
         self.projects_state = ProjectsStateViewModel(projects=projects, empty_message=empty_message)
-        self.router.go_to(RouteName.PROJECTS)
+        self._set_route(RouteName.PROJECTS)
 
     def select_project(self, project_id: str) -> None:
         """Load a project detail and open its route."""
@@ -106,7 +115,7 @@ class FrontendShell:
             metadata_summary=detail.metadata_summary,
             actions=_build_project_actions(detail.actions),
         )
-        self.router.go_to(RouteName.PROJECT_DETAIL, project_id=project_id)
+        self._set_route(RouteName.PROJECT_DETAIL, project_id=project_id)
 
     def start_sync(self) -> None:
         """Trigger sync through the workflow contract."""
@@ -121,21 +130,21 @@ class FrontendShell:
                 summary=str(error),
             )
             self.latest_error = str(error)
-        self.router.go_to(RouteName.SYNC, project_id=project_id)
+        self._set_route(RouteName.SYNC, project_id=project_id)
 
     def start_audit(self) -> None:
         """Trigger audit through the workflow contract."""
         project_id = self._require_project_id()
         self.latest_error = None
         self.audit_state = self.services.workflows.start_audit(project_id)
-        self.router.go_to(RouteName.AUDIT, project_id=project_id)
+        self._set_route(RouteName.AUDIT, project_id=project_id)
 
     def start_po_processing(self) -> None:
         """Trigger PO processing through the workflow contract."""
         project_id = self._require_project_id()
         self.latest_error = None
         self.po_processing_state = self.services.workflows.start_po_processing(project_id)
-        self.router.go_to(RouteName.PO_PROCESSING, project_id=project_id)
+        self._set_route(RouteName.PO_PROCESSING, project_id=project_id)
 
     def open_settings(self) -> None:
         """Load settings and open the settings route."""
@@ -149,7 +158,34 @@ class FrontendShell:
                 status_message=str(error),
             )
             self.latest_error = str(error)
-        self.router.go_to(RouteName.SETTINGS)
+        self._set_route(RouteName.SETTINGS)
+
+    def open_application_menu(self) -> None:
+        """Mark the application menu as open for the current route context."""
+        self._refresh_navigation_menu(is_open=True)
+
+    def open_route_from_menu(self, route_key: str) -> None:
+        """Open a route selected from the grouped application menu."""
+        if route_key == RouteName.DASHBOARD.value:
+            self.open_dashboard()
+            return
+        if route_key == RouteName.PROJECTS.value:
+            self.open_projects()
+            return
+        if route_key == RouteName.SETTINGS.value:
+            self.open_settings()
+            return
+        if route_key == RouteName.SYNC.value:
+            self.start_sync()
+            return
+        if route_key == RouteName.AUDIT.value:
+            self.start_audit()
+            return
+        if route_key == RouteName.PO_PROCESSING.value:
+            self.start_po_processing()
+            return
+        msg = f"Unsupported route key: {route_key}"
+        raise ValueError(msg)
 
     def set_settings_theme_mode(self, theme_mode: str) -> None:
         """Update the draft theme mode."""
@@ -208,6 +244,45 @@ class FrontendShell:
             status_message="Settings draft updated.",
         )
 
+    def set_settings_ui_language(self, ui_language: str) -> None:
+        """Update the draft UI language."""
+        state = self._require_settings_state()
+        allowed_languages = {"en", "es"}
+        if ui_language not in allowed_languages:
+            msg = f"Unsupported UI language: {ui_language}"
+            raise ValueError(msg)
+        self.settings_state = replace(
+            state,
+            app_settings=replace(state.app_settings, ui_language=ui_language),
+            status="editing",
+            status_message="Settings draft updated.",
+        )
+
+    def update_settings_draft(self, app_settings: AppSettingsViewModel) -> None:
+        """Replace the current settings draft with a full form snapshot."""
+        state = self._require_settings_state()
+        self.settings_state = build_settings_state(
+            app_settings=app_settings,
+            status="editing",
+            status_message="Settings draft updated.",
+            selected_section_key=state.selected_section_key,
+        )
+
+    def select_settings_section(self, section_key: str) -> None:
+        """Change the selected settings section without bypassing the shell."""
+        state = self._require_settings_state()
+        next_state = build_settings_state(
+            app_settings=state.app_settings,
+            status=state.status,
+            status_message=state.status_message,
+            selected_section_key=section_key,
+        )
+        if next_state.selected_section_is_available:
+            status_message = "App / UI / Kivy settings are ready to edit."
+        else:
+            status_message = f"{next_state.selected_section_title} will be available later."
+        self.settings_state = replace(next_state, status_message=status_message)
+
     def save_settings(self) -> None:
         """Persist the current draft settings through the settings contract."""
         state = self._require_settings_state()
@@ -221,7 +296,7 @@ class FrontendShell:
                 status_message=str(error),
             )
             self.latest_error = str(error)
-        self.router.go_to(RouteName.SETTINGS)
+        self._set_route(RouteName.SETTINGS)
 
     def restore_default_settings(self) -> None:
         """Restore settings defaults through the settings contract."""
@@ -236,7 +311,7 @@ class FrontendShell:
                 status_message=str(error),
             )
             self.latest_error = str(error)
-        self.router.go_to(RouteName.SETTINGS)
+        self._set_route(RouteName.SETTINGS)
 
     def _require_project_id(self) -> str:
         route = self.router.current
@@ -254,6 +329,22 @@ class FrontendShell:
             msg = "Settings must be loaded before editing them."
             raise ValueError(msg)
         return state
+
+    def _set_route(self, route_name: RouteName, project_id: str | None = None) -> None:
+        self.router.go_to(route_name, project_id=project_id)
+        self._refresh_navigation_menu(is_open=False)
+
+    def _refresh_navigation_menu(self, *, is_open: bool) -> None:
+        self.navigation_menu = build_navigation_menu_state(
+            active_route_key=self.router.current.name.value,
+            operations_enabled=self._has_project_context(),
+            is_open=is_open,
+        )
+
+    def _has_project_context(self) -> bool:
+        if self.project_detail_state is not None:
+            return True
+        return self.router.current.project_id is not None
 
 
 def _build_project_actions(

@@ -153,13 +153,21 @@ pip install -r requirements/dev.txt
 La app gráfica puede iniciarse con:
 
 ```bash
+pip install -e .
 python -m polyglot_site_translator
 ```
 
 O desde el entorno virtual del repositorio:
 
 ```bash
+.venv/bin/pip install -e .
 .venv/bin/python -m polyglot_site_translator
+```
+
+Si querés ejecutar la app local sin instalación editable, usá el launcher del repositorio:
+
+```bash
+.venv/bin/python run_app.py
 ```
 
 ## Testing y validación

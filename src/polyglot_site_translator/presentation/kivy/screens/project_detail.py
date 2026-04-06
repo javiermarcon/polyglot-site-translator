@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
-from kivy.uix.label import Label
 from kivy.uix.screenmanager import ScreenManager
 
 from polyglot_site_translator.presentation.frontend_shell import FrontendShell
 from polyglot_site_translator.presentation.kivy.screens.base import BaseShellScreen
+from polyglot_site_translator.presentation.kivy.widgets.common import WrappedLabel
 
 
 class ProjectDetailScreen(BaseShellScreen):
@@ -16,6 +16,7 @@ class ProjectDetailScreen(BaseShellScreen):
         super().__init__(
             screen_name="project_detail",
             title="Project Detail",
+            subtitle="Contextual actions for the currently selected project.",
             shell=shell,
             manager_ref=manager_ref,
         )
@@ -23,7 +24,7 @@ class ProjectDetailScreen(BaseShellScreen):
         self.add_nav_button("Sync FTP", self._start_sync)
         self.add_nav_button("Run Audit", self._start_audit)
         self.add_nav_button("Process PO", self._start_po_processing)
-        self._detail_label = Label(halign="left", valign="top")
+        self._detail_label = WrappedLabel(font_size=15)
         self._content.add_widget(self._detail_label)
         self.refresh()
 

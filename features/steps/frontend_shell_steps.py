@@ -22,6 +22,11 @@ SYNCED_FILES = 12
 PROCESSED_FAMILIES = 4
 DEFAULT_WINDOW_WIDTH = 1280
 DEFAULT_WINDOW_HEIGHT = 720
+THEME_OPTION_COUNT = 3
+CUSTOM_WINDOW_WIDTH = 1440
+CUSTOM_WINDOW_HEIGHT = 900
+COMPACT_WINDOW_WIDTH = 550
+COMPACT_WINDOW_HEIGHT = 700
 StepFunction = TypeVar("StepFunction", bound=Callable[..., object])
 
 given = cast(Callable[[str], Callable[[StepFunction], StepFunction]], behave_module.given)
@@ -89,6 +94,7 @@ def step_saved_custom_settings(context: object) -> None:
     typed_context.shell.set_settings_theme_mode("dark")
     typed_context.shell.toggle_remember_last_screen()
     typed_context.shell.toggle_developer_mode()
+    typed_context.shell.set_settings_window_size(width=1440, height=900)
     typed_context.shell.save_settings()
 
 
@@ -134,6 +140,18 @@ def step_open_settings(context: object) -> None:
     typed_context.shell.open_settings()
 
 
+@when("the operator opens the application menu")
+def step_open_application_menu(context: object) -> None:
+    typed_context = _context_with_shell(context)
+    typed_context.shell.open_application_menu()
+
+
+@when("the operator opens the settings screen from the application menu")
+def step_open_settings_from_menu(context: object) -> None:
+    typed_context = _context_with_shell(context)
+    typed_context.shell.open_settings()
+
+
 @when("the operator enables remember last screen")
 def step_enable_remember_last_screen(context: object) -> None:
     typed_context = _context_with_shell(context)
@@ -152,6 +170,24 @@ def step_set_theme_mode(context: object, theme_mode: str) -> None:
     typed_context.shell.set_settings_theme_mode(theme_mode)
 
 
+@when("the operator sets the window size to 1440 by 900")
+def step_set_window_size(context: object) -> None:
+    typed_context = _context_with_shell(context)
+    typed_context.shell.set_settings_window_size(
+        width=CUSTOM_WINDOW_WIDTH,
+        height=CUSTOM_WINDOW_HEIGHT,
+    )
+
+
+@when("the operator sets the compact window size to 550 by 700")
+def step_set_compact_window_size(context: object) -> None:
+    typed_context = _context_with_shell(context)
+    typed_context.shell.set_settings_window_size(
+        width=COMPACT_WINDOW_WIDTH,
+        height=COMPACT_WINDOW_HEIGHT,
+    )
+
+
 @when("the operator applies the settings changes")
 def step_apply_settings(context: object) -> None:
     typed_context = _context_with_shell(context)
@@ -162,6 +198,12 @@ def step_apply_settings(context: object) -> None:
 def step_restore_settings(context: object) -> None:
     typed_context = _context_with_shell(context)
     typed_context.shell.restore_default_settings()
+
+
+@when('the operator selects the settings section "{section_key}"')
+def step_select_settings_section(context: object, section_key: str) -> None:
+    typed_context = _context_with_shell(context)
+    typed_context.shell.select_settings_section(section_key)
 
 
 @then("the dashboard is the active route")
@@ -275,6 +317,13 @@ def step_assert_settings_section(context: object) -> None:
     assert "app-ui-kivy" in section_keys
 
 
+@then("the application menu shows the main navigation groups")
+def step_assert_application_menu_groups(context: object) -> None:
+    typed_context = _context_with_shell(context)
+    section_keys = [section.key for section in typed_context.shell.navigation_menu.sections]
+    assert section_keys == ["workspace", "operations", "system"]
+
+
 @then("the settings draft uses the default window size")
 def step_assert_default_window_size(context: object) -> None:
     typed_context = _context_with_shell(context)
@@ -290,11 +339,27 @@ def step_assert_default_remember_last_screen(context: object) -> None:
     assert typed_context.shell.settings_state.app_settings.remember_last_screen is False
 
 
+@then("the settings screen shows a single theme selector with explanations")
+def step_assert_theme_selector(context: object) -> None:
+    typed_context = _context_with_shell(context)
+    assert typed_context.shell.settings_state is not None
+    assert typed_context.shell.settings_state.theme_mode_field.control_type == "choice"
+    assert len(typed_context.shell.settings_state.theme_mode_field.options) == THEME_OPTION_COUNT
+    assert typed_context.shell.settings_state.theme_mode_field.help_text != ""
+
+
 @then("the settings screen shows the changes as saved")
 def step_assert_settings_saved(context: object) -> None:
     typed_context = _context_with_shell(context)
     assert typed_context.shell.settings_state is not None
     assert typed_context.shell.settings_state.status == "saved"
+
+
+@then("the settings save exposes a saved confirmation message")
+def step_assert_settings_saved_message(context: object) -> None:
+    typed_context = _context_with_shell(context)
+    assert typed_context.shell.settings_state is not None
+    assert typed_context.shell.settings_state.status_message == "Settings saved."
 
 
 @then("the saved settings keep remember last screen enabled")
@@ -304,6 +369,22 @@ def step_assert_saved_remember_last_screen(context: object) -> None:
     assert typed_context.shell.settings_state.app_settings.remember_last_screen is True
 
 
+@then("the saved settings keep the selected window size")
+def step_assert_saved_window_size(context: object) -> None:
+    typed_context = _context_with_shell(context)
+    assert typed_context.shell.settings_state is not None
+    assert typed_context.shell.settings_state.app_settings.window_width == CUSTOM_WINDOW_WIDTH
+    assert typed_context.shell.settings_state.app_settings.window_height == CUSTOM_WINDOW_HEIGHT
+
+
+@then("the saved settings keep the compact window size")
+def step_assert_saved_compact_window_size(context: object) -> None:
+    typed_context = _context_with_shell(context)
+    assert typed_context.shell.settings_state is not None
+    assert typed_context.shell.settings_state.app_settings.window_width == COMPACT_WINDOW_WIDTH
+    assert typed_context.shell.settings_state.app_settings.window_height == COMPACT_WINDOW_HEIGHT
+
+
 @then("the settings draft shows the persisted custom values")
 def step_assert_persisted_settings(context: object) -> None:
     typed_context = _context_with_shell(context)
@@ -311,6 +392,8 @@ def step_assert_persisted_settings(context: object) -> None:
     assert typed_context.shell.settings_state.app_settings.theme_mode == "dark"
     assert typed_context.shell.settings_state.app_settings.developer_mode is True
     assert typed_context.shell.settings_state.app_settings.remember_last_screen is True
+    assert typed_context.shell.settings_state.app_settings.window_width == CUSTOM_WINDOW_WIDTH
+    assert typed_context.shell.settings_state.app_settings.window_height == CUSTOM_WINDOW_HEIGHT
 
 
 @then("the settings screen shows a failed status")
@@ -327,3 +410,13 @@ def step_assert_settings_error_message(context: object) -> None:
         "App settings are temporarily unavailable.",
         "App settings could not be saved.",
     }
+
+
+@then("the settings screen shows the selected planned section")
+def step_assert_planned_section(context: object) -> None:
+    typed_context = _context_with_shell(context)
+    assert typed_context.shell.settings_state is not None
+    assert typed_context.shell.settings_state.selected_section_key == "translation"
+    assert typed_context.shell.settings_state.status_message == (
+        "Translation Settings will be available later."
+    )

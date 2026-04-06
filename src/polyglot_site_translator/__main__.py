@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
+import os
 from typing import Any, cast
+
+os.environ.setdefault("KIVY_NO_FILELOG", "1")
 
 from polyglot_site_translator.app import create_kivy_app
 

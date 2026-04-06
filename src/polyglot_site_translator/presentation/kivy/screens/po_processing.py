@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
-from kivy.uix.label import Label
 from kivy.uix.screenmanager import ScreenManager
 
 from polyglot_site_translator.presentation.frontend_shell import FrontendShell
 from polyglot_site_translator.presentation.kivy.screens.base import BaseShellScreen
+from polyglot_site_translator.presentation.kivy.widgets.common import WrappedLabel
 
 
 class POProcessingScreen(BaseShellScreen):
@@ -16,11 +16,12 @@ class POProcessingScreen(BaseShellScreen):
         super().__init__(
             screen_name="po_processing",
             title="PO Processing",
+            subtitle="Project-scoped PO workflow summary and prepared locale families.",
             shell=shell,
             manager_ref=manager_ref,
         )
         self.add_nav_button("Back to Project", self._back_to_project)
-        self._summary_label = Label(halign="left", valign="top")
+        self._summary_label = WrappedLabel(font_size=15)
         self._content.add_widget(self._summary_label)
         self.refresh()
 

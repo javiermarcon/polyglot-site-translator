@@ -6,6 +6,34 @@ from dataclasses import dataclass
 
 
 @dataclass(frozen=True)
+class NavigationMenuItemViewModel:
+    """A navigation target rendered in the application menu."""
+
+    key: str
+    title: str
+    description: str
+    is_enabled: bool
+
+
+@dataclass(frozen=True)
+class NavigationMenuSectionViewModel:
+    """A grouped section rendered in the application menu."""
+
+    key: str
+    title: str
+    items: list[NavigationMenuItemViewModel]
+
+
+@dataclass(frozen=True)
+class NavigationMenuStateViewModel:
+    """Global navigation menu state for the application shell."""
+
+    sections: list[NavigationMenuSectionViewModel]
+    active_route_key: str
+    is_open: bool
+
+
+@dataclass(frozen=True)
 class DashboardSectionViewModel:
     """A top-level workflow entry rendered in the dashboard."""
 
@@ -22,6 +50,25 @@ class SettingsSectionViewModel:
     title: str
     description: str
     is_available: bool
+
+
+@dataclass(frozen=True)
+class SettingsOptionViewModel:
+    """A selectable option rendered by a settings control."""
+
+    value: str
+    label: str
+
+
+@dataclass(frozen=True)
+class SettingsFieldViewModel:
+    """A typed settings field descriptor for the settings UI."""
+
+    key: str
+    label: str
+    help_text: str
+    control_type: str
+    options: list[SettingsOptionViewModel]
 
 
 @dataclass(frozen=True)
@@ -79,7 +126,12 @@ class SettingsStateViewModel:
 
     sections: list[SettingsSectionViewModel]
     selected_section_key: str
+    selected_section_title: str
+    selected_section_description: str
+    selected_section_is_available: bool
     app_settings: AppSettingsViewModel
+    theme_mode_field: SettingsFieldViewModel
+    ui_language_field: SettingsFieldViewModel
     status: str
     status_message: str | None
 
@@ -159,6 +211,75 @@ def build_settings_sections() -> list[SettingsSectionViewModel]:
     ]
 
 
+def build_navigation_menu_state(
+    *,
+    active_route_key: str,
+    operations_enabled: bool,
+    is_open: bool,
+) -> NavigationMenuStateViewModel:
+    """Return the grouped application navigation menu."""
+    return NavigationMenuStateViewModel(
+        sections=[
+            NavigationMenuSectionViewModel(
+                key="workspace",
+                title="Workspace",
+                items=[
+                    NavigationMenuItemViewModel(
+                        key="dashboard",
+                        title="Dashboard",
+                        description="Overview and entry points for the application.",
+                        is_enabled=True,
+                    ),
+                    NavigationMenuItemViewModel(
+                        key="projects",
+                        title="Projects",
+                        description="Open the registry of managed projects and sites.",
+                        is_enabled=True,
+                    ),
+                ],
+            ),
+            NavigationMenuSectionViewModel(
+                key="operations",
+                title="Operations",
+                items=[
+                    NavigationMenuItemViewModel(
+                        key="sync",
+                        title="Sync",
+                        description="Project-scoped synchronization workflow.",
+                        is_enabled=operations_enabled,
+                    ),
+                    NavigationMenuItemViewModel(
+                        key="audit",
+                        title="Audit",
+                        description="Project-scoped audit workflow summary.",
+                        is_enabled=operations_enabled,
+                    ),
+                    NavigationMenuItemViewModel(
+                        key="po-processing",
+                        title="PO Processing",
+                        description="Project-scoped PO workflow summary.",
+                        is_enabled=operations_enabled,
+                    ),
+                ],
+            ),
+            NavigationMenuSectionViewModel(
+                key="system",
+                title="System",
+                items=[
+                    NavigationMenuItemViewModel(
+                        key="settings",
+                        title="Settings",
+                        description="Application, UI and future system configuration.",
+                        is_enabled=True,
+                    ),
+                ],
+            ),
+        ],
+        active_route_key=active_route_key,
+        is_open=is_open,
+    )
+
+
 def build_default_app_settings() -> AppSettingsViewModel:
     """Return the default frontend settings."""
     return AppSettingsViewModel(
@@ -171,6 +292,43 @@ def build_default_app_settings() -> AppSettingsViewModel:
     )
 
 
+def _find_settings_section(section_key: str) -> SettingsSectionViewModel:
+    for section in build_settings_sections():
+        if section.key == section_key:
+            return section
+    msg = f"Unknown settings section: {section_key}"
+    raise LookupError(msg)
+
+
+def build_theme_mode_field() -> SettingsFieldViewModel:
+    """Return metadata for the theme-mode settings control."""
+    return SettingsFieldViewModel(
+        key="theme_mode",
+        label="Theme Mode",
+        help_text="Choose the visual appearance that the Kivy shell should use by default.",
+        control_type="choice",
+        options=[
+            SettingsOptionViewModel(value="system", label="System"),
+            SettingsOptionViewModel(value="light", label="Light"),
+            SettingsOptionViewModel(value="dark", label="Dark"),
+        ],
+    )
+
+
+def build_ui_language_field() -> SettingsFieldViewModel:
+    """Return metadata for the UI language settings control."""
+    return SettingsFieldViewModel(
+        key="ui_language",
+        label="UI Language",
+        help_text="Prepare the frontend for future localization without wiring translations yet.",
+        control_type="choice",
+        options=[
+            SettingsOptionViewModel(value="en", label="English"),
+            SettingsOptionViewModel(value="es", label="Spanish"),
+        ],
+    )
+
+
 def build_settings_state(
     *,
     app_settings: AppSettingsViewModel,
@@ -179,10 +337,16 @@ def build_settings_state(
     selected_section_key: str = "app-ui-kivy",
 ) -> SettingsStateViewModel:
     """Return the settings screen state for the current frontend configuration."""
+    selected_section = _find_settings_section(selected_section_key)
     return SettingsStateViewModel(
         sections=build_settings_sections(),
         selected_section_key=selected_section_key,
+        selected_section_title=selected_section.title,
+        selected_section_description=selected_section.description,
+        selected_section_is_available=selected_section.is_available,
         app_settings=app_settings,
+        theme_mode_field=build_theme_mode_field(),
+        ui_language_field=build_ui_language_field(),
         status=status,
         status_message=status_message,
     )

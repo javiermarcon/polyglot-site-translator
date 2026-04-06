@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
-from kivy.uix.label import Label
 from kivy.uix.screenmanager import ScreenManager
 
 from polyglot_site_translator.presentation.frontend_shell import FrontendShell
 from polyglot_site_translator.presentation.kivy.screens.base import BaseShellScreen
+from polyglot_site_translator.presentation.kivy.widgets.common import WrappedLabel
 
 
 class DashboardScreen(BaseShellScreen):
@@ -16,12 +16,13 @@ class DashboardScreen(BaseShellScreen):
         super().__init__(
             screen_name="dashboard",
             title="Dashboard",
+            subtitle="Main entry point for projects, operations and system configuration.",
             shell=shell,
             manager_ref=manager_ref,
         )
         self.add_nav_button("Open Projects", self._open_projects)
-        self.add_nav_button("Open Settings", self._open_settings)
-        self._sections_label = Label(halign="left", valign="top")
+        self.add_nav_button("Open Settings", self._open_settings, primary=False)
+        self._sections_label = WrappedLabel(font_size=15)
         self._content.add_widget(self._sections_label)
         self.refresh()
 

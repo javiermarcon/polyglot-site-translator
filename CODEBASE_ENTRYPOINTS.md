@@ -30,6 +30,8 @@ It must not contain:
 Current entrypoints:
 - `polyglot_site_translator.app:create_kivy_app`
 - `polyglot_site_translator.__main__:main`
+- `run_app.py`
+- `polyglot_site_translator.presentation.kivy.app.PolyglotSiteTranslatorApp.apply_runtime_settings`
 
 ---
 
@@ -90,8 +92,15 @@ Current navigation entrypoint:
 
 Current settings orchestration entrypoints:
 - `FrontendShell.open_settings`
+- `FrontendShell.open_application_menu`
+- `FrontendShell.open_route_from_menu`
+- `FrontendShell.select_settings_section`
+- `FrontendShell.update_settings_draft`
 - `FrontendShell.save_settings`
 - `FrontendShell.restore_default_settings`
+
+Current Kivy settings layout entrypoint:
+- `polyglot_site_translator.presentation.kivy.settings_layout.build_settings_layout_spec`
 
 ---
 
@@ -144,9 +153,13 @@ Current frontend test-covered entrypoints:
 - `FrontendShell.start_audit`
 - `FrontendShell.start_po_processing`
 - `FrontendShell.open_settings`
+- `FrontendShell.open_application_menu`
+- `FrontendShell.open_route_from_menu`
 - `FrontendShell.set_settings_theme_mode`
+- `FrontendShell.set_settings_ui_language`
 - `FrontendShell.toggle_remember_last_screen`
 - `FrontendShell.toggle_developer_mode`
+- `FrontendShell.select_settings_section`
 - `FrontendShell.save_settings`
 - `FrontendShell.restore_default_settings`
 

@@ -26,6 +26,9 @@ The codebase should be organized around these layers:
    - presentation shell / UI orchestrator
    - typed view models for screens and workflow panels
    - typed settings state and editable draft settings
+   - Kivy runtime settings applier for theme and window behavior
+   - runtime theme palette tokens for light and dark frontend modes
+   - responsive layout rules for compact and desktop settings screens
    - navigation router and selected-project context
    - screens
    - widgets
@@ -152,6 +155,7 @@ Kivy screens/widgets should never directly implement:
 The presentation layer may contain:
 - typed screen state and workflow summaries
 - typed settings sections and draft frontend settings
+- Kivy-only runtime behavior such as applying theme palette tokens and window size
 - a thin router for navigation state
 - a presentation shell/controller that coordinates service contracts
 - fake or mockable service bundles for local UI development and tests
@@ -237,8 +241,9 @@ Key responsibilities:
 - `presentation/contracts.py` defines UI-facing protocols for project catalog and workflow actions.
 - `presentation/view_models.py` defines typed dataclasses for dashboard, projects, project detail, sync, audit, and PO processing states.
 - `presentation/frontend_shell.py` centralizes navigation-safe orchestration without embedding infrastructure logic in widgets.
+- `presentation/frontend_shell.py` now also owns the grouped application menu state and contextual route enabling.
 - `presentation/fakes.py` provides deterministic in-memory services for the initial frontend shell, BDD scenarios, and unit tests.
 - `presentation/kivy/` contains thin `ScreenManager` wiring and screen classes that render already-prepared state.
 - `presentation/contracts.py` now also defines a settings contract for frontend configuration workflows.
 - `presentation/view_models.py` now includes extensible settings sections and typed app/UI/Kivy settings.
-- `presentation/kivy/screens/settings.py` exposes the initial configuration screen for frontend behavior.
+- `presentation/kivy/screens/settings.py` exposes the initial configuration screen for frontend behavior using a sectioned layout and typed field metadata.

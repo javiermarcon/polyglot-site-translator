@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
+
 from kivy.uix.screenmanager import NoTransition, ScreenManager
 
 from polyglot_site_translator.presentation.frontend_shell import FrontendShell
@@ -12,9 +14,13 @@ from polyglot_site_translator.presentation.kivy.screens.project_detail import Pr
 from polyglot_site_translator.presentation.kivy.screens.projects import ProjectsScreen
 from polyglot_site_translator.presentation.kivy.screens.settings import SettingsScreen
 from polyglot_site_translator.presentation.kivy.screens.sync import SyncScreen
+from polyglot_site_translator.presentation.view_models import AppSettingsViewModel
 
 
-def build_root_widget(shell: FrontendShell) -> ScreenManager:
+def build_root_widget(
+    shell: FrontendShell,
+    apply_runtime_settings: Callable[[AppSettingsViewModel], None] | None = None,
+) -> ScreenManager:
     """Create the ScreenManager used by the Kivy app."""
     manager = ScreenManager(transition=NoTransition())
     screens = [
@@ -24,7 +30,11 @@ def build_root_widget(shell: FrontendShell) -> ScreenManager:
         SyncScreen(shell=shell, manager_ref=manager),
         AuditScreen(shell=shell, manager_ref=manager),
         POProcessingScreen(shell=shell, manager_ref=manager),
-        SettingsScreen(shell=shell, manager_ref=manager),
+        SettingsScreen(
+            shell=shell,
+            manager_ref=manager,
+            apply_runtime_settings=apply_runtime_settings,
+        ),
     ]
     for screen in screens:
         manager.add_widget(screen)

@@ -37,6 +37,9 @@ Update it whenever the structure changes.
 - `README.md`
   High-level user/developer-facing introduction if present.
 
+- `run_app.py`
+  Local launcher for the src-layout application package without requiring editable installation.
+
 ---
 
 ## Expected `src/` responsibilities
@@ -73,7 +76,7 @@ Current frontend base:
   Typed dataclasses for dashboard, project list/detail, sync, audit, PO processing, and settings.
 
 - `polyglot_site_translator/presentation/frontend_shell.py`
-  Navigation, settings editing, and orchestration state independent from Kivy rendering.
+  Navigation menu state, settings editing, and orchestration state independent from Kivy rendering.
 
 - `polyglot_site_translator/presentation/fakes.py`
   In-memory fake services used by the frontend shell and tests.
@@ -81,8 +84,14 @@ Current frontend base:
 - `polyglot_site_translator/presentation/kivy/`
   Thin Kivy `ScreenManager`, screens, and reusable widget area.
 
+- `polyglot_site_translator/presentation/kivy/theme.py`
+  Runtime theme palette tokens and active theme selection for the Kivy frontend.
+
+- `polyglot_site_translator/presentation/kivy/settings_layout.py`
+  Responsive layout rules for the settings screen so compact windows switch to a usable stacked layout.
+
 - `polyglot_site_translator/presentation/kivy/screens/settings.py`
-  Extensible settings screen with the initial App / UI / Kivy section.
+  Extensible settings screen with the initial App / UI / Kivy section, runtime draft editing, Kivy-only runtime setting application, and compact responsive layout behavior.
 
 - `services/`
   - use-case orchestration
