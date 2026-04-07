@@ -183,6 +183,16 @@ Test:
 - state transitions that do not require brittle rendering tests
 - error propagation to presentation layer abstractions if present
 
+### If changing TOML settings persistence
+
+Test:
+
+- default loading when the config file does not exist yet
+- round-trip save/load behavior
+- invalid TOML or invalid setting values
+- per-user config-path resolution overrides
+- remembered safe startup screens and runtime setting application
+
 ---
 
 ## Fixtures

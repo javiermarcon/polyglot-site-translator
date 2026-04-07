@@ -333,6 +333,7 @@ class FrontendShell:
     def _set_route(self, route_name: RouteName, project_id: str | None = None) -> None:
         self.router.go_to(route_name, project_id=project_id)
         self._refresh_navigation_menu(is_open=False)
+        self._persist_last_opened_screen(route_name)
 
     def _refresh_navigation_menu(self, *, is_open: bool) -> None:
         self.navigation_menu = build_navigation_menu_state(
@@ -345,6 +346,23 @@ class FrontendShell:
         if self.project_detail_state is not None:
             return True
         return self.router.current.project_id is not None
+
+    def _persist_last_opened_screen(self, route_name: RouteName) -> None:
+        """Persist the last opened screen when the preference is enabled."""
+        settings_state = self.settings_state
+        if settings_state is None or settings_state.status == "failed":
+            return
+        if not settings_state.app_settings.remember_last_screen:
+            return
+        updated_settings = replace(
+            settings_state.app_settings,
+            last_opened_screen=route_name.value,
+        )
+        try:
+            self.services.settings.save_settings(updated_settings)
+            self.settings_state = replace(settings_state, app_settings=updated_settings)
+        except ControlledServiceError as error:
+            self.latest_error = str(error)
 
 
 def _build_project_actions(

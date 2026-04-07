@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from polyglot_site_translator.presentation.contracts import FrontendServices
+from polyglot_site_translator.presentation.contracts import FrontendServices, SettingsService
 from polyglot_site_translator.presentation.errors import ControlledServiceError
 from polyglot_site_translator.presentation.view_models import (
     AppSettingsViewModel,
@@ -143,6 +143,13 @@ class InMemorySettingsService:
 
 def build_seeded_services() -> FrontendServices:
     """Return a fake service bundle with sample projects."""
+    return build_seeded_services_with_settings(
+        InMemorySettingsService(_saved_settings=build_default_app_settings())
+    )
+
+
+def build_seeded_services_with_settings(settings_service: SettingsService) -> FrontendServices:
+    """Return seeded fake catalog/workflow services with an injected settings service."""
     projects = [
         ProjectSummaryViewModel(
             id="wp-site",
@@ -162,7 +169,7 @@ def build_seeded_services() -> FrontendServices:
     return FrontendServices(
         catalog=InMemoryProjectCatalogService(projects=projects),
         workflows=FakeProjectWorkflowService(),
-        settings=InMemorySettingsService(_saved_settings=build_default_app_settings()),
+        settings=settings_service,
     )
 
 
