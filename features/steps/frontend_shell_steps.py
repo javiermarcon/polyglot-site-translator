@@ -3,17 +3,21 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+from pathlib import Path
+import tempfile
 from typing import Protocol, TypeVar, cast
 
 import behave as behave_module  # type: ignore[import-untyped]
 
 from polyglot_site_translator.bootstrap import create_frontend_shell
+from polyglot_site_translator.infrastructure.settings import build_default_settings_service
 from polyglot_site_translator.presentation.fakes import (
     build_empty_services,
     build_failing_settings_load_services,
     build_failing_settings_save_services,
     build_failing_sync_services,
     build_seeded_services,
+    build_seeded_services_with_settings,
 )
 from polyglot_site_translator.presentation.frontend_shell import FrontendShell
 from polyglot_site_translator.presentation.router import RouteName
@@ -38,6 +42,7 @@ class BehaveShellContext(Protocol):
     """Typed subset of behave context used by this feature."""
 
     shell: FrontendShell
+    settings_temp_dir: tempfile.TemporaryDirectory[str]
 
 
 def _context_with_shell(context: object) -> BehaveShellContext:
@@ -48,6 +53,18 @@ def _context_with_shell(context: object) -> BehaveShellContext:
 def step_seeded_shell(context: object) -> None:
     typed_context = _context_with_shell(context)
     typed_context.shell = create_frontend_shell(build_seeded_services())
+
+
+@given("the frontend shell is wired with TOML-backed settings persistence")
+def step_seeded_toml_shell(context: object) -> None:
+    typed_context = _context_with_shell(context)
+    typed_context.settings_temp_dir = tempfile.TemporaryDirectory()
+    settings_service = build_default_settings_service(
+        config_dir=Path(typed_context.settings_temp_dir.name)
+    )
+    typed_context.shell = create_frontend_shell(
+        build_seeded_services_with_settings(settings_service)
+    )
 
 
 @given("the frontend shell is wired with an empty fake catalog")
@@ -96,6 +113,17 @@ def step_saved_custom_settings(context: object) -> None:
     typed_context.shell.toggle_developer_mode()
     typed_context.shell.set_settings_window_size(width=1440, height=900)
     typed_context.shell.save_settings()
+
+
+@when("the operator restarts the frontend shell")
+def step_restart_frontend_shell(context: object) -> None:
+    typed_context = _context_with_shell(context)
+    settings_service = build_default_settings_service(
+        config_dir=Path(typed_context.settings_temp_dir.name)
+    )
+    typed_context.shell = create_frontend_shell(
+        build_seeded_services_with_settings(settings_service)
+    )
 
 
 @when("the operator opens the application")

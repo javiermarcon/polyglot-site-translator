@@ -162,6 +162,7 @@ def test_settings_screen_raises_for_missing_state_or_draft_and_option_lookup_fai
     app = cast(Any, create_kivy_app())
     root = app.build()
     settings_screen = root.get_screen("settings")
+    settings_screen._shell.settings_state = None
 
     with pytest.raises(
         ValueError,

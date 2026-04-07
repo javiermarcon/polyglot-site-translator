@@ -14,6 +14,7 @@ from polyglot_site_translator.presentation.kivy.screens.project_detail import Pr
 from polyglot_site_translator.presentation.kivy.screens.projects import ProjectsScreen
 from polyglot_site_translator.presentation.kivy.screens.settings import SettingsScreen
 from polyglot_site_translator.presentation.kivy.screens.sync import SyncScreen
+from polyglot_site_translator.presentation.router import RouteName
 from polyglot_site_translator.presentation.view_models import AppSettingsViewModel
 
 
@@ -38,5 +39,15 @@ def build_root_widget(
     ]
     for screen in screens:
         manager.add_widget(screen)
-    manager.current = "dashboard"
+    manager.current = _resolve_initial_screen_name(shell)
     return manager
+
+
+def _resolve_initial_screen_name(shell: FrontendShell) -> str:
+    """Map the shell route to the corresponding screen name."""
+    route_name = shell.router.current.name
+    if route_name is RouteName.PROJECT_DETAIL:
+        return "project_detail"
+    if route_name is RouteName.PO_PROCESSING:
+        return "po_processing"
+    return route_name.value
