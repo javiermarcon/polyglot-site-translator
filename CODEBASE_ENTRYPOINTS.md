@@ -56,6 +56,8 @@ Current frontend-facing service entrypoints:
 - `SettingsService.load_settings`
 - `SettingsService.save_settings`
 - `SettingsService.reset_settings`
+- `polyglot_site_translator.infrastructure.settings.build_default_settings_service`
+- `polyglot_site_translator.infrastructure.settings.TomlSettingsService`
 
 ---
 
@@ -112,6 +114,13 @@ Possible examples:
 - site repository
 - settings repository
 - scan history repository if added later
+
+Current frontend settings persistence entrypoints:
+- `polyglot_site_translator.infrastructure.settings.resolve_user_config_dir`
+- `polyglot_site_translator.infrastructure.settings.build_default_settings_service`
+- `polyglot_site_translator.infrastructure.settings.TomlSettingsService.load_settings`
+- `polyglot_site_translator.infrastructure.settings.TomlSettingsService.save_settings`
+- `polyglot_site_translator.infrastructure.settings.TomlSettingsService.reset_settings`
 
 ---
 

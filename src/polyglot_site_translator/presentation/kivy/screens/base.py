@@ -159,6 +159,8 @@ class BaseShellScreen(Screen):  # type: ignore[misc]
                 entry.bind(on_release=lambda _widget, key=item.key: self._open_menu_route(key))
                 dropdown.add_widget(entry)
         self._menu_dropdown = dropdown
+        if self._menu_button.get_parent_window() is None:
+            return
         dropdown.open(self._menu_button)
 
     def _open_menu_route(self, route_key: str) -> None:

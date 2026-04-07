@@ -133,10 +133,12 @@ The frontend baseline now also includes:
 - an extensible settings screen
 - a dedicated settings contract for frontend configuration
 - typed App / UI / Kivy settings state
-- fake in-memory settings persistence for tests and local UI behavior
+- TOML-backed frontend settings persistence for runtime configuration
+- fake in-memory settings persistence for isolated tests and local doubles
 - a grouped application menu that separates workspace, operations, and system navigation
 - a Kivy runtime theme module for light/dark palette application
 - runtime application of saved window size and theme mode after successful settings saves
+- startup loading of persisted theme, window size, and safe remembered screens
 - responsive settings layout rules so narrow windows switch to a stacked compact layout
 
 When extending the frontend, keep new behavior behind those boundaries unless the architecture docs are intentionally updated.

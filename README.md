@@ -20,7 +20,8 @@ El repositorio está en una etapa temprana y hoy incluye principalmente:
 - navegación inicial con `ScreenManager`
 - pantallas base para dashboard, proyectos, detalle, sync, audit y PO processing
 - contratos de servicios para la UI
-- implementaciones fake/in-memory para desarrollo y tests
+- persistencia real en TOML para settings generales de la app
+- implementaciones fake/in-memory para catálogo y workflows de desarrollo
 - escenarios BDD y tests de presentación/orquestación
 - documentación arquitectónica para guiar futuras iteraciones
 
@@ -59,10 +60,11 @@ La base actual implementa sobre todo la capa de presentación, con estas piezas:
 
 - `app.py` y `__main__.py`: entrypoints de la app gráfica
 - `bootstrap.py`: wiring inicial del frontend shell
+- `infrastructure/settings.py`: persistencia TOML de settings generales por usuario
 - `presentation/contracts.py`: contratos de servicios que consume la UI
 - `presentation/view_models.py`: modelos tipados para pantallas y paneles
 - `presentation/frontend_shell.py`: orquestación de navegación y estado
-- `presentation/fakes.py`: servicios fake para desarrollo y pruebas
+- `presentation/fakes.py`: catálogo/workflows fake y doubles de settings para desarrollo y pruebas
 - `presentation/kivy/`: app Kivy, `ScreenManager`, screens y widgets
 La UI no debe hablar directamente con:
 
@@ -169,6 +171,9 @@ Si querés ejecutar la app local sin instalación editable, usá el launcher del
 ```bash
 .venv/bin/python run_app.py
 ```
+
+Los settings generales se guardan en `settings.toml` dentro del directorio de configuración del usuario.
+Para desarrollo o pruebas locales, podés overridear la ubicación con `POLYGLOT_SITE_TRANSLATOR_CONFIG_DIR`.
 
 ## Testing y validación
 

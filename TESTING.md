@@ -183,6 +183,16 @@ Test:
 - state transitions that do not require brittle rendering tests
 - error propagation to presentation layer abstractions if present
 
+### If changing TOML settings persistence
+
+Test:
+
+- default loading when the config file does not exist yet
+- round-trip save/load behavior
+- invalid TOML or invalid setting values
+- per-user config-path resolution overrides
+- remembered safe startup screens and runtime setting application
+
 ---
 
 ## Fixtures
@@ -222,6 +232,12 @@ Examples:
 python -m pytest
 python -m pytest tests/unit
 python -m pytest tests/integration
+```
+
+For headless Linux CI or local headless validation of Kivy tests, use a virtual display:
+
+```bash
+xvfb-run -a python -m pytest
 ```
 
 If the project later formalizes dedicated commands, update this file and the repository maps.

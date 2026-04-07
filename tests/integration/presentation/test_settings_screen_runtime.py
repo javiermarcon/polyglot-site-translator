@@ -12,11 +12,17 @@ from kivy.uix.textinput import TextInput
 import pytest
 
 from polyglot_site_translator.app import create_kivy_app
+from polyglot_site_translator.presentation.kivy.screens.settings import (
+    _find_option_label,
+    _find_option_value,
+)
 from polyglot_site_translator.presentation.kivy.theme import (
     get_active_theme_mode,
     resolve_theme_palette,
     set_active_theme_mode,
 )
+from polyglot_site_translator.presentation.kivy.widgets.common import WrappedLabel
+from polyglot_site_translator.presentation.view_models import SettingsOptionViewModel
 
 
 @pytest.fixture(autouse=True)
@@ -112,6 +118,75 @@ def test_settings_screen_switches_to_compact_layout_for_narrow_windows() -> None
     assert settings_screen._layout_spec.main_columns == 1
     assert settings_screen._layout_spec.action_orientation == "vertical"
     assert tuple(Window.size) == (550, 700)
+
+
+def test_settings_screen_handles_section_selection_defaults_and_dashboard_navigation() -> None:
+    app = cast(Any, create_kivy_app())
+    root = app.build()
+    settings_screen = root.get_screen("settings")
+
+    settings_screen._shell.open_settings()
+    root.current = "settings"
+    settings_screen.refresh()
+
+    settings_screen._select_settings_section("translation")
+    assert settings_screen._shell.settings_state is not None
+    assert settings_screen._shell.settings_state.selected_section_key == "translation"
+    assert "Planned Section" in _collect_label_texts(settings_screen)
+
+    settings_screen._select_settings_section("app-ui-kivy")
+    remember_label = WrappedLabel(text="")
+    developer_label = WrappedLabel(text="")
+    settings_screen._toggle_remember_last_screen(None, True, remember_label)
+    settings_screen._toggle_developer_mode(None, True, developer_label)
+    settings_screen._on_theme_mode_selected(None, "Light")
+    settings_screen._on_ui_language_selected(None, "Spanish")
+
+    assert settings_screen._draft_settings is not None
+    assert settings_screen._draft_settings.remember_last_screen is True
+    assert settings_screen._draft_settings.developer_mode is True
+    assert settings_screen._draft_settings.theme_mode == "light"
+    assert settings_screen._draft_settings.ui_language == "es"
+    assert remember_label.text == "Enabled"
+    assert developer_label.text == "Enabled"
+
+    settings_screen._restore_defaults()
+    assert settings_screen._shell.settings_state is not None
+    assert settings_screen._shell.settings_state.status == "defaults-restored"
+
+    settings_screen._back_to_dashboard()
+    assert root.current == "dashboard"
+
+
+def test_settings_screen_raises_for_missing_state_or_draft_and_option_lookup_failures() -> None:
+    app = cast(Any, create_kivy_app())
+    root = app.build()
+    settings_screen = root.get_screen("settings")
+    settings_screen._shell.settings_state = None
+
+    with pytest.raises(
+        ValueError,
+        match=r"Settings must be loaded before rendering the settings screen\.",
+    ):
+        settings_screen._require_state()
+
+    settings_screen._shell.open_settings()
+    settings_screen.refresh()
+    settings_screen._draft_settings = None
+
+    with pytest.raises(
+        ValueError,
+        match=r"Settings draft must be initialized before editing\.",
+    ):
+        settings_screen._require_draft()
+
+    options = [SettingsOptionViewModel(value="en", label="English")]
+
+    with pytest.raises(LookupError, match="Unknown option value: es"):
+        _find_option_label(options, "es")
+
+    with pytest.raises(LookupError, match="Unknown option label: Spanish"):
+        _find_option_value(options, "Spanish")
 
 
 def _find_button_by_text(root_widget: object, text: str) -> Button:
