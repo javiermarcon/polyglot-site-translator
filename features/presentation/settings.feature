@@ -44,6 +44,13 @@ Feature: Frontend settings management
     When the operator opens the settings screen
     Then the settings draft shows the persisted custom values
 
+  Scenario: Reopen settings from a new shell and keep the TOML-backed state
+    Given the frontend shell is wired with TOML-backed settings persistence
+    And the operator has saved custom settings
+    When the operator restarts the frontend shell
+    And the operator opens the settings screen
+    Then the settings draft shows the persisted custom values
+
   Scenario: Reset settings to defaults
     Given the frontend shell is wired with seeded fake services
     And the operator has saved custom settings

@@ -69,6 +69,9 @@ Current frontend base:
 - `polyglot_site_translator/bootstrap.py`
   Presentation-shell wiring and injectable service bundle assembly.
 
+- `polyglot_site_translator/infrastructure/settings.py`
+  TOML-backed settings persistence, validation, and per-user config-path resolution.
+
 - `polyglot_site_translator/presentation/contracts.py`
   UI-facing service protocols, including frontend settings operations.
 
@@ -79,7 +82,7 @@ Current frontend base:
   Navigation menu state, settings editing, and orchestration state independent from Kivy rendering.
 
 - `polyglot_site_translator/presentation/fakes.py`
-  In-memory fake services used by the frontend shell and tests.
+  In-memory fake services used by the frontend shell and tests, plus seeded fake catalog/workflow wiring with injectable settings persistence.
 
 - `polyglot_site_translator/presentation/kivy/`
   Thin Kivy `ScreenManager`, screens, and reusable widget area.

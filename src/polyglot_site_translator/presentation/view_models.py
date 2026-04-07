@@ -79,6 +79,7 @@ class AppSettingsViewModel:
     window_width: int
     window_height: int
     remember_last_screen: bool
+    last_opened_screen: str
     developer_mode: bool
     ui_language: str
 
@@ -287,6 +288,7 @@ def build_default_app_settings() -> AppSettingsViewModel:
         window_width=1280,
         window_height=720,
         remember_last_screen=False,
+        last_opened_screen="dashboard",
         developer_mode=False,
         ui_language="en",
     )

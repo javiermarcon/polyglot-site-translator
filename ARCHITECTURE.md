@@ -160,6 +160,8 @@ The presentation layer may contain:
 - a presentation shell/controller that coordinates service contracts
 - fake or mockable service bundles for local UI development and tests
 
+Frontend settings persistence remains behind the `SettingsService` contract and is now implemented at runtime through a TOML-backed infrastructure service. Kivy screens still edit typed drafts and delegate save/load/reset operations through the presentation shell.
+
 ### Shared services must remain target-agnostic where feasible
 
 Common services must not hardcode WordPress, Django, or Flask assumptions when those belong in adapters/plugins.
