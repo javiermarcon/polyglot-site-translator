@@ -4,8 +4,10 @@ from __future__ import annotations
 
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.screenmanager import ScreenManager
+from kivy.uix.spinner import Spinner
 from kivy.uix.switch import Switch
 from kivy.uix.textinput import TextInput
+from kivy.uix.widget import Widget
 
 from polyglot_site_translator.presentation.frontend_shell import FrontendShell
 from polyglot_site_translator.presentation.kivy.screens.base import BaseShellScreen
@@ -17,6 +19,7 @@ from polyglot_site_translator.presentation.kivy.widgets.common import (
 )
 from polyglot_site_translator.presentation.view_models import (
     ProjectEditorStateViewModel,
+    SettingsOptionViewModel,
     SiteEditorViewModel,
 )
 
@@ -35,7 +38,7 @@ class ProjectEditorScreen(BaseShellScreen):
         self.add_nav_button("Back to Projects", self._back_to_projects, primary=False)
         self._draft_editor: SiteEditorViewModel | None = None
         self._name_input: TextInput | None = None
-        self._framework_input: TextInput | None = None
+        self._framework_spinner: Spinner | None = None
         self._local_path_input: TextInput | None = None
         self._default_locale_input: TextInput | None = None
         self._ftp_host_input: TextInput | None = None
@@ -85,8 +88,14 @@ class ProjectEditorScreen(BaseShellScreen):
         )
         self._name_input = self._build_text_input(state.editor.name)
         panel.add_widget(_build_field("Name", self._name_input))
-        self._framework_input = self._build_text_input(state.editor.framework_type)
-        panel.add_widget(_build_field("Framework Type", self._framework_input))
+        self._framework_spinner = self._build_spinner(
+            values=[option.label for option in state.framework_options],
+            current_label=_find_option_label(
+                state.framework_options,
+                state.editor.framework_type,
+            ),
+        )
+        panel.add_widget(_build_field("Framework Type", self._framework_spinner))
         self._local_path_input = self._build_text_input(state.editor.local_path)
         panel.add_widget(_build_field("Local Path", self._local_path_input))
         self._default_locale_input = self._build_text_input(state.editor.default_locale)
@@ -125,6 +134,17 @@ class ProjectEditorScreen(BaseShellScreen):
             cursor_color=palette.text_primary,
         )
 
+    def _build_spinner(self, *, values: list[str], current_label: str) -> Spinner:
+        palette = get_active_theme()
+        return Spinner(
+            text=current_label,
+            values=values,
+            size_hint_y=None,
+            height=44,
+            background_color=palette.card_subtle_background,
+            color=palette.text_primary,
+        )
+
     def _build_active_toggle(self, is_active: bool) -> SurfaceBoxLayout:
         card = SurfaceBoxLayout(
             orientation="vertical",
@@ -147,7 +167,10 @@ class ProjectEditorScreen(BaseShellScreen):
         editor = SiteEditorViewModel(
             site_id=state.editor.site_id,
             name=self._require_text(self._name_input),
-            framework_type=self._require_text(self._framework_input),
+            framework_type=self._require_framework_value(
+                state.framework_options,
+                self._framework_spinner,
+            ),
             local_path=self._require_text(self._local_path_input),
             default_locale=self._require_text(self._default_locale_input),
             ftp_host=self._require_text(self._ftp_host_input),
@@ -184,8 +207,18 @@ class ProjectEditorScreen(BaseShellScreen):
             raise ValueError(msg)
         return str(field.text).strip()
 
+    def _require_framework_value(
+        self,
+        options: list[SettingsOptionViewModel],
+        field: Spinner | None,
+    ) -> str:
+        if field is None:
+            msg = "Project editor input field is not available."
+            raise ValueError(msg)
+        return _find_option_value(options, str(field.text).strip())
 
-def _build_field(label: str, field: TextInput) -> SurfaceBoxLayout:
+
+def _build_field(label: str, field: Widget) -> SurfaceBoxLayout:
     card = SurfaceBoxLayout(
         orientation="vertical",
         spacing=8,
@@ -197,6 +230,22 @@ def _build_field(label: str, field: TextInput) -> SurfaceBoxLayout:
     card.add_widget(WrappedLabel(text=label, font_size=16, bold=True))
     card.add_widget(field)
     return card
+
+
+def _find_option_label(options: list[SettingsOptionViewModel], value: str) -> str:
+    for option in options:
+        if option.value == value:
+            return option.label
+    msg = f"Unknown option value: {value}"
+    raise LookupError(msg)
+
+
+def _find_option_value(options: list[SettingsOptionViewModel], label: str) -> str:
+    for option in options:
+        if option.label == label:
+            return option.value
+    msg = f"Unknown option label: {label}"
+    raise LookupError(msg)
 
 
 def _build_information_card(*, title: str, body: str) -> SurfaceBoxLayout:

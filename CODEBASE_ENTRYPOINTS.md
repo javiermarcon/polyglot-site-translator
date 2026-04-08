@@ -77,6 +77,17 @@ Examples:
 
 Framework adapters are responsible for target-specific discovery or extraction, not the shared orchestration flow.
 
+Current adapter entrypoints:
+- `polyglot_site_translator.adapters.base.BaseFrameworkAdapter`
+- `polyglot_site_translator.adapters.framework_registry.FrameworkAdapterRegistry`
+- `polyglot_site_translator.adapters.framework_registry.FrameworkAdapterRegistry.discover_installed`
+- `polyglot_site_translator.adapters.framework_registry.FrameworkAdapterRegistry.list_framework_descriptors`
+- `polyglot_site_translator.adapters.wordpress.WordPressFrameworkAdapter`
+- `polyglot_site_translator.adapters.django.DjangoFrameworkAdapter`
+- `polyglot_site_translator.adapters.flask.FlaskFrameworkAdapter`
+- `polyglot_site_translator.services.framework_detection.FrameworkDetectionService.detect_project`
+- `polyglot_site_translator.services.framework_detection.FrameworkDetectionService.list_supported_frameworks`
+
 ---
 
 ## Domain entrypoints
@@ -112,6 +123,12 @@ Current project-registry orchestration entrypoints:
 - `FrontendShell.open_project_editor_edit`
 - `FrontendShell.save_new_project`
 - `FrontendShell.save_project_edits`
+
+Current project-detail enrichment entrypoints:
+- `polyglot_site_translator.services.site_registry.SiteRegistryService.detect_framework`
+- `polyglot_site_translator.presentation.site_registry_services.SiteRegistryPresentationCatalogService.get_project_detail`
+- `polyglot_site_translator.presentation.site_registry_services.SiteRegistryPresentationManagementService.create_project`
+- `polyglot_site_translator.presentation.site_registry_services.SiteRegistryPresentationManagementService.update_project`
 
 Current Kivy settings layout entrypoint:
 - `polyglot_site_translator.presentation.kivy.settings_layout.build_settings_layout_spec`

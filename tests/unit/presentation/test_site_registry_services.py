@@ -7,6 +7,13 @@ from pathlib import Path
 
 import pytest
 
+from polyglot_site_translator.adapters.framework_registry import FrameworkAdapterRegistry
+from polyglot_site_translator.domain.framework_detection.errors import (
+    FrameworkDetectionAmbiguityError,
+)
+from polyglot_site_translator.domain.framework_detection.models import (
+    FrameworkDetectionResult,
+)
 from polyglot_site_translator.domain.site_registry.errors import (
     SiteRegistryConflictError,
     SiteRegistryNotFoundError,
@@ -21,6 +28,8 @@ from polyglot_site_translator.presentation.errors import ControlledServiceError
 from polyglot_site_translator.presentation.site_registry_services import (
     SiteRegistryPresentationCatalogService,
     SiteRegistryPresentationManagementService,
+    SiteRegistryPresentationWorkflowService,
+    _build_project_detail,
 )
 from polyglot_site_translator.presentation.view_models import (
     SettingsStateViewModel,
@@ -28,6 +37,7 @@ from polyglot_site_translator.presentation.view_models import (
     build_default_app_settings,
     build_settings_state,
 )
+from polyglot_site_translator.services.framework_detection import FrameworkDetectionService
 from polyglot_site_translator.services.site_registry import SiteRegistryService
 
 
@@ -85,6 +95,7 @@ def test_catalog_service_maps_project_summaries_and_detail() -> None:
     assert projects[0].status == "Active"
     assert projects[0].framework == "Custom_Cms"
     assert "FTP user: deploy" in detail.metadata_summary
+    assert "No framework detected" in detail.metadata_summary
 
 
 def test_catalog_service_wraps_controlled_errors() -> None:
@@ -103,7 +114,12 @@ def test_management_service_builds_create_and_edit_editor_states(tmp_path: Path)
     settings_service = TomlSettingsService(tmp_path / "settings.toml")
     settings_service.reset_settings()
     repository = InMemorySiteRegistryRepository()
-    domain_service = SiteRegistryService(repository=repository)
+    domain_service = SiteRegistryService(
+        repository=repository,
+        framework_detection_service=FrameworkDetectionService(
+            registry=FrameworkAdapterRegistry.discover_installed()
+        ),
+    )
     created = domain_service.create_site(_build_registration())
     management = SiteRegistryPresentationManagementService(
         service=domain_service,
@@ -115,8 +131,26 @@ def test_management_service_builds_create_and_edit_editor_states(tmp_path: Path)
 
     assert create_state.mode == "create"
     assert create_state.editor.local_path.endswith("/site")
+    assert [option.value for option in create_state.framework_options] == [
+        "unknown",
+        "django",
+        "flask",
+        "wordpress",
+    ]
     assert edit_state.mode == "edit"
     assert edit_state.editor.site_id == created.id
+
+
+def test_management_service_wraps_build_edit_errors(tmp_path: Path) -> None:
+    settings_service = TomlSettingsService(tmp_path / "settings.toml")
+    settings_service.reset_settings()
+    management = SiteRegistryPresentationManagementService(
+        service=SiteRegistryService(repository=InMemorySiteRegistryRepository()),
+        settings_service=settings_service,
+    )
+
+    with pytest.raises(ControlledServiceError, match=r"Unknown site id: missing-site"):
+        management.build_edit_project_editor("missing-site")
 
 
 def test_management_service_wraps_build_create_configuration_errors(tmp_path: Path) -> None:
@@ -179,6 +213,111 @@ def test_management_service_wraps_domain_conflicts(tmp_path: Path) -> None:
         match=r"A site with the name 'Marketing Site' already exists\.",
     ):
         conflict_management.create_project(_build_editor())
+
+
+def test_management_service_updates_projects_successfully(tmp_path: Path) -> None:
+    settings_service = TomlSettingsService(tmp_path / "settings.toml")
+    settings_service.reset_settings()
+    repository = InMemorySiteRegistryRepository()
+    domain_service = SiteRegistryService(repository=repository)
+    created = domain_service.create_site(_build_registration())
+    management = SiteRegistryPresentationManagementService(
+        service=domain_service,
+        settings_service=settings_service,
+    )
+
+    detail = management.update_project(
+        created.id,
+        replace(_build_editor(), local_path="/workspace/marketing-site-v2"),
+    )
+
+    assert detail.project.local_path == "/workspace/marketing-site-v2"
+
+
+def test_framework_aware_workflow_service_builds_audit_preview_from_detection() -> None:
+    repository = InMemorySiteRegistryRepository()
+    service = SiteRegistryService(repository=repository)
+    created = service.create_site(_build_registration())
+    workflow = SiteRegistryPresentationWorkflowService(service=service)
+
+    audit = workflow.start_audit(created.id)
+
+    assert audit.status == "completed"
+    assert audit.findings_count == 0
+    assert "No supported framework was detected" in audit.findings_summary
+
+
+def test_framework_aware_workflow_service_builds_matched_audit_preview(tmp_path: Path) -> None:
+    project_path = tmp_path / "wordpress-site"
+    project_path.mkdir()
+    (project_path / "wp-config.php").write_text("<?php\n", encoding="utf-8")
+    (project_path / "wp-content").mkdir()
+    (project_path / "wp-includes").mkdir()
+    repository = InMemorySiteRegistryRepository()
+    service = SiteRegistryService(
+        repository=repository,
+        framework_detection_service=FrameworkDetectionService(
+            registry=FrameworkAdapterRegistry.discover_installed()
+        ),
+    )
+    created = service.create_site(
+        replace(_build_registration(), framework_type="unknown", local_path=str(project_path))
+    )
+    workflow = SiteRegistryPresentationWorkflowService(service=service)
+
+    audit = workflow.start_audit(created.id)
+
+    assert audit.status == "completed"
+    assert audit.findings_count > 0
+    assert "wp-config.php" in audit.findings_summary
+
+
+def test_framework_aware_workflow_service_wraps_lookup_errors() -> None:
+    workflow = SiteRegistryPresentationWorkflowService(
+        service=SiteRegistryService(repository=InMemorySiteRegistryRepository())
+    )
+
+    with pytest.raises(ControlledServiceError, match=r"Unknown site id: missing-site"):
+        workflow.start_audit("missing-site")
+
+
+def test_build_project_detail_without_detection_keeps_base_metadata_only() -> None:
+    detail = _build_project_detail(
+        RegisteredSite(
+            id="site-1",
+            name="Marketing Site",
+            framework_type="wordpress",
+            local_path="/workspace/marketing-site",
+            default_locale="en_US",
+            ftp_host="ftp.example.com",
+            ftp_port=21,
+            ftp_username="deploy",
+            ftp_password="secret",
+            ftp_remote_path="/public_html",
+            is_active=True,
+        )
+    )
+
+    assert detail.metadata_summary == "Framework: WordPress | FTP user: deploy | FTP port: 21"
+
+
+def test_catalog_service_wraps_framework_detection_ambiguity() -> None:
+    repository = InMemorySiteRegistryRepository()
+
+    class AmbiguousDetectionService(SiteRegistryService):
+        def detect_framework(self, project_path: str) -> FrameworkDetectionResult:
+            msg = "Multiple framework adapters matched the project path with the same confidence."
+            raise FrameworkDetectionAmbiguityError(msg)
+
+    service = AmbiguousDetectionService(repository=repository)
+    created = service.create_site(_build_registration())
+    catalog = SiteRegistryPresentationCatalogService(service)
+
+    with pytest.raises(
+        ControlledServiceError,
+        match=r"Multiple framework adapters matched the project path with the same confidence\.",
+    ):
+        catalog.get_project_detail(created.id)
 
 
 def _build_registration(*, framework_type: str = "wordpress") -> SiteRegistrationInput:

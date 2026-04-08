@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from polyglot_site_translator.adapters.framework_registry import FrameworkAdapterRegistry
 from polyglot_site_translator.infrastructure.settings import TomlSettingsService
 from polyglot_site_translator.infrastructure.site_registry_sqlite import (
     ConfiguredSqliteSiteRegistryRepository,
@@ -17,6 +18,7 @@ from polyglot_site_translator.presentation.errors import ControlledServiceError
 from polyglot_site_translator.presentation.site_registry_services import (
     SiteRegistryPresentationCatalogService,
     SiteRegistryPresentationManagementService,
+    SiteRegistryPresentationWorkflowService,
 )
 from polyglot_site_translator.presentation.view_models import (
     AppSettingsViewModel,
@@ -31,8 +33,12 @@ from polyglot_site_translator.presentation.view_models import (
     SyncStatusViewModel,
     build_default_app_settings,
     build_default_site_editor,
+    build_framework_type_options_from_descriptors,
     build_project_editor_state,
     build_settings_state,
+)
+from polyglot_site_translator.services.framework_detection import (
+    FrameworkDetectionService,
 )
 from polyglot_site_translator.services.site_registry import SiteRegistryService
 
@@ -168,6 +174,9 @@ class InMemoryProjectRegistryManagementService:
         return build_project_editor_state(
             mode="create",
             editor=build_default_site_editor(),
+            framework_options=build_framework_type_options_from_descriptors(
+                FrameworkAdapterRegistry.discover_installed().list_framework_descriptors()
+            ),
             status="editing",
             status_message="Provide the project metadata to register a new site.",
         )
@@ -188,6 +197,9 @@ class InMemoryProjectRegistryManagementService:
                 ftp_password="super-secret",
                 ftp_remote_path="/public_html",
                 is_active=True,
+            ),
+            framework_options=build_framework_type_options_from_descriptors(
+                FrameworkAdapterRegistry.discover_installed().list_framework_descriptors()
             ),
             status="editing",
             status_message="Update the persisted site registry record.",
@@ -318,13 +330,19 @@ def build_default_frontend_services(
 ) -> FrontendServices:
     """Return the default runtime services with real SQLite site registry persistence."""
     repository = ConfiguredSqliteSiteRegistryRepository(settings_service)
-    site_registry_service = SiteRegistryService(repository=repository)
+    framework_detection_service = FrameworkDetectionService(
+        registry=FrameworkAdapterRegistry.discover_installed()
+    )
+    site_registry_service = SiteRegistryService(
+        repository=repository,
+        framework_detection_service=framework_detection_service,
+    )
     catalog: ProjectCatalogService = SiteRegistryPresentationCatalogService(site_registry_service)
     if fail_site_registry:
         catalog = FailingSiteRegistryCatalogService()
     return FrontendServices(
         catalog=catalog,
-        workflows=FakeProjectWorkflowService(),
+        workflows=SiteRegistryPresentationWorkflowService(service=site_registry_service),
         settings=settings_service,
         registry=SiteRegistryPresentationManagementService(
             service=site_registry_service,

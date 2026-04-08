@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 from dataclasses import dataclass
+
+from polyglot_site_translator.domain.framework_detection.models import FrameworkDescriptor
 
 
 @dataclass(frozen=True)
@@ -182,6 +185,7 @@ class ProjectEditorStateViewModel:
     title: str
     submit_label: str
     editor: SiteEditorViewModel
+    framework_options: list[SettingsOptionViewModel]
     status: str
     status_message: str | None
 
@@ -336,7 +340,7 @@ def build_default_site_editor() -> SiteEditorViewModel:
     return SiteEditorViewModel(
         site_id=None,
         name="",
-        framework_type="wordpress",
+        framework_type="unknown",
         local_path="",
         default_locale="en_US",
         ftp_host="",
@@ -352,6 +356,7 @@ def build_project_editor_state(
     *,
     mode: str,
     editor: SiteEditorViewModel,
+    framework_options: list[SettingsOptionViewModel],
     status: str,
     status_message: str | None,
 ) -> ProjectEditorStateViewModel:
@@ -362,6 +367,7 @@ def build_project_editor_state(
             title="Edit Project",
             submit_label="Save Project",
             editor=editor,
+            framework_options=framework_options,
             status=status,
             status_message=status_message,
         )
@@ -370,9 +376,23 @@ def build_project_editor_state(
         title="Register Project",
         submit_label="Create Project",
         editor=editor,
+        framework_options=framework_options,
         status=status,
         status_message=status_message,
     )
+
+
+def build_framework_type_options_from_descriptors(
+    descriptors: Iterable[FrameworkDescriptor],
+) -> list[SettingsOptionViewModel]:
+    """Return selectable framework types for the project editor."""
+    return [
+        SettingsOptionViewModel(
+            value=descriptor.framework_type,
+            label=descriptor.display_name,
+        )
+        for descriptor in descriptors
+    ]
 
 
 def _find_settings_section(section_key: str) -> SettingsSectionViewModel:
