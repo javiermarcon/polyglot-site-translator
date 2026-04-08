@@ -64,6 +64,7 @@ Current frontend-facing service entrypoints:
 - `SettingsService.reset_settings`
 - `polyglot_site_translator.infrastructure.settings.build_default_settings_service`
 - `polyglot_site_translator.infrastructure.settings.TomlSettingsService`
+- `polyglot_site_translator.services.project_sync.ProjectSyncService.sync_remote_to_local`
 - `polyglot_site_translator.services.remote_connections.RemoteConnectionService.list_supported_connection_types`
 - `polyglot_site_translator.services.remote_connections.RemoteConnectionService.test_connection`
 
@@ -128,6 +129,7 @@ Current project-registry orchestration entrypoints:
 - `FrontendShell.save_new_project`
 - `FrontendShell.save_project_edits`
 - `FrontendShell.test_project_connection`
+- `polyglot_site_translator.presentation.site_registry_services.SiteRegistryPresentationWorkflowService.start_sync`
 
 Current project-detail enrichment entrypoints:
 - `polyglot_site_translator.services.site_registry.SiteRegistryService.detect_framework`
@@ -163,6 +165,7 @@ Current site-registry persistence entrypoints:
 - `polyglot_site_translator.infrastructure.site_secrets.LocalKeySiteSecretCipher`
 - `polyglot_site_translator.infrastructure.remote_connections.registry.RemoteConnectionRegistry`
 - `polyglot_site_translator.infrastructure.remote_connections.registry.RemoteConnectionRegistry.discover_installed`
+- `polyglot_site_translator.infrastructure.sync_local.LocalSyncWorkspace`
 
 ---
 

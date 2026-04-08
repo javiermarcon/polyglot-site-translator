@@ -35,7 +35,12 @@ class SyncScreen(BaseShellScreen):
         if state is None:
             self._summary_label.text = "No sync action started."
         else:
-            self._summary_label.text = (
-                f"Status: {state.status}\nFiles: {state.files_synced}\n{state.summary}"
-            )
+            summary_lines = [
+                f"Status: {state.status}",
+                f"Files: {state.files_synced}",
+            ]
+            if state.error_code is not None:
+                summary_lines.append(f"Error Code: {state.error_code}")
+            summary_lines.append(state.summary)
+            self._summary_label.text = "\n".join(summary_lines)
         self.update_error_label()

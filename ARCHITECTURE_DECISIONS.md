@@ -207,3 +207,20 @@ Not every project needs remote access, and future targets must not assume FTP-on
 - A "No Remote Connection" option is first-class and valid.
 - Connection testing must return structured results and stay behind services/infrastructure boundaries.
 - Legacy `ftp_*` persistence needs controlled migration without decrypting stored ciphertext during the move.
+
+---
+
+## AD-014: Remote-to-local sync reuses the existing remote provider registry
+
+**Decision**
+Implement the first real sync stage as a remote-to-local workflow orchestrated by a dedicated sync service, while reusing the existing discoverable remote connection providers instead of creating a second registry or parallel provider system.
+
+**Why**
+The repository already has typed optional remote connections and a discoverable provider model. Reusing that base keeps transport resolution centralized, avoids duplicate extension points, and prepares the system for later bidirectional sync without pushing network or filesystem behavior into Kivy.
+
+**Implications**
+- Sync direction, summaries, results, remote file descriptors, and errors need explicit typed models.
+- Presentation triggers sync through services and renders structured results; widgets do not open sockets or touch the filesystem directly.
+- Remote providers now own both connection testing and transport-specific remote listing/download behavior.
+- Local workspace preparation and file writes stay in infrastructure, separate from presentation and domain logic.
+- The first stage supports remote-to-local only; local-to-remote, filtering, and richer sync controls remain future work.

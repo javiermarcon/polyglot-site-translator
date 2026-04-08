@@ -28,6 +28,9 @@ El repositorio está en una etapa temprana y hoy incluye principalmente:
 - subsistema real de conexiones remotas opcionales separado del proyecto
 - catálogo discoverable de tipos de conexión remota con opción explícita "No Remote Connection"
 - test de conexión estructurado para `ftp`, `ftps_explicit`, `ftps_implicit`, `sftp` y `scp`
+- primera base real de sync `remote -> local` usando la configuración remota persistida del proyecto
+- descarga real de archivos remotos al `local_path` con creación automática de directorios locales faltantes
+- resultado tipado y controlado de sync con conteo de archivos y código de error cuando falla
 - migración automática de columnas heredadas `ftp_*` a una tabla relacionada de conexiones remotas
 - registry real de adapters/framework detection con resultados tipados
 - detección efectiva de proyectos WordPress, Django y Flask a partir de `local_path`
@@ -40,7 +43,9 @@ El repositorio está en una etapa temprana y hoy incluye principalmente:
 
 Todavía no están implementados en forma real:
 
-- sincronización remota completa
+- sync `local -> remote`
+- filtros de sync por adapter o por subconjuntos
+- controles de sync full/selectivo en UI
 - scanner de auditoría
 - procesamiento real de `.po/.mo`
 - reporting final
@@ -73,15 +78,18 @@ La base actual implementa una base funcional de presentación, settings y `site_
 - `bootstrap.py`: wiring inicial del frontend shell
 - `domain/site_registry/`: modelos tipados, errores y contratos del dominio de site registry
 - `domain/remote_connections/`: modelos tipados, contratos y resultados estructurados de conexiones remotas
+- `domain/sync/`: dirección de sync, archivos remotos, resultados, summaries y errores explícitos
 - `domain/framework_detection/`: contratos, resultados tipados y errores explícitos para detección de framework
 - `services/site_registry.py`: validación y CRUD del site registry
 - `services/remote_connections.py`: validación opcional, catálogo discoverable y test de conexión
+- `services/project_sync.py`: sync real `remote -> local` con resultados tipados y errores controlados
 - `services/framework_detection.py`: orquestación de detección desde el registry de adapters
 - `adapters/base.py`: contrato base discoverable para nuevos adapters
 - `infrastructure/settings.py`: persistencia TOML de settings generales por usuario
 - `infrastructure/database_location.py`: resolución del path final de SQLite desde settings
 - `infrastructure/site_registry_sqlite.py`: repositorio SQLite real con schema y mapeo fila ↔ modelo
 - `infrastructure/remote_connections/`: registry discoverable y providers concretos de conexión remota
+- `infrastructure/sync_local.py`: preparación del workspace local y persistencia de archivos descargados durante sync
 - `infrastructure/site_secrets.py`: cifrado local de secretos persistidos del site registry
 - `adapters/framework_registry.py`: registry/resolver real de adapters con descubrimiento dinámico por paquete
 - `adapters/wordpress.py`, `adapters/django.py`, `adapters/flask.py`: detección framework-specific y evidencia estructurada
@@ -111,12 +119,12 @@ La base actual del frontend incluye:
 - Project Editor con combo dinámico de framework y combo dinámico de tipo de conexión remota
 - acción "Test Connection" en el editor, resuelta por servicios y con resultado estructurado en pantalla
 - Audit Screen con preview basado en la detección real del proyecto en vez de un conteo fijo del runtime
-- Sync Screen para mostrar estado fake de sincronización
+- Sync Screen con wiring real de `remote -> local` y resumen estructurado del resultado
 - Audit Screen para mostrar resultados fake de auditoría
 - PO Processing Screen para mostrar resultados fake de procesamiento
 - Settings generales con persistencia TOML y campos para configurar la ubicación/nombre de la base SQLite
 
-La navegación mantiene el contexto del proyecto seleccionado. El flujo principal de create/list/detail/update ya usa servicios reales para `site_registry`, mientras que sync/audit/PO processing siguen usando servicios fake detrás de los mismos contratos de UI.
+La navegación mantiene el contexto del proyecto seleccionado. El flujo principal de create/list/detail/update y el sync `remote -> local` ya usan servicios reales para `site_registry` y el subsistema remoto; audit y PO processing siguen usando servicios fake detrás de los mismos contratos de UI.
 
 ## Estructura del repositorio
 
@@ -129,9 +137,11 @@ src/
     domain/
       framework_detection/
       remote_connections/
+      sync/
       site_registry/
     services/
       framework_detection.py
+      project_sync.py
       remote_connections.py
       site_registry.py
     adapters/
@@ -146,6 +156,7 @@ src/
       settings.py
       site_registry_sqlite.py
       site_secrets.py
+      sync_local.py
     presentation/
       contracts.py
       errors.py
@@ -231,6 +242,11 @@ La contraseña remota no se guarda en texto plano en SQLite.
 Se persiste cifrada con una key local almacenada junto al config dir de la app.
 Si el runtime encuentra una base heredada con columnas `ftp_*`, migra esos datos a la tabla de conexiones remotas relacionadas sin convertir el ciphertext a texto plano durante la migración.
 
+El flujo de sync actual usa la conexión remota persistida del proyecto para listar el contenido remoto y descargar archivos al `local_path`.
+Si el workspace local no existe, se crea automáticamente.
+Si el remoto está vacío, el sync devuelve un resultado válido con `0` archivos descargados.
+En esta etapa todavía no existe sync `local -> remote`, ni filtros por adapter, ni controles de sync selectivo/full desde la UI.
+
 ## Testing y validación
 
 Comandos recomendados:
@@ -240,7 +256,7 @@ Comandos recomendados:
 .venv/bin/python -m ruff format --check .
 .venv/bin/python -m mypy src tests features/steps
 .venv/bin/python -m pytest
-.venv/bin/python -m behave features/presentation/frontend_shell.feature features/presentation/settings.feature features/presentation/site_registry.feature features/presentation/framework_detection.feature features/presentation/remote_connections.feature
+.venv/bin/python -m behave features/presentation/frontend_shell.feature features/presentation/settings.feature features/presentation/site_registry.feature features/presentation/framework_detection.feature features/presentation/remote_connections.feature features/presentation/sync.feature
 ```
 
 El repositorio sigue un flujo obligatorio BDD + TDD:

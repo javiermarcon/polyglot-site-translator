@@ -40,6 +40,8 @@ Configure, validate, test, and later synchronize optional remote sources into lo
 - discoverable connection-type catalogs
 - optional remote connection configs
 - structured connection-test results
+- typed sync direction and structured sync results
+- remote file discovery descriptors
 - connection validation
 - remote path handling
 - download/sync orchestration

@@ -49,6 +49,7 @@ from polyglot_site_translator.presentation.view_models import (
 from polyglot_site_translator.services.framework_detection import (
     FrameworkDetectionService,
 )
+from polyglot_site_translator.services.project_sync import ProjectSyncService
 from polyglot_site_translator.services.remote_connections import RemoteConnectionService
 from polyglot_site_translator.services.site_registry import SiteRegistryService
 
@@ -123,14 +124,15 @@ class FakeProjectWorkflowService:
             status="completed",
             files_synced=12,
             summary="Synchronized 12 files into the local workspace preview.",
+            error_code=None,
         )
 
     def start_audit(self, project_id: str) -> AuditSummaryViewModel:
         """Return a deterministic audit summary."""
         return AuditSummaryViewModel(
             status="completed",
-            findings_count=3,
-            findings_summary="3 findings across code and templates",
+            findings_count=0,
+            findings_summary="No supported framework was detected for this project.",
         )
 
     def start_po_processing(self, project_id: str) -> POProcessingSummaryViewModel:
@@ -368,6 +370,7 @@ def build_default_frontend_services(
     settings_service: TomlSettingsService,
     fail_site_registry: bool = False,
     remote_connection_service: RemoteConnectionService | None = None,
+    project_sync_service: ProjectSyncService | None = None,
 ) -> FrontendServices:
     """Return the default runtime services with real SQLite site registry persistence."""
     repository = ConfiguredSqliteSiteRegistryRepository(settings_service)
@@ -382,12 +385,18 @@ def build_default_frontend_services(
         framework_detection_service=framework_detection_service,
         remote_connection_service=resolved_remote_connection_service,
     )
+    resolved_project_sync_service = project_sync_service or ProjectSyncService(
+        registry=RemoteConnectionRegistry.discover_installed()
+    )
     catalog: ProjectCatalogService = SiteRegistryPresentationCatalogService(site_registry_service)
     if fail_site_registry:
         catalog = FailingSiteRegistryCatalogService()
     return FrontendServices(
         catalog=catalog,
-        workflows=SiteRegistryPresentationWorkflowService(service=site_registry_service),
+        workflows=SiteRegistryPresentationWorkflowService(
+            service=site_registry_service,
+            project_sync_service=resolved_project_sync_service,
+        ),
         settings=settings_service,
         registry=SiteRegistryPresentationManagementService(
             service=site_registry_service,

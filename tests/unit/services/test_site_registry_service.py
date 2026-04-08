@@ -11,6 +11,7 @@ import pytest
 from polyglot_site_translator.adapters.framework_registry import FrameworkAdapterRegistry
 from polyglot_site_translator.adapters.wordpress import WordPressFrameworkAdapter
 from polyglot_site_translator.domain.remote_connections.models import (
+    RemoteConnectionConfig,
     RemoteConnectionConfigInput,
     RemoteConnectionTestResult,
     RemoteConnectionTypeDescriptor,
@@ -19,6 +20,7 @@ from polyglot_site_translator.domain.site_registry.models import (
     RegisteredSite,
     SiteRegistrationInput,
 )
+from polyglot_site_translator.domain.sync.models import RemoteSyncFile
 from polyglot_site_translator.infrastructure.remote_connections.registry import (
     RemoteConnectionRegistry,
 )
@@ -83,6 +85,20 @@ class StubSFTPProvider:
             message="Connected successfully.",
             error_code=None,
         )
+
+    def list_remote_files(
+        self,
+        config: RemoteConnectionConfig,
+    ) -> list[RemoteSyncFile]:
+        return []
+
+    def download_file(
+        self,
+        config: RemoteConnectionConfig,
+        remote_path: str,
+    ) -> bytes:
+        msg = f"download not used in this test for {remote_path}"
+        raise AssertionError(msg)
 
 
 def test_site_registry_service_creates_and_lists_sites() -> None:

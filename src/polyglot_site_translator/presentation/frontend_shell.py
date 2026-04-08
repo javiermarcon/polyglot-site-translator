@@ -147,6 +147,7 @@ class FrontendShell:
                 status="failed",
                 files_synced=0,
                 summary=str(error),
+                error_code=None,
             )
             self.latest_error = str(error)
         self._set_route(RouteName.SYNC, project_id=project_id)

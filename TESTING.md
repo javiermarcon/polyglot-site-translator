@@ -174,6 +174,18 @@ Test:
 - failure behavior through mocks/stubs
 - no accidental destructive behavior
 
+### If changing sync code
+
+Test:
+
+- remote-to-local happy path
+- projects without remote connection
+- empty remote sources
+- remote listing failures
+- download failures
+- local workspace preparation and directory creation
+- UI-facing sync summaries and controlled error codes
+
 ### If changing CLI
 
 Test:

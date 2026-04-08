@@ -12,10 +12,12 @@ import behave as behave_module  # type: ignore[import-untyped]
 
 from polyglot_site_translator.bootstrap import create_frontend_shell
 from polyglot_site_translator.domain.remote_connections.models import (
+    RemoteConnectionConfig,
     RemoteConnectionConfigInput,
     RemoteConnectionTestResult,
     RemoteConnectionTypeDescriptor,
 )
+from polyglot_site_translator.domain.sync.models import RemoteSyncFile
 from polyglot_site_translator.infrastructure.remote_connections.registry import (
     RemoteConnectionRegistry,
 )
@@ -51,6 +53,20 @@ class StubRemoteConnectionProvider:
             message=self.result.message,
             error_code=self.result.error_code,
         )
+
+    def list_remote_files(
+        self,
+        config: RemoteConnectionConfig,
+    ) -> list[RemoteSyncFile]:
+        return []
+
+    def download_file(
+        self,
+        config: RemoteConnectionConfig,
+        remote_path: str,
+    ) -> bytes:
+        msg = f"download not used in this BDD provider for {remote_path}"
+        raise AssertionError(msg)
 
 
 class BehaveRemoteConnectionContext(Protocol):

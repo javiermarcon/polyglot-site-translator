@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import replace
 from pathlib import Path
+from typing import Protocol
 
 from polyglot_site_translator.domain.framework_detection.errors import (
     FrameworkDetectionAmbiguityError,
@@ -26,6 +27,7 @@ from polyglot_site_translator.domain.site_registry.models import (
     RegisteredSite,
     SiteRegistrationInput,
 )
+from polyglot_site_translator.domain.sync.models import SyncResult
 from polyglot_site_translator.infrastructure.database_location import (
     resolve_sqlite_database_location,
 )
@@ -51,6 +53,23 @@ from polyglot_site_translator.presentation.view_models import (
     build_project_editor_state,
 )
 from polyglot_site_translator.services.site_registry import SiteRegistryService
+
+
+class SiteRegistryWorkflowService(Protocol):
+    """Subset of site-registry behavior required by workflow presentation adapters."""
+
+    def get_site(self, site_id: str) -> RegisteredSite:
+        """Return a persisted site registry record."""
+
+    def detect_framework(self, project_path: str) -> FrameworkDetectionResult:
+        """Return framework detection data for a local path."""
+
+
+class ProjectSyncWorkflowService(Protocol):
+    """Sync orchestration contract consumed by workflow presentation adapters."""
+
+    def sync_remote_to_local(self, site: RegisteredSite) -> SyncResult:
+        """Synchronize the remote project into the local workspace."""
 
 
 class SiteRegistryPresentationCatalogService(ProjectCatalogService):
@@ -207,16 +226,27 @@ class SiteRegistryPresentationManagementService(ProjectRegistryManagementService
 class SiteRegistryPresentationWorkflowService(ProjectWorkflowService):
     """Expose runtime workflow previews backed by persisted project context."""
 
-    def __init__(self, *, service: SiteRegistryService) -> None:
+    def __init__(
+        self,
+        *,
+        service: SiteRegistryWorkflowService,
+        project_sync_service: ProjectSyncWorkflowService,
+    ) -> None:
         self._service = service
+        self._project_sync_service = project_sync_service
 
     def start_sync(self, project_id: str) -> SyncStatusViewModel:
-        """Return the current sync preview placeholder."""
-        return SyncStatusViewModel(
-            status="completed",
-            files_synced=12,
-            summary="Synchronized 12 files into the local workspace preview.",
-        )
+        """Run remote-to-local sync for the selected project."""
+        try:
+            site = self._service.get_site(project_id)
+        except (
+            SiteRegistryNotFoundError,
+            SiteRegistryPersistenceError,
+            SiteRegistryConfigurationError,
+        ) as error:
+            raise ControlledServiceError(str(error)) from error
+        result = self._project_sync_service.sync_remote_to_local(site)
+        return _build_sync_status(result)
 
     def start_audit(self, project_id: str) -> AuditSummaryViewModel:
         """Return a framework-aware audit preview for the selected project."""
@@ -400,3 +430,31 @@ def _build_metadata_summary(
         "No supported framework markers were detected."
     )
     return f"{summary} | No framework detected. {warning_text}"
+
+
+def _build_sync_status(result: SyncResult) -> SyncStatusViewModel:
+    if result.success:
+        if result.summary.files_downloaded == 0:
+            summary = "Remote workspace is empty. No files were downloaded."
+        else:
+            summary = (
+                f"Downloaded {result.summary.files_downloaded} files into {result.local_path}."
+            )
+        return SyncStatusViewModel(
+            status="completed",
+            files_synced=result.summary.files_downloaded,
+            summary=summary,
+            error_code=None,
+        )
+    error = result.error
+    error_message = "Sync failed."
+    error_code = None
+    if error is not None:
+        error_message = error.message
+        error_code = error.code
+    return SyncStatusViewModel(
+        status="failed",
+        files_synced=result.summary.files_downloaded,
+        summary=error_message,
+        error_code=error_code,
+    )

@@ -3,21 +3,25 @@
 from __future__ import annotations
 
 from importlib import import_module
-from typing import Any
+import posixpath
+import stat
+from typing import Any, cast
 
 from polyglot_site_translator.domain.remote_connections.models import (
     BuiltinRemoteConnectionType,
+    RemoteConnectionConfig,
     RemoteConnectionConfigInput,
     RemoteConnectionTestResult,
     RemoteConnectionTypeDescriptor,
 )
+from polyglot_site_translator.domain.sync.models import RemoteSyncFile
 from polyglot_site_translator.infrastructure.remote_connections.base import (
     BaseRemoteConnectionProvider,
 )
 
 
 class SFTPRemoteConnectionProvider(BaseRemoteConnectionProvider):
-    """Provider for SFTP connectivity tests."""
+    """Provider for SFTP connectivity tests and downloads."""
 
     descriptor = RemoteConnectionTypeDescriptor(
         connection_type=BuiltinRemoteConnectionType.SFTP.value,
@@ -30,6 +34,19 @@ class SFTPRemoteConnectionProvider(BaseRemoteConnectionProvider):
         config: RemoteConnectionConfigInput,
     ) -> RemoteConnectionTestResult:
         return _test_ssh_connection(config, "Connected successfully using SFTP.")
+
+    def list_remote_files(
+        self,
+        config: RemoteConnectionConfig,
+    ) -> list[RemoteSyncFile]:
+        return _list_ssh_files(config)
+
+    def download_file(
+        self,
+        config: RemoteConnectionConfig,
+        remote_path: str,
+    ) -> bytes:
+        return _download_ssh_file(config, remote_path)
 
 
 class SCPRemoteConnectionProvider(BaseRemoteConnectionProvider):
@@ -47,21 +64,26 @@ class SCPRemoteConnectionProvider(BaseRemoteConnectionProvider):
     ) -> RemoteConnectionTestResult:
         return _test_ssh_connection(config, "Connected successfully using SCP.")
 
+    def list_remote_files(
+        self,
+        config: RemoteConnectionConfig,
+    ) -> list[RemoteSyncFile]:
+        return _list_ssh_files(config)
+
+    def download_file(
+        self,
+        config: RemoteConnectionConfig,
+        remote_path: str,
+    ) -> bytes:
+        return _download_ssh_file(config, remote_path)
+
 
 def _test_ssh_connection(
     config: RemoteConnectionConfigInput,
     success_message: str,
 ) -> RemoteConnectionTestResult:
     try:
-        ssh_client = _build_ssh_client()
-        ssh_client.load_system_host_keys()
-        ssh_client.connect(
-            hostname=config.host,
-            port=config.port,
-            username=config.username,
-            password=config.password,
-            timeout=10,
-        )
+        ssh_client = _connect_ssh_client(config)
         sftp_client = ssh_client.open_sftp()
         sftp_client.chdir(config.remote_path)
         sftp_client.close()
@@ -97,3 +119,93 @@ def _test_ssh_connection(
 def _build_ssh_client() -> Any:
     paramiko = import_module("paramiko")
     return paramiko.SSHClient()
+
+
+def _connect_ssh_client(
+    config: RemoteConnectionConfig | RemoteConnectionConfigInput,
+) -> Any:
+    ssh_client = _build_ssh_client()
+    ssh_exception_type: type[BaseException] = OSError
+    try:
+        paramiko_module = import_module("paramiko")
+    except ModuleNotFoundError:
+        pass
+    else:
+        ssh_exception_type = cast(
+            type[BaseException],
+            paramiko_module.SSHException,
+        )
+    ssh_client.load_system_host_keys()
+    try:
+        ssh_client.connect(
+            hostname=config.host,
+            port=config.port,
+            username=config.username,
+            password=config.password,
+            timeout=10,
+        )
+    except (OSError, ssh_exception_type) as error:
+        ssh_client.close()
+        raise OSError(str(error)) from error
+    return ssh_client
+
+
+def _list_ssh_files(config: RemoteConnectionConfig) -> list[RemoteSyncFile]:
+    ssh_client = _connect_ssh_client(config)
+    sftp_client = ssh_client.open_sftp()
+    try:
+        normalized_root = posixpath.normpath(config.remote_path)
+        return _walk_sftp_directory(
+            sftp_client=sftp_client,
+            base_remote_path=normalized_root,
+            current_remote_path=normalized_root,
+        )
+    finally:
+        sftp_client.close()
+        ssh_client.close()
+
+
+def _download_ssh_file(config: RemoteConnectionConfig, remote_path: str) -> bytes:
+    ssh_client = _connect_ssh_client(config)
+    sftp_client = ssh_client.open_sftp()
+    remote_file = sftp_client.file(remote_path, mode="rb")
+    try:
+        return cast(bytes, remote_file.read())
+    finally:
+        remote_file.close()
+        sftp_client.close()
+        ssh_client.close()
+
+
+def _walk_sftp_directory(
+    *,
+    sftp_client: Any,
+    base_remote_path: str,
+    current_remote_path: str,
+) -> list[RemoteSyncFile]:
+    remote_files: list[RemoteSyncFile] = []
+    for entry in sftp_client.listdir_attr(current_remote_path):
+        remote_path = _join_remote_path(current_remote_path, entry.filename)
+        if stat.S_ISDIR(entry.st_mode):
+            remote_files.extend(
+                _walk_sftp_directory(
+                    sftp_client=sftp_client,
+                    base_remote_path=base_remote_path,
+                    current_remote_path=remote_path,
+                )
+            )
+            continue
+        remote_files.append(
+            RemoteSyncFile(
+                remote_path=remote_path,
+                relative_path=posixpath.relpath(remote_path, base_remote_path),
+                size_bytes=int(getattr(entry, "st_size", 0)),
+            )
+        )
+    return remote_files
+
+
+def _join_remote_path(base_path: str, name: str) -> str:
+    if base_path == "/":
+        return f"/{name}"
+    return posixpath.join(base_path, name)

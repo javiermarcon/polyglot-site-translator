@@ -214,6 +214,7 @@ class SyncStatusViewModel:
     status: str
     files_synced: int
     summary: str
+    error_code: str | None = None
 
 
 @dataclass(frozen=True)

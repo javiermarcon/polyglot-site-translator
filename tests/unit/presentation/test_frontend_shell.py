@@ -86,7 +86,10 @@ def test_audit_and_po_actions_update_independent_panels() -> None:
 
     assert shell.audit_state is not None
     assert shell.audit_state.status == "completed"
-    assert shell.audit_state.findings_summary == "3 findings across code and templates"
+    assert (
+        shell.audit_state.findings_summary
+        == "No supported framework was detected for this project."
+    )
     assert shell.po_processing_state is not None
     assert shell.po_processing_state.status == "completed"
     assert shell.po_processing_state.processed_families == 4

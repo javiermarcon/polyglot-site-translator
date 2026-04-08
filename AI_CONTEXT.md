@@ -153,6 +153,9 @@ The frontend baseline now also includes:
 - an editor-level "Test Connection" action delegated through presentation/application services
 - encrypted-at-rest remote passwords through a local key file stored alongside app config
 - migration of legacy `ftp_*` columns into a related remote-connection table without decrypting stored ciphertext during migration
+- a first real remote-to-local sync service that reuses the discoverable remote provider registry
+- typed sync direction, remote file descriptors, summaries, results, and controlled sync errors
+- local workspace preparation and file writes isolated in infrastructure for sync workflows
 - a real adapter registry for framework detection with typed results
 - dynamic adapter discovery from the `adapters/` package at runtime
 - concrete WordPress, Django, and Flask detection adapters
