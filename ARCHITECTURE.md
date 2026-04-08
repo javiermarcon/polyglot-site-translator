@@ -43,6 +43,7 @@ The codebase should be organized around these layers:
    - validate and orchestrate site registry CRUD through explicit service contracts
    - orchestrate framework detection through a registry-backed detection service
    - validate optional remote connection configs and test them through discoverable providers
+   - orchestrate remote-to-local sync through the existing discoverable remote provider registry
 
 3. **Domain logic**
    - shared PO processing
@@ -53,6 +54,7 @@ The codebase should be organized around these layers:
    - typed framework detection results and ambiguity errors
    - typed site registry records and domain errors
    - typed remote connection descriptors, configs, and test results
+   - typed sync direction, remote file descriptors, sync summaries, sync results, and sync errors
 
 4. **Framework adapters / plugins**
    - WordPress-specific discovery and extraction
@@ -67,6 +69,7 @@ The codebase should be organized around these layers:
    - TOML-backed frontend settings persistence
    - discoverable remote connection providers
    - FTP/FTPS/SFTP/SCP access
+   - local workspace preparation and downloaded-file persistence for sync
    - filesystem IO
    - optional translation providers
    - serialization/export
@@ -92,10 +95,13 @@ Examples:
 Current first real implementation:
 - `domain/site_registry/` defines typed models, contracts, and explicit errors
 - `domain/remote_connections/` defines typed descriptors, configs, contracts, and test results
+- `domain/sync/` defines sync direction, remote file descriptors, summaries, results, and explicit sync errors
 - `services/site_registry.py` validates and orchestrates CRUD use cases
 - `services/remote_connections.py` validates optional remote configs, exposes the discoverable catalog, and dispatches connection tests
+- `services/project_sync.py` orchestrates remote-to-local listing, download, local-directory preparation, and structured sync results
 - `infrastructure/site_registry_sqlite.py` owns schema creation, row mapping, and SQLite access
 - `infrastructure/remote_connections/` owns discoverable remote connection providers and transport-specific connectivity checks
+- `infrastructure/sync_local.py` owns local workspace directory creation and file writes for synchronized content
 - `presentation/site_registry_services.py` adapts the real service into UI-facing catalog/editor workflows
 
 Current framework detection implementation:
@@ -109,6 +115,18 @@ Current framework detection implementation:
 ### 2. Remote connections and synchronization
 
 Stores, validates, tests, and later synchronizes optional remote sources into a local workspace suitable for scanning/auditing.
+
+Current first sync stage:
+- real remote-to-local download only
+- reuses persisted `RemoteConnectionConfig`
+- reuses the existing discoverable remote provider registry
+- returns typed sync results with structured success/failure details
+- prepares the local workspace automatically when directories are missing
+
+Not yet implemented in this stage:
+- local-to-remote sync
+- adapter-aware sync filtering
+- selective vs full sync controls in the UI
 
 Current concrete connection types:
 - FTP
@@ -223,6 +241,11 @@ The project editor now also owns:
 - a discoverable remote connection-type combo with an explicit "No Remote Connection" option
 - an optional remote connection draft separate from the persisted site/project identity
 - a "Test Connection" action that delegates to application services and renders structured results without opening network sessions from widgets
+
+The sync screen now also owns:
+- rendering the structured result of a real remote-to-local sync workflow
+- showing the synchronized file count and controlled error code when sync fails
+- staying presentation-only while services/providers own remote listing, download, and local filesystem writes
 
 ### Shared services must remain target-agnostic where feasible
 

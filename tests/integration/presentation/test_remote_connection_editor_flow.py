@@ -10,10 +10,12 @@ from kivy.uix.spinner import Spinner
 
 from polyglot_site_translator.app import create_kivy_app
 from polyglot_site_translator.domain.remote_connections.models import (
+    RemoteConnectionConfig,
     RemoteConnectionConfigInput,
     RemoteConnectionTestResult,
     RemoteConnectionTypeDescriptor,
 )
+from polyglot_site_translator.domain.sync.models import RemoteSyncFile
 from polyglot_site_translator.infrastructure.remote_connections.registry import (
     RemoteConnectionRegistry,
 )
@@ -46,6 +48,20 @@ class SuccessfulSFTPProvider:
             message="Connected successfully using the test provider.",
             error_code=None,
         )
+
+    def list_remote_files(
+        self,
+        config: RemoteConnectionConfig,
+    ) -> list[RemoteSyncFile]:
+        return []
+
+    def download_file(
+        self,
+        config: RemoteConnectionConfig,
+        remote_path: str,
+    ) -> bytes:
+        msg = f"download not used in this test for {remote_path}"
+        raise AssertionError(msg)
 
 
 def test_project_editor_exposes_dynamic_remote_connection_options(tmp_path: Path) -> None:

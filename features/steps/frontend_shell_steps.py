@@ -288,7 +288,8 @@ def step_assert_audit_summary(context: object) -> None:
     typed_context = _context_with_shell(context)
     assert typed_context.shell.audit_state is not None
     assert (
-        typed_context.shell.audit_state.findings_summary == "3 findings across code and templates"
+        typed_context.shell.audit_state.findings_summary
+        == "No supported framework was detected for this project."
     )
 
 

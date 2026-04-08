@@ -30,6 +30,12 @@ from polyglot_site_translator.domain.site_registry.models import (
     SiteProject,
     SiteRegistrationInput,
 )
+from polyglot_site_translator.domain.sync.models import (
+    RemoteSyncFile,
+    SyncDirection,
+    SyncResult,
+    SyncSummary,
+)
 from polyglot_site_translator.infrastructure.remote_connections.registry import (
     RemoteConnectionRegistry,
 )
@@ -114,6 +120,42 @@ class SuccessfulSFTPProvider:
             port=config.port,
             message="Connected successfully.",
             error_code=None,
+        )
+
+    def list_remote_files(
+        self,
+        config: RemoteConnectionConfig,
+    ) -> list[RemoteSyncFile]:
+        return []
+
+    def download_file(
+        self,
+        config: RemoteConnectionConfig,
+        remote_path: str,
+    ) -> bytes:
+        msg = f"download not used in this test for {remote_path}"
+        raise AssertionError(msg)
+
+
+class SyncStub:
+    """Project sync stub for workflow-constructor compatibility in audit tests."""
+
+    def sync_remote_to_local(self, site: RegisteredSite) -> SyncResult:
+        return SyncResult(
+            direction=SyncDirection.REMOTE_TO_LOCAL,
+            success=True,
+            project_id=site.id,
+            connection_type=(
+                site.remote_connection.connection_type if site.remote_connection else None
+            ),
+            local_path=site.local_path,
+            summary=SyncSummary(
+                files_discovered=0,
+                files_downloaded=0,
+                directories_created=0,
+                bytes_downloaded=0,
+            ),
+            error=None,
         )
 
 
@@ -285,7 +327,10 @@ def test_framework_aware_workflow_service_builds_audit_preview_from_detection() 
     repository = InMemorySiteRegistryRepository()
     service = _build_domain_service(repository)
     created = service.create_site(_build_registration())
-    workflow = SiteRegistryPresentationWorkflowService(service=service)
+    workflow = SiteRegistryPresentationWorkflowService(
+        service=service,
+        project_sync_service=SyncStub(),
+    )
 
     audit = workflow.start_audit(created.id)
 
@@ -311,7 +356,10 @@ def test_framework_aware_workflow_service_builds_matched_audit_preview(tmp_path:
     created = service.create_site(
         _build_registration(framework_type="unknown", local_path=str(project_path))
     )
-    workflow = SiteRegistryPresentationWorkflowService(service=service)
+    workflow = SiteRegistryPresentationWorkflowService(
+        service=service,
+        project_sync_service=SyncStub(),
+    )
 
     audit = workflow.start_audit(created.id)
 
@@ -322,7 +370,8 @@ def test_framework_aware_workflow_service_builds_matched_audit_preview(tmp_path:
 
 def test_framework_aware_workflow_service_wraps_lookup_errors() -> None:
     workflow = SiteRegistryPresentationWorkflowService(
-        service=SiteRegistryService(repository=InMemorySiteRegistryRepository())
+        service=SiteRegistryService(repository=InMemorySiteRegistryRepository()),
+        project_sync_service=SyncStub(),
     )
 
     with pytest.raises(ControlledServiceError, match=r"Unknown site id: missing-site"):

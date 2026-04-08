@@ -5,10 +5,12 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 
 from polyglot_site_translator.domain.remote_connections.models import (
+    RemoteConnectionConfig,
     RemoteConnectionConfigInput,
     RemoteConnectionTestResult,
     RemoteConnectionTypeDescriptor,
 )
+from polyglot_site_translator.domain.sync.models import RemoteSyncFile
 
 
 class BaseRemoteConnectionProvider(ABC):
@@ -22,3 +24,18 @@ class BaseRemoteConnectionProvider(ABC):
         config: RemoteConnectionConfigInput,
     ) -> RemoteConnectionTestResult:
         """Attempt a transport-level connection test."""
+
+    @abstractmethod
+    def list_remote_files(
+        self,
+        config: RemoteConnectionConfig,
+    ) -> list[RemoteSyncFile]:
+        """Return the remote files available for synchronization."""
+
+    @abstractmethod
+    def download_file(
+        self,
+        config: RemoteConnectionConfig,
+        remote_path: str,
+    ) -> bytes:
+        """Download a remote file and return its contents."""

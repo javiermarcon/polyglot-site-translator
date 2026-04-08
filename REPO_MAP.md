@@ -90,6 +90,9 @@ Current frontend base:
 - `polyglot_site_translator/domain/remote_connections/`
   Typed remote-connection descriptors, configs, test results, and provider contracts.
 
+- `polyglot_site_translator/domain/sync/`
+  Typed sync direction, remote file descriptors, summaries, results, and explicit sync errors.
+
 - `polyglot_site_translator/domain/framework_detection/`
   Typed framework-detection contracts, result models, and explicit ambiguity errors.
 
@@ -108,8 +111,14 @@ Current frontend base:
 - `polyglot_site_translator/services/remote_connections.py`
   Validation, discoverable catalog exposure, and connection-test orchestration for remote connection providers.
 
+- `polyglot_site_translator/services/project_sync.py`
+  Remote-to-local sync orchestration over the existing remote provider registry, including typed results and controlled failures.
+
 - `polyglot_site_translator/infrastructure/remote_connections/`
   Discoverable FTP/FTPS/SFTP/SCP provider implementations and the runtime provider registry.
+
+- `polyglot_site_translator/infrastructure/sync_local.py`
+  Local workspace directory creation and downloaded-file persistence for sync workflows.
 
 - `polyglot_site_translator/presentation/contracts.py`
   UI-facing service protocols, including frontend settings operations and project-registry create/edit flows.
@@ -189,24 +198,30 @@ Current frontend coverage:
 
 - `tests/unit/presentation/`
 - `tests/integration/presentation/`
+- `tests/unit/infrastructure/test_remote_sync_providers.py`
 - `tests/unit/infrastructure/test_site_secrets.py`
 - `tests/unit/infrastructure/test_sqlite_site_registry_repository.py`
+- `tests/unit/infrastructure/test_sync_local_workspace.py`
 - `tests/unit/adapters/test_adapter_common.py`
 - `tests/unit/adapters/test_framework_detection_registry.py`
 - `tests/unit/adapters/test_wordpress_adapter.py`
 - `tests/unit/adapters/test_django_adapter.py`
 - `tests/unit/adapters/test_flask_adapter.py`
 - `tests/unit/services/test_framework_detection_service.py`
+- `tests/unit/services/test_project_sync_service.py`
 - `tests/unit/presentation/test_site_registry_services.py`
+- `tests/unit/presentation/test_sync_workflow_services.py`
 - `tests/integration/presentation/test_project_editor_screen_runtime.py`
 - `tests/integration/presentation/test_site_registry_flow.py`
 - `tests/integration/presentation/test_framework_detection_flow.py`
+- `tests/integration/presentation/test_sync_flow.py`
 - `tests/unit/infrastructure/test_remote_connection_registry.py`
 - `tests/unit/services/test_remote_connection_service.py`
 - `tests/integration/presentation/test_remote_connection_editor_flow.py`
 - `features/presentation/site_registry.feature`
 - `features/presentation/framework_detection.feature`
 - `features/presentation/remote_connections.feature`
+- `features/presentation/sync.feature`
 
 If UI tests are added, they should remain isolated and clearly labeled.
 
