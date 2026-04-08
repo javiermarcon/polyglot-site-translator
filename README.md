@@ -18,16 +18,19 @@ El repositorio está en una etapa temprana y hoy incluye principalmente:
 
 - una base de frontend Kivy bajo `src/polyglot_site_translator/`
 - navegación inicial con `ScreenManager`
-- pantallas base para dashboard, proyectos, detalle, sync, audit y PO processing
+- pantallas base para dashboard, proyectos, detalle, editor de proyectos, sync, audit y PO processing
 - contratos de servicios para la UI
 - persistencia real en TOML para settings generales de la app
-- implementaciones fake/in-memory para catálogo y workflows de desarrollo
+- persistencia real en SQLite para `site_registry`
+- configuración general de la app para definir `database_directory` y `database_filename`
+- cifrado local reversible para persistir `ftp_password` encriptado en SQLite
+- integración real del flujo principal de proyectos con `site_registry` persistido
+- implementaciones fake/in-memory para workflows de desarrollo y dobles aislados de tests
 - escenarios BDD y tests de presentación/orquestación
 - documentación arquitectónica para guiar futuras iteraciones
 
 Todavía no están implementados en forma real:
 
-- SQLite
 - FTP
 - adapters de frameworks
 - scanner de auditoría
@@ -36,7 +39,7 @@ Todavía no están implementados en forma real:
 
 ## Objetivos del proyecto
 
-Esta aplicación busca ofrecer una shell gráfica capaz de crecer sin reescrituras grandes cuando entren las capas reales del sistema.
+Esta aplicación busca ofrecer una shell gráfica capaz de crecer sin reescrituras grandes a medida que entren más capas reales del sistema.
 
 El diseño apunta a:
 
@@ -56,16 +59,23 @@ La arquitectura esperada se organiza en capas:
 4. Framework adapters / plugins
 5. Infrastructure
 
-La base actual implementa sobre todo la capa de presentación, con estas piezas:
+La base actual implementa una base funcional de presentación, settings y `site_registry`, con estas piezas:
 
 - `app.py` y `__main__.py`: entrypoints de la app gráfica
 - `bootstrap.py`: wiring inicial del frontend shell
+- `domain/site_registry/`: modelos tipados, errores y contratos del dominio de site registry
+- `services/site_registry.py`: validación y CRUD del site registry
 - `infrastructure/settings.py`: persistencia TOML de settings generales por usuario
+- `infrastructure/database_location.py`: resolución del path final de SQLite desde settings
+- `infrastructure/site_registry_sqlite.py`: repositorio SQLite real con schema y mapeo fila ↔ modelo
+- `infrastructure/site_secrets.py`: cifrado local de secretos persistidos del site registry
 - `presentation/contracts.py`: contratos de servicios que consume la UI
 - `presentation/view_models.py`: modelos tipados para pantallas y paneles
 - `presentation/frontend_shell.py`: orquestación de navegación y estado
-- `presentation/fakes.py`: catálogo/workflows fake y doubles de settings para desarrollo y pruebas
+- `presentation/site_registry_services.py`: adapters entre el servicio real de site registry y la UI
+- `presentation/fakes.py`: workflows fake, doubles de settings y wiring runtime del site registry real
 - `presentation/kivy/`: app Kivy, `ScreenManager`, screens y widgets
+
 La UI no debe hablar directamente con:
 
 - SQLite
@@ -80,13 +90,15 @@ La UI no debe hablar directamente con:
 La base actual del frontend incluye:
 
 - Home / Dashboard como punto de entrada
-- Projects / Sites List para listar proyectos fake/in-memory
-- Project / Site Detail con acciones futuras ya modeladas
+- Projects / Sites List para listar proyectos persistidos en SQLite
+- Project / Site Detail con lectura real del registry persistido
+- Project Editor para alta y edición básica de sitios/proyectos
 - Sync Screen para mostrar estado fake de sincronización
 - Audit Screen para mostrar resultados fake de auditoría
 - PO Processing Screen para mostrar resultados fake de procesamiento
+- Settings generales con persistencia TOML y campos para configurar la ubicación/nombre de la base SQLite
 
-La navegación mantiene el contexto del proyecto seleccionado y deja preparado el reemplazo futuro de fakes por servicios reales.
+La navegación mantiene el contexto del proyecto seleccionado. El flujo principal de create/list/detail/update ya usa servicios reales para `site_registry`, mientras que sync/audit/PO processing siguen usando servicios fake detrás de los mismos contratos de UI.
 
 ## Estructura del repositorio
 
@@ -96,12 +108,22 @@ src/
     app.py
     __main__.py
     bootstrap.py
+    domain/
+      site_registry/
+    services/
+      site_registry.py
+    infrastructure/
+      database_location.py
+      settings.py
+      site_registry_sqlite.py
+      site_secrets.py
     presentation/
       contracts.py
       errors.py
       fakes.py
       frontend_shell.py
       router.py
+      site_registry_services.py
       view_models.py
       kivy/
         app.py
@@ -174,6 +196,10 @@ Si querés ejecutar la app local sin instalación editable, usá el launcher del
 
 Los settings generales se guardan en `settings.toml` dentro del directorio de configuración del usuario.
 Para desarrollo o pruebas locales, podés overridear la ubicación con `POLYGLOT_SITE_TRANSLATOR_CONFIG_DIR`.
+Dentro de esos settings también se persisten `database_directory` y `database_filename`, que determinan dónde se crea/usa la base SQLite real del `site_registry`.
+
+La contraseña FTP no se guarda en texto plano en SQLite.
+Se persiste cifrada con una key local almacenada junto al config dir de la app.
 
 ## Testing y validación
 
@@ -184,7 +210,7 @@ Comandos recomendados:
 .venv/bin/python -m ruff format --check .
 .venv/bin/python -m mypy src tests features/steps
 .venv/bin/python -m pytest
-.venv/bin/python -m behave features/presentation/frontend_shell.feature
+.venv/bin/python -m behave features/presentation/frontend_shell.feature features/presentation/settings.feature features/presentation/site_registry.feature
 ```
 
 El repositorio sigue un flujo obligatorio BDD + TDD:
@@ -230,7 +256,7 @@ Reglas clave:
 
 - no usar `except Exception`
 - no empujar lógica de negocio a widgets/screens
-- no acoplar la UI a infraestructura real
+- no acoplar la UI directamente a infraestructura real
 - no introducir cambios arquitectónicos sin actualizar documentación
 
 ## Legacy
@@ -247,7 +273,6 @@ Ese código:
 
 La base actual está preparada para integrar en iteraciones futuras:
 
-- repositorio SQLite para site registry
 - servicios FTP reales
 - resolver/registry de adapters
 - scanner de auditoría
