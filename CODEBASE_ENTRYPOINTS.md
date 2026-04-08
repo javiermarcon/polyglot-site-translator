@@ -39,6 +39,7 @@ Current entrypoints:
 
 The application should expose use-case-oriented services such as:
 - site/project registration and CRUD
+- remote connection catalog and test orchestration
 - FTP synchronization
 - PO audit/sync/translation
 - source audit
@@ -54,6 +55,7 @@ Current frontend-facing service entrypoints:
 - `ProjectRegistryManagementService.build_edit_project_editor`
 - `ProjectRegistryManagementService.create_project`
 - `ProjectRegistryManagementService.update_project`
+- `ProjectRegistryManagementService.test_remote_connection`
 - `ProjectWorkflowService.start_sync`
 - `ProjectWorkflowService.start_audit`
 - `ProjectWorkflowService.start_po_processing`
@@ -62,6 +64,8 @@ Current frontend-facing service entrypoints:
 - `SettingsService.reset_settings`
 - `polyglot_site_translator.infrastructure.settings.build_default_settings_service`
 - `polyglot_site_translator.infrastructure.settings.TomlSettingsService`
+- `polyglot_site_translator.services.remote_connections.RemoteConnectionService.list_supported_connection_types`
+- `polyglot_site_translator.services.remote_connections.RemoteConnectionService.test_connection`
 
 ---
 
@@ -123,6 +127,7 @@ Current project-registry orchestration entrypoints:
 - `FrontendShell.open_project_editor_edit`
 - `FrontendShell.save_new_project`
 - `FrontendShell.save_project_edits`
+- `FrontendShell.test_project_connection`
 
 Current project-detail enrichment entrypoints:
 - `polyglot_site_translator.services.site_registry.SiteRegistryService.detect_framework`
@@ -156,6 +161,8 @@ Current site-registry persistence entrypoints:
 - `polyglot_site_translator.infrastructure.site_registry_sqlite.SqliteSiteRegistryRepository`
 - `polyglot_site_translator.infrastructure.site_registry_sqlite.ConfiguredSqliteSiteRegistryRepository`
 - `polyglot_site_translator.infrastructure.site_secrets.LocalKeySiteSecretCipher`
+- `polyglot_site_translator.infrastructure.remote_connections.registry.RemoteConnectionRegistry`
+- `polyglot_site_translator.infrastructure.remote_connections.registry.RemoteConnectionRegistry.discover_installed`
 
 ---
 

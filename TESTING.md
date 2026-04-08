@@ -9,7 +9,7 @@ This project combines:
 - framework-specific adapters
 - source scanning
 - SQLite persistence
-- FTP integration
+- remote connection integration
 - reporting/export
 
 Testing must reflect those responsibilities without making the suite fragile.
@@ -69,7 +69,7 @@ Unit tests must cover isolated logic such as:
 - report rendering
 - path and configuration normalization
 - repository/persistence mapping
-- FTP input validation
+- remote connection input validation
 
 ### 2. Integration tests
 
@@ -162,12 +162,15 @@ Test:
 - explicit persistence/configuration error wrapping
 - encrypted secret storage behavior if credential fields are persisted
 
-### If changing FTP code
+### If changing remote connection code
 
 Test:
 
 - path normalization
 - configuration validation
+- discoverable provider catalogs
+- optional no-connection flows
+- structured connection-test results
 - failure behavior through mocks/stubs
 - no accidental destructive behavior
 

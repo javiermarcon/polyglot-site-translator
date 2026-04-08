@@ -2,20 +2,30 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
+from typing import cast
 
 import pytest
 
 from polyglot_site_translator.adapters.framework_registry import FrameworkAdapterRegistry
 from polyglot_site_translator.adapters.wordpress import WordPressFrameworkAdapter
+from polyglot_site_translator.domain.remote_connections.models import (
+    RemoteConnectionConfigInput,
+    RemoteConnectionTestResult,
+    RemoteConnectionTypeDescriptor,
+)
 from polyglot_site_translator.domain.site_registry.models import (
     RegisteredSite,
     SiteRegistrationInput,
 )
+from polyglot_site_translator.infrastructure.remote_connections.registry import (
+    RemoteConnectionRegistry,
+)
 from polyglot_site_translator.services.framework_detection import (
     FrameworkDetectionService,
 )
+from polyglot_site_translator.services.remote_connections import RemoteConnectionService
 from polyglot_site_translator.services.site_registry import SiteRegistryService
 
 
@@ -46,63 +56,85 @@ class InMemorySiteRegistryRepository:
         del self.sites[site_id]
 
 
-def test_site_registry_service_creates_and_lists_sites() -> None:
-    service = SiteRegistryService(repository=InMemorySiteRegistryRepository(sites={}))
+_DEFAULT_REMOTE = object()
 
-    created_site = service.create_site(
-        SiteRegistrationInput(
-            name="Marketing Site",
-            framework_type="wordpress",
-            local_path="/workspace/marketing-site",
-            default_locale="en_US",
-            ftp_host="ftp.example.com",
-            ftp_port=21,
-            ftp_username="deploy",
-            ftp_password="super-secret",
-            ftp_remote_path="/public_html",
-            is_active=True,
+
+@dataclass(frozen=True)
+class StubSFTPProvider:
+    """Remote provider stub for site registry service tests."""
+
+    descriptor: RemoteConnectionTypeDescriptor = field(
+        default_factory=lambda: RemoteConnectionTypeDescriptor(
+            connection_type="sftp",
+            display_name="SFTP",
+            default_port=22,
         )
     )
 
+    def test_connection(
+        self,
+        config: RemoteConnectionConfigInput,
+    ) -> RemoteConnectionTestResult:
+        return RemoteConnectionTestResult(
+            success=True,
+            connection_type=config.connection_type,
+            host=config.host,
+            port=config.port,
+            message="Connected successfully.",
+            error_code=None,
+        )
+
+
+def test_site_registry_service_creates_and_lists_sites() -> None:
+    service = _build_service()
+
+    created_site = service.create_site(_build_registration())
+
     assert created_site.name == "Marketing Site"
+    assert created_site.remote_connection is not None
     assert service.list_sites() == [created_site]
 
 
+def test_site_registry_service_allows_projects_without_remote_connections() -> None:
+    service = _build_service()
+
+    created_site = service.create_site(_build_registration(remote_connection=None))
+
+    assert created_site.remote_connection is None
+
+
+def test_site_registry_service_lists_and_gets_sites_from_the_repository() -> None:
+    service = _build_service()
+    created_site = service.create_site(_build_registration())
+
+    assert service.list_sites() == [created_site]
+    assert service.get_site(created_site.id) == created_site
+
+
 def test_site_registry_service_updates_a_site() -> None:
-    service = SiteRegistryService(repository=InMemorySiteRegistryRepository(sites={}))
-    created_site = service.create_site(
-        SiteRegistrationInput(
-            name="Marketing Site",
-            framework_type="wordpress",
-            local_path="/workspace/marketing-site",
-            default_locale="en_US",
-            ftp_host="ftp.example.com",
-            ftp_port=21,
-            ftp_username="deploy",
-            ftp_password="super-secret",
-            ftp_remote_path="/public_html",
-            is_active=True,
-        )
-    )
+    service = _build_service()
+    created_site = service.create_site(_build_registration())
 
     updated_site = service.update_site(
         site_id=created_site.id,
-        registration=SiteRegistrationInput(
-            name="Marketing Site",
-            framework_type="wordpress",
+        registration=_build_registration(
             local_path="/workspace/marketing-site-v2",
-            default_locale="en_US",
-            ftp_host="ftp-v2.example.com",
-            ftp_port=21,
-            ftp_username="deploy",
-            ftp_password="super-secret",
-            ftp_remote_path="/public_html",
+            remote_connection=RemoteConnectionConfigInput(
+                connection_type="sftp",
+                host="sftp.example.com",
+                port=22,
+                username="deploy",
+                password="super-secret",
+                remote_path="/srv/app",
+            ),
             is_active=False,
         ),
     )
 
     assert updated_site.local_path == "/workspace/marketing-site-v2"
     assert updated_site.is_active is False
+    assert updated_site.remote_connection is not None
+    assert updated_site.remote_connection.connection_type == "sftp"
 
 
 def test_site_registry_service_detects_and_persists_supported_frameworks(
@@ -120,20 +152,13 @@ def test_site_registry_service_detects_and_persists_supported_frameworks(
                 adapters=[WordPressFrameworkAdapter()]
             )
         ),
+        remote_connection_service=_build_remote_connection_service(),
     )
 
     created_site = service.create_site(
-        SiteRegistrationInput(
-            name="Marketing Site",
+        _build_registration(
             framework_type="customapp",
             local_path=str(project_path),
-            default_locale="en_US",
-            ftp_host="ftp.example.com",
-            ftp_port=21,
-            ftp_username="deploy",
-            ftp_password="super-secret",
-            ftp_remote_path="/public_html",
-            is_active=True,
         )
     )
 
@@ -143,20 +168,7 @@ def test_site_registry_service_detects_and_persists_supported_frameworks(
 def test_site_registry_service_delete_and_detection_fallback_behave_as_expected() -> None:
     repository = InMemorySiteRegistryRepository(sites={})
     service = SiteRegistryService(repository=repository)
-    created_site = service.create_site(
-        SiteRegistrationInput(
-            name="Marketing Site",
-            framework_type="customapp",
-            local_path="/workspace/marketing-site",
-            default_locale="en_US",
-            ftp_host="ftp.example.com",
-            ftp_port=21,
-            ftp_username="deploy",
-            ftp_password="super-secret",
-            ftp_remote_path="/public_html",
-            is_active=True,
-        )
-    )
+    created_site = service.create_site(_build_registration(remote_connection=None))
 
     detection = service.detect_framework("/workspace/marketing-site")
     service.delete_site(created_site.id)
@@ -173,24 +185,107 @@ def test_site_registry_service_lists_unknown_framework_when_detection_is_missing
     assert [framework.framework_type for framework in frameworks] == ["unknown"]
 
 
+def test_site_registry_service_handles_missing_remote_connection_service_branches() -> None:
+    service = SiteRegistryService(repository=InMemorySiteRegistryRepository(sites={}))
+    created_site = service.create_site(_build_registration())
+
+    assert created_site.remote_connection is None
+    assert service.list_supported_connection_types() == []
+    assert service.can_test_remote_connection(_build_registration(remote_connection=None)) is False
+    with pytest.raises(
+        ValueError,
+        match=r"Remote connection testing is not configured\.",
+    ):
+        service.test_remote_connection(_build_registration())
+
+
+def test_site_registry_service_lists_supported_connection_types() -> None:
+    service = _build_service()
+
+    connection_types = service.list_supported_connection_types()
+
+    assert [descriptor.connection_type for descriptor in connection_types] == [
+        "none",
+        "sftp",
+    ]
+
+
+def test_site_registry_service_lists_supported_frameworks_when_detection_is_configured() -> None:
+    service = SiteRegistryService(
+        repository=InMemorySiteRegistryRepository(sites={}),
+        framework_detection_service=FrameworkDetectionService(
+            registry=FrameworkAdapterRegistry.discover_installed()
+        ),
+        remote_connection_service=_build_remote_connection_service(),
+    )
+
+    assert [framework.framework_type for framework in service.list_supported_frameworks()] == [
+        "unknown",
+        "django",
+        "flask",
+        "wordpress",
+    ]
+
+
+def test_site_registry_service_can_test_and_runs_a_remote_connection() -> None:
+    service = _build_service()
+    registration = _build_registration()
+
+    assert service.can_test_remote_connection(registration) is True
+    result = service.test_remote_connection(registration)
+
+    assert result.success is True
+    assert result.message == "Connected successfully."
+
+
+def test_site_registry_service_keeps_the_operator_framework_when_detection_does_not_match(
+    tmp_path: Path,
+) -> None:
+    project_path = tmp_path / "generic-site"
+    project_path.mkdir()
+    (project_path / "README.txt").write_text("generic project\n", encoding="utf-8")
+    service = SiteRegistryService(
+        repository=InMemorySiteRegistryRepository(sites={}),
+        framework_detection_service=FrameworkDetectionService(
+            registry=FrameworkAdapterRegistry.default_registry(
+                adapters=[WordPressFrameworkAdapter()]
+            )
+        ),
+        remote_connection_service=_build_remote_connection_service(),
+    )
+
+    created_site = service.create_site(
+        _build_registration(framework_type="customapp", local_path=str(project_path))
+    )
+
+    assert created_site.framework_type == "customapp"
+
+
 @pytest.mark.parametrize(
-    ("name", "local_path", "default_locale", "ftp_port", "expected_message"),
+    ("name", "local_path", "default_locale", "remote_connection", "expected_message"),
     [
-        ("", "/workspace/marketing-site", "en_US", 21, r"Site name must not be empty\."),
-        ("Marketing Site", "", "en_US", 21, r"Local path must not be empty\."),
+        ("", "/workspace/marketing-site", "en_US", None, r"Site name must not be empty\."),
+        ("Marketing Site", "", "en_US", None, r"Local path must not be empty\."),
         (
             "Marketing Site",
             "/workspace/marketing-site",
             "",
-            21,
+            None,
             r"Default locale must not be empty\.",
         ),
         (
             "Marketing Site",
             "/workspace/marketing-site",
             "en_US",
-            0,
-            r"FTP port must be a positive integer\.",
+            RemoteConnectionConfigInput(
+                connection_type="sftp",
+                host="example.com",
+                port=0,
+                username="deploy",
+                password="super-secret",
+                remote_path="/srv/app",
+            ),
+            r"Remote port must be a positive integer\.",
         ),
     ],
 )
@@ -198,23 +293,59 @@ def test_site_registry_service_rejects_invalid_input(
     name: str,
     local_path: str,
     default_locale: str,
-    ftp_port: int,
+    remote_connection: RemoteConnectionConfigInput | None,
     expected_message: str,
 ) -> None:
-    service = SiteRegistryService(repository=InMemorySiteRegistryRepository(sites={}))
+    service = _build_service()
 
     with pytest.raises(ValueError, match=expected_message):
         service.create_site(
-            SiteRegistrationInput(
+            _build_registration(
                 name=name,
-                framework_type="wordpress",
                 local_path=local_path,
                 default_locale=default_locale,
-                ftp_host="ftp.example.com",
-                ftp_port=ftp_port,
-                ftp_username="deploy",
-                ftp_password="super-secret",
-                ftp_remote_path="/public_html",
-                is_active=True,
+                remote_connection=remote_connection,
             )
         )
+
+
+def _build_service() -> SiteRegistryService:
+    return SiteRegistryService(
+        repository=InMemorySiteRegistryRepository(sites={}),
+        remote_connection_service=_build_remote_connection_service(),
+    )
+
+
+def _build_remote_connection_service() -> RemoteConnectionService:
+    return RemoteConnectionService(
+        registry=RemoteConnectionRegistry.default_registry(providers=[StubSFTPProvider()])
+    )
+
+
+def _build_registration(  # noqa: PLR0913
+    *,
+    name: str = "Marketing Site",
+    framework_type: str = "wordpress",
+    local_path: str = "/workspace/marketing-site",
+    default_locale: str = "en_US",
+    remote_connection: RemoteConnectionConfigInput | object | None = _DEFAULT_REMOTE,
+    is_active: bool = True,
+) -> SiteRegistrationInput:
+    resolved_remote_connection = remote_connection
+    if resolved_remote_connection is _DEFAULT_REMOTE:
+        resolved_remote_connection = RemoteConnectionConfigInput(
+            connection_type="sftp",
+            host="example.com",
+            port=22,
+            username="deploy",
+            password="super-secret",
+            remote_path="/srv/app",
+        )
+    return SiteRegistrationInput(
+        name=name,
+        framework_type=framework_type,
+        local_path=local_path,
+        default_locale=default_locale,
+        remote_connection=cast(RemoteConnectionConfigInput | None, resolved_remote_connection),
+        is_active=is_active,
+    )

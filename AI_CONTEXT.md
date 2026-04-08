@@ -8,7 +8,8 @@ It combines:
 
 - site registration
 - SQLite persistence
-- FTP download/synchronization
+- optional remote connection management and testing
+- FTP/FTPS/SFTP/SCP download/synchronization
 - shared translation services
 - source auditing
 - framework-specific adapters
@@ -36,6 +37,7 @@ When changing this codebase, prioritize:
 ## Conceptual domains
 
 - **Site registry**: local records for managed sites
+- **Remote connections**: optional typed remote configs and connection tests
 - **FTP sync**: remote site download/update workflows
 - **Common translation services**: PO discovery, sync, translation, compilation, reporting-ready outputs
 - **Framework adapters**: WordPress, Django, Flask, and future target-specific discovery/parsing rules
@@ -73,6 +75,7 @@ When changing this codebase, prioritize:
 ## Common mistakes to avoid
 
 - embedding FTP logic in screens
+- hardcoding remote connection types in widgets
 - embedding SQL in views/widgets
 - generating reports inside scanners
 - hardcoding WordPress assumptions in shared modules
@@ -141,10 +144,15 @@ The frontend baseline now also includes:
 - startup loading of persisted theme, window size, and safe remembered screens
 - responsive settings layout rules so narrow windows switch to a stacked compact layout
 - a first real `site_registry` subsystem backed by SQLite
+- a real optional `remote_connections` subsystem with a discoverable provider registry
 - explicit domain models, contracts, and errors for site registry CRUD
+- explicit typed descriptors and structured connection-test results for remote connections
 - SQLite repository resolution from persisted `database_directory` and `database_filename`
 - a thin project editor screen for create/edit flows through the presentation shell
-- encrypted-at-rest FTP passwords through a local key file stored alongside app config
+- a discoverable remote connection combo with a "No Remote Connection" option
+- an editor-level "Test Connection" action delegated through presentation/application services
+- encrypted-at-rest remote passwords through a local key file stored alongside app config
+- migration of legacy `ftp_*` columns into a related remote-connection table without decrypting stored ciphertext during migration
 - a real adapter registry for framework detection with typed results
 - dynamic adapter discovery from the `adapters/` package at runtime
 - concrete WordPress, Django, and Flask detection adapters

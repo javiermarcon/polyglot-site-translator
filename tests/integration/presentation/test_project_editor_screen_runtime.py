@@ -68,11 +68,12 @@ def test_project_editor_screen_saves_new_projects_and_can_return_to_projects() -
     editor_screen._framework_spinner.text = "Django"
     editor_screen._local_path_input.text = "/workspace/new-project"
     editor_screen._default_locale_input.text = "en_US"
-    editor_screen._ftp_host_input.text = "ftp.example.com"
-    editor_screen._ftp_port_input.text = "21"
-    editor_screen._ftp_username_input.text = "deploy"
-    editor_screen._ftp_password_input.text = "super-secret"
-    editor_screen._ftp_remote_path_input.text = "/srv/new-project"
+    editor_screen._connection_type_spinner.text = "FTP"
+    editor_screen._remote_host_input.text = "ftp.example.com"
+    editor_screen._remote_port_input.text = "21"
+    editor_screen._remote_username_input.text = "deploy"
+    editor_screen._remote_password_input.text = "super-secret"
+    editor_screen._remote_path_input.text = "/srv/new-project"
     editor_screen._is_active_switch.active = False
 
     editor_screen._save_editor()
@@ -109,6 +110,14 @@ def test_project_editor_screen_exposes_dynamic_framework_options() -> None:
         _find_option_label(shell.project_editor_state.framework_options, "wordpress") == "WordPress"
     )
     assert _find_option_value(shell.project_editor_state.framework_options, "Flask") == "flask"
+    assert tuple(editor_screen._connection_type_spinner.values) == (
+        "No Remote Connection",
+        "FTP",
+        "FTPS Explicit",
+        "FTPS Implicit",
+        "SCP",
+        "SFTP",
+    )
 
 
 def test_project_editor_screen_saves_edits_and_refreshes_when_not_routed_to_detail() -> None:
@@ -125,7 +134,12 @@ def test_project_editor_screen_saves_edits_and_refreshes_when_not_routed_to_deta
     assert root.current == "project_editor"
 
     editor_screen._local_path_input.text = "/workspace/marketing-site-v2"
-    editor_screen._ftp_host_input.text = "ftp-v2.example.com"
+    editor_screen._connection_type_spinner.text = "FTP"
+    editor_screen._remote_host_input.text = "ftp-v2.example.com"
+    editor_screen._remote_port_input.text = "21"
+    editor_screen._remote_username_input.text = "deploy"
+    editor_screen._remote_password_input.text = "super-secret"
+    editor_screen._remote_path_input.text = "/public_html"
     editor_screen._save_editor()
 
     assert root.current == "project_detail"
@@ -189,6 +203,9 @@ def test_project_editor_screen_uses_save_new_project_when_site_id_is_missing_in_
             **{**shell.project_editor_state.editor.__dict__, "site_id": None}
         ),
         framework_options=shell.project_editor_state.framework_options,
+        connection_type_options=shell.project_editor_state.connection_type_options,
+        connection_test_enabled=shell.project_editor_state.connection_test_enabled,
+        connection_test_result=shell.project_editor_state.connection_test_result,
         status="editing",
         status_message="Update the persisted site registry record.",
     )

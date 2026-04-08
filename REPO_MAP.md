@@ -2,7 +2,7 @@
 
 ## Repository purpose
 
-This repository hosts a Kivy-based application for translation auditing, source scanning, site/project management, FTP synchronization, framework-aware extraction, and report generation.
+This repository hosts a Kivy-based application for translation auditing, source scanning, site/project management, optional remote connections, framework-aware extraction, and report generation.
 
 ---
 
@@ -76,10 +76,13 @@ Current frontend base:
   Resolution and validation of the configured SQLite directory/filename into a final database path.
 
 - `polyglot_site_translator/infrastructure/site_registry_sqlite.py`
-  Real SQLite repository for the site registry, including schema setup and configured runtime wiring from settings.
+  Real SQLite repository for the site registry, including schema setup, legacy FTP migration, related remote-connection persistence, and configured runtime wiring from settings.
 
 - `polyglot_site_translator/infrastructure/site_secrets.py`
-  Local reversible encryption helper used to store FTP passwords encrypted at rest.
+  Local reversible encryption helper used to store remote passwords encrypted at rest.
+
+- `polyglot_site_translator/domain/remote_connections/`
+  Typed remote-connection descriptors, configs, test results, and provider contracts.
 
 - `polyglot_site_translator/domain/framework_detection/`
   Typed framework-detection contracts, result models, and explicit ambiguity errors.
@@ -94,7 +97,13 @@ Current frontend base:
   Registry-backed framework detection orchestration with path validation and framework catalog exposure.
 
 - `polyglot_site_translator/services/site_registry.py`
-  Site registry CRUD orchestration and validation independent from Kivy or SQLite details, with optional framework detection integration.
+  Site registry CRUD orchestration and validation independent from Kivy or SQLite details, with optional remote-connection integration and optional framework detection integration.
+
+- `polyglot_site_translator/services/remote_connections.py`
+  Validation, discoverable catalog exposure, and connection-test orchestration for remote connection providers.
+
+- `polyglot_site_translator/infrastructure/remote_connections/`
+  Discoverable FTP/FTPS/SFTP/SCP provider implementations and the runtime provider registry.
 
 - `polyglot_site_translator/presentation/contracts.py`
   UI-facing service protocols, including frontend settings operations and project-registry create/edit flows.
@@ -121,7 +130,7 @@ Current frontend base:
   Extensible settings screen with the initial App / UI / Kivy section, including editable SQLite directory/filename fields.
 
 - `polyglot_site_translator/presentation/kivy/screens/project_editor.py`
-  Thin create/edit screen for site registry records driven entirely by typed presentation state.
+  Thin create/edit screen for site registry records driven entirely by typed presentation state, including the discoverable remote connection selector and "Test Connection" action.
 
 - `services/`
   - use-case orchestration
@@ -186,8 +195,12 @@ Current frontend coverage:
 - `tests/integration/presentation/test_project_editor_screen_runtime.py`
 - `tests/integration/presentation/test_site_registry_flow.py`
 - `tests/integration/presentation/test_framework_detection_flow.py`
+- `tests/unit/infrastructure/test_remote_connection_registry.py`
+- `tests/unit/services/test_remote_connection_service.py`
+- `tests/integration/presentation/test_remote_connection_editor_flow.py`
 - `features/presentation/site_registry.feature`
 - `features/presentation/framework_detection.feature`
+- `features/presentation/remote_connections.feature`
 
 If UI tests are added, they should remain isolated and clearly labeled.
 

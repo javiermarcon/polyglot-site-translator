@@ -14,6 +14,12 @@ from polyglot_site_translator.domain.framework_detection.errors import (
 from polyglot_site_translator.domain.framework_detection.models import (
     FrameworkDetectionResult,
 )
+from polyglot_site_translator.domain.remote_connections.models import (
+    RemoteConnectionConfig,
+    RemoteConnectionConfigInput,
+    RemoteConnectionTestResult,
+    RemoteConnectionTypeDescriptor,
+)
 from polyglot_site_translator.domain.site_registry.errors import (
     SiteRegistryConflictError,
     SiteRegistryNotFoundError,
@@ -21,7 +27,11 @@ from polyglot_site_translator.domain.site_registry.errors import (
 )
 from polyglot_site_translator.domain.site_registry.models import (
     RegisteredSite,
+    SiteProject,
     SiteRegistrationInput,
+)
+from polyglot_site_translator.infrastructure.remote_connections.registry import (
+    RemoteConnectionRegistry,
 )
 from polyglot_site_translator.infrastructure.settings import TomlSettingsService
 from polyglot_site_translator.presentation.errors import ControlledServiceError
@@ -38,6 +48,7 @@ from polyglot_site_translator.presentation.view_models import (
     build_settings_state,
 )
 from polyglot_site_translator.services.framework_detection import FrameworkDetectionService
+from polyglot_site_translator.services.remote_connections import RemoteConnectionService
 from polyglot_site_translator.services.site_registry import SiteRegistryService
 
 
@@ -83,9 +94,32 @@ class PersistenceFailingRepository(InMemorySiteRegistryRepository):
         raise SiteRegistryPersistenceError(msg)
 
 
+class SuccessfulSFTPProvider:
+    """Remote connection provider stub for presentation tests."""
+
+    descriptor = RemoteConnectionTypeDescriptor(
+        connection_type="sftp",
+        display_name="SFTP",
+        default_port=22,
+    )
+
+    def test_connection(
+        self,
+        config: RemoteConnectionConfigInput,
+    ) -> RemoteConnectionTestResult:
+        return RemoteConnectionTestResult(
+            success=True,
+            connection_type=config.connection_type,
+            host=config.host,
+            port=config.port,
+            message="Connected successfully.",
+            error_code=None,
+        )
+
+
 def test_catalog_service_maps_project_summaries_and_detail() -> None:
     repository = InMemorySiteRegistryRepository()
-    service = SiteRegistryService(repository=repository)
+    service = _build_domain_service(repository)
     created = service.create_site(_build_registration(framework_type="custom_cms"))
     catalog = SiteRegistryPresentationCatalogService(service)
 
@@ -94,7 +128,7 @@ def test_catalog_service_maps_project_summaries_and_detail() -> None:
 
     assert projects[0].status == "Active"
     assert projects[0].framework == "Custom_Cms"
-    assert "FTP user: deploy" in detail.metadata_summary
+    assert "Remote user: deploy" in detail.metadata_summary
     assert "No framework detected" in detail.metadata_summary
 
 
@@ -114,12 +148,7 @@ def test_management_service_builds_create_and_edit_editor_states(tmp_path: Path)
     settings_service = TomlSettingsService(tmp_path / "settings.toml")
     settings_service.reset_settings()
     repository = InMemorySiteRegistryRepository()
-    domain_service = SiteRegistryService(
-        repository=repository,
-        framework_detection_service=FrameworkDetectionService(
-            registry=FrameworkAdapterRegistry.discover_installed()
-        ),
-    )
+    domain_service = _build_domain_service(repository)
     created = domain_service.create_site(_build_registration())
     management = SiteRegistryPresentationManagementService(
         service=domain_service,
@@ -137,6 +166,10 @@ def test_management_service_builds_create_and_edit_editor_states(tmp_path: Path)
         "flask",
         "wordpress",
     ]
+    assert [option.value for option in create_state.connection_type_options] == [
+        "none",
+        "sftp",
+    ]
     assert edit_state.mode == "edit"
     assert edit_state.editor.site_id == created.id
 
@@ -145,7 +178,7 @@ def test_management_service_wraps_build_edit_errors(tmp_path: Path) -> None:
     settings_service = TomlSettingsService(tmp_path / "settings.toml")
     settings_service.reset_settings()
     management = SiteRegistryPresentationManagementService(
-        service=SiteRegistryService(repository=InMemorySiteRegistryRepository()),
+        service=_build_domain_service(InMemorySiteRegistryRepository()),
         settings_service=settings_service,
     )
 
@@ -166,7 +199,7 @@ def test_management_service_wraps_build_create_configuration_errors(tmp_path: Pa
             )
 
     management = SiteRegistryPresentationManagementService(
-        service=SiteRegistryService(repository=InMemorySiteRegistryRepository()),
+        service=_build_domain_service(InMemorySiteRegistryRepository()),
         settings_service=InvalidSettingsService(tmp_path / "settings.toml"),
     )
 
@@ -179,11 +212,11 @@ def test_management_service_wraps_invalid_editor_payloads_and_missing_sites(tmp_
     settings_service.reset_settings()
     repository = InMemorySiteRegistryRepository()
     management = SiteRegistryPresentationManagementService(
-        service=SiteRegistryService(repository=repository),
+        service=_build_domain_service(repository),
         settings_service=settings_service,
     )
 
-    invalid_editor = replace(_build_editor(), ftp_port="not-a-number")
+    invalid_editor = replace(_build_editor(), remote_port="not-a-number")
 
     with pytest.raises(ControlledServiceError, match=r"invalid literal for int"):
         management.create_project(invalid_editor)
@@ -196,7 +229,7 @@ def test_management_service_wraps_domain_conflicts(tmp_path: Path) -> None:
     settings_service = TomlSettingsService(tmp_path / "settings.toml")
     settings_service.reset_settings()
     repository = InMemorySiteRegistryRepository()
-    SiteRegistryService(repository=repository).create_site(_build_registration())
+    _build_domain_service(repository).create_site(_build_registration())
 
     class ConflictRepository(InMemorySiteRegistryRepository):
         def create_site(self, site: RegisteredSite) -> RegisteredSite:
@@ -204,7 +237,7 @@ def test_management_service_wraps_domain_conflicts(tmp_path: Path) -> None:
             raise SiteRegistryConflictError(msg)
 
     conflict_management = SiteRegistryPresentationManagementService(
-        service=SiteRegistryService(repository=ConflictRepository()),
+        service=_build_domain_service(ConflictRepository()),
         settings_service=settings_service,
     )
 
@@ -219,7 +252,7 @@ def test_management_service_updates_projects_successfully(tmp_path: Path) -> Non
     settings_service = TomlSettingsService(tmp_path / "settings.toml")
     settings_service.reset_settings()
     repository = InMemorySiteRegistryRepository()
-    domain_service = SiteRegistryService(repository=repository)
+    domain_service = _build_domain_service(repository)
     created = domain_service.create_site(_build_registration())
     management = SiteRegistryPresentationManagementService(
         service=domain_service,
@@ -234,9 +267,23 @@ def test_management_service_updates_projects_successfully(tmp_path: Path) -> Non
     assert detail.project.local_path == "/workspace/marketing-site-v2"
 
 
+def test_management_service_tests_remote_connections_successfully(tmp_path: Path) -> None:
+    settings_service = TomlSettingsService(tmp_path / "settings.toml")
+    settings_service.reset_settings()
+    management = SiteRegistryPresentationManagementService(
+        service=_build_domain_service(InMemorySiteRegistryRepository()),
+        settings_service=settings_service,
+    )
+
+    result = management.test_remote_connection(_build_editor())
+
+    assert result.success is True
+    assert result.message == "Connected successfully."
+
+
 def test_framework_aware_workflow_service_builds_audit_preview_from_detection() -> None:
     repository = InMemorySiteRegistryRepository()
-    service = SiteRegistryService(repository=repository)
+    service = _build_domain_service(repository)
     created = service.create_site(_build_registration())
     workflow = SiteRegistryPresentationWorkflowService(service=service)
 
@@ -259,9 +306,10 @@ def test_framework_aware_workflow_service_builds_matched_audit_preview(tmp_path:
         framework_detection_service=FrameworkDetectionService(
             registry=FrameworkAdapterRegistry.discover_installed()
         ),
+        remote_connection_service=_build_remote_connection_service(),
     )
     created = service.create_site(
-        replace(_build_registration(), framework_type="unknown", local_path=str(project_path))
+        _build_registration(framework_type="unknown", local_path=str(project_path))
     )
     workflow = SiteRegistryPresentationWorkflowService(service=service)
 
@@ -284,21 +332,31 @@ def test_framework_aware_workflow_service_wraps_lookup_errors() -> None:
 def test_build_project_detail_without_detection_keeps_base_metadata_only() -> None:
     detail = _build_project_detail(
         RegisteredSite(
-            id="site-1",
-            name="Marketing Site",
-            framework_type="wordpress",
-            local_path="/workspace/marketing-site",
-            default_locale="en_US",
-            ftp_host="ftp.example.com",
-            ftp_port=21,
-            ftp_username="deploy",
-            ftp_password="secret",
-            ftp_remote_path="/public_html",
-            is_active=True,
+            project=SiteProject(
+                id="site-1",
+                name="Marketing Site",
+                framework_type="wordpress",
+                local_path="/workspace/marketing-site",
+                default_locale="en_US",
+                is_active=True,
+            ),
+            remote_connection=RemoteConnectionConfig(
+                id="remote-site-1",
+                site_project_id="site-1",
+                connection_type="ftp",
+                host="ftp.example.com",
+                port=21,
+                username="deploy",
+                password="secret",
+                remote_path="/public_html",
+            ),
         )
     )
 
-    assert detail.metadata_summary == "Framework: WordPress | FTP user: deploy | FTP port: 21"
+    assert (
+        detail.metadata_summary
+        == "Framework: WordPress | Remote user: deploy | Connection type: ftp"
+    )
 
 
 def test_catalog_service_wraps_framework_detection_ambiguity() -> None:
@@ -320,17 +378,40 @@ def test_catalog_service_wraps_framework_detection_ambiguity() -> None:
         catalog.get_project_detail(created.id)
 
 
-def _build_registration(*, framework_type: str = "wordpress") -> SiteRegistrationInput:
+def _build_domain_service(repository: InMemorySiteRegistryRepository) -> SiteRegistryService:
+    return SiteRegistryService(
+        repository=repository,
+        framework_detection_service=FrameworkDetectionService(
+            registry=FrameworkAdapterRegistry.discover_installed()
+        ),
+        remote_connection_service=_build_remote_connection_service(),
+    )
+
+
+def _build_remote_connection_service() -> RemoteConnectionService:
+    return RemoteConnectionService(
+        registry=RemoteConnectionRegistry.default_registry(providers=[SuccessfulSFTPProvider()])
+    )
+
+
+def _build_registration(
+    *,
+    framework_type: str = "wordpress",
+    local_path: str = "/workspace/marketing-site",
+) -> SiteRegistrationInput:
     return SiteRegistrationInput(
         name="Marketing Site",
         framework_type=framework_type,
-        local_path="/workspace/marketing-site",
+        local_path=local_path,
         default_locale="en_US",
-        ftp_host="ftp.example.com",
-        ftp_port=21,
-        ftp_username="deploy",
-        ftp_password="super-secret",
-        ftp_remote_path="/public_html",
+        remote_connection=RemoteConnectionConfigInput(
+            connection_type="sftp",
+            host="example.com",
+            port=22,
+            username="deploy",
+            password="super-secret",
+            remote_path="/srv/app",
+        ),
         is_active=True,
     )
 
@@ -342,10 +423,11 @@ def _build_editor() -> SiteEditorViewModel:
         framework_type="wordpress",
         local_path="/workspace/marketing-site",
         default_locale="en_US",
-        ftp_host="ftp.example.com",
-        ftp_port="21",
-        ftp_username="deploy",
-        ftp_password="super-secret",
-        ftp_remote_path="/public_html",
+        connection_type="sftp",
+        remote_host="example.com",
+        remote_port="22",
+        remote_username="deploy",
+        remote_password="super-secret",
+        remote_path="/srv/app",
         is_active=True,
     )

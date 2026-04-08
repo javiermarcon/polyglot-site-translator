@@ -6,6 +6,10 @@ from collections.abc import Iterable
 from dataclasses import dataclass
 
 from polyglot_site_translator.domain.framework_detection.models import FrameworkDescriptor
+from polyglot_site_translator.domain.remote_connections.models import (
+    NO_REMOTE_CONNECTION_VALUE,
+    RemoteConnectionTypeDescriptor,
+)
 
 
 @dataclass(frozen=True)
@@ -169,12 +173,22 @@ class SiteEditorViewModel:
     framework_type: str
     local_path: str
     default_locale: str
-    ftp_host: str
-    ftp_port: str
-    ftp_username: str
-    ftp_password: str
-    ftp_remote_path: str
+    connection_type: str
+    remote_host: str
+    remote_port: str
+    remote_username: str
+    remote_password: str
+    remote_path: str
     is_active: bool
+
+
+@dataclass(frozen=True)
+class RemoteConnectionTestResultViewModel:
+    """Connection-test result rendered by the project editor."""
+
+    success: bool
+    message: str
+    error_code: str | None
 
 
 @dataclass(frozen=True)
@@ -186,6 +200,9 @@ class ProjectEditorStateViewModel:
     submit_label: str
     editor: SiteEditorViewModel
     framework_options: list[SettingsOptionViewModel]
+    connection_type_options: list[SettingsOptionViewModel]
+    connection_test_enabled: bool
+    connection_test_result: RemoteConnectionTestResultViewModel | None
     status: str
     status_message: str | None
 
@@ -343,20 +360,24 @@ def build_default_site_editor() -> SiteEditorViewModel:
         framework_type="unknown",
         local_path="",
         default_locale="en_US",
-        ftp_host="",
-        ftp_port="21",
-        ftp_username="",
-        ftp_password="",
-        ftp_remote_path="",
+        connection_type=NO_REMOTE_CONNECTION_VALUE,
+        remote_host="",
+        remote_port="",
+        remote_username="",
+        remote_password="",
+        remote_path="",
         is_active=True,
     )
 
 
-def build_project_editor_state(
+def build_project_editor_state(  # noqa: PLR0913
     *,
     mode: str,
     editor: SiteEditorViewModel,
     framework_options: list[SettingsOptionViewModel],
+    connection_type_options: list[SettingsOptionViewModel],
+    connection_test_enabled: bool,
+    connection_test_result: RemoteConnectionTestResultViewModel | None,
     status: str,
     status_message: str | None,
 ) -> ProjectEditorStateViewModel:
@@ -368,6 +389,9 @@ def build_project_editor_state(
             submit_label="Save Project",
             editor=editor,
             framework_options=framework_options,
+            connection_type_options=connection_type_options,
+            connection_test_enabled=connection_test_enabled,
+            connection_test_result=connection_test_result,
             status=status,
             status_message=status_message,
         )
@@ -377,6 +401,9 @@ def build_project_editor_state(
         submit_label="Create Project",
         editor=editor,
         framework_options=framework_options,
+        connection_type_options=connection_type_options,
+        connection_test_enabled=connection_test_enabled,
+        connection_test_result=connection_test_result,
         status=status,
         status_message=status_message,
     )
@@ -389,6 +416,20 @@ def build_framework_type_options_from_descriptors(
     return [
         SettingsOptionViewModel(
             value=descriptor.framework_type,
+            label=descriptor.display_name,
+        )
+        for descriptor in descriptors
+    ]
+
+
+def build_connection_type_options(
+    *,
+    descriptors: Iterable[RemoteConnectionTypeDescriptor],
+) -> list[SettingsOptionViewModel]:
+    """Return selectable remote connection types for the project editor."""
+    return [
+        SettingsOptionViewModel(
+            value=descriptor.connection_type,
             label=descriptor.display_name,
         )
         for descriptor in descriptors

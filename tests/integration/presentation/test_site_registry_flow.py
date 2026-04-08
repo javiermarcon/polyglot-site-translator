@@ -27,11 +27,12 @@ def test_projects_flow_uses_the_real_sqlite_site_registry(tmp_path: Path) -> Non
             framework_type="wordpress",
             local_path="/workspace/marketing-site",
             default_locale="en_US",
-            ftp_host="ftp.example.com",
-            ftp_port="21",
-            ftp_username="deploy",
-            ftp_password="super-secret",
-            ftp_remote_path="/public_html",
+            connection_type="ftp",
+            remote_host="ftp.example.com",
+            remote_port="21",
+            remote_username="deploy",
+            remote_password="super-secret",
+            remote_path="/public_html",
             is_active=True,
         )
     )

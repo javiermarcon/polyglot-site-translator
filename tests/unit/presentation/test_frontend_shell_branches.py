@@ -22,6 +22,7 @@ from polyglot_site_translator.presentation.view_models import (
     ProjectDetailViewModel,
     ProjectEditorStateViewModel,
     ProjectSummaryViewModel,
+    RemoteConnectionTestResultViewModel,
     SettingsStateViewModel,
     SiteEditorViewModel,
     build_default_app_settings,
@@ -69,6 +70,13 @@ class FailingRegistryService:
         editor: SiteEditorViewModel,
     ) -> ProjectDetailViewModel:
         msg = f"Project could not be updated for {project_id}."
+        raise ControlledServiceError(msg)
+
+    def test_remote_connection(
+        self,
+        editor: SiteEditorViewModel,
+    ) -> RemoteConnectionTestResultViewModel:
+        msg = f"Remote connection test unavailable for {editor.name}."
         raise ControlledServiceError(msg)
 
 
@@ -278,11 +286,12 @@ def test_shell_handles_project_editor_failures_and_missing_editor_state() -> Non
                 framework_type="wordpress",
                 local_path="/workspace/new-site",
                 default_locale="en_US",
-                ftp_host="ftp.example.com",
-                ftp_port="21",
-                ftp_username="deploy",
-                ftp_password="super-secret",
-                ftp_remote_path="/public_html",
+                connection_type="ftp",
+                remote_host="ftp.example.com",
+                remote_port="21",
+                remote_username="deploy",
+                remote_password="super-secret",
+                remote_path="/public_html",
                 is_active=True,
             )
         )

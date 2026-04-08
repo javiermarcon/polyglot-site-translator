@@ -11,6 +11,10 @@ from polyglot_site_translator.domain.framework_detection.errors import (
 from polyglot_site_translator.domain.framework_detection.models import (
     FrameworkDetectionResult,
 )
+from polyglot_site_translator.domain.remote_connections.models import (
+    NO_REMOTE_CONNECTION_VALUE,
+    RemoteConnectionConfigInput,
+)
 from polyglot_site_translator.domain.site_registry.errors import (
     SiteRegistryConfigurationError,
     SiteRegistryConflictError,
@@ -38,8 +42,10 @@ from polyglot_site_translator.presentation.view_models import (
     ProjectDetailViewModel,
     ProjectEditorStateViewModel,
     ProjectSummaryViewModel,
+    RemoteConnectionTestResultViewModel,
     SiteEditorViewModel,
     SyncStatusViewModel,
+    build_connection_type_options,
     build_default_site_editor,
     build_framework_type_options_from_descriptors,
     build_project_editor_state,
@@ -97,14 +103,13 @@ class SiteRegistryPresentationManagementService(ProjectRegistryManagementService
             build_default_site_editor(),
             local_path=str(self._default_workspace_root() / "site"),
         )
-        return build_project_editor_state(
+        return _build_editor_state(
+            service=self._service,
             mode="create",
             editor=editor,
-            framework_options=build_framework_type_options_from_descriptors(
-                self._service.list_supported_frameworks()
-            ),
             status="editing",
             status_message="Provide the project metadata to register a new site.",
+            connection_test_result=None,
         )
 
     def build_edit_project_editor(self, project_id: str) -> ProjectEditorStateViewModel:
@@ -117,14 +122,13 @@ class SiteRegistryPresentationManagementService(ProjectRegistryManagementService
             SiteRegistryConfigurationError,
         ) as error:
             raise ControlledServiceError(str(error)) from error
-        return build_project_editor_state(
+        return _build_editor_state(
+            service=self._service,
             mode="edit",
             editor=_build_site_editor(site),
-            framework_options=build_framework_type_options_from_descriptors(
-                self._service.list_supported_frameworks()
-            ),
             status="editing",
             status_message="Update the persisted site registry record.",
+            connection_test_result=None,
         )
 
     def create_project(self, editor: SiteEditorViewModel) -> ProjectDetailViewModel:
@@ -166,6 +170,26 @@ class SiteRegistryPresentationManagementService(ProjectRegistryManagementService
         ) as error:
             raise ControlledServiceError(str(error)) from error
         return _build_project_detail(site, detection_result)
+
+    def test_remote_connection(
+        self,
+        editor: SiteEditorViewModel,
+    ) -> RemoteConnectionTestResultViewModel:
+        """Test the current remote connection draft from the editor."""
+        try:
+            result = self._service.test_remote_connection(_build_service_payload(editor))
+        except (
+            ValueError,
+            SiteRegistryValidationError,
+            SiteRegistryConfigurationError,
+            SiteRegistryPersistenceError,
+        ) as error:
+            raise ControlledServiceError(str(error)) from error
+        return RemoteConnectionTestResultViewModel(
+            success=result.success,
+            message=result.message,
+            error_code=result.error_code,
+        )
 
     def _default_workspace_root(self) -> Path:
         try:
@@ -232,17 +256,48 @@ class SiteRegistryPresentationWorkflowService(ProjectWorkflowService):
         )
 
 
+def _build_editor_state(  # noqa: PLR0913
+    *,
+    service: SiteRegistryService,
+    mode: str,
+    editor: SiteEditorViewModel,
+    status: str,
+    status_message: str | None,
+    connection_test_result: RemoteConnectionTestResultViewModel | None,
+) -> ProjectEditorStateViewModel:
+    return build_project_editor_state(
+        mode=mode,
+        editor=editor,
+        framework_options=build_framework_type_options_from_descriptors(
+            service.list_supported_frameworks()
+        ),
+        connection_type_options=build_connection_type_options(
+            descriptors=service.list_supported_connection_types()
+        ),
+        connection_test_enabled=service.can_test_remote_connection(_build_service_payload(editor)),
+        connection_test_result=connection_test_result,
+        status=status,
+        status_message=status_message,
+    )
+
+
 def _build_service_payload(editor: SiteEditorViewModel) -> SiteRegistrationInput:
+    remote_connection: RemoteConnectionConfigInput | None = None
+    if editor.connection_type != NO_REMOTE_CONNECTION_VALUE:
+        remote_connection = RemoteConnectionConfigInput(
+            connection_type=editor.connection_type,
+            host=editor.remote_host,
+            port=int(editor.remote_port),
+            username=editor.remote_username,
+            password=editor.remote_password,
+            remote_path=editor.remote_path,
+        )
     return SiteRegistrationInput(
         name=editor.name,
         framework_type=editor.framework_type,
         local_path=editor.local_path,
         default_locale=editor.default_locale,
-        ftp_host=editor.ftp_host,
-        ftp_port=int(editor.ftp_port),
-        ftp_username=editor.ftp_username,
-        ftp_password=editor.ftp_password,
-        ftp_remote_path=editor.ftp_remote_path,
+        remote_connection=remote_connection,
         is_active=editor.is_active,
     )
 
@@ -263,27 +318,41 @@ def _build_project_detail(
 ) -> ProjectDetailViewModel:
     return ProjectDetailViewModel(
         project=_build_project_summary(site),
-        configuration_summary=(
-            f"Locale: {site.default_locale} | FTP host: {site.ftp_host} "
-            f"| Remote path: {site.ftp_remote_path}"
-        ),
+        configuration_summary=_build_configuration_summary(site),
         metadata_summary=_build_metadata_summary(site, detection_result),
         actions=[],
     )
 
 
 def _build_site_editor(site: RegisteredSite) -> SiteEditorViewModel:
+    remote_connection = site.remote_connection
+    if remote_connection is None:
+        return SiteEditorViewModel(
+            site_id=site.id,
+            name=site.name,
+            framework_type=site.framework_type,
+            local_path=site.local_path,
+            default_locale=site.default_locale,
+            connection_type=NO_REMOTE_CONNECTION_VALUE,
+            remote_host="",
+            remote_port="",
+            remote_username="",
+            remote_password="",
+            remote_path="",
+            is_active=site.is_active,
+        )
     return SiteEditorViewModel(
         site_id=site.id,
         name=site.name,
         framework_type=site.framework_type,
         local_path=site.local_path,
         default_locale=site.default_locale,
-        ftp_host=site.ftp_host,
-        ftp_port=str(site.ftp_port),
-        ftp_username=site.ftp_username,
-        ftp_password=site.ftp_password,
-        ftp_remote_path=site.ftp_remote_path,
+        connection_type=remote_connection.connection_type,
+        remote_host=remote_connection.host,
+        remote_port=str(remote_connection.port),
+        remote_username=remote_connection.username,
+        remote_password=remote_connection.password,
+        remote_path=remote_connection.remote_path,
         is_active=site.is_active,
     )
 
@@ -297,14 +366,27 @@ def _format_framework_name(framework_type: str) -> str:
     return framework_map.get(framework_type, framework_type.title())
 
 
+def _build_configuration_summary(site: RegisteredSite) -> str:
+    if site.remote_connection is None:
+        return f"Locale: {site.default_locale} | Remote connection: None"
+    return (
+        f"Locale: {site.default_locale} | Remote: {site.remote_connection.connection_type} "
+        f"{site.remote_connection.host}:{site.remote_connection.port} "
+        f"| Path: {site.remote_connection.remote_path}"
+    )
+
+
 def _build_metadata_summary(
     site: RegisteredSite,
     detection_result: FrameworkDetectionResult | None,
 ) -> str:
-    summary = (
-        f"Framework: {_format_framework_name(site.framework_type)} | "
-        f"FTP user: {site.ftp_username} | FTP port: {site.ftp_port}"
-    )
+    remote_summary = "Remote connection: none configured"
+    if site.remote_connection is not None:
+        remote_summary = (
+            f"Remote user: {site.remote_connection.username} | "
+            f"Connection type: {site.remote_connection.connection_type}"
+        )
+    summary = f"Framework: {_format_framework_name(site.framework_type)} | {remote_summary}"
     if detection_result is None:
         return summary
     if detection_result.matched:
