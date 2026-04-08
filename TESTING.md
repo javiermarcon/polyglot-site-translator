@@ -251,6 +251,7 @@ xvfb-run -a python -m pytest
 ```
 
 If the project later formalizes dedicated commands, update this file and the repository maps.
+If command changes also affect the normal contributor workflow, installation, or validation entrypoints, update `README.md` in the same patch as required by `AGENTS.md`.
 
 ---
 
