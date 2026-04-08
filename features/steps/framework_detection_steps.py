@@ -117,11 +117,12 @@ def step_register_detected_path(context: object) -> None:
             framework_type="customapp",
             local_path=str(typed_context.detected_project_path),
             default_locale="en_US",
-            ftp_host="ftp.example.com",
-            ftp_port="21",
-            ftp_username="deploy",
-            ftp_password="super-secret",
-            ftp_remote_path="/public_html",
+            connection_type="ftp",
+            remote_host="ftp.example.com",
+            remote_port="21",
+            remote_username="deploy",
+            remote_password="super-secret",
+            remote_path="/public_html",
             is_active=True,
         )
     )

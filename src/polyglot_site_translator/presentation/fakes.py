@@ -5,6 +5,12 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from polyglot_site_translator.adapters.framework_registry import FrameworkAdapterRegistry
+from polyglot_site_translator.domain.remote_connections.models import (
+    NO_REMOTE_CONNECTION_VALUE,
+)
+from polyglot_site_translator.infrastructure.remote_connections.registry import (
+    RemoteConnectionRegistry,
+)
 from polyglot_site_translator.infrastructure.settings import TomlSettingsService
 from polyglot_site_translator.infrastructure.site_registry_sqlite import (
     ConfiguredSqliteSiteRegistryRepository,
@@ -28,9 +34,12 @@ from polyglot_site_translator.presentation.view_models import (
     ProjectDetailViewModel,
     ProjectEditorStateViewModel,
     ProjectSummaryViewModel,
+    RemoteConnectionTestResultViewModel,
+    SettingsOptionViewModel,
     SettingsStateViewModel,
     SiteEditorViewModel,
     SyncStatusViewModel,
+    build_connection_type_options,
     build_default_app_settings,
     build_default_site_editor,
     build_framework_type_options_from_descriptors,
@@ -40,6 +49,7 @@ from polyglot_site_translator.presentation.view_models import (
 from polyglot_site_translator.services.framework_detection import (
     FrameworkDetectionService,
 )
+from polyglot_site_translator.services.remote_connections import RemoteConnectionService
 from polyglot_site_translator.services.site_registry import SiteRegistryService
 
 
@@ -61,6 +71,15 @@ def _default_actions() -> list[ProjectActionViewModel]:
             description="Launch a fake PO processing summary without touching gettext files.",
         ),
     ]
+
+
+def _default_connection_type_options() -> list[SettingsOptionViewModel]:
+    remote_connection_service = RemoteConnectionService(
+        registry=RemoteConnectionRegistry.discover_installed()
+    )
+    return build_connection_type_options(
+        descriptors=remote_connection_service.list_supported_connection_types()
+    )
 
 
 @dataclass
@@ -177,6 +196,9 @@ class InMemoryProjectRegistryManagementService:
             framework_options=build_framework_type_options_from_descriptors(
                 FrameworkAdapterRegistry.discover_installed().list_framework_descriptors()
             ),
+            connection_type_options=_default_connection_type_options(),
+            connection_test_enabled=False,
+            connection_test_result=None,
             status="editing",
             status_message="Provide the project metadata to register a new site.",
         )
@@ -191,16 +213,20 @@ class InMemoryProjectRegistryManagementService:
                 framework_type=detail.project.framework.lower(),
                 local_path=detail.project.local_path,
                 default_locale="en_US",
-                ftp_host="ftp.example.com",
-                ftp_port="21",
-                ftp_username="deploy",
-                ftp_password="super-secret",
-                ftp_remote_path="/public_html",
+                connection_type=NO_REMOTE_CONNECTION_VALUE,
+                remote_host="",
+                remote_port="",
+                remote_username="",
+                remote_password="",
+                remote_path="",
                 is_active=True,
             ),
             framework_options=build_framework_type_options_from_descriptors(
                 FrameworkAdapterRegistry.discover_installed().list_framework_descriptors()
             ),
+            connection_type_options=_default_connection_type_options(),
+            connection_test_enabled=False,
+            connection_test_result=None,
             status="editing",
             status_message="Update the persisted site registry record.",
         )
@@ -237,6 +263,20 @@ class InMemoryProjectRegistryManagementService:
                 updated_projects.append(project)
         self.catalog.projects = updated_projects
         return self.catalog.get_project_detail(project_id)
+
+    def test_remote_connection(
+        self,
+        editor: SiteEditorViewModel,
+    ) -> RemoteConnectionTestResultViewModel:
+        success = editor.connection_type != NO_REMOTE_CONNECTION_VALUE and editor.remote_host != ""
+        message = "Connected successfully using the fake remote connection service."
+        if not success:
+            message = "Remote connection test requires a configured remote connection."
+        return RemoteConnectionTestResultViewModel(
+            success=success,
+            message=message,
+            error_code=None if success else "invalid_remote_config",
+        )
 
 
 def build_seeded_services() -> FrontendServices:
@@ -327,15 +367,20 @@ def build_default_frontend_services(
     *,
     settings_service: TomlSettingsService,
     fail_site_registry: bool = False,
+    remote_connection_service: RemoteConnectionService | None = None,
 ) -> FrontendServices:
     """Return the default runtime services with real SQLite site registry persistence."""
     repository = ConfiguredSqliteSiteRegistryRepository(settings_service)
     framework_detection_service = FrameworkDetectionService(
         registry=FrameworkAdapterRegistry.discover_installed()
     )
+    resolved_remote_connection_service = remote_connection_service or RemoteConnectionService(
+        registry=RemoteConnectionRegistry.discover_installed()
+    )
     site_registry_service = SiteRegistryService(
         repository=repository,
         framework_detection_service=framework_detection_service,
+        remote_connection_service=resolved_remote_connection_service,
     )
     catalog: ProjectCatalogService = SiteRegistryPresentationCatalogService(site_registry_service)
     if fail_site_registry:

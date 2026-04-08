@@ -16,8 +16,8 @@ Manage the local record of sites or projects known to the application.
 - site/project name
 - local workspace path
 - framework type
-- FTP settings
-- encrypted FTP password persistence
+- optional remote connection linkage
+- encrypted remote password persistence
 - preferred locales
 - site-specific processing options
 - active/inactive status
@@ -30,13 +30,16 @@ Manage the local record of sites or projects known to the application.
 
 ---
 
-## Domain 2: FTP synchronization
+## Domain 2: Remote connections and synchronization
 
 ### Responsibility
 
-Download or synchronize site content from remote FTP sources into local workspaces.
+Configure, validate, test, and later synchronize optional remote sources into local workspaces.
 
 ### Includes
+- discoverable connection-type catalogs
+- optional remote connection configs
+- structured connection-test results
 - connection validation
 - remote path handling
 - download/sync orchestration
@@ -45,7 +48,7 @@ Download or synchronize site content from remote FTP sources into local workspac
 ### Excludes
 - UI widget logic
 - report generation
-- direct persistence concerns not related to FTP operations
+- direct persistence concerns not related to remote operations
 
 ---
 
@@ -120,7 +123,7 @@ Inspect source trees for localization-related issues beyond PO files.
 
 ### Excludes
 - rendering reports
-- FTP connection logic
+- remote connection logic
 - UI behavior
 
 ---
@@ -165,7 +168,7 @@ Provide the graphical user experience through Kivy.
 ### Excludes
 - domain rules
 - raw SQL
-- FTP sessions
+- remote sessions
 - scanning heuristics
 - report generation internals
 - adapter extraction internals
@@ -188,7 +191,7 @@ Store and retrieve application-owned data locally.
 ### Excludes
 - UI-driven direct SQL
 - scanner logic
-- FTP operations
+- remote operations
 
 ---
 
@@ -198,6 +201,6 @@ Store and retrieve application-owned data locally.
 - Presentation may use fake/mock service implementations for local shell development and tests, but those fakes must still respect the same contracts.
 - Reporting consumes findings; it does not discover them.
 - Persistence stores application data; it does not implement UI flows.
-- FTP is infrastructure and must stay isolated behind service boundaries.
+- Remote transport logic is infrastructure and must stay isolated behind service boundaries.
 - Shared translation services and source auditing are related but distinct domains.
 - Framework adapters/plugins isolate target-specific behavior from shared services.

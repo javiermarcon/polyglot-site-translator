@@ -10,15 +10,22 @@ from polyglot_site_translator.domain.framework_detection.models import (
     FrameworkDetectionResult,
     unknown_framework_descriptor,
 )
+from polyglot_site_translator.domain.remote_connections.models import (
+    RemoteConnectionConfig,
+    RemoteConnectionTestResult,
+    RemoteConnectionTypeDescriptor,
+)
 from polyglot_site_translator.domain.site_registry.contracts import SiteRegistryRepository
 from polyglot_site_translator.domain.site_registry.errors import (
     SiteRegistryValidationError,
 )
 from polyglot_site_translator.domain.site_registry.models import (
     RegisteredSite,
+    SiteProject,
     SiteRegistrationInput,
 )
 from polyglot_site_translator.services.framework_detection import FrameworkDetectionService
+from polyglot_site_translator.services.remote_connections import RemoteConnectionService
 
 
 class SiteRegistryService:
@@ -28,30 +35,35 @@ class SiteRegistryService:
         self,
         repository: SiteRegistryRepository,
         framework_detection_service: FrameworkDetectionService | None = None,
+        remote_connection_service: RemoteConnectionService | None = None,
     ) -> None:
         self._repository = repository
         self._framework_detection_service = framework_detection_service
+        self._remote_connection_service = remote_connection_service
 
     def create_site(self, registration: SiteRegistrationInput) -> RegisteredSite:
         """Validate and create a new site registry record."""
-        framework_type = _resolve_framework_type(
-            registration=registration,
-            framework_detection_service=self._framework_detection_service,
+        site_id = f"site-{uuid4().hex}"
+        return self._repository.create_site(
+            RegisteredSite(
+                project=SiteProject(
+                    id=site_id,
+                    name=_require_text(registration.name, "Site name"),
+                    framework_type=_resolve_framework_type(
+                        registration=registration,
+                        framework_detection_service=self._framework_detection_service,
+                    ),
+                    local_path=_require_text(registration.local_path, "Local path"),
+                    default_locale=_require_text(registration.default_locale, "Default locale"),
+                    is_active=registration.is_active,
+                ),
+                remote_connection=_resolve_remote_connection(
+                    site_project_id=site_id,
+                    registration=registration,
+                    remote_connection_service=self._remote_connection_service,
+                ),
+            )
         )
-        validated_site = RegisteredSite(
-            id=f"site-{uuid4().hex}",
-            name=_require_text(registration.name, "Site name"),
-            framework_type=framework_type,
-            local_path=_require_text(registration.local_path, "Local path"),
-            default_locale=_require_text(registration.default_locale, "Default locale"),
-            ftp_host=_require_text(registration.ftp_host, "FTP host"),
-            ftp_port=_require_port(registration.ftp_port),
-            ftp_username=_require_text(registration.ftp_username, "FTP username"),
-            ftp_password=_require_text(registration.ftp_password, "FTP password"),
-            ftp_remote_path=_require_text(registration.ftp_remote_path, "FTP remote path"),
-            is_active=registration.is_active,
-        )
-        return self._repository.create_site(validated_site)
 
     def list_sites(self) -> list[RegisteredSite]:
         """Return persisted site registry records."""
@@ -69,24 +81,26 @@ class SiteRegistryService:
     ) -> RegisteredSite:
         """Validate and update an existing site registry record."""
         existing_site = self._repository.get_site(site_id)
-        framework_type = _resolve_framework_type(
-            registration=registration,
-            framework_detection_service=self._framework_detection_service,
+        return self._repository.update_site(
+            RegisteredSite(
+                project=SiteProject(
+                    id=existing_site.id,
+                    name=_require_text(registration.name, "Site name"),
+                    framework_type=_resolve_framework_type(
+                        registration=registration,
+                        framework_detection_service=self._framework_detection_service,
+                    ),
+                    local_path=_require_text(registration.local_path, "Local path"),
+                    default_locale=_require_text(registration.default_locale, "Default locale"),
+                    is_active=registration.is_active,
+                ),
+                remote_connection=_resolve_remote_connection(
+                    site_project_id=existing_site.id,
+                    registration=registration,
+                    remote_connection_service=self._remote_connection_service,
+                ),
+            )
         )
-        validated_site = RegisteredSite(
-            id=existing_site.id,
-            name=_require_text(registration.name, "Site name"),
-            framework_type=framework_type,
-            local_path=_require_text(registration.local_path, "Local path"),
-            default_locale=_require_text(registration.default_locale, "Default locale"),
-            ftp_host=_require_text(registration.ftp_host, "FTP host"),
-            ftp_port=_require_port(registration.ftp_port),
-            ftp_username=_require_text(registration.ftp_username, "FTP username"),
-            ftp_password=_require_text(registration.ftp_password, "FTP password"),
-            ftp_remote_path=_require_text(registration.ftp_remote_path, "FTP remote path"),
-            is_active=registration.is_active,
-        )
-        return self._repository.update_site(validated_site)
 
     def delete_site(self, site_id: str) -> None:
         """Delete a persisted site registry record."""
@@ -107,19 +121,40 @@ class SiteRegistryService:
             return [unknown_framework_descriptor()]
         return self._framework_detection_service.list_supported_frameworks()
 
+    def list_supported_connection_types(self) -> list[RemoteConnectionTypeDescriptor]:
+        """Return the discoverable remote connection catalog."""
+        if self._remote_connection_service is None:
+            return []
+        return self._remote_connection_service.list_supported_connection_types()
+
+    def can_test_remote_connection(self, registration: SiteRegistrationInput) -> bool:
+        """Return whether the given registration has a complete remote config."""
+        if self._remote_connection_service is None:
+            return False
+        return self._remote_connection_service.can_test_connection(registration.remote_connection)
+
+    def test_remote_connection(
+        self,
+        registration: SiteRegistrationInput,
+    ) -> RemoteConnectionTestResult:
+        """Validate and test a remote connection draft without persisting it."""
+        if self._remote_connection_service is None:
+            msg = "Remote connection testing is not configured."
+            raise SiteRegistryValidationError(msg)
+        remote_connection = self._remote_connection_service.validate_optional_config(
+            registration.remote_connection
+        )
+        if remote_connection is None:
+            msg = "Remote connection test requires a configured remote connection."
+            raise SiteRegistryValidationError(msg)
+        return self._remote_connection_service.test_connection(remote_connection)
+
 
 def _require_text(value: str, label: str) -> str:
     normalized_value = value.strip()
     if normalized_value:
         return normalized_value
     msg = f"{label} must not be empty."
-    raise SiteRegistryValidationError(msg)
-
-
-def _require_port(ftp_port: int) -> int:
-    if ftp_port > 0:
-        return ftp_port
-    msg = "FTP port must be a positive integer."
     raise SiteRegistryValidationError(msg)
 
 
@@ -135,3 +170,29 @@ def _resolve_framework_type(
     if detected.matched:
         return detected.framework_type
     return provided_framework_type
+
+
+def _resolve_remote_connection(
+    *,
+    site_project_id: str,
+    registration: SiteRegistrationInput,
+    remote_connection_service: RemoteConnectionService | None,
+) -> RemoteConnectionConfig | None:
+    if remote_connection_service is None:
+        return None
+    validated_config = remote_connection_service.validate_optional_config(
+        registration.remote_connection
+    )
+    if validated_config is None:
+        return None
+    return RemoteConnectionConfig(
+        id=f"remote-{site_project_id}",
+        site_project_id=site_project_id,
+        connection_type=validated_config.connection_type,
+        host=validated_config.host,
+        port=validated_config.port,
+        username=validated_config.username,
+        password=validated_config.password,
+        remote_path=validated_config.remote_path,
+        flags=validated_config.flags,
+    )

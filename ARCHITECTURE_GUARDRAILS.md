@@ -53,6 +53,11 @@ SQLite access must remain centralized.
 
 FTP connection logic, download logic, and path normalization must remain centralized.
 
+### 8b. Do not hardcode remote connection catalogs in the UI
+
+Connection-type selectors must be loaded from the discoverable remote connection registry through services.
+Do not duplicate the supported connection list across widgets, screens, or tests that can consume the typed catalog.
+
 ### 9. Do not change entrypoints silently
 
 If CLI, service entrypoints, UI navigation entrypoints, or adapter registration points change:

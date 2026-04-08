@@ -13,7 +13,8 @@ SRC_PATH = Path(__file__).resolve().parents[1] / "src"
 if str(SRC_PATH) not in sys.path:
     sys.path.insert(0, str(SRC_PATH))
 
-from polyglot_site_translator.domain.site_registry.models import RegisteredSite
+from polyglot_site_translator.domain.remote_connections.models import RemoteConnectionConfig
+from polyglot_site_translator.domain.site_registry.models import RegisteredSite, SiteProject
 from polyglot_site_translator.infrastructure.settings import build_default_settings_service
 from polyglot_site_translator.infrastructure.site_registry_sqlite import (
     ConfiguredSqliteSiteRegistryRepository,
@@ -33,31 +34,45 @@ def isolate_user_config_dir(
     if not repository.list_sites():
         repository.create_site(
             RegisteredSite(
-                id="wp-site",
-                name="Marketing Site",
-                framework_type="wordpress",
-                local_path="/workspace/marketing-site",
-                default_locale="en_US",
-                ftp_host="ftp.example.com",
-                ftp_port=21,
-                ftp_username="deploy",
-                ftp_password="super-secret",
-                ftp_remote_path="/public_html",
-                is_active=True,
+                project=SiteProject(
+                    id="wp-site",
+                    name="Marketing Site",
+                    framework_type="wordpress",
+                    local_path="/workspace/marketing-site",
+                    default_locale="en_US",
+                    is_active=True,
+                ),
+                remote_connection=RemoteConnectionConfig(
+                    id="remote-wp-site",
+                    site_project_id="wp-site",
+                    connection_type="ftp",
+                    host="ftp.example.com",
+                    port=21,
+                    username="deploy",
+                    password="super-secret",
+                    remote_path="/public_html",
+                ),
             )
         )
         repository.create_site(
             RegisteredSite(
-                id="dj-admin",
-                name="Backoffice",
-                framework_type="django",
-                local_path="/workspace/backoffice",
-                default_locale="en_US",
-                ftp_host="ftp-backoffice.example.com",
-                ftp_port=21,
-                ftp_username="deploy",
-                ftp_password="super-secret",
-                ftp_remote_path="/srv/backoffice",
-                is_active=False,
+                project=SiteProject(
+                    id="dj-admin",
+                    name="Backoffice",
+                    framework_type="django",
+                    local_path="/workspace/backoffice",
+                    default_locale="en_US",
+                    is_active=False,
+                ),
+                remote_connection=RemoteConnectionConfig(
+                    id="remote-dj-admin",
+                    site_project_id="dj-admin",
+                    connection_type="ftp",
+                    host="ftp-backoffice.example.com",
+                    port=21,
+                    username="deploy",
+                    password="super-secret",
+                    remote_path="/srv/backoffice",
+                ),
             )
         )

@@ -190,3 +190,20 @@ The application needs a user-configurable SQLite location without teaching widge
 - `TomlSettingsService` persists the configured directory and filename.
 - `resolve_sqlite_database_location()` owns normalization and final path composition.
 - Runtime site registry wiring can change storage location without rewriting screens or the presentation shell.
+
+---
+
+## AD-013: Remote connections are optional, typed, and discoverable
+
+**Decision**
+Store remote connection settings separately from the core site/project record, and resolve concrete connection types through a discoverable provider registry.
+
+**Why**
+Not every project needs remote access, and future targets must not assume FTP-only transport or require manual registration when a new provider is added.
+
+**Implications**
+- `SiteProject` identity and `RemoteConnectionConfig` persistence remain separate.
+- UI selectors must be populated from the discoverable catalog instead of hardcoded lists.
+- A "No Remote Connection" option is first-class and valid.
+- Connection testing must return structured results and stay behind services/infrastructure boundaries.
+- Legacy `ftp_*` persistence needs controlled migration without decrypting stored ciphertext during the move.

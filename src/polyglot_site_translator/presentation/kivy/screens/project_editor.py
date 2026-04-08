@@ -41,12 +41,14 @@ class ProjectEditorScreen(BaseShellScreen):
         self._framework_spinner: Spinner | None = None
         self._local_path_input: TextInput | None = None
         self._default_locale_input: TextInput | None = None
-        self._ftp_host_input: TextInput | None = None
-        self._ftp_port_input: TextInput | None = None
-        self._ftp_username_input: TextInput | None = None
-        self._ftp_password_input: TextInput | None = None
-        self._ftp_remote_path_input: TextInput | None = None
+        self._connection_type_spinner: Spinner | None = None
+        self._remote_host_input: TextInput | None = None
+        self._remote_port_input: TextInput | None = None
+        self._remote_username_input: TextInput | None = None
+        self._remote_password_input: TextInput | None = None
+        self._remote_path_input: TextInput | None = None
         self._is_active_switch: Switch | None = None
+        self._test_connection_button: AppButton | None = None
         self.refresh()
 
     def refresh(self) -> None:
@@ -100,24 +102,51 @@ class ProjectEditorScreen(BaseShellScreen):
         panel.add_widget(_build_field("Local Path", self._local_path_input))
         self._default_locale_input = self._build_text_input(state.editor.default_locale)
         panel.add_widget(_build_field("Default Locale", self._default_locale_input))
-        self._ftp_host_input = self._build_text_input(state.editor.ftp_host)
-        panel.add_widget(_build_field("FTP Host", self._ftp_host_input))
-        self._ftp_port_input = self._build_text_input(state.editor.ftp_port)
-        panel.add_widget(_build_field("FTP Port", self._ftp_port_input))
-        self._ftp_username_input = self._build_text_input(state.editor.ftp_username)
-        panel.add_widget(_build_field("FTP Username", self._ftp_username_input))
-        self._ftp_password_input = self._build_text_input(state.editor.ftp_password, password=True)
-        panel.add_widget(_build_field("FTP Password", self._ftp_password_input))
-        self._ftp_remote_path_input = self._build_text_input(state.editor.ftp_remote_path)
-        panel.add_widget(_build_field("FTP Remote Path", self._ftp_remote_path_input))
+        self._connection_type_spinner = self._build_spinner(
+            values=[option.label for option in state.connection_type_options],
+            current_label=_find_option_label(
+                state.connection_type_options,
+                state.editor.connection_type,
+            ),
+        )
+        panel.add_widget(_build_field("Remote Connection Type", self._connection_type_spinner))
+        self._remote_host_input = self._build_text_input(state.editor.remote_host)
+        panel.add_widget(_build_field("Remote Host", self._remote_host_input))
+        self._remote_port_input = self._build_text_input(state.editor.remote_port)
+        panel.add_widget(_build_field("Remote Port", self._remote_port_input))
+        self._remote_username_input = self._build_text_input(state.editor.remote_username)
+        panel.add_widget(_build_field("Remote Username", self._remote_username_input))
+        self._remote_password_input = self._build_text_input(
+            state.editor.remote_password,
+            password=True,
+        )
+        panel.add_widget(_build_field("Remote Password", self._remote_password_input))
+        self._remote_path_input = self._build_text_input(state.editor.remote_path)
+        panel.add_widget(_build_field("Remote Path", self._remote_path_input))
+        if state.connection_test_result is not None:
+            panel.add_widget(
+                _build_information_card(
+                    title="Remote Connection Test",
+                    body=state.connection_test_result.message,
+                )
+            )
         panel.add_widget(self._build_active_toggle(state.editor.is_active))
         actions = BoxLayout(orientation="horizontal", spacing=12, size_hint_y=None, height=48)
         save_button = AppButton(text=state.submit_label, primary=True)
         save_button.bind(on_release=self._save_editor)
+        self._test_connection_button = AppButton(
+            text="Test Connection",
+            primary=False,
+            disabled=not state.connection_test_enabled,
+        )
+        self._test_connection_button.bind(on_release=self._test_connection)
         cancel_button = AppButton(text="Cancel", primary=False)
         cancel_button.bind(on_release=self._back_to_projects)
         actions.add_widget(save_button)
+        actions.add_widget(self._test_connection_button)
         actions.add_widget(cancel_button)
+        self._bind_connection_test_state_updates(state)
+        self._refresh_test_connection_button_state(state)
         panel.add_widget(actions)
         return panel
 
@@ -173,11 +202,15 @@ class ProjectEditorScreen(BaseShellScreen):
             ),
             local_path=self._require_text(self._local_path_input),
             default_locale=self._require_text(self._default_locale_input),
-            ftp_host=self._require_text(self._ftp_host_input),
-            ftp_port=self._require_text(self._ftp_port_input),
-            ftp_username=self._require_text(self._ftp_username_input),
-            ftp_password=self._require_text(self._ftp_password_input),
-            ftp_remote_path=self._require_text(self._ftp_remote_path_input),
+            connection_type=self._require_framework_value(
+                state.connection_type_options,
+                self._connection_type_spinner,
+            ),
+            remote_host=self._optional_text(self._remote_host_input),
+            remote_port=self._optional_text(self._remote_port_input),
+            remote_username=self._optional_text(self._remote_username_input),
+            remote_password=self._optional_text(self._remote_password_input),
+            remote_path=self._optional_text(self._remote_path_input),
             is_active=self._is_active_switch.active if self._is_active_switch is not None else True,
         )
         self._draft_editor = editor
@@ -188,6 +221,32 @@ class ProjectEditorScreen(BaseShellScreen):
         if self._shell.router.current.name.value == "project-detail":
             self.show_route("project_detail")
             return
+        self.refresh()
+
+    def _test_connection(self, *_args: object) -> None:
+        state = self._require_state()
+        editor = SiteEditorViewModel(
+            site_id=state.editor.site_id,
+            name=self._require_text(self._name_input),
+            framework_type=self._require_framework_value(
+                state.framework_options,
+                self._framework_spinner,
+            ),
+            local_path=self._require_text(self._local_path_input),
+            default_locale=self._require_text(self._default_locale_input),
+            connection_type=self._require_framework_value(
+                state.connection_type_options,
+                self._connection_type_spinner,
+            ),
+            remote_host=self._optional_text(self._remote_host_input),
+            remote_port=self._optional_text(self._remote_port_input),
+            remote_username=self._optional_text(self._remote_username_input),
+            remote_password=self._optional_text(self._remote_password_input),
+            remote_path=self._optional_text(self._remote_path_input),
+            is_active=self._is_active_switch.active if self._is_active_switch is not None else True,
+        )
+        self._draft_editor = editor
+        self._shell.test_project_connection(editor)
         self.refresh()
 
     def _back_to_projects(self, *_args: object) -> None:
@@ -206,6 +265,47 @@ class ProjectEditorScreen(BaseShellScreen):
             msg = "Project editor input field is not available."
             raise ValueError(msg)
         return str(field.text).strip()
+
+    def _optional_text(self, field: TextInput | None) -> str:
+        if field is None:
+            msg = "Project editor input field is not available."
+            raise ValueError(msg)
+        return str(field.text).strip()
+
+    def _bind_connection_test_state_updates(self, state: ProjectEditorStateViewModel) -> None:
+        bindable_fields = [
+            self._connection_type_spinner,
+            self._remote_host_input,
+            self._remote_port_input,
+            self._remote_username_input,
+            self._remote_password_input,
+            self._remote_path_input,
+        ]
+        for field in bindable_fields:
+            if field is not None:
+                field.bind(
+                    text=lambda *_args, editor_state=state: (
+                        self._refresh_test_connection_button_state(editor_state)
+                    )
+                )
+
+    def _refresh_test_connection_button_state(self, state: ProjectEditorStateViewModel) -> None:
+        if self._test_connection_button is None:
+            return
+        connection_type = self._require_framework_value(
+            state.connection_type_options,
+            self._connection_type_spinner,
+        )
+        remote_port = self._optional_text(self._remote_port_input)
+        self._test_connection_button.disabled = not (
+            connection_type != "none"
+            and self._optional_text(self._remote_host_input) != ""
+            and remote_port.isdigit()
+            and int(remote_port) > 0
+            and self._optional_text(self._remote_username_input) != ""
+            and self._optional_text(self._remote_password_input) != ""
+            and self._optional_text(self._remote_path_input) != ""
+        )
 
     def _require_framework_value(
         self,

@@ -7,7 +7,8 @@ This repository contains a Kivy-based graphical application for managing transla
 The application is expected to support:
 
 - registration of sites/projects in SQLite
-- FTP-based site download/synchronization
+- optional remote connection management per project
+- FTP/SFTP/SCP-based site download/synchronization
 - auditing of source trees
 - processing and synchronization of `.po/.mo`
 - detection of untranslated or hardcoded strings
@@ -41,6 +42,7 @@ The codebase should be organized around these layers:
    - expose use cases to the UI
    - validate and orchestrate site registry CRUD through explicit service contracts
    - orchestrate framework detection through a registry-backed detection service
+   - validate optional remote connection configs and test them through discoverable providers
 
 3. **Domain logic**
    - shared PO processing
@@ -50,6 +52,7 @@ The codebase should be organized around these layers:
    - adapter contracts
    - typed framework detection results and ambiguity errors
    - typed site registry records and domain errors
+   - typed remote connection descriptors, configs, and test results
 
 4. **Framework adapters / plugins**
    - WordPress-specific discovery and extraction
@@ -60,9 +63,10 @@ The codebase should be organized around these layers:
 5. **Infrastructure**
    - SQLite persistence
    - SQLite database-path resolution from frontend settings
-   - local reversible encryption for persisted FTP passwords
+   - local reversible encryption for persisted remote passwords
    - TOML-backed frontend settings persistence
-   - FTP access
+   - discoverable remote connection providers
+   - FTP/FTPS/SFTP/SCP access
    - filesystem IO
    - optional translation providers
    - serialization/export
@@ -79,16 +83,19 @@ Examples:
 - site/project name
 - local working directory
 - framework type
-- FTP host/user/path settings
+- optional remote connection settings
 - preferred locales
 - audit/translation options
 - active/inactive status
-- encrypted FTP password at rest
+- encrypted remote password at rest
 
 Current first real implementation:
 - `domain/site_registry/` defines typed models, contracts, and explicit errors
+- `domain/remote_connections/` defines typed descriptors, configs, contracts, and test results
 - `services/site_registry.py` validates and orchestrates CRUD use cases
+- `services/remote_connections.py` validates optional remote configs, exposes the discoverable catalog, and dispatches connection tests
 - `infrastructure/site_registry_sqlite.py` owns schema creation, row mapping, and SQLite access
+- `infrastructure/remote_connections/` owns discoverable remote connection providers and transport-specific connectivity checks
 - `presentation/site_registry_services.py` adapts the real service into UI-facing catalog/editor workflows
 
 Current framework detection implementation:
@@ -99,9 +106,20 @@ Current framework detection implementation:
 - `services/framework_detection.py` validates local paths, delegates to the adapter registry, and exposes framework catalog metadata
 - `services/site_registry.py` can enrich persisted `framework_type` through the detection service without embedding heuristics itself
 
-### 2. FTP synchronization
+### 2. Remote connections and synchronization
 
-Downloads or synchronizes site content from FTP sources into a local workspace suitable for scanning/auditing.
+Stores, validates, tests, and later synchronizes optional remote sources into a local workspace suitable for scanning/auditing.
+
+Current concrete connection types:
+- FTP
+- explicit FTPS
+- implicit FTPS
+- SFTP
+- SCP
+
+Extension rule:
+- new remote connection providers should be added as discoverable modules/classes in `infrastructure/remote_connections/`
+- the runtime registry should discover them automatically instead of requiring manual registration lists
 
 ### 3. Shared PO processing
 
@@ -177,7 +195,7 @@ Responsible for rendering normalized findings and summaries into:
 ### Presentation must not own domain logic
 
 Kivy screens/widgets should never directly implement:
-- FTP workflows
+- remote transport workflows
 - SQLite queries
 - parsing heuristics
 - source scanners
@@ -200,6 +218,11 @@ The general settings flow now also owns:
 - `database_filename`
 
 The final SQLite path is resolved in infrastructure from typed settings. Widgets never compose the database path manually.
+
+The project editor now also owns:
+- a discoverable remote connection-type combo with an explicit "No Remote Connection" option
+- an optional remote connection draft separate from the persisted site/project identity
+- a "Test Connection" action that delegates to application services and renders structured results without opening network sessions from widgets
 
 ### Shared services must remain target-agnostic where feasible
 

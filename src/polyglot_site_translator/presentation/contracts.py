@@ -12,6 +12,7 @@ from polyglot_site_translator.presentation.view_models import (
     ProjectDetailViewModel,
     ProjectEditorStateViewModel,
     ProjectSummaryViewModel,
+    RemoteConnectionTestResultViewModel,
     SettingsStateViewModel,
     SiteEditorViewModel,
     SyncStatusViewModel,
@@ -72,6 +73,12 @@ class ProjectRegistryManagementService(Protocol):
         editor: SiteEditorViewModel,
     ) -> ProjectDetailViewModel:
         """Update a project registry record and return its detail view."""
+
+    def test_remote_connection(
+        self,
+        editor: SiteEditorViewModel,
+    ) -> RemoteConnectionTestResultViewModel:
+        """Test the current remote connection draft and return the result."""
 
 
 @dataclass(frozen=True)

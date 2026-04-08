@@ -415,6 +415,32 @@ class FrontendShell:
             return
         self._set_route(RouteName.PROJECT_DETAIL, project_id=detail.project.id)
 
+    def test_project_connection(self, editor: SiteEditorViewModel) -> None:
+        """Run a remote connection test for the current editor draft."""
+        state = self._require_project_editor_state()
+        try:
+            connection_test_result = self.services.registry.test_remote_connection(editor)
+            self.project_editor_state = replace(
+                state,
+                editor=editor,
+                connection_test_enabled=True,
+                connection_test_result=connection_test_result,
+                status="connection-tested",
+                status_message=connection_test_result.message,
+            )
+            self.latest_error = None
+        except ControlledServiceError as error:
+            self.project_editor_state = replace(
+                state,
+                editor=editor,
+                connection_test_result=None,
+                connection_test_enabled=False,
+                status="failed",
+                status_message=str(error),
+            )
+            self.latest_error = str(error)
+        self._set_route(RouteName.PROJECT_EDITOR, project_id=editor.site_id)
+
     def _require_project_id(self) -> str:
         route = self.router.current
         project_id = route.project_id

@@ -5,7 +5,8 @@ Aplicación gráfica basada en Kivy para auditoría, traducción y gestión de p
 El objetivo del repositorio es construir una base mantenible y extensible para trabajar con:
 
 - registro de sitios/proyectos
-- sincronización por FTP
+- configuración remota opcional por proyecto
+- sincronización remota multi-transporte
 - detección de framework
 - procesamiento de archivos `.po/.mo`
 - auditoría de código fuente y plantillas
@@ -23,7 +24,11 @@ El repositorio está en una etapa temprana y hoy incluye principalmente:
 - persistencia real en TOML para settings generales de la app
 - persistencia real en SQLite para `site_registry`
 - configuración general de la app para definir `database_directory` y `database_filename`
-- cifrado local reversible para persistir `ftp_password` encriptado en SQLite
+- cifrado local reversible para persistir passwords remotos encriptados en SQLite
+- subsistema real de conexiones remotas opcionales separado del proyecto
+- catálogo discoverable de tipos de conexión remota con opción explícita "No Remote Connection"
+- test de conexión estructurado para `ftp`, `ftps_explicit`, `ftps_implicit`, `sftp` y `scp`
+- migración automática de columnas heredadas `ftp_*` a una tabla relacionada de conexiones remotas
 - registry real de adapters/framework detection con resultados tipados
 - detección efectiva de proyectos WordPress, Django y Flask a partir de `local_path`
 - auto-discovery dinámico de adapters al iniciar, sin registro manual en el runtime
@@ -35,7 +40,7 @@ El repositorio está en una etapa temprana y hoy incluye principalmente:
 
 Todavía no están implementados en forma real:
 
-- FTP
+- sincronización remota completa
 - scanner de auditoría
 - procesamiento real de `.po/.mo`
 - reporting final
@@ -67,20 +72,23 @@ La base actual implementa una base funcional de presentación, settings y `site_
 - `app.py` y `__main__.py`: entrypoints de la app gráfica
 - `bootstrap.py`: wiring inicial del frontend shell
 - `domain/site_registry/`: modelos tipados, errores y contratos del dominio de site registry
+- `domain/remote_connections/`: modelos tipados, contratos y resultados estructurados de conexiones remotas
 - `domain/framework_detection/`: contratos, resultados tipados y errores explícitos para detección de framework
 - `services/site_registry.py`: validación y CRUD del site registry
+- `services/remote_connections.py`: validación opcional, catálogo discoverable y test de conexión
 - `services/framework_detection.py`: orquestación de detección desde el registry de adapters
 - `adapters/base.py`: contrato base discoverable para nuevos adapters
 - `infrastructure/settings.py`: persistencia TOML de settings generales por usuario
 - `infrastructure/database_location.py`: resolución del path final de SQLite desde settings
 - `infrastructure/site_registry_sqlite.py`: repositorio SQLite real con schema y mapeo fila ↔ modelo
+- `infrastructure/remote_connections/`: registry discoverable y providers concretos de conexión remota
 - `infrastructure/site_secrets.py`: cifrado local de secretos persistidos del site registry
 - `adapters/framework_registry.py`: registry/resolver real de adapters con descubrimiento dinámico por paquete
 - `adapters/wordpress.py`, `adapters/django.py`, `adapters/flask.py`: detección framework-specific y evidencia estructurada
 - `presentation/contracts.py`: contratos de servicios que consume la UI
 - `presentation/view_models.py`: modelos tipados para pantallas y paneles
 - `presentation/frontend_shell.py`: orquestación de navegación y estado
-- `presentation/site_registry_services.py`: adapters entre el servicio real de site registry, la detección de framework y la UI
+- `presentation/site_registry_services.py`: adapters entre el servicio real de site registry, el subsistema remoto, la detección de framework y la UI
 - `presentation/fakes.py`: workflows fake, doubles de settings y wiring runtime del site registry + framework detection real
 - `presentation/kivy/`: app Kivy, `ScreenManager`, screens y widgets
 
@@ -100,7 +108,8 @@ La base actual del frontend incluye:
 - Home / Dashboard como punto de entrada
 - Projects / Sites List para listar proyectos persistidos en SQLite
 - Project / Site Detail con lectura real del registry persistido y metadata de detección de framework
-- Project Editor con combo dinámico alimentado por los adapters auto-descubiertos
+- Project Editor con combo dinámico de framework y combo dinámico de tipo de conexión remota
+- acción "Test Connection" en el editor, resuelta por servicios y con resultado estructurado en pantalla
 - Audit Screen con preview basado en la detección real del proyecto en vez de un conteo fijo del runtime
 - Sync Screen para mostrar estado fake de sincronización
 - Audit Screen para mostrar resultados fake de auditoría
@@ -119,9 +128,11 @@ src/
     bootstrap.py
     domain/
       framework_detection/
+      remote_connections/
       site_registry/
     services/
       framework_detection.py
+      remote_connections.py
       site_registry.py
     adapters/
       common.py
@@ -131,6 +142,7 @@ src/
       flask.py
     infrastructure/
       database_location.py
+      remote_connections/
       settings.py
       site_registry_sqlite.py
       site_secrets.py
@@ -215,8 +227,9 @@ Los settings generales se guardan en `settings.toml` dentro del directorio de co
 Para desarrollo o pruebas locales, podés overridear la ubicación con `POLYGLOT_SITE_TRANSLATOR_CONFIG_DIR`.
 Dentro de esos settings también se persisten `database_directory` y `database_filename`, que determinan dónde se crea/usa la base SQLite real del `site_registry`.
 
-La contraseña FTP no se guarda en texto plano en SQLite.
+La contraseña remota no se guarda en texto plano en SQLite.
 Se persiste cifrada con una key local almacenada junto al config dir de la app.
+Si el runtime encuentra una base heredada con columnas `ftp_*`, migra esos datos a la tabla de conexiones remotas relacionadas sin convertir el ciphertext a texto plano durante la migración.
 
 ## Testing y validación
 
@@ -227,7 +240,7 @@ Comandos recomendados:
 .venv/bin/python -m ruff format --check .
 .venv/bin/python -m mypy src tests features/steps
 .venv/bin/python -m pytest
-.venv/bin/python -m behave features/presentation/frontend_shell.feature features/presentation/settings.feature features/presentation/site_registry.feature features/presentation/framework_detection.feature
+.venv/bin/python -m behave features/presentation/frontend_shell.feature features/presentation/settings.feature features/presentation/site_registry.feature features/presentation/framework_detection.feature features/presentation/remote_connections.feature
 ```
 
 El repositorio sigue un flujo obligatorio BDD + TDD:
