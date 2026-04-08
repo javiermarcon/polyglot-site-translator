@@ -20,7 +20,10 @@ Update it whenever the structure changes.
   Automated tests.
 
 - `requirements/`
-  Dependency files split by environment or purpose.
+  Canonical dependency declaration directory.
+  Runtime dependencies belong in `requirements/base.txt`.
+  Dev/test-only dependencies belong in `requirements/dev.txt`.
+  New third-party dependencies must not be introduced outside this strategy.
 
 - `.github/`
   CI, automation, dependabot, repository workflows.
@@ -36,6 +39,9 @@ Update it whenever the structure changes.
 
 - `README.md`
   High-level user/developer-facing introduction if present.
+
+- `AGENTS.md`
+  Operational rules for agents and contributors, including mandatory documentation alignment and dependency-declaration policy.
 
 - `run_app.py`
   Local launcher for the src-layout application package without requiring editable installation.
@@ -215,6 +221,8 @@ Recommended split:
 - `requirements/production.txt` if truly needed later
 - `requirements/android.txt` if packaging-specific dependencies become necessary
 
+Treat this directory as the single source of truth for declared third-party dependencies.
+Do not add Python standard-library modules here.
 Keep this map updated if the strategy changes.
 
 ---

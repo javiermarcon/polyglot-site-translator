@@ -40,6 +40,8 @@ If a section does not apply, explicitly say so.
 - Do not hardcode framework-specific rules into shared services when they belong in an adapter or plugin.
 - Do not break CLI or service entrypoints if they already exist.
 - Do not introduce a new module or subsystem without updating repository documentation.
+- Do not introduce a new external dependency without declaring it in the `requirements/` directory using the repository split defined below.
+- Do not leave `README.md` outdated when a task changes behavior, installation, usage, testing commands, architecture visible to contributors, or user/developer-facing capabilities.
 - Do not change architecture without updating:
   - `ARCHITECTURE.md`
   - `REPO_MAP.md`
@@ -68,6 +70,8 @@ A task is not done unless all of the following are true:
 - New domain logic is not embedded directly in Kivy views/widgets.
 - Error handling is explicit and concrete.
 - Documentation affected by the change is updated in the same patch.
+- Any new external dependency is declared in the correct file under `requirements/`, or explicitly avoided because it belongs to the Python standard library.
+- `README.md` reflects the real current behavior whenever the task changed installation, setup, commands, workflows, visible features, or other user/developer-facing behavior.
 - The repository remains coherent for future Codex/agent iterations.
 
 ---
@@ -80,6 +84,8 @@ Before finishing any non-trivial change, verify explicitly:
 - mypy passes.
 - pytest passes for the affected scope.
 - Documentation is aligned with the final code.
+- New dependencies, if any, are declared in the correct `requirements/` file and nowhere inconsistent.
+- `README.md` is aligned with the final installation, usage, testing, configuration, and feature set affected by the task.
 - No `except Exception` was introduced.
 - No domain logic was pushed into presentation-only modules.
 - No persistence logic was duplicated across UI and services.
@@ -135,6 +141,42 @@ Before finishing any non-trivial change, verify explicitly:
 
 ## What to update when adding features
 
+### Dependency declaration policy
+
+External dependencies are mandatory, explicit repository data.
+They must never be introduced implicitly.
+
+If a task requires a new third-party library:
+
+- runtime dependencies must be added to `requirements/base.txt`
+- development-only or test-only dependencies must be added to `requirements/dev.txt`
+- dependencies must not be declared in ad hoc files or inconsistent locations when the existing `requirements/` strategy already covers the use case
+- a dependency must not be used in code, tests, scripts, or tooling setup unless it is declared in the appropriate `requirements/` file
+- Python standard-library modules such as `ftplib`, `sqlite3`, `pathlib`, `json`, and similar modules must not be added to `requirements/`
+- if a new dependency affects CI, automation, or workflows, the relevant CI/workflow files must be updated in the same change
+- if a new dependency affects installation, setup, commands, or user/developer expectations, `README.md` must be updated in the same change
+
+Do not rely on “it is probably installed already”.
+Do not leave undeclared dependencies for future cleanup.
+
+### README alignment policy
+
+`README.md` is a required operational document, not optional project marketing text.
+It must describe the real current state of the repository.
+
+Update `README.md` in the same patch whenever a task:
+
+- changes observable system behavior
+- adds, removes, or materially changes a feature
+- changes architecture in a way that affects contributors or the visible system shape
+- changes installation, setup, configuration, or environment expectations
+- changes testing commands, validation workflow, or canonical development commands
+- changes primary usage flows, operator workflows, or visible project capabilities
+- adds a dependency or capability whose impact should be visible to users or contributors
+
+`README.md` must not remain desynchronized from the codebase.
+If the way to run, test, configure, install, or use the system changed, `README.md` must reflect it before the task is considered done.
+
 ### If adding a new domain service
 
 Update:
@@ -170,6 +212,14 @@ Update:
 - `ARCHITECTURE_GUARDRAILS.md`
 - `STYLE.md` if coding-related
 - `TESTING.md` if validation-related
+
+### If changing dependencies or developer-visible workflows
+
+Update:
+
+- the correct file under `requirements/`
+- `README.md` if installation, setup, commands, capabilities, or expectations changed
+- CI/workflow files if automation or environment setup changed
 
 ---
 
