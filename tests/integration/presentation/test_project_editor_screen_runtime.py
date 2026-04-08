@@ -4,10 +4,15 @@ from __future__ import annotations
 
 from typing import Any, cast
 
+from kivy.uix.spinner import Spinner
 import pytest
 
 from polyglot_site_translator.app import create_kivy_app
 from polyglot_site_translator.presentation.fakes import build_seeded_services
+from polyglot_site_translator.presentation.kivy.screens.project_editor import (
+    _find_option_label,
+    _find_option_value,
+)
 from polyglot_site_translator.presentation.view_models import SiteEditorViewModel
 
 
@@ -37,6 +42,18 @@ def test_project_editor_screen_renders_empty_state_and_requires_loaded_state() -
     ):
         editor_screen._require_text(None)
 
+    with pytest.raises(
+        ValueError,
+        match=r"Project editor input field is not available\.",
+    ):
+        editor_screen._require_framework_value([], None)
+
+    with pytest.raises(LookupError, match="Unknown option value: tornado"):
+        _find_option_label([], "tornado")
+
+    with pytest.raises(LookupError, match="Unknown option label: Tornado"):
+        _find_option_value([], "Tornado")
+
 
 def test_project_editor_screen_saves_new_projects_and_can_return_to_projects() -> None:
     app = cast(Any, create_kivy_app(services=build_seeded_services()))
@@ -48,7 +65,7 @@ def test_project_editor_screen_saves_new_projects_and_can_return_to_projects() -
     root.current = "project_editor"
     editor_screen.refresh()
     editor_screen._name_input.text = "New Project"
-    editor_screen._framework_input.text = "django"
+    editor_screen._framework_spinner.text = "Django"
     editor_screen._local_path_input.text = "/workspace/new-project"
     editor_screen._default_locale_input.text = "en_US"
     editor_screen._ftp_host_input.text = "ftp.example.com"
@@ -67,6 +84,31 @@ def test_project_editor_screen_saves_new_projects_and_can_return_to_projects() -
 
     editor_screen._back_to_projects()
     assert root.current == "projects"
+
+
+def test_project_editor_screen_exposes_dynamic_framework_options() -> None:
+    app = cast(Any, create_kivy_app(services=build_seeded_services()))
+    root = app.build()
+    editor_screen = root.get_screen("project_editor")
+    shell = editor_screen._shell
+
+    shell.open_project_editor_create()
+    root.current = "project_editor"
+    editor_screen.refresh()
+
+    assert editor_screen._framework_spinner is not None
+    assert isinstance(editor_screen._framework_spinner, Spinner)
+    assert editor_screen._framework_spinner.text == "Unknown"
+    assert tuple(editor_screen._framework_spinner.values) == (
+        "Unknown",
+        "Django",
+        "Flask",
+        "WordPress",
+    )
+    assert (
+        _find_option_label(shell.project_editor_state.framework_options, "wordpress") == "WordPress"
+    )
+    assert _find_option_value(shell.project_editor_state.framework_options, "Flask") == "flask"
 
 
 def test_project_editor_screen_saves_edits_and_refreshes_when_not_routed_to_detail() -> None:
@@ -146,6 +188,7 @@ def test_project_editor_screen_uses_save_new_project_when_site_id_is_missing_in_
         editor=SiteEditorViewModel(
             **{**shell.project_editor_state.editor.__dict__, "site_id": None}
         ),
+        framework_options=shell.project_editor_state.framework_options,
         status="editing",
         status_message="Update the persisted site registry record.",
     )

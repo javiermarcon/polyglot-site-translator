@@ -108,7 +108,8 @@ def test_workflow_screens_render_empty_and_loaded_states_and_return_to_detail() 
     assert audit_screen._summary_label.text == "No audit action started."
     shell.start_audit()
     audit_screen.refresh()
-    assert "Findings: 3" in audit_screen._summary_label.text
+    assert "Findings: 0" in audit_screen._summary_label.text
+    assert "No supported framework was detected" in audit_screen._summary_label.text
     audit_screen._back_to_project()
     assert root.current == "project_detail"
 

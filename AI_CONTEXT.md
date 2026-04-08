@@ -145,5 +145,9 @@ The frontend baseline now also includes:
 - SQLite repository resolution from persisted `database_directory` and `database_filename`
 - a thin project editor screen for create/edit flows through the presentation shell
 - encrypted-at-rest FTP passwords through a local key file stored alongside app config
+- a real adapter registry for framework detection with typed results
+- dynamic adapter discovery from the `adapters/` package at runtime
+- concrete WordPress, Django, and Flask detection adapters
+- project-detail enrichment that shows framework detection evidence or warnings without moving heuristics into Kivy
 
 When extending the frontend, keep new behavior behind those boundaries unless the architecture docs are intentionally updated.

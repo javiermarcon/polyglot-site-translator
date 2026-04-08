@@ -79,6 +79,7 @@ Encapsulate framework-specific conventions and extraction rules.
 
 ### Includes
 - project type detection
+- typed evidence, warnings, and relevant paths for matches or non-matches
 - source-root conventions
 - configuration-file parsing
 - database configuration extraction
@@ -88,6 +89,14 @@ Encapsulate framework-specific conventions and extraction rules.
 - WordPress adapter parsing `wp-config.php`
 - Django adapter resolving `settings.py` or related settings modules
 - Flask adapter inspecting config modules or factory conventions
+
+### Current concrete implementation
+- ordered adapter registry with explicit ambiguity handling and package auto-discovery
+- typed `FrameworkDetectionResult` values
+- typed framework descriptors for selectors/catalogs
+- WordPress detection via `wp-config.php`, `wp-content/`, `wp-includes/`, and optional `wp-admin/`
+- Django detection via `manage.py` plus `settings.py`, `wsgi.py`, or `asgi.py`
+- Flask detection via `app.py`, `wsgi.py`, factory markers, `babel.cfg`, and `translations/`
 
 ### Excludes
 - shared PO logic

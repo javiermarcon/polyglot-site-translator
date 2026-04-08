@@ -135,6 +135,8 @@ Test:
 Test:
 
 - project/framework detection
+- structured evidence, warnings, and relevant paths
+- adapter-registry resolution and ambiguity handling
 - target-specific extraction behavior
 - normalization into shared contracts
 - failure behavior for invalid configurations

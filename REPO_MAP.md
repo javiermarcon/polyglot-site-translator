@@ -81,11 +81,20 @@ Current frontend base:
 - `polyglot_site_translator/infrastructure/site_secrets.py`
   Local reversible encryption helper used to store FTP passwords encrypted at rest.
 
+- `polyglot_site_translator/domain/framework_detection/`
+  Typed framework-detection contracts, result models, and explicit ambiguity errors.
+
 - `polyglot_site_translator/domain/site_registry/`
   Typed site registry models, repository contracts, and explicit domain errors.
 
+- `polyglot_site_translator/adapters/`
+  Discoverable adapter base class, dynamic adapter registry, and concrete WordPress, Django, and Flask project detectors.
+
+- `polyglot_site_translator/services/framework_detection.py`
+  Registry-backed framework detection orchestration with path validation and framework catalog exposure.
+
 - `polyglot_site_translator/services/site_registry.py`
-  Site registry CRUD orchestration and validation independent from Kivy or SQLite details.
+  Site registry CRUD orchestration and validation independent from Kivy or SQLite details, with optional framework detection integration.
 
 - `polyglot_site_translator/presentation/contracts.py`
   UI-facing service protocols, including frontend settings operations and project-registry create/edit flows.
@@ -167,10 +176,18 @@ Current frontend coverage:
 - `tests/integration/presentation/`
 - `tests/unit/infrastructure/test_site_secrets.py`
 - `tests/unit/infrastructure/test_sqlite_site_registry_repository.py`
+- `tests/unit/adapters/test_adapter_common.py`
+- `tests/unit/adapters/test_framework_detection_registry.py`
+- `tests/unit/adapters/test_wordpress_adapter.py`
+- `tests/unit/adapters/test_django_adapter.py`
+- `tests/unit/adapters/test_flask_adapter.py`
+- `tests/unit/services/test_framework_detection_service.py`
 - `tests/unit/presentation/test_site_registry_services.py`
 - `tests/integration/presentation/test_project_editor_screen_runtime.py`
 - `tests/integration/presentation/test_site_registry_flow.py`
+- `tests/integration/presentation/test_framework_detection_flow.py`
 - `features/presentation/site_registry.feature`
+- `features/presentation/framework_detection.feature`
 
 If UI tests are added, they should remain isolated and clearly labeled.
 

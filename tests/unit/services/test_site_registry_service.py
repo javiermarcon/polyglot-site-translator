@@ -3,12 +3,18 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from pathlib import Path
 
 import pytest
 
+from polyglot_site_translator.adapters.framework_registry import FrameworkAdapterRegistry
+from polyglot_site_translator.adapters.wordpress import WordPressFrameworkAdapter
 from polyglot_site_translator.domain.site_registry.models import (
     RegisteredSite,
     SiteRegistrationInput,
+)
+from polyglot_site_translator.services.framework_detection import (
+    FrameworkDetectionService,
 )
 from polyglot_site_translator.services.site_registry import SiteRegistryService
 
@@ -97,6 +103,74 @@ def test_site_registry_service_updates_a_site() -> None:
 
     assert updated_site.local_path == "/workspace/marketing-site-v2"
     assert updated_site.is_active is False
+
+
+def test_site_registry_service_detects_and_persists_supported_frameworks(
+    tmp_path: Path,
+) -> None:
+    project_path = tmp_path / "wordpress-site"
+    project_path.mkdir()
+    (project_path / "wp-config.php").write_text("<?php\n", encoding="utf-8")
+    (project_path / "wp-content").mkdir()
+    (project_path / "wp-includes").mkdir()
+    service = SiteRegistryService(
+        repository=InMemorySiteRegistryRepository(sites={}),
+        framework_detection_service=FrameworkDetectionService(
+            registry=FrameworkAdapterRegistry.default_registry(
+                adapters=[WordPressFrameworkAdapter()]
+            )
+        ),
+    )
+
+    created_site = service.create_site(
+        SiteRegistrationInput(
+            name="Marketing Site",
+            framework_type="customapp",
+            local_path=str(project_path),
+            default_locale="en_US",
+            ftp_host="ftp.example.com",
+            ftp_port=21,
+            ftp_username="deploy",
+            ftp_password="super-secret",
+            ftp_remote_path="/public_html",
+            is_active=True,
+        )
+    )
+
+    assert created_site.framework_type == "wordpress"
+
+
+def test_site_registry_service_delete_and_detection_fallback_behave_as_expected() -> None:
+    repository = InMemorySiteRegistryRepository(sites={})
+    service = SiteRegistryService(repository=repository)
+    created_site = service.create_site(
+        SiteRegistrationInput(
+            name="Marketing Site",
+            framework_type="customapp",
+            local_path="/workspace/marketing-site",
+            default_locale="en_US",
+            ftp_host="ftp.example.com",
+            ftp_port=21,
+            ftp_username="deploy",
+            ftp_password="super-secret",
+            ftp_remote_path="/public_html",
+            is_active=True,
+        )
+    )
+
+    detection = service.detect_framework("/workspace/marketing-site")
+    service.delete_site(created_site.id)
+
+    assert detection.matched is False
+    assert repository.sites == {}
+
+
+def test_site_registry_service_lists_unknown_framework_when_detection_is_missing() -> None:
+    service = SiteRegistryService(repository=InMemorySiteRegistryRepository(sites={}))
+
+    frameworks = service.list_supported_frameworks()
+
+    assert [framework.framework_type for framework in frameworks] == ["unknown"]
 
 
 @pytest.mark.parametrize(

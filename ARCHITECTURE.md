@@ -40,6 +40,7 @@ The codebase should be organized around these layers:
    - coordinate repositories, scanners, translators, reporters, and adapters
    - expose use cases to the UI
    - validate and orchestrate site registry CRUD through explicit service contracts
+   - orchestrate framework detection through a registry-backed detection service
 
 3. **Domain logic**
    - shared PO processing
@@ -47,6 +48,7 @@ The codebase should be organized around these layers:
    - report-ready normalization
    - site/project models
    - adapter contracts
+   - typed framework detection results and ambiguity errors
    - typed site registry records and domain errors
 
 4. **Framework adapters / plugins**
@@ -89,6 +91,14 @@ Current first real implementation:
 - `infrastructure/site_registry_sqlite.py` owns schema creation, row mapping, and SQLite access
 - `presentation/site_registry_services.py` adapts the real service into UI-facing catalog/editor workflows
 
+Current framework detection implementation:
+- `domain/framework_detection/` defines typed adapter contracts, detection results, and ambiguity errors
+- `adapters/base.py` defines the discoverable adapter base class
+- `adapters/framework_registry.py` auto-discovers ordered adapters from the package and handles explicit ambiguity
+- `adapters/wordpress.py`, `adapters/django.py`, and `adapters/flask.py` own target-specific detection heuristics
+- `services/framework_detection.py` validates local paths, delegates to the adapter registry, and exposes framework catalog metadata
+- `services/site_registry.py` can enrich persisted `framework_type` through the detection service without embedding heuristics itself
+
 ### 2. FTP synchronization
 
 Downloads or synchronizes site content from FTP sources into a local workspace suitable for scanning/auditing.
@@ -110,6 +120,7 @@ This logic must remain reusable across framework adapters.
 
 Responsible for target-specific behavior such as:
 - how to identify project type
+- how to emit structured evidence and warnings for detection
 - where to scan
 - how to infer source roots
 - how to extract database configuration
@@ -120,6 +131,15 @@ Examples:
 - WordPress may parse `wp-config.php`
 - Django may inspect `settings.py`, settings modules, or environment-backed settings
 - Flask may rely on config modules, app factories, or environment conventions
+
+Current concrete detection heuristics:
+- WordPress: `wp-config.php`, `wp-content/`, `wp-includes/`, optional `wp-admin/`
+- Django: `manage.py` plus `settings.py`, `wsgi.py`, or `asgi.py`, with optional `locale/`
+- Flask: `app.py`, `wsgi.py`, factory markers, `babel.cfg`, and `translations/`
+
+Extension rule:
+- new adapters should be added as discoverable modules/classes in `adapters/`
+- the runtime registry should discover them automatically instead of requiring manual registration lists
 
 ### 5. Source auditing
 
@@ -230,9 +250,10 @@ Report modules must render findings produced by scanners/services, not scan file
 
 1. User selects a site/project.
 2. UI or service resolves the project framework type.
-3. The matching adapter/plugin runs extraction logic.
-4. Adapter returns normalized data for use by shared services.
-5. Shared services continue from normalized contracts rather than raw framework-specific structures.
+3. `FrameworkDetectionService` asks the registry for the best adapter match and returns a typed result with evidence, relevant paths, config files, and warnings.
+4. The matching adapter/plugin runs extraction logic.
+5. Adapter returns normalized data for use by shared services.
+6. Shared services continue from normalized contracts rather than raw framework-specific structures.
 
 ---
 

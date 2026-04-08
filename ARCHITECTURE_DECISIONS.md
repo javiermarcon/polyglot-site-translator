@@ -95,6 +95,9 @@ The project is no longer WordPress-only. WordPress, Django, Flask, and future ta
 - Shared services must remain target-agnostic where possible.
 - A stable contract is needed between adapters and services.
 - Tests must cover both shared behavior and adapter-specific behavior.
+- Adapter selection should be centralized in a registry/resolver instead of spread through `if/elif` chains.
+- Ambiguous multi-match detection should fail explicitly instead of silently picking an arbitrary framework.
+- New adapters should be discoverable by convention from the adapters package instead of requiring manual runtime registration lists.
 
 ---
 
