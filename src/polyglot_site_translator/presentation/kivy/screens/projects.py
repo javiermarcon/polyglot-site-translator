@@ -21,6 +21,7 @@ class ProjectsScreen(BaseShellScreen):
             manager_ref=manager_ref,
         )
         self.add_nav_button("Back to Dashboard", self._go_dashboard)
+        self.add_nav_button("Register Project", self._open_create_project, primary=False)
         self._list_label = WrappedLabel(font_size=15)
         self._content.add_widget(self._list_label)
         self._project_buttons: list[AppButton] = []
@@ -33,6 +34,10 @@ class ProjectsScreen(BaseShellScreen):
     def _open_project(self, project_id: str) -> None:
         self._shell.select_project(project_id)
         self.show_route("project_detail")
+
+    def _open_create_project(self, *_args: object) -> None:
+        self._shell.open_project_editor_create()
+        self.show_route("project_editor")
 
     def refresh(self) -> None:
         for button in self._project_buttons:

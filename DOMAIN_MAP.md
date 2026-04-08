@@ -17,13 +17,16 @@ Manage the local record of sites or projects known to the application.
 - local workspace path
 - framework type
 - FTP settings
+- encrypted FTP password persistence
 - preferred locales
 - site-specific processing options
+- active/inactive status
 
 ### Excludes
 - UI rendering details
 - raw screen state
 - report formatting
+- SQLite path composition inside widgets
 
 ---
 
@@ -170,6 +173,8 @@ Store and retrieve application-owned data locally.
 - SQLite schema access
 - repositories
 - mapping between rows and models
+- final database-path resolution from typed frontend settings
+- local secret-key handling for encrypted persisted credentials
 
 ### Excludes
 - UI-driven direct SQL

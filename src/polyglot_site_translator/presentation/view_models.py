@@ -75,13 +75,15 @@ class SettingsFieldViewModel:
 class AppSettingsViewModel:
     """Editable frontend settings related to Kivy and UI behavior."""
 
-    theme_mode: str
-    window_width: int
-    window_height: int
-    remember_last_screen: bool
-    last_opened_screen: str
-    developer_mode: bool
-    ui_language: str
+    theme_mode: str = "system"
+    window_width: int = 1280
+    window_height: int = 720
+    remember_last_screen: bool = False
+    last_opened_screen: str = "dashboard"
+    developer_mode: bool = False
+    ui_language: str = "en"
+    database_directory: str = ""
+    database_filename: str = "site_registry.sqlite3"
 
 
 @dataclass(frozen=True)
@@ -153,6 +155,35 @@ class ProjectDetailStateViewModel:
     configuration_summary: str
     metadata_summary: str
     actions: list[ProjectActionViewModel]
+
+
+@dataclass(frozen=True)
+class SiteEditorViewModel:
+    """Editable site registry form values consumed by the project editor screen."""
+
+    site_id: str | None
+    name: str
+    framework_type: str
+    local_path: str
+    default_locale: str
+    ftp_host: str
+    ftp_port: str
+    ftp_username: str
+    ftp_password: str
+    ftp_remote_path: str
+    is_active: bool
+
+
+@dataclass(frozen=True)
+class ProjectEditorStateViewModel:
+    """Project editor state consumed by the project editor screen."""
+
+    mode: str
+    title: str
+    submit_label: str
+    editor: SiteEditorViewModel
+    status: str
+    status_message: str | None
 
 
 @dataclass(frozen=True)
@@ -281,7 +312,11 @@ def build_navigation_menu_state(
     )
 
 
-def build_default_app_settings() -> AppSettingsViewModel:
+def build_default_app_settings(
+    *,
+    database_directory: str = "",
+    database_filename: str = "site_registry.sqlite3",
+) -> AppSettingsViewModel:
     """Return the default frontend settings."""
     return AppSettingsViewModel(
         theme_mode="system",
@@ -291,6 +326,52 @@ def build_default_app_settings() -> AppSettingsViewModel:
         last_opened_screen="dashboard",
         developer_mode=False,
         ui_language="en",
+        database_directory=database_directory,
+        database_filename=database_filename,
+    )
+
+
+def build_default_site_editor() -> SiteEditorViewModel:
+    """Return the default site registry editor draft."""
+    return SiteEditorViewModel(
+        site_id=None,
+        name="",
+        framework_type="wordpress",
+        local_path="",
+        default_locale="en_US",
+        ftp_host="",
+        ftp_port="21",
+        ftp_username="",
+        ftp_password="",
+        ftp_remote_path="",
+        is_active=True,
+    )
+
+
+def build_project_editor_state(
+    *,
+    mode: str,
+    editor: SiteEditorViewModel,
+    status: str,
+    status_message: str | None,
+) -> ProjectEditorStateViewModel:
+    """Return the project editor state for create/edit flows."""
+    if mode == "edit":
+        return ProjectEditorStateViewModel(
+            mode=mode,
+            title="Edit Project",
+            submit_label="Save Project",
+            editor=editor,
+            status=status,
+            status_message=status_message,
+        )
+    return ProjectEditorStateViewModel(
+        mode=mode,
+        title="Register Project",
+        submit_label="Create Project",
+        editor=editor,
+        status=status,
+        status_message=status_message,
     )
 
 

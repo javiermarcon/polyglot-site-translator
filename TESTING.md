@@ -156,6 +156,9 @@ Test:
 - inserts/updates/deletes
 - idempotency where applicable
 - record retrieval and mapping
+- configured database-path resolution from settings
+- explicit persistence/configuration error wrapping
+- encrypted secret storage behavior if credential fields are persisted
 
 ### If changing FTP code
 
@@ -192,6 +195,8 @@ Test:
 - invalid TOML or invalid setting values
 - per-user config-path resolution overrides
 - remembered safe startup screens and runtime setting application
+- database directory/filename validation and normalization
+- integration with the configured SQLite site registry location
 
 ---
 
@@ -256,6 +261,8 @@ High-value targets:
 - repositories
 - CLI
 - report generation
+
+For non-trivial new or modified logic in this repository, the expected target remains at least 95% coverage for each relevant file unless a narrow documented exception is justified.
 
 Widget rendering internals are a lower priority than domain correctness and orchestration boundaries.
 

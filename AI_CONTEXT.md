@@ -140,5 +140,10 @@ The frontend baseline now also includes:
 - runtime application of saved window size and theme mode after successful settings saves
 - startup loading of persisted theme, window size, and safe remembered screens
 - responsive settings layout rules so narrow windows switch to a stacked compact layout
+- a first real `site_registry` subsystem backed by SQLite
+- explicit domain models, contracts, and errors for site registry CRUD
+- SQLite repository resolution from persisted `database_directory` and `database_filename`
+- a thin project editor screen for create/edit flows through the presentation shell
+- encrypted-at-rest FTP passwords through a local key file stored alongside app config
 
 When extending the frontend, keep new behavior behind those boundaries unless the architecture docs are intentionally updated.

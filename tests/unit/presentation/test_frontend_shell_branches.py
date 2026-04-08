@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import replace
+from typing import cast
 
 import pytest
 
@@ -12,12 +13,17 @@ from polyglot_site_translator.presentation.errors import ControlledServiceError
 from polyglot_site_translator.presentation.fakes import (
     FakeProjectWorkflowService,
     InMemoryProjectCatalogService,
+    InMemoryProjectRegistryManagementService,
     InMemorySettingsService,
     build_seeded_services,
 )
 from polyglot_site_translator.presentation.router import RouteName
 from polyglot_site_translator.presentation.view_models import (
+    ProjectDetailViewModel,
+    ProjectEditorStateViewModel,
+    ProjectSummaryViewModel,
     SettingsStateViewModel,
+    SiteEditorViewModel,
     build_default_app_settings,
 )
 
@@ -27,6 +33,42 @@ class ResetFailingSettingsService(InMemorySettingsService):
 
     def reset_settings(self) -> SettingsStateViewModel:
         msg = "Settings defaults are temporarily unavailable."
+        raise ControlledServiceError(msg)
+
+
+class FailingCatalogService:
+    """Catalog fake that fails on both list and detail requests."""
+
+    def list_projects(self) -> list[ProjectSummaryViewModel]:
+        msg = "SQLite site registry is temporarily unavailable."
+        raise ControlledServiceError(msg)
+
+    def get_project_detail(self, project_id: str) -> ProjectDetailViewModel:
+        msg = f"SQLite site registry is temporarily unavailable for {project_id}."
+        raise ControlledServiceError(msg)
+
+
+class FailingRegistryService:
+    """Registry fake that fails on create/edit workflows."""
+
+    def build_create_project_editor(self) -> ProjectEditorStateViewModel:
+        msg = "Create workflow unavailable."
+        raise ControlledServiceError(msg)
+
+    def build_edit_project_editor(self, project_id: str) -> ProjectEditorStateViewModel:
+        msg = f"Edit workflow unavailable for {project_id}."
+        raise ControlledServiceError(msg)
+
+    def create_project(self, editor: SiteEditorViewModel) -> ProjectDetailViewModel:
+        msg = f"Project could not be created for {editor.name}."
+        raise ControlledServiceError(msg)
+
+    def update_project(
+        self,
+        project_id: str,
+        editor: SiteEditorViewModel,
+    ) -> ProjectDetailViewModel:
+        msg = f"Project could not be updated for {project_id}."
         raise ControlledServiceError(msg)
 
 
@@ -118,6 +160,9 @@ def test_restore_default_settings_failure_keeps_failed_state() -> None:
         catalog=seeded_services.catalog,
         workflows=seeded_services.workflows,
         settings=ResetFailingSettingsService(_saved_settings=build_default_app_settings()),
+        registry=InMemoryProjectRegistryManagementService(
+            catalog=cast(InMemoryProjectCatalogService, seeded_services.catalog),
+        ),
     )
     shell = create_frontend_shell(services)
     shell.open_settings()
@@ -181,3 +226,76 @@ def test_project_workflow_fake_can_sync_non_wp_site_without_failure() -> None:
     sync_state = workflow.start_sync("dj-admin")
 
     assert sync_state.status == "completed"
+
+
+def test_shell_wraps_project_catalog_failures_and_registry_failures() -> None:
+    seeded_services = build_seeded_services()
+    shell = create_frontend_shell(
+        FrontendServices(
+            catalog=FailingCatalogService(),
+            workflows=seeded_services.workflows,
+            settings=seeded_services.settings,
+            registry=FailingRegistryService(),
+        )
+    )
+
+    shell.open_projects()
+    assert shell.projects_state.projects == []
+    assert shell.latest_error == "SQLite site registry is temporarily unavailable."
+
+    shell.select_project("missing-site")
+    assert shell.project_detail_state is None
+    assert shell.latest_error == "SQLite site registry is temporarily unavailable for missing-site."
+
+    shell.open_project_editor_create()
+    assert shell.project_editor_state is None
+    assert shell.latest_error == "Create workflow unavailable."
+
+    shell.open_project_editor_edit("wp-site")
+    assert shell.project_editor_state is None
+    assert shell.latest_error == "Edit workflow unavailable for wp-site."
+
+
+def test_shell_handles_project_editor_failures_and_missing_editor_state() -> None:
+    seeded_services = build_seeded_services()
+    shell = create_frontend_shell(
+        FrontendServices(
+            catalog=seeded_services.catalog,
+            workflows=seeded_services.workflows,
+            settings=seeded_services.settings,
+            registry=FailingRegistryService(),
+        )
+    )
+
+    with pytest.raises(
+        ValueError,
+        match=r"Project editor state must be loaded before editing\.",
+    ):
+        shell.save_new_project(
+            SiteEditorViewModel(
+                site_id=None,
+                name="New Site",
+                framework_type="wordpress",
+                local_path="/workspace/new-site",
+                default_locale="en_US",
+                ftp_host="ftp.example.com",
+                ftp_port="21",
+                ftp_username="deploy",
+                ftp_password="super-secret",
+                ftp_remote_path="/public_html",
+                is_active=True,
+            )
+        )
+
+    shell.project_editor_state = seeded_services.registry.build_create_project_editor()
+    editor = shell.project_editor_state.editor
+    shell.save_new_project(editor)
+    assert shell.project_editor_state is not None
+    assert shell.project_editor_state.status == "failed"
+    assert shell.router.current.name is RouteName.PROJECT_EDITOR
+
+    shell.project_editor_state = seeded_services.registry.build_edit_project_editor("wp-site")
+    shell.save_project_edits("wp-site", shell.project_editor_state.editor)
+    assert shell.project_editor_state is not None
+    assert shell.project_editor_state.status == "failed"
+    assert shell.router.current.project_id == "wp-site"

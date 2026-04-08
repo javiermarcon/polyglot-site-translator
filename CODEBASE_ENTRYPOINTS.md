@@ -50,6 +50,10 @@ These services are the correct integration layer for the UI.
 Current frontend-facing service entrypoints:
 - `ProjectCatalogService.list_projects`
 - `ProjectCatalogService.get_project_detail`
+- `ProjectRegistryManagementService.build_create_project_editor`
+- `ProjectRegistryManagementService.build_edit_project_editor`
+- `ProjectRegistryManagementService.create_project`
+- `ProjectRegistryManagementService.update_project`
 - `ProjectWorkflowService.start_sync`
 - `ProjectWorkflowService.start_audit`
 - `ProjectWorkflowService.start_po_processing`
@@ -96,10 +100,18 @@ Current settings orchestration entrypoints:
 - `FrontendShell.open_settings`
 - `FrontendShell.open_application_menu`
 - `FrontendShell.open_route_from_menu`
+- `FrontendShell.set_settings_database_directory`
+- `FrontendShell.set_settings_database_filename`
 - `FrontendShell.select_settings_section`
 - `FrontendShell.update_settings_draft`
 - `FrontendShell.save_settings`
 - `FrontendShell.restore_default_settings`
+
+Current project-registry orchestration entrypoints:
+- `FrontendShell.open_project_editor_create`
+- `FrontendShell.open_project_editor_edit`
+- `FrontendShell.save_new_project`
+- `FrontendShell.save_project_edits`
 
 Current Kivy settings layout entrypoint:
 - `polyglot_site_translator.presentation.kivy.settings_layout.build_settings_layout_spec`
@@ -121,6 +133,12 @@ Current frontend settings persistence entrypoints:
 - `polyglot_site_translator.infrastructure.settings.TomlSettingsService.load_settings`
 - `polyglot_site_translator.infrastructure.settings.TomlSettingsService.save_settings`
 - `polyglot_site_translator.infrastructure.settings.TomlSettingsService.reset_settings`
+
+Current site-registry persistence entrypoints:
+- `polyglot_site_translator.infrastructure.database_location.resolve_sqlite_database_location`
+- `polyglot_site_translator.infrastructure.site_registry_sqlite.SqliteSiteRegistryRepository`
+- `polyglot_site_translator.infrastructure.site_registry_sqlite.ConfiguredSqliteSiteRegistryRepository`
+- `polyglot_site_translator.infrastructure.site_secrets.LocalKeySiteSecretCipher`
 
 ---
 
@@ -164,8 +182,14 @@ Current frontend test-covered entrypoints:
 - `FrontendShell.open_settings`
 - `FrontendShell.open_application_menu`
 - `FrontendShell.open_route_from_menu`
+- `FrontendShell.open_project_editor_create`
+- `FrontendShell.open_project_editor_edit`
+- `FrontendShell.save_new_project`
+- `FrontendShell.save_project_edits`
 - `FrontendShell.set_settings_theme_mode`
 - `FrontendShell.set_settings_ui_language`
+- `FrontendShell.set_settings_database_directory`
+- `FrontendShell.set_settings_database_filename`
 - `FrontendShell.toggle_remember_last_screen`
 - `FrontendShell.toggle_developer_mode`
 - `FrontendShell.select_settings_section`

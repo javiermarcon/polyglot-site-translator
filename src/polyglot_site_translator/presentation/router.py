@@ -12,6 +12,7 @@ class RouteName(StrEnum):
     DASHBOARD = "dashboard"
     PROJECTS = "projects"
     PROJECT_DETAIL = "project-detail"
+    PROJECT_EDITOR = "project-editor"
     SYNC = "sync"
     AUDIT = "audit"
     PO_PROCESSING = "po-processing"

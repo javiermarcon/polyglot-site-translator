@@ -39,6 +39,7 @@ The codebase should be organized around these layers:
    - orchestrate workflows
    - coordinate repositories, scanners, translators, reporters, and adapters
    - expose use cases to the UI
+   - validate and orchestrate site registry CRUD through explicit service contracts
 
 3. **Domain logic**
    - shared PO processing
@@ -46,6 +47,7 @@ The codebase should be organized around these layers:
    - report-ready normalization
    - site/project models
    - adapter contracts
+   - typed site registry records and domain errors
 
 4. **Framework adapters / plugins**
    - WordPress-specific discovery and extraction
@@ -55,6 +57,9 @@ The codebase should be organized around these layers:
 
 5. **Infrastructure**
    - SQLite persistence
+   - SQLite database-path resolution from frontend settings
+   - local reversible encryption for persisted FTP passwords
+   - TOML-backed frontend settings persistence
    - FTP access
    - filesystem IO
    - optional translation providers
@@ -75,6 +80,14 @@ Examples:
 - FTP host/user/path settings
 - preferred locales
 - audit/translation options
+- active/inactive status
+- encrypted FTP password at rest
+
+Current first real implementation:
+- `domain/site_registry/` defines typed models, contracts, and explicit errors
+- `services/site_registry.py` validates and orchestrates CRUD use cases
+- `infrastructure/site_registry_sqlite.py` owns schema creation, row mapping, and SQLite access
+- `presentation/site_registry_services.py` adapts the real service into UI-facing catalog/editor workflows
 
 ### 2. FTP synchronization
 
@@ -162,6 +175,12 @@ The presentation layer may contain:
 
 Frontend settings persistence remains behind the `SettingsService` contract and is now implemented at runtime through a TOML-backed infrastructure service. Kivy screens still edit typed drafts and delegate save/load/reset operations through the presentation shell.
 
+The general settings flow now also owns:
+- `database_directory`
+- `database_filename`
+
+The final SQLite path is resolved in infrastructure from typed settings. Widgets never compose the database path manually.
+
 ### Shared services must remain target-agnostic where feasible
 
 Common services must not hardcode WordPress, Django, or Flask assumptions when those belong in adapters/plugins.
@@ -245,7 +264,18 @@ Key responsibilities:
 - `presentation/frontend_shell.py` centralizes navigation-safe orchestration without embedding infrastructure logic in widgets.
 - `presentation/frontend_shell.py` now also owns the grouped application menu state and contextual route enabling.
 - `presentation/fakes.py` provides deterministic in-memory services for the initial frontend shell, BDD scenarios, and unit tests.
+- `presentation/fakes.py` also exposes a default runtime bundle that keeps fake workflow services but swaps the project catalog/editor flows to the real SQLite-backed site registry.
 - `presentation/kivy/` contains thin `ScreenManager` wiring and screen classes that render already-prepared state.
 - `presentation/contracts.py` now also defines a settings contract for frontend configuration workflows.
+- `presentation/contracts.py` now also defines a project-registry management contract for create/edit flows.
 - `presentation/view_models.py` now includes extensible settings sections and typed app/UI/Kivy settings.
+- `presentation/view_models.py` now also includes typed project-editor view models and SQLite location settings fields.
 - `presentation/kivy/screens/settings.py` exposes the initial configuration screen for frontend behavior using a sectioned layout and typed field metadata.
+- `presentation/kivy/screens/project_editor.py` exposes a thin create/edit screen for site registry records.
+
+Current site registry runtime flow:
+1. `app.py` builds the default frontend services with TOML settings and a configured SQLite repository.
+2. `ConfiguredSqliteSiteRegistryRepository` resolves the database location from persisted general settings.
+3. `SqliteSiteRegistryRepository` ensures the schema and persists typed `RegisteredSite` records.
+4. `SiteRegistryPresentationCatalogService` and `SiteRegistryPresentationManagementService` adapt CRUD use cases to UI-facing view models.
+5. Kivy screens invoke the presentation shell only; they do not import or execute SQL.

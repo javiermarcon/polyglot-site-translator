@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass, replace
 
 from polyglot_site_translator.presentation.contracts import FrontendServices
@@ -16,8 +17,10 @@ from polyglot_site_translator.presentation.view_models import (
     POProcessingSummaryViewModel,
     ProjectActionViewModel,
     ProjectDetailStateViewModel,
+    ProjectEditorStateViewModel,
     ProjectsStateViewModel,
     SettingsStateViewModel,
+    SiteEditorViewModel,
     SyncStatusViewModel,
     build_default_app_settings,
     build_navigation_menu_state,
@@ -70,6 +73,7 @@ class FrontendShell:
     audit_state: AuditSummaryViewModel | None
     po_processing_state: POProcessingSummaryViewModel | None
     settings_state: SettingsStateViewModel | None
+    project_editor_state: ProjectEditorStateViewModel | None
     navigation_menu: NavigationMenuStateViewModel
     latest_error: str | None
 
@@ -83,6 +87,7 @@ class FrontendShell:
         self.audit_state = None
         self.po_processing_state = None
         self.settings_state = None
+        self.project_editor_state = None
         self.navigation_menu = build_navigation_menu_state(
             active_route_key=RouteName.DASHBOARD.value,
             operations_enabled=False,
@@ -97,24 +102,38 @@ class FrontendShell:
 
     def open_projects(self) -> None:
         """Load project summaries and open the projects route."""
-        self.latest_error = None
-        projects = self.services.catalog.list_projects()
-        empty_message = None
-        if not projects:
-            empty_message = "No projects registered yet."
-        self.projects_state = ProjectsStateViewModel(projects=projects, empty_message=empty_message)
+        try:
+            projects = self.services.catalog.list_projects()
+            self.latest_error = None
+            empty_message = None
+            if not projects:
+                empty_message = "No projects registered yet."
+            self.projects_state = ProjectsStateViewModel(
+                projects=projects,
+                empty_message=empty_message,
+            )
+        except ControlledServiceError as error:
+            self.projects_state = ProjectsStateViewModel(
+                projects=[],
+                empty_message="No projects registered yet.",
+            )
+            self.latest_error = str(error)
         self._set_route(RouteName.PROJECTS)
 
     def select_project(self, project_id: str) -> None:
         """Load a project detail and open its route."""
-        self.latest_error = None
-        detail = self.services.catalog.get_project_detail(project_id)
-        self.project_detail_state = ProjectDetailStateViewModel(
-            project=detail.project,
-            configuration_summary=detail.configuration_summary,
-            metadata_summary=detail.metadata_summary,
-            actions=_build_project_actions(detail.actions),
-        )
+        try:
+            detail = self.services.catalog.get_project_detail(project_id)
+            self.project_detail_state = ProjectDetailStateViewModel(
+                project=detail.project,
+                configuration_summary=detail.configuration_summary,
+                metadata_summary=detail.metadata_summary,
+                actions=_build_project_actions(detail.actions),
+            )
+            self.latest_error = None
+        except ControlledServiceError as error:
+            self.project_detail_state = None
+            self.latest_error = str(error)
         self._set_route(RouteName.PROJECT_DETAIL, project_id=project_id)
 
     def start_sync(self) -> None:
@@ -166,23 +185,18 @@ class FrontendShell:
 
     def open_route_from_menu(self, route_key: str) -> None:
         """Open a route selected from the grouped application menu."""
-        if route_key == RouteName.DASHBOARD.value:
-            self.open_dashboard()
-            return
-        if route_key == RouteName.PROJECTS.value:
-            self.open_projects()
-            return
-        if route_key == RouteName.SETTINGS.value:
-            self.open_settings()
-            return
-        if route_key == RouteName.SYNC.value:
-            self.start_sync()
-            return
-        if route_key == RouteName.AUDIT.value:
-            self.start_audit()
-            return
-        if route_key == RouteName.PO_PROCESSING.value:
-            self.start_po_processing()
+        action_map: dict[str, Callable[[], None]] = {
+            RouteName.DASHBOARD.value: self.open_dashboard,
+            RouteName.PROJECTS.value: self.open_projects,
+            RouteName.SETTINGS.value: self.open_settings,
+            RouteName.PROJECT_EDITOR.value: self.open_project_editor_create,
+            RouteName.SYNC.value: self.start_sync,
+            RouteName.AUDIT.value: self.start_audit,
+            RouteName.PO_PROCESSING.value: self.start_po_processing,
+        }
+        action = action_map.get(route_key)
+        if action is not None:
+            action()
             return
         msg = f"Unsupported route key: {route_key}"
         raise ValueError(msg)
@@ -258,6 +272,26 @@ class FrontendShell:
             status_message="Settings draft updated.",
         )
 
+    def set_settings_database_directory(self, database_directory: str) -> None:
+        """Update the draft SQLite database directory."""
+        state = self._require_settings_state()
+        self.settings_state = replace(
+            state,
+            app_settings=replace(state.app_settings, database_directory=database_directory),
+            status="editing",
+            status_message="Settings draft updated.",
+        )
+
+    def set_settings_database_filename(self, database_filename: str) -> None:
+        """Update the draft SQLite database filename."""
+        state = self._require_settings_state()
+        self.settings_state = replace(
+            state,
+            app_settings=replace(state.app_settings, database_filename=database_filename),
+            status="editing",
+            status_message="Settings draft updated.",
+        )
+
     def update_settings_draft(self, app_settings: AppSettingsViewModel) -> None:
         """Replace the current settings draft with a full form snapshot."""
         state = self._require_settings_state()
@@ -313,6 +347,74 @@ class FrontendShell:
             self.latest_error = str(error)
         self._set_route(RouteName.SETTINGS)
 
+    def open_project_editor_create(self) -> None:
+        """Open the create-project editor workflow."""
+        try:
+            self.project_editor_state = self.services.registry.build_create_project_editor()
+            self.latest_error = None
+        except ControlledServiceError as error:
+            self.project_editor_state = None
+            self.latest_error = str(error)
+        self._set_route(RouteName.PROJECT_EDITOR)
+
+    def open_project_editor_edit(self, project_id: str) -> None:
+        """Open the edit-project editor workflow."""
+        try:
+            self.project_editor_state = self.services.registry.build_edit_project_editor(project_id)
+            self.latest_error = None
+        except ControlledServiceError as error:
+            self.project_editor_state = None
+            self.latest_error = str(error)
+        self._set_route(RouteName.PROJECT_EDITOR, project_id=project_id)
+
+    def save_new_project(self, editor: SiteEditorViewModel) -> None:
+        """Create a project registry record from the editor draft."""
+        try:
+            detail = self.services.registry.create_project(editor)
+            self.project_detail_state = ProjectDetailStateViewModel(
+                project=detail.project,
+                configuration_summary=detail.configuration_summary,
+                metadata_summary=detail.metadata_summary,
+                actions=_build_project_actions(detail.actions),
+            )
+            self.latest_error = None
+        except ControlledServiceError as error:
+            state = self._require_project_editor_state()
+            self.project_editor_state = replace(
+                state,
+                status="failed",
+                status_message=str(error),
+                editor=editor,
+            )
+            self.latest_error = str(error)
+            self._set_route(RouteName.PROJECT_EDITOR)
+            return
+        self._set_route(RouteName.PROJECT_DETAIL, project_id=detail.project.id)
+
+    def save_project_edits(self, project_id: str, editor: SiteEditorViewModel) -> None:
+        """Update a project registry record from the editor draft."""
+        try:
+            detail = self.services.registry.update_project(project_id, editor)
+            self.project_detail_state = ProjectDetailStateViewModel(
+                project=detail.project,
+                configuration_summary=detail.configuration_summary,
+                metadata_summary=detail.metadata_summary,
+                actions=_build_project_actions(detail.actions),
+            )
+            self.latest_error = None
+        except ControlledServiceError as error:
+            state = self._require_project_editor_state()
+            self.project_editor_state = replace(
+                state,
+                status="failed",
+                status_message=str(error),
+                editor=editor,
+            )
+            self.latest_error = str(error)
+            self._set_route(RouteName.PROJECT_EDITOR, project_id=project_id)
+            return
+        self._set_route(RouteName.PROJECT_DETAIL, project_id=detail.project.id)
+
     def _require_project_id(self) -> str:
         route = self.router.current
         project_id = route.project_id
@@ -327,6 +429,13 @@ class FrontendShell:
         state = self.settings_state
         if state is None:
             msg = "Settings must be loaded before editing them."
+            raise ValueError(msg)
+        return state
+
+    def _require_project_editor_state(self) -> ProjectEditorStateViewModel:
+        state = self.project_editor_state
+        if state is None:
+            msg = "Project editor state must be loaded before editing."
             raise ValueError(msg)
         return state
 

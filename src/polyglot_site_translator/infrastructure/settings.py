@@ -10,7 +10,11 @@ import sys
 import tomllib
 from typing import Any
 
-from polyglot_site_translator.presentation.contracts import SettingsService
+from polyglot_site_translator.infrastructure.database_location import (
+    DEFAULT_DATABASE_FILENAME,
+    normalize_database_filename,
+    validate_database_directory,
+)
 from polyglot_site_translator.presentation.errors import ControlledServiceError
 from polyglot_site_translator.presentation.router import RouteName
 from polyglot_site_translator.presentation.view_models import (
@@ -47,7 +51,7 @@ def resolve_user_config_dir(explicit_dir: Path | None = None) -> Path:
     return _resolve_posix_config_dir()
 
 
-def build_default_settings_service(config_dir: Path | None = None) -> SettingsService:
+def build_default_settings_service(config_dir: Path | None = None) -> TomlSettingsService:
     """Build the default TOML-backed settings service for the current user."""
     settings_path = resolve_user_config_dir(config_dir) / SETTINGS_FILENAME
     return TomlSettingsService(settings_path=settings_path)
@@ -96,7 +100,12 @@ class TomlSettingsService:
 
     def save_settings(self, app_settings: AppSettingsViewModel) -> SettingsStateViewModel:
         """Persist the provided settings as TOML."""
-        normalized_settings = _validate_app_settings(app_settings)
+        normalized_settings = _validate_app_settings(
+            _with_default_database_directory(
+                app_settings,
+                default_directory=self._settings_path.parent,
+            )
+        )
         try:
             self._settings_path.parent.mkdir(parents=True, exist_ok=True)
             self._settings_path.write_text(
@@ -114,7 +123,10 @@ class TomlSettingsService:
 
     def reset_settings(self) -> SettingsStateViewModel:
         """Restore and persist frontend defaults."""
-        default_settings = build_default_app_settings()
+        default_settings = build_default_app_settings(
+            database_directory=str(self._settings_path.parent),
+            database_filename=DEFAULT_DATABASE_FILENAME,
+        )
         return replace(
             self.save_settings(default_settings),
             status="defaults-restored",
@@ -123,14 +135,14 @@ class TomlSettingsService:
 
     def _load_app_settings(self) -> AppSettingsViewModel:
         if not self._settings_path.exists():
-            return build_default_app_settings()
+            return _build_default_persisted_settings(self._settings_path.parent)
 
         raw_document = tomllib.loads(self._settings_path.read_text(encoding="utf-8"))
         if not raw_document:
-            return build_default_app_settings()
+            return _build_default_persisted_settings(self._settings_path.parent)
 
         raw_settings = _read_app_table(raw_document)
-        default_settings = build_default_app_settings()
+        default_settings = _build_default_persisted_settings(self._settings_path.parent)
         app_settings = replace(
             default_settings,
             theme_mode=_read_string(raw_settings, "theme_mode", default_settings.theme_mode),
@@ -152,8 +164,32 @@ class TomlSettingsService:
                 default_settings.developer_mode,
             ),
             ui_language=_read_string(raw_settings, "ui_language", default_settings.ui_language),
+            database_directory=_read_string(
+                raw_settings,
+                "database_directory",
+                default_settings.database_directory,
+            ),
+            database_filename=_read_string(
+                raw_settings,
+                "database_filename",
+                default_settings.database_filename,
+            ),
         )
         return _validate_app_settings(app_settings)
+
+
+def _build_default_persisted_settings(settings_directory: Path) -> AppSettingsViewModel:
+    return build_default_app_settings(database_directory=str(settings_directory))
+
+
+def _with_default_database_directory(
+    app_settings: AppSettingsViewModel,
+    *,
+    default_directory: Path,
+) -> AppSettingsViewModel:
+    if app_settings.database_directory.strip():
+        return app_settings
+    return replace(app_settings, database_directory=str(default_directory))
 
 
 def _read_app_table(raw_document: dict[str, Any]) -> dict[str, Any]:
@@ -203,7 +239,16 @@ def _validate_app_settings(app_settings: AppSettingsViewModel) -> AppSettingsVie
     if app_settings.last_opened_screen not in _ALLOWED_ROUTE_NAMES:
         msg = f"Unsupported last opened screen: {app_settings.last_opened_screen}"
         raise ControlledServiceError(msg)
-    return app_settings
+    try:
+        database_directory = str(validate_database_directory(app_settings.database_directory))
+        database_filename = normalize_database_filename(app_settings.database_filename)
+    except ValueError as error:
+        raise ControlledServiceError(str(error)) from error
+    return replace(
+        app_settings,
+        database_directory=database_directory,
+        database_filename=database_filename,
+    )
 
 
 def _serialize_settings_document(app_settings: AppSettingsViewModel) -> str:
@@ -219,6 +264,8 @@ def _serialize_settings_document(app_settings: AppSettingsViewModel) -> str:
         f"last_opened_screen = {_format_toml_string(app_settings.last_opened_screen)}\n"
         f"developer_mode = {_format_toml_bool(app_settings.developer_mode)}\n"
         f"ui_language = {_format_toml_string(app_settings.ui_language)}\n"
+        f"database_directory = {_format_toml_string(app_settings.database_directory)}\n"
+        f"database_filename = {_format_toml_string(app_settings.database_filename)}\n"
     )
 
 
