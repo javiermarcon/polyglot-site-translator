@@ -21,6 +21,7 @@ class ProjectDetailScreen(BaseShellScreen):
             manager_ref=manager_ref,
         )
         self.add_nav_button("Back to Projects", self._back_to_projects)
+        self.add_nav_button("Edit Project", self._edit_project, primary=False)
         self.add_nav_button("Sync FTP", self._start_sync)
         self.add_nav_button("Run Audit", self._start_audit)
         self.add_nav_button("Process PO", self._start_po_processing)
@@ -43,6 +44,13 @@ class ProjectDetailScreen(BaseShellScreen):
     def _start_po_processing(self, *_args: object) -> None:
         self._shell.start_po_processing()
         self.show_route("po_processing")
+
+    def _edit_project(self, *_args: object) -> None:
+        detail = self._shell.project_detail_state
+        if detail is None:
+            return
+        self._shell.open_project_editor_edit(detail.project.id)
+        self.show_route("project_editor")
 
     def refresh(self) -> None:
         detail = self._shell.project_detail_state

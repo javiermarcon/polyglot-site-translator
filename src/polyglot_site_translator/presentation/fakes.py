@@ -4,20 +4,37 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from polyglot_site_translator.presentation.contracts import FrontendServices, SettingsService
+from polyglot_site_translator.infrastructure.settings import TomlSettingsService
+from polyglot_site_translator.infrastructure.site_registry_sqlite import (
+    ConfiguredSqliteSiteRegistryRepository,
+)
+from polyglot_site_translator.presentation.contracts import (
+    FrontendServices,
+    ProjectCatalogService,
+    SettingsService,
+)
 from polyglot_site_translator.presentation.errors import ControlledServiceError
+from polyglot_site_translator.presentation.site_registry_services import (
+    SiteRegistryPresentationCatalogService,
+    SiteRegistryPresentationManagementService,
+)
 from polyglot_site_translator.presentation.view_models import (
     AppSettingsViewModel,
     AuditSummaryViewModel,
     POProcessingSummaryViewModel,
     ProjectActionViewModel,
     ProjectDetailViewModel,
+    ProjectEditorStateViewModel,
     ProjectSummaryViewModel,
     SettingsStateViewModel,
+    SiteEditorViewModel,
     SyncStatusViewModel,
     build_default_app_settings,
+    build_default_site_editor,
+    build_project_editor_state,
     build_settings_state,
 )
+from polyglot_site_translator.services.site_registry import SiteRegistryService
 
 
 def _default_actions() -> list[ProjectActionViewModel]:
@@ -40,7 +57,7 @@ def _default_actions() -> list[ProjectActionViewModel]:
     ]
 
 
-@dataclass(frozen=True)
+@dataclass
 class InMemoryProjectCatalogService:
     """Fake project catalog backed by in-memory view models."""
 
@@ -141,6 +158,75 @@ class InMemorySettingsService:
         )
 
 
+@dataclass
+class InMemoryProjectRegistryManagementService:
+    """Fake create/update service for project registry tests."""
+
+    catalog: InMemoryProjectCatalogService
+
+    def build_create_project_editor(self) -> ProjectEditorStateViewModel:
+        return build_project_editor_state(
+            mode="create",
+            editor=build_default_site_editor(),
+            status="editing",
+            status_message="Provide the project metadata to register a new site.",
+        )
+
+    def build_edit_project_editor(self, project_id: str) -> ProjectEditorStateViewModel:
+        detail = self.catalog.get_project_detail(project_id)
+        return build_project_editor_state(
+            mode="edit",
+            editor=SiteEditorViewModel(
+                site_id=detail.project.id,
+                name=detail.project.name,
+                framework_type=detail.project.framework.lower(),
+                local_path=detail.project.local_path,
+                default_locale="en_US",
+                ftp_host="ftp.example.com",
+                ftp_port="21",
+                ftp_username="deploy",
+                ftp_password="super-secret",
+                ftp_remote_path="/public_html",
+                is_active=True,
+            ),
+            status="editing",
+            status_message="Update the persisted site registry record.",
+        )
+
+    def create_project(self, editor: SiteEditorViewModel) -> ProjectDetailViewModel:
+        project = ProjectSummaryViewModel(
+            id="created-site",
+            name=editor.name,
+            framework=editor.framework_type.title(),
+            local_path=editor.local_path,
+            status="Active" if editor.is_active else "Inactive",
+        )
+        self.catalog.projects = [*self.catalog.projects, project]
+        return self.catalog.get_project_detail(project.id)
+
+    def update_project(
+        self,
+        project_id: str,
+        editor: SiteEditorViewModel,
+    ) -> ProjectDetailViewModel:
+        updated_projects: list[ProjectSummaryViewModel] = []
+        for project in self.catalog.projects:
+            if project.id == project_id:
+                updated_projects.append(
+                    ProjectSummaryViewModel(
+                        id=project.id,
+                        name=editor.name,
+                        framework=editor.framework_type.title(),
+                        local_path=editor.local_path,
+                        status="Active" if editor.is_active else "Inactive",
+                    )
+                )
+            else:
+                updated_projects.append(project)
+        self.catalog.projects = updated_projects
+        return self.catalog.get_project_detail(project_id)
+
+
 def build_seeded_services() -> FrontendServices:
     """Return a fake service bundle with sample projects."""
     return build_seeded_services_with_settings(
@@ -166,19 +252,23 @@ def build_seeded_services_with_settings(settings_service: SettingsService) -> Fr
             status="Needs sync",
         ),
     ]
+    catalog = InMemoryProjectCatalogService(projects=projects)
     return FrontendServices(
-        catalog=InMemoryProjectCatalogService(projects=projects),
+        catalog=catalog,
         workflows=FakeProjectWorkflowService(),
         settings=settings_service,
+        registry=InMemoryProjectRegistryManagementService(catalog=catalog),
     )
 
 
 def build_empty_services() -> FrontendServices:
     """Return a fake service bundle with no registered projects."""
+    catalog = InMemoryProjectCatalogService(projects=[])
     return FrontendServices(
-        catalog=InMemoryProjectCatalogService(projects=[]),
+        catalog=catalog,
         workflows=FakeProjectWorkflowService(),
         settings=InMemorySettingsService(_saved_settings=build_default_app_settings()),
+        registry=InMemoryProjectRegistryManagementService(catalog=catalog),
     )
 
 
@@ -189,6 +279,7 @@ def build_failing_sync_services() -> FrontendServices:
         catalog=services.catalog,
         workflows=FakeProjectWorkflowService(fail_sync=True),
         settings=services.settings,
+        registry=services.registry,
     )
 
 
@@ -202,6 +293,7 @@ def build_failing_settings_load_services() -> FrontendServices:
             _saved_settings=build_default_app_settings(),
             fail_load=True,
         ),
+        registry=services.registry,
     )
 
 
@@ -215,4 +307,39 @@ def build_failing_settings_save_services() -> FrontendServices:
             _saved_settings=build_default_app_settings(),
             fail_save=True,
         ),
+        registry=services.registry,
     )
+
+
+def build_default_frontend_services(
+    *,
+    settings_service: TomlSettingsService,
+    fail_site_registry: bool = False,
+) -> FrontendServices:
+    """Return the default runtime services with real SQLite site registry persistence."""
+    repository = ConfiguredSqliteSiteRegistryRepository(settings_service)
+    site_registry_service = SiteRegistryService(repository=repository)
+    catalog: ProjectCatalogService = SiteRegistryPresentationCatalogService(site_registry_service)
+    if fail_site_registry:
+        catalog = FailingSiteRegistryCatalogService()
+    return FrontendServices(
+        catalog=catalog,
+        workflows=FakeProjectWorkflowService(),
+        settings=settings_service,
+        registry=SiteRegistryPresentationManagementService(
+            service=site_registry_service,
+            settings_service=settings_service,
+        ),
+    )
+
+
+class FailingSiteRegistryCatalogService:
+    """Catalog fake that always surfaces a controlled site registry failure."""
+
+    def list_projects(self) -> list[ProjectSummaryViewModel]:
+        msg = "SQLite site registry is temporarily unavailable."
+        raise ControlledServiceError(msg)
+
+    def get_project_detail(self, project_id: str) -> ProjectDetailViewModel:
+        msg = f"SQLite site registry is temporarily unavailable for {project_id}."
+        raise ControlledServiceError(msg)

@@ -29,6 +29,7 @@ def test_create_kivy_app_builds_root_with_expected_screens() -> None:
         "dashboard",
         "projects",
         "project_detail",
+        "project_editor",
         "sync",
         "audit",
         "po_processing",

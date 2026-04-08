@@ -51,6 +51,8 @@ class SettingsScreen(BaseShellScreen):
         self._apply_runtime_settings = apply_runtime_settings
         self._width_input: TextInput | None = None
         self._height_input: TextInput | None = None
+        self._database_directory_input: TextInput | None = None
+        self._database_filename_input: TextInput | None = None
         self._draft_settings: AppSettingsViewModel | None = None
         self._layout_spec = build_settings_layout_spec(Window.width)
         self.refresh()
@@ -223,6 +225,12 @@ class SettingsScreen(BaseShellScreen):
                 on_select=self._on_ui_language_selected,
             )
         )
+        form.add_widget(
+            self._build_database_field(
+                directory_value=draft.database_directory,
+                filename_value=draft.database_filename,
+            )
+        )
         actions = BoxLayout(
             orientation=self._layout_spec.action_orientation,
             spacing=12,
@@ -307,6 +315,47 @@ class SettingsScreen(BaseShellScreen):
         card.add_widget(row)
         return card
 
+    def _build_database_field(
+        self,
+        *,
+        directory_value: str,
+        filename_value: str,
+    ) -> SurfaceBoxLayout:
+        palette = get_active_theme()
+        card = _build_field_card(
+            title="SQLite Site Registry",
+            help_text=(
+                "Configure the directory and filename used to resolve the SQLite site registry. "
+                "The UI edits settings only; path resolution stays in infrastructure services."
+            ),
+        )
+        column = BoxLayout(orientation="vertical", spacing=12, size_hint_y=None)
+        column.bind(minimum_height=column.setter("height"))
+        self._database_directory_input = TextInput(
+            text=directory_value,
+            multiline=False,
+            size_hint_y=None,
+            height=44,
+            background_color=palette.card_subtle_background,
+            foreground_color=palette.text_primary,
+            cursor_color=palette.text_primary,
+        )
+        self._database_filename_input = TextInput(
+            text=filename_value,
+            multiline=False,
+            size_hint_y=None,
+            height=44,
+            background_color=palette.card_subtle_background,
+            foreground_color=palette.text_primary,
+            cursor_color=palette.text_primary,
+        )
+        column.add_widget(WrappedLabel(text="Database Directory", font_size=14, bold=True))
+        column.add_widget(self._database_directory_input)
+        column.add_widget(WrappedLabel(text="Database Filename", font_size=14, bold=True))
+        column.add_widget(self._database_filename_input)
+        card.add_widget(column)
+        return card
+
     def _build_toggle_field(
         self,
         *,
@@ -348,6 +397,12 @@ class SettingsScreen(BaseShellScreen):
                     window_width=int(width_text),
                     window_height=int(height_text),
                 )
+        if self._database_directory_input is not None and self._database_filename_input is not None:
+            draft = replace(
+                draft,
+                database_directory=self._database_directory_input.text.strip(),
+                database_filename=self._database_filename_input.text.strip(),
+            )
         self._draft_settings = draft
         self._shell.update_settings_draft(draft)
         self._shell.save_settings()

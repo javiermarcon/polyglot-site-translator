@@ -10,8 +10,10 @@ from polyglot_site_translator.presentation.view_models import (
     AuditSummaryViewModel,
     POProcessingSummaryViewModel,
     ProjectDetailViewModel,
+    ProjectEditorStateViewModel,
     ProjectSummaryViewModel,
     SettingsStateViewModel,
+    SiteEditorViewModel,
     SyncStatusViewModel,
 )
 
@@ -52,6 +54,26 @@ class SettingsService(Protocol):
         """Restore frontend settings defaults."""
 
 
+class ProjectRegistryManagementService(Protocol):
+    """Create and update project registry records exposed to the UI."""
+
+    def build_create_project_editor(self) -> ProjectEditorStateViewModel:
+        """Return the initial project editor state for create flows."""
+
+    def build_edit_project_editor(self, project_id: str) -> ProjectEditorStateViewModel:
+        """Return the initial project editor state for edit flows."""
+
+    def create_project(self, editor: SiteEditorViewModel) -> ProjectDetailViewModel:
+        """Create a new project registry record and return its detail view."""
+
+    def update_project(
+        self,
+        project_id: str,
+        editor: SiteEditorViewModel,
+    ) -> ProjectDetailViewModel:
+        """Update a project registry record and return its detail view."""
+
+
 @dataclass(frozen=True)
 class FrontendServices:
     """Injectable service bundle consumed by the presentation layer."""
@@ -59,3 +81,4 @@ class FrontendServices:
     catalog: ProjectCatalogService
     workflows: ProjectWorkflowService
     settings: SettingsService
+    registry: ProjectRegistryManagementService

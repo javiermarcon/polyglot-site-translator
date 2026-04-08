@@ -146,10 +146,10 @@ This project is intended to be extended iteratively, including by coding agents.
 ## AD-010: Frontend shell depends on contracts and typed presentation models
 
 **Decision**
-Introduce a presentation shell between Kivy widgets and future application services, using typed view models and explicit UI-facing service protocols.
+Introduce a presentation shell between Kivy widgets and application services, using typed view models and explicit UI-facing service protocols.
 
 **Why**
-The repository needs a usable Kivy base now, but real SQLite, FTP, adapter, scanning, and PO services are intentionally postponed. A presentation shell allows the UI to be built and tested without coupling widgets to infrastructure or domain implementations.
+The repository needs a usable Kivy base and must support incremental replacement of fake services with real infrastructure. A presentation shell allows the UI to evolve without coupling widgets to SQLite, TOML persistence, FTP, or future adapter implementations.
 
 **Implications**
 - Screens stay thin and render precomputed state.
@@ -171,3 +171,19 @@ The current task only needs App / UI / Kivy settings, but the repository will la
 - Settings persistence remains behind a dedicated service contract.
 - The Kivy screen edits a typed draft and delegates saving/resetting to the presentation shell.
 - Future settings sections can extend the same structure without rewriting navigation or mixing persistence into widgets.
+
+---
+
+## AD-012: SQLite location is configured through general settings and resolved in infrastructure
+
+**Decision**
+Store `database_directory` and `database_filename` in the general frontend settings, then resolve the final SQLite path in infrastructure.
+
+**Why**
+The application needs a user-configurable SQLite location without teaching widgets how to build paths or where the database lives on disk.
+
+**Implications**
+- Kivy screens edit only typed settings fields.
+- `TomlSettingsService` persists the configured directory and filename.
+- `resolve_sqlite_database_location()` owns normalization and final path composition.
+- Runtime site registry wiring can change storage location without rewriting screens or the presentation shell.

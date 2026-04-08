@@ -11,6 +11,7 @@ from polyglot_site_translator.presentation.kivy.screens.audit import AuditScreen
 from polyglot_site_translator.presentation.kivy.screens.dashboard import DashboardScreen
 from polyglot_site_translator.presentation.kivy.screens.po_processing import POProcessingScreen
 from polyglot_site_translator.presentation.kivy.screens.project_detail import ProjectDetailScreen
+from polyglot_site_translator.presentation.kivy.screens.project_editor import ProjectEditorScreen
 from polyglot_site_translator.presentation.kivy.screens.projects import ProjectsScreen
 from polyglot_site_translator.presentation.kivy.screens.settings import SettingsScreen
 from polyglot_site_translator.presentation.kivy.screens.sync import SyncScreen
@@ -28,6 +29,7 @@ def build_root_widget(
         DashboardScreen(shell=shell, manager_ref=manager),
         ProjectsScreen(shell=shell, manager_ref=manager),
         ProjectDetailScreen(shell=shell, manager_ref=manager),
+        ProjectEditorScreen(shell=shell, manager_ref=manager),
         SyncScreen(shell=shell, manager_ref=manager),
         AuditScreen(shell=shell, manager_ref=manager),
         POProcessingScreen(shell=shell, manager_ref=manager),
@@ -48,6 +50,8 @@ def _resolve_initial_screen_name(shell: FrontendShell) -> str:
     route_name = shell.router.current.name
     if route_name is RouteName.PROJECT_DETAIL:
         return "project_detail"
+    if route_name is RouteName.PROJECT_EDITOR:
+        return "project_editor"
     if route_name is RouteName.PO_PROCESSING:
         return "po_processing"
     return route_name.value

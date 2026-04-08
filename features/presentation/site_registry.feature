@@ -1,0 +1,50 @@
+Feature: SQLite-backed site registry management
+  As an operator of the localization desktop application
+  I want to configure and use a real SQLite-backed site registry
+  So that projects remain persisted across sessions without coupling the UI to SQL details
+
+  Scenario: Configure the SQLite database location from general settings
+    Given the frontend shell is wired with SQLite-backed site registry services
+    And the operator has opened the settings screen
+    When the operator sets the database directory to "/tmp/polyglot-db"
+    And the operator sets the database filename to "registry.sqlite3"
+    And the operator applies the settings changes
+    And the operator restarts the SQLite-backed frontend shell
+    And the operator opens the settings screen
+    Then the settings draft shows the configured database directory
+    And the settings draft shows the configured database filename
+
+  Scenario: Register the first site in an empty SQLite registry
+    Given the frontend shell is wired with SQLite-backed site registry services
+    When the operator opens the projects list
+    Then the projects list is empty
+    When the operator opens the create project workflow
+    And the operator submits a new site registry entry
+    Then the project detail route is active for the created site
+    And the project detail shows the persisted site registry values
+
+  Scenario: Reopen the SQLite registry and list the persisted site
+    Given the frontend shell is wired with SQLite-backed site registry services
+    And a site has been registered in the SQLite registry
+    When the operator restarts the SQLite-backed frontend shell
+    And the operator opens the projects list
+    Then the projects list shows the persisted SQLite site
+
+  Scenario: Update a persisted SQLite site
+    Given the frontend shell is wired with SQLite-backed site registry services
+    And a site has been registered in the SQLite registry
+    When the operator opens the edit project workflow for the persisted site
+    And the operator updates the local path and FTP host
+    Then the project detail shows the updated persisted site registry values
+
+  Scenario: Surface an invalid SQLite configuration through the projects flow
+    Given the frontend shell is wired with SQLite-backed services and invalid database settings
+    When the operator opens the projects list
+    Then the projects list is empty
+    And the frontend shell shows the controlled site registry error message
+
+  Scenario: Surface a controlled SQLite persistence failure
+    Given the frontend shell is wired with a failing SQLite-backed site registry service
+    When the operator opens the projects list
+    Then the projects list is empty
+    And the frontend shell shows the controlled site registry error message
