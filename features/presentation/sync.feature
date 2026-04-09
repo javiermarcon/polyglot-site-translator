@@ -41,3 +41,11 @@ Feature: Remote to local project synchronization
     When the operator opens the synced detail for project "marketing-site"
     And the operator starts the sync workflow
     Then the sync screen shows the downloaded file count
+
+  Scenario: Open a dedicated sync progress window from the project detail
+    Given the frontend shell is wired with a real sync workflow
+    And the registered project "marketing-site" has remote files available
+    When the operator opens the synced detail for project "marketing-site"
+    And the operator starts the sync workflow from the project detail screen
+    Then the sync progress window is open
+    And the sync progress window lists the remote sync commands

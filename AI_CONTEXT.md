@@ -155,7 +155,9 @@ The frontend baseline now also includes:
 - migration of legacy `ftp_*` columns into a related remote-connection table without decrypting stored ciphertext during migration
 - a first real remote-to-local sync service that reuses the discoverable remote provider registry
 - typed sync direction, remote file descriptors, summaries, results, and controlled sync errors
+- typed sync progress events used to drive a background execution popup in the frontend
 - local workspace preparation and file writes isolated in infrastructure for sync workflows
+- a dedicated sync progress window opened from Project Detail so remote transfers do not block the Kivy UI thread
 - a real adapter registry for framework detection with typed results
 - dynamic adapter discovery from the `adapters/` package at runtime
 - concrete WordPress, Django, and Flask detection adapters

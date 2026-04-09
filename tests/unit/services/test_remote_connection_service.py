@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass
 
 import pytest
@@ -14,7 +15,7 @@ from polyglot_site_translator.domain.remote_connections.models import (
     RemoteConnectionTypeDescriptor,
 )
 from polyglot_site_translator.domain.site_registry.errors import SiteRegistryValidationError
-from polyglot_site_translator.domain.sync.models import RemoteSyncFile
+from polyglot_site_translator.domain.sync.models import RemoteSyncFile, SyncProgressEvent
 from polyglot_site_translator.infrastructure.remote_connections.registry import (
     RemoteConnectionRegistry,
 )
@@ -44,6 +45,7 @@ class StubRemoteConnectionProvider:
     def list_remote_files(
         self,
         config: RemoteConnectionConfig,
+        progress_callback: Callable[[SyncProgressEvent], None] | None = None,
     ) -> list[RemoteSyncFile]:
         return []
 
@@ -51,6 +53,7 @@ class StubRemoteConnectionProvider:
         self,
         config: RemoteConnectionConfig,
         remote_path: str,
+        progress_callback: Callable[[SyncProgressEvent], None] | None = None,
     ) -> bytes:
         msg = f"download not used in this test for {remote_path}"
         raise AssertionError(msg)

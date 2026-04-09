@@ -4,7 +4,9 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass, replace
+from threading import Lock, Thread
 
+from polyglot_site_translator.domain.sync.models import SyncProgressEvent, SyncProgressStage
 from polyglot_site_translator.presentation.contracts import FrontendServices
 from polyglot_site_translator.presentation.errors import ControlledServiceError
 from polyglot_site_translator.presentation.router import FrontendRouter, RouteName
@@ -21,6 +23,8 @@ from polyglot_site_translator.presentation.view_models import (
     ProjectsStateViewModel,
     SettingsStateViewModel,
     SiteEditorViewModel,
+    SyncCommandLogEntryViewModel,
+    SyncProgressStateViewModel,
     SyncStatusViewModel,
     build_default_app_settings,
     build_navigation_menu_state,
@@ -39,7 +43,7 @@ def _build_dashboard_state() -> DashboardStateViewModel:
             DashboardSectionViewModel(
                 key="sync",
                 title="Sync",
-                description="Run a future FTP synchronization workflow through service contracts.",
+                description="Run a remote synchronization workflow through service contracts.",
             ),
             DashboardSectionViewModel(
                 key="audit",
@@ -74,6 +78,7 @@ class FrontendShell:
     po_processing_state: POProcessingSummaryViewModel | None
     settings_state: SettingsStateViewModel | None
     project_editor_state: ProjectEditorStateViewModel | None
+    sync_progress_state: SyncProgressStateViewModel | None
     navigation_menu: NavigationMenuStateViewModel
     latest_error: str | None
 
@@ -88,12 +93,15 @@ class FrontendShell:
         self.po_processing_state = None
         self.settings_state = None
         self.project_editor_state = None
+        self.sync_progress_state = None
         self.navigation_menu = build_navigation_menu_state(
             active_route_key=RouteName.DASHBOARD.value,
             operations_enabled=False,
             is_open=False,
         )
         self.latest_error = None
+        self._sync_state_lock = Lock()
+        self._active_sync_thread: Thread | None = None
 
     def open_dashboard(self) -> None:
         """Open the dashboard route."""
@@ -139,18 +147,39 @@ class FrontendShell:
     def start_sync(self) -> None:
         """Trigger sync through the workflow contract."""
         project_id = self._require_project_id()
-        try:
-            self.sync_state = self.services.workflows.start_sync(project_id)
-            self.latest_error = None
-        except ControlledServiceError as error:
-            self.sync_state = SyncStatusViewModel(
-                status="failed",
-                files_synced=0,
-                summary=str(error),
-                error_code=None,
+        self._run_sync(
+            project_id=project_id,
+            route_to_sync=True,
+            progress_callback=None,
+        )
+
+    def start_sync_async(self) -> None:
+        """Trigger sync in a background thread for popup-based progress rendering."""
+        project_id = self._require_project_id()
+        project_name = project_id
+        if self.project_detail_state is not None:
+            project_name = self.project_detail_state.project.name
+        with self._sync_state_lock:
+            if self._active_sync_thread is not None and self._active_sync_thread.is_alive():
+                return
+            self.sync_progress_state = SyncProgressStateViewModel(
+                project_id=project_id,
+                project_name=project_name,
+                status="running",
+                message="Starting remote sync.",
+                progress_current=0,
+                progress_total=0,
+                progress_is_indeterminate=True,
+                command_log=[],
             )
-            self.latest_error = str(error)
-        self._set_route(RouteName.SYNC, project_id=project_id)
+        worker = Thread(
+            target=self._run_sync_in_background,
+            args=(project_id,),
+            daemon=True,
+            name=f"sync-{project_id}",
+        )
+        self._active_sync_thread = worker
+        worker.start()
 
     def start_audit(self) -> None:
         """Trigger audit through the workflow contract."""
@@ -451,6 +480,85 @@ class FrontendShell:
             msg = "A project must be selected before running workflows."
             raise ValueError(msg)
         return project_id
+
+    def _run_sync(
+        self,
+        *,
+        project_id: str,
+        route_to_sync: bool,
+        progress_callback: Callable[[SyncProgressEvent], None] | None,
+    ) -> None:
+        try:
+            self.sync_state = self.services.workflows.start_sync(
+                project_id,
+                progress_callback=progress_callback,
+            )
+            self.latest_error = None
+        except ControlledServiceError as error:
+            self.sync_state = SyncStatusViewModel(
+                status="failed",
+                files_synced=0,
+                summary=str(error),
+                error_code=None,
+            )
+            self.latest_error = str(error)
+        if route_to_sync:
+            self._set_route(RouteName.SYNC, project_id=project_id)
+
+    def _run_sync_in_background(self, project_id: str) -> None:
+        self._run_sync(
+            project_id=project_id,
+            route_to_sync=False,
+            progress_callback=self._record_sync_progress_event,
+        )
+        with self._sync_state_lock:
+            current_state = self.sync_progress_state
+            if current_state is None or self.sync_state is None:
+                self._active_sync_thread = None
+                return
+            self.sync_progress_state = replace(
+                current_state,
+                status=self.sync_state.status,
+                message=self.sync_state.summary,
+                progress_current=self.sync_state.files_synced,
+                progress_total=max(current_state.progress_total, self.sync_state.files_synced),
+                progress_is_indeterminate=False,
+            )
+            self._active_sync_thread = None
+
+    def _record_sync_progress_event(self, event: SyncProgressEvent) -> None:
+        with self._sync_state_lock:
+            current_state = self.sync_progress_state
+            if current_state is None:
+                return
+            command_log = list(current_state.command_log)
+            if event.command_text is not None:
+                command_log.append(
+                    SyncCommandLogEntryViewModel(
+                        command_text=event.command_text,
+                        message=event.message,
+                    )
+                )
+            progress_total = current_state.progress_total
+            if event.total_files is not None:
+                progress_total = event.total_files
+            progress_current = current_state.progress_current
+            if event.files_downloaded is not None:
+                progress_current = event.files_downloaded
+            status = current_state.status
+            if event.stage is SyncProgressStage.COMPLETED:
+                status = "completed"
+            if event.stage is SyncProgressStage.FAILED:
+                status = "failed"
+            self.sync_progress_state = replace(
+                current_state,
+                status=status,
+                message=event.message,
+                progress_current=progress_current,
+                progress_total=progress_total,
+                progress_is_indeterminate=progress_total == 0 and status == "running",
+                command_log=command_log,
+            )
 
     def _require_settings_state(self) -> SettingsStateViewModel:
         state = self.settings_state

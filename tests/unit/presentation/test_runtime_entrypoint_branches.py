@@ -5,16 +5,16 @@ from __future__ import annotations
 from dataclasses import replace
 
 from polyglot_site_translator.bootstrap import create_frontend_shell
-from polyglot_site_translator.presentation.fakes import (
+from polyglot_site_translator.presentation.kivy.app import PolyglotSiteTranslatorApp
+from polyglot_site_translator.presentation.kivy.root import _resolve_initial_screen_name
+from polyglot_site_translator.presentation.router import RouteName
+from polyglot_site_translator.presentation.view_models import build_default_app_settings
+from tests.support.frontend_doubles import (
     InMemorySettingsService,
     build_failing_settings_load_services,
     build_seeded_services,
     build_seeded_services_with_settings,
 )
-from polyglot_site_translator.presentation.kivy.app import PolyglotSiteTranslatorApp
-from polyglot_site_translator.presentation.kivy.root import _resolve_initial_screen_name
-from polyglot_site_translator.presentation.router import RouteName
-from polyglot_site_translator.presentation.view_models import build_default_app_settings
 
 
 def test_apply_runtime_settings_refreshes_current_screen_when_root_is_present() -> None:

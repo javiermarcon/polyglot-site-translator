@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+from dataclasses import replace
 from pathlib import Path
 import tempfile
 from typing import Protocol, TypeVar, cast
@@ -14,6 +15,7 @@ from polyglot_site_translator.infrastructure.settings import build_default_setti
 from polyglot_site_translator.presentation.fakes import build_default_frontend_services
 from polyglot_site_translator.presentation.frontend_shell import FrontendShell
 from polyglot_site_translator.presentation.view_models import SiteEditorViewModel
+from tests.support.frontend_doubles import FailingSiteRegistryCatalogService
 
 StepFunction = TypeVar("StepFunction", bound=Callable[..., object])
 
@@ -106,9 +108,9 @@ def step_failing_sqlite_service(context: object) -> None:
         config_dir=Path(typed_context.settings_temp_dir.name)
     )
     typed_context.shell = create_frontend_shell(
-        build_default_frontend_services(
-            settings_service=settings_service,
-            fail_site_registry=True,
+        replace(
+            build_default_frontend_services(settings_service=settings_service),
+            catalog=FailingSiteRegistryCatalogService(),
         )
     )
 
@@ -171,7 +173,7 @@ def step_open_edit_project(context: object) -> None:
     typed_context.shell.open_project_editor_edit(typed_context.created_site_id)
 
 
-@when("the operator updates the local path and FTP host")
+@when("the operator updates the local path and remote connection data")
 def step_update_site(context: object) -> None:
     typed_context = _context_with_shell(context)
     typed_context.shell.save_project_edits(
@@ -185,9 +187,9 @@ def step_update_site(context: object) -> None:
             connection_type="ftp",
             remote_host="ftp-v2.example.com",
             remote_port="21",
-            remote_username="deploy",
-            remote_password="super-secret",
-            remote_path="/public_html",
+            remote_username="deployer",
+            remote_password="super-secret-v2",
+            remote_path="/public_html/v2",
             is_active=True,
         ),
     )
@@ -221,6 +223,19 @@ def step_assert_updated_site_detail(context: object) -> None:
     assert typed_context.shell.project_detail_state.project.local_path == (
         "/workspace/marketing-site-v2"
     )
+
+
+@then("reopening the persisted site editor shows the updated remote connection values")
+def step_assert_updated_remote_connection(context: object) -> None:
+    typed_context = _context_with_shell(context)
+    typed_context.shell.open_project_editor_edit(typed_context.created_site_id)
+    assert typed_context.shell.project_editor_state is not None
+    assert typed_context.shell.project_editor_state.editor.connection_type == "ftp"
+    assert typed_context.shell.project_editor_state.editor.remote_host == "ftp-v2.example.com"
+    assert typed_context.shell.project_editor_state.editor.remote_port == "21"
+    assert typed_context.shell.project_editor_state.editor.remote_username == "deployer"
+    assert typed_context.shell.project_editor_state.editor.remote_password == "super-secret-v2"
+    assert typed_context.shell.project_editor_state.editor.remote_path == "/public_html/v2"
 
 
 @then("the settings draft shows the configured database directory")

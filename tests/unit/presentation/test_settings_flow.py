@@ -3,12 +3,12 @@
 from __future__ import annotations
 
 from polyglot_site_translator.bootstrap import create_frontend_shell
-from polyglot_site_translator.presentation.fakes import (
+from polyglot_site_translator.presentation.router import RouteName
+from tests.support.frontend_doubles import (
     build_failing_settings_load_services,
     build_failing_settings_save_services,
     build_seeded_services,
 )
-from polyglot_site_translator.presentation.router import RouteName
 
 
 def test_open_settings_loads_sections_and_defaults() -> None:

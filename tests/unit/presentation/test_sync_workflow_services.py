@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass
 
 import pytest
@@ -15,6 +16,7 @@ from polyglot_site_translator.domain.site_registry.models import RegisteredSite,
 from polyglot_site_translator.domain.sync.models import (
     SyncDirection,
     SyncError,
+    SyncProgressEvent,
     SyncResult,
     SyncSummary,
 )
@@ -46,7 +48,11 @@ class _ServiceStub:
 class _ProjectSyncStub:
     result: SyncResult
 
-    def sync_remote_to_local(self, site: RegisteredSite) -> SyncResult:
+    def sync_remote_to_local(
+        self,
+        site: RegisteredSite,
+        progress_callback: Callable[[SyncProgressEvent], None] | None = None,
+    ) -> SyncResult:
         return self.result
 
 

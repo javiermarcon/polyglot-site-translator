@@ -17,13 +17,20 @@ from polyglot_site_translator.domain.remote_connections.models import (
     RemoteConnectionTestResult,
     RemoteConnectionTypeDescriptor,
 )
-from polyglot_site_translator.domain.sync.models import RemoteSyncFile
+from polyglot_site_translator.domain.sync.models import (
+    RemoteSyncFile,
+    SyncProgressEvent,
+    SyncProgressStage,
+)
 from polyglot_site_translator.infrastructure.remote_connections.registry import (
     RemoteConnectionRegistry,
 )
 from polyglot_site_translator.infrastructure.settings import build_default_settings_service
 from polyglot_site_translator.presentation.fakes import build_default_frontend_services
 from polyglot_site_translator.presentation.frontend_shell import FrontendShell
+from polyglot_site_translator.presentation.kivy.screens.project_detail import (
+    ProjectDetailScreen,
+)
 from polyglot_site_translator.presentation.kivy.screens.sync import SyncScreen
 from polyglot_site_translator.presentation.view_models import SiteEditorViewModel
 from polyglot_site_translator.services.project_sync import ProjectSyncService
@@ -64,14 +71,39 @@ class ScenarioSyncProvider:
             error_code=None,
         )
 
-    def list_remote_files(self, config: RemoteConnectionConfig) -> list[RemoteSyncFile]:
+    def list_remote_files(
+        self,
+        config: RemoteConnectionConfig,
+        progress_callback: Callable[[SyncProgressEvent], None] | None = None,
+    ) -> list[RemoteSyncFile]:
+        if progress_callback is not None:
+            progress_callback(
+                SyncProgressEvent(
+                    stage=SyncProgressStage.LISTING_REMOTE,
+                    message="Listing remote files through the behave sync provider.",
+                    command_text=f"SFTP LIST {config.remote_path}",
+                )
+            )
         host = config.host
         if host in self.failing_hosts:
             msg = self.failing_hosts[host]
             raise OSError(msg)
         return list(self.remote_files_by_host.get(host, []))
 
-    def download_file(self, config: RemoteConnectionConfig, remote_path: str) -> bytes:
+    def download_file(
+        self,
+        config: RemoteConnectionConfig,
+        remote_path: str,
+        progress_callback: Callable[[SyncProgressEvent], None] | None = None,
+    ) -> bytes:
+        if progress_callback is not None:
+            progress_callback(
+                SyncProgressEvent(
+                    stage=SyncProgressStage.DOWNLOADING_FILE,
+                    message=f"Downloading {remote_path} through the behave sync provider.",
+                    command_text=f"SFTP GET {remote_path}",
+                )
+            )
         return self.file_contents_by_path[remote_path]
 
 
@@ -84,6 +116,7 @@ class BehaveSyncContext(Protocol):
     settings_temp_dir: tempfile.TemporaryDirectory[str]
     project_ids: dict[str, str]
     sync_screen: SyncScreen
+    detail_screen: ProjectDetailScreen
 
 
 def _context(context: object) -> BehaveSyncContext:
@@ -110,6 +143,10 @@ def step_real_sync_shell(context: object) -> None:
     typed_context.sync_root = app.build()
     typed_context.shell = app._shell
     typed_context.sync_screen = cast(SyncScreen, typed_context.sync_root.get_screen("sync"))
+    typed_context.detail_screen = cast(
+        ProjectDetailScreen,
+        typed_context.sync_root.get_screen("project_detail"),
+    )
 
 
 @given('the registered project "{project_key}" has remote files available')
@@ -201,6 +238,28 @@ def step_assert_sync_screen(context: object) -> None:
     typed_context = _context(context)
     typed_context.sync_screen.refresh()
     assert "Files: 2" in typed_context.sync_screen._summary_label.text
+
+
+@when("the operator starts the sync workflow from the project detail screen")
+def step_start_sync_from_detail_screen(context: object) -> None:
+    typed_context = _context(context)
+    typed_context.sync_root.current = "project_detail"
+    typed_context.detail_screen._start_sync()
+
+
+@then("the sync progress window is open")
+def step_assert_sync_progress_window_open(context: object) -> None:
+    typed_context = _context(context)
+    assert typed_context.detail_screen._sync_progress_popup is not None
+
+
+@then("the sync progress window lists the remote sync commands")
+def step_assert_sync_progress_window_commands(context: object) -> None:
+    typed_context = _context(context)
+    popup = typed_context.detail_screen._sync_progress_popup
+    assert popup is not None
+    popup.refresh()
+    assert "SFTP LIST /srv/app" in popup._command_log_label.text
 
 
 def _create_project(

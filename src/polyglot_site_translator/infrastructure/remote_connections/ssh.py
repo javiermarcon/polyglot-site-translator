@@ -14,7 +14,12 @@ from polyglot_site_translator.domain.remote_connections.models import (
     RemoteConnectionTestResult,
     RemoteConnectionTypeDescriptor,
 )
-from polyglot_site_translator.domain.sync.models import RemoteSyncFile
+from polyglot_site_translator.domain.sync.models import (
+    RemoteSyncFile,
+    SyncProgressCallback,
+    SyncProgressEvent,
+    SyncProgressStage,
+)
 from polyglot_site_translator.infrastructure.remote_connections.base import (
     BaseRemoteConnectionProvider,
 )
@@ -38,15 +43,17 @@ class SFTPRemoteConnectionProvider(BaseRemoteConnectionProvider):
     def list_remote_files(
         self,
         config: RemoteConnectionConfig,
+        progress_callback: SyncProgressCallback | None = None,
     ) -> list[RemoteSyncFile]:
-        return _list_ssh_files(config)
+        return _list_ssh_files(config, progress_callback)
 
     def download_file(
         self,
         config: RemoteConnectionConfig,
         remote_path: str,
+        progress_callback: SyncProgressCallback | None = None,
     ) -> bytes:
-        return _download_ssh_file(config, remote_path)
+        return _download_ssh_file(config, remote_path, progress_callback, "SFTP")
 
 
 class SCPRemoteConnectionProvider(BaseRemoteConnectionProvider):
@@ -67,15 +74,17 @@ class SCPRemoteConnectionProvider(BaseRemoteConnectionProvider):
     def list_remote_files(
         self,
         config: RemoteConnectionConfig,
+        progress_callback: SyncProgressCallback | None = None,
     ) -> list[RemoteSyncFile]:
-        return _list_ssh_files(config)
+        return _list_ssh_files(config, progress_callback)
 
     def download_file(
         self,
         config: RemoteConnectionConfig,
         remote_path: str,
+        progress_callback: SyncProgressCallback | None = None,
     ) -> bytes:
-        return _download_ssh_file(config, remote_path)
+        return _download_ssh_file(config, remote_path, progress_callback, "SCP")
 
 
 def _test_ssh_connection(
@@ -150,7 +159,18 @@ def _connect_ssh_client(
     return ssh_client
 
 
-def _list_ssh_files(config: RemoteConnectionConfig) -> list[RemoteSyncFile]:
+def _list_ssh_files(
+    config: RemoteConnectionConfig,
+    progress_callback: SyncProgressCallback | None = None,
+) -> list[RemoteSyncFile]:
+    _emit_progress(
+        progress_callback,
+        SyncProgressEvent(
+            stage=SyncProgressStage.LISTING_REMOTE,
+            message=f"Connecting to {config.host}:{config.port} for remote listing.",
+            command_text=f"SSH CONNECT {config.host}:{config.port}",
+        ),
+    )
     ssh_client = _connect_ssh_client(config)
     sftp_client = ssh_client.open_sftp()
     try:
@@ -159,15 +179,37 @@ def _list_ssh_files(config: RemoteConnectionConfig) -> list[RemoteSyncFile]:
             sftp_client=sftp_client,
             base_remote_path=normalized_root,
             current_remote_path=normalized_root,
+            progress_callback=progress_callback,
         )
     finally:
         sftp_client.close()
         ssh_client.close()
 
 
-def _download_ssh_file(config: RemoteConnectionConfig, remote_path: str) -> bytes:
+def _download_ssh_file(
+    config: RemoteConnectionConfig,
+    remote_path: str,
+    progress_callback: SyncProgressCallback | None,
+    transport_label: str,
+) -> bytes:
+    _emit_progress(
+        progress_callback,
+        SyncProgressEvent(
+            stage=SyncProgressStage.DOWNLOADING_FILE,
+            message=f"Connecting to {config.host}:{config.port} for file download.",
+            command_text=f"SSH CONNECT {config.host}:{config.port}",
+        ),
+    )
     ssh_client = _connect_ssh_client(config)
     sftp_client = ssh_client.open_sftp()
+    _emit_progress(
+        progress_callback,
+        SyncProgressEvent(
+            stage=SyncProgressStage.DOWNLOADING_FILE,
+            message=f"Downloading remote file {remote_path}.",
+            command_text=f"{transport_label} GET {remote_path}",
+        ),
+    )
     remote_file = sftp_client.file(remote_path, mode="rb")
     try:
         return cast(bytes, remote_file.read())
@@ -182,8 +224,17 @@ def _walk_sftp_directory(
     sftp_client: Any,
     base_remote_path: str,
     current_remote_path: str,
+    progress_callback: SyncProgressCallback | None = None,
 ) -> list[RemoteSyncFile]:
     remote_files: list[RemoteSyncFile] = []
+    _emit_progress(
+        progress_callback,
+        SyncProgressEvent(
+            stage=SyncProgressStage.LISTING_REMOTE,
+            message=f"Listing remote directory {current_remote_path}.",
+            command_text=f"SFTP LIST {current_remote_path}",
+        ),
+    )
     for entry in sftp_client.listdir_attr(current_remote_path):
         remote_path = _join_remote_path(current_remote_path, entry.filename)
         if stat.S_ISDIR(entry.st_mode):
@@ -192,6 +243,7 @@ def _walk_sftp_directory(
                     sftp_client=sftp_client,
                     base_remote_path=base_remote_path,
                     current_remote_path=remote_path,
+                    progress_callback=progress_callback,
                 )
             )
             continue
@@ -209,3 +261,12 @@ def _join_remote_path(base_path: str, name: str) -> str:
     if base_path == "/":
         return f"/{name}"
     return posixpath.join(base_path, name)
+
+
+def _emit_progress(
+    progress_callback: SyncProgressCallback | None,
+    event: SyncProgressEvent,
+) -> None:
+    if progress_callback is None:
+        return
+    progress_callback(event)

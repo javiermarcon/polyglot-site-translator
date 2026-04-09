@@ -224,3 +224,19 @@ The repository already has typed optional remote connections and a discoverable 
 - Remote providers now own both connection testing and transport-specific remote listing/download behavior.
 - Local workspace preparation and file writes stay in infrastructure, separate from presentation and domain logic.
 - The first stage supports remote-to-local only; local-to-remote, filtering, and richer sync controls remain future work.
+
+---
+
+## AD-015: Long-running sync runs in background and reports typed progress events
+
+**Decision**
+Run project sync from the frontend through a background thread and drive the UI from typed progress events plus a dedicated sync-progress popup.
+
+**Why**
+Remote sync can block on FTP/SFTP/SSH I/O. Running that workflow directly in a Kivy callback freezes the UI, which is not acceptable for an operator-facing desktop app.
+
+**Implications**
+- Kivy widgets remain presentation-only and do not execute remote I/O directly.
+- The presentation shell owns background orchestration state for sync execution.
+- Application and infrastructure layers emit typed progress events and command-log entries that the popup can render.
+- The Project Detail action opens a progress window instead of blocking the current screen while the workflow runs.

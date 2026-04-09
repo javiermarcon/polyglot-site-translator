@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import replace
 from pathlib import Path
 from typing import Protocol
@@ -27,7 +28,7 @@ from polyglot_site_translator.domain.site_registry.models import (
     RegisteredSite,
     SiteRegistrationInput,
 )
-from polyglot_site_translator.domain.sync.models import SyncResult
+from polyglot_site_translator.domain.sync.models import SyncProgressEvent, SyncResult
 from polyglot_site_translator.infrastructure.database_location import (
     resolve_sqlite_database_location,
 )
@@ -68,7 +69,11 @@ class SiteRegistryWorkflowService(Protocol):
 class ProjectSyncWorkflowService(Protocol):
     """Sync orchestration contract consumed by workflow presentation adapters."""
 
-    def sync_remote_to_local(self, site: RegisteredSite) -> SyncResult:
+    def sync_remote_to_local(
+        self,
+        site: RegisteredSite,
+        progress_callback: Callable[[SyncProgressEvent], None] | None = None,
+    ) -> SyncResult:
         """Synchronize the remote project into the local workspace."""
 
 
@@ -235,7 +240,11 @@ class SiteRegistryPresentationWorkflowService(ProjectWorkflowService):
         self._service = service
         self._project_sync_service = project_sync_service
 
-    def start_sync(self, project_id: str) -> SyncStatusViewModel:
+    def start_sync(
+        self,
+        project_id: str,
+        progress_callback: Callable[[SyncProgressEvent], None] | None = None,
+    ) -> SyncStatusViewModel:
         """Run remote-to-local sync for the selected project."""
         try:
             site = self._service.get_site(project_id)
@@ -245,7 +254,10 @@ class SiteRegistryPresentationWorkflowService(ProjectWorkflowService):
             SiteRegistryConfigurationError,
         ) as error:
             raise ControlledServiceError(str(error)) from error
-        result = self._project_sync_service.sync_remote_to_local(site)
+        result = self._project_sync_service.sync_remote_to_local(
+            site,
+            progress_callback=progress_callback,
+        )
         return _build_sync_status(result)
 
     def start_audit(self, project_id: str) -> AuditSummaryViewModel:

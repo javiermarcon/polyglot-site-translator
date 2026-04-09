@@ -218,6 +218,28 @@ class SyncStatusViewModel:
 
 
 @dataclass(frozen=True)
+class SyncCommandLogEntryViewModel:
+    """A single sync command rendered in the progress window."""
+
+    command_text: str
+    message: str
+
+
+@dataclass(frozen=True)
+class SyncProgressStateViewModel:
+    """Progress state rendered while a sync runs in background."""
+
+    project_id: str
+    project_name: str
+    status: str
+    message: str
+    progress_current: int
+    progress_total: int
+    progress_is_indeterminate: bool
+    command_log: list[SyncCommandLogEntryViewModel]
+
+
+@dataclass(frozen=True)
 class AuditSummaryViewModel:
     """Audit panel state."""
 

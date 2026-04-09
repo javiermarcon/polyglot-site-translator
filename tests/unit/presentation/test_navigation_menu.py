@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from polyglot_site_translator.bootstrap import create_frontend_shell
-from polyglot_site_translator.presentation.fakes import build_seeded_services
+from tests.support.frontend_doubles import build_seeded_services
 
 
 def test_navigation_menu_is_grouped_for_future_growth() -> None:
