@@ -506,11 +506,14 @@ class FrontendShell:
             self._set_route(RouteName.SYNC, project_id=project_id)
 
     def _run_sync_in_background(self, project_id: str) -> None:
-        self._run_sync(
-            project_id=project_id,
-            route_to_sync=False,
-            progress_callback=self._record_sync_progress_event,
-        )
+        try:
+            self._run_sync(
+                project_id=project_id,
+                route_to_sync=False,
+                progress_callback=self._record_sync_progress_event,
+            )
+        except (AttributeError, LookupError, OSError, RuntimeError, ValueError) as error:
+            self._surface_background_sync_failure(error)
         with self._sync_state_lock:
             current_state = self.sync_progress_state
             if current_state is None or self.sync_state is None:
@@ -525,6 +528,25 @@ class FrontendShell:
                 progress_is_indeterminate=False,
             )
             self._active_sync_thread = None
+
+    def _surface_background_sync_failure(
+        self,
+        error: AttributeError | LookupError | OSError | RuntimeError | ValueError,
+    ) -> None:
+        error_message = str(error) or "Background sync failed."
+        self.sync_state = SyncStatusViewModel(
+            status="failed",
+            files_synced=0,
+            summary=error_message,
+            error_code="sync_runtime_failure",
+        )
+        self.latest_error = error_message
+        self._record_sync_progress_event(
+            SyncProgressEvent(
+                stage=SyncProgressStage.FAILED,
+                message=error_message,
+            )
+        )
 
     def _record_sync_progress_event(self, event: SyncProgressEvent) -> None:
         with self._sync_state_lock:

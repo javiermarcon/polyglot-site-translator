@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
 from ftplib import FTP, FTP_TLS, all_errors
 import posixpath
 import socket
@@ -24,12 +24,14 @@ from polyglot_site_translator.domain.sync.models import (
 )
 from polyglot_site_translator.infrastructure.remote_connections.base import (
     BaseRemoteConnectionProvider,
+    RemoteConnectionOperationError,
 )
 
 _ConnectFunction = Callable[
     [FTP, RemoteConnectionConfig | RemoteConnectionConfigInput],
     None,
 ]
+_FTP_CLOSE_ERRORS = (*all_errors, AttributeError, OSError)
 
 
 class FTPRemoteConnectionProvider(BaseRemoteConnectionProvider):
@@ -50,7 +52,15 @@ class FTPRemoteConnectionProvider(BaseRemoteConnectionProvider):
             _connect_ftp_client(client, config)
             client.cwd(config.remote_path)
         except all_errors as error:
-            return _failure_result(config, str(error), "ftp_connection_failed")
+            normalized_error = _normalize_ftp_error(
+                error,
+                default_code="ftp_connection_failed",
+            )
+            return _failure_result(
+                config,
+                str(normalized_error),
+                normalized_error.error_code,
+            )
         finally:
             _close_ftp_client(client)
         return _success_result(config, "Connected successfully using FTP.")
@@ -60,7 +70,19 @@ class FTPRemoteConnectionProvider(BaseRemoteConnectionProvider):
         config: RemoteConnectionConfig,
         progress_callback: SyncProgressCallback | None = None,
     ) -> list[RemoteSyncFile]:
-        return _list_ftp_files(
+        return list(
+            self.iter_remote_files(
+                config=config,
+                progress_callback=progress_callback,
+            )
+        )
+
+    def iter_remote_files(
+        self,
+        config: RemoteConnectionConfig,
+        progress_callback: SyncProgressCallback | None = None,
+    ) -> Iterator[RemoteSyncFile]:
+        return _iter_ftp_files(
             config=config,
             client=self._build_client(),
             progress_callback=progress_callback,
@@ -101,7 +123,15 @@ class ExplicitFTPSRemoteConnectionProvider(BaseRemoteConnectionProvider):
             _connect_explicit_ftps_client(client, config)
             client.cwd(config.remote_path)
         except all_errors as error:
-            return _failure_result(config, str(error), "ftps_explicit_connection_failed")
+            normalized_error = _normalize_ftp_error(
+                error,
+                default_code="ftps_explicit_connection_failed",
+            )
+            return _failure_result(
+                config,
+                str(normalized_error),
+                normalized_error.error_code,
+            )
         finally:
             _close_ftp_client(client)
         return _success_result(config, "Connected successfully using explicit FTPS.")
@@ -111,7 +141,19 @@ class ExplicitFTPSRemoteConnectionProvider(BaseRemoteConnectionProvider):
         config: RemoteConnectionConfig,
         progress_callback: SyncProgressCallback | None = None,
     ) -> list[RemoteSyncFile]:
-        return _list_ftp_files(
+        return list(
+            self.iter_remote_files(
+                config=config,
+                progress_callback=progress_callback,
+            )
+        )
+
+    def iter_remote_files(
+        self,
+        config: RemoteConnectionConfig,
+        progress_callback: SyncProgressCallback | None = None,
+    ) -> Iterator[RemoteSyncFile]:
+        return _iter_ftp_files(
             config=config,
             client=self._build_client(),
             connect_fn=_connect_explicit_ftps_client,
@@ -175,7 +217,15 @@ class ImplicitFTPSRemoteConnectionProvider(BaseRemoteConnectionProvider):
             _connect_implicit_ftps_client(client, config)
             client.cwd(config.remote_path)
         except all_errors as error:
-            return _failure_result(config, str(error), "ftps_implicit_connection_failed")
+            normalized_error = _normalize_ftp_error(
+                error,
+                default_code="ftps_implicit_connection_failed",
+            )
+            return _failure_result(
+                config,
+                str(normalized_error),
+                normalized_error.error_code,
+            )
         finally:
             _close_ftp_client(client)
         return _success_result(config, "Connected successfully using implicit FTPS.")
@@ -185,7 +235,19 @@ class ImplicitFTPSRemoteConnectionProvider(BaseRemoteConnectionProvider):
         config: RemoteConnectionConfig,
         progress_callback: SyncProgressCallback | None = None,
     ) -> list[RemoteSyncFile]:
-        return _list_ftp_files(
+        return list(
+            self.iter_remote_files(
+                config=config,
+                progress_callback=progress_callback,
+            )
+        )
+
+    def iter_remote_files(
+        self,
+        config: RemoteConnectionConfig,
+        progress_callback: SyncProgressCallback | None = None,
+    ) -> Iterator[RemoteSyncFile]:
+        return _iter_ftp_files(
             config=config,
             client=self._build_client(),
             connect_fn=_connect_implicit_ftps_client,
@@ -239,13 +301,13 @@ def _connect_implicit_ftps_client(
     typed_client.prot_p()
 
 
-def _list_ftp_files(
+def _iter_ftp_files(
     *,
     config: RemoteConnectionConfig,
     client: FTP,
     connect_fn: _ConnectFunction = _connect_ftp_client,
     progress_callback: SyncProgressCallback | None = None,
-) -> list[RemoteSyncFile]:
+) -> Iterator[RemoteSyncFile]:
     try:
         _emit_progress(
             progress_callback,
@@ -257,14 +319,14 @@ def _list_ftp_files(
         )
         connect_fn(client, config)
         normalized_root = _normalize_remote_path(config.remote_path)
-        return _walk_ftp_directory(
+        yield from _walk_ftp_directory(
             client=client,
             base_remote_path=normalized_root,
             current_remote_path=normalized_root,
             progress_callback=progress_callback,
         )
     except all_errors as error:
-        raise OSError(str(error)) from error
+        raise _normalize_ftp_error(error, default_code="remote_listing_failed") from error
     finally:
         _close_ftp_client(client)
 
@@ -298,7 +360,7 @@ def _download_ftp_file(
         )
         client.retrbinary(f"RETR {remote_path}", chunks.append)
     except all_errors as error:
-        raise OSError(str(error)) from error
+        raise _normalize_ftp_error(error, default_code="download_failed") from error
     finally:
         _close_ftp_client(client)
     return b"".join(chunks)
@@ -310,8 +372,7 @@ def _walk_ftp_directory(
     base_remote_path: str,
     current_remote_path: str,
     progress_callback: SyncProgressCallback | None = None,
-) -> list[RemoteSyncFile]:
-    remote_files: list[RemoteSyncFile] = []
+) -> Iterator[RemoteSyncFile]:
     _emit_progress(
         progress_callback,
         SyncProgressEvent(
@@ -325,25 +386,20 @@ def _walk_ftp_directory(
             continue
         remote_path = _join_remote_path(current_remote_path, name)
         if facts.get("type") == "dir":
-            remote_files.extend(
-                _walk_ftp_directory(
-                    client=client,
-                    base_remote_path=base_remote_path,
-                    current_remote_path=remote_path,
-                    progress_callback=progress_callback,
-                )
+            yield from _walk_ftp_directory(
+                client=client,
+                base_remote_path=base_remote_path,
+                current_remote_path=remote_path,
+                progress_callback=progress_callback,
             )
             continue
         if facts.get("type") != "file":
             continue
-        remote_files.append(
-            RemoteSyncFile(
-                remote_path=remote_path,
-                relative_path=posixpath.relpath(remote_path, base_remote_path),
-                size_bytes=int(facts.get("size", "0")),
-            )
+        yield RemoteSyncFile(
+            remote_path=remote_path,
+            relative_path=posixpath.relpath(remote_path, base_remote_path),
+            size_bytes=int(facts.get("size", "0")),
         )
-    return remote_files
 
 
 def _normalize_remote_path(remote_path: str) -> str:
@@ -363,7 +419,78 @@ def _close_ftp_client(client: FTP) -> None:
     try:
         client.quit()
     except all_errors:
+        _close_ftp_socket(client)
+    except AttributeError:
+        _close_ftp_socket(client)
+    except OSError:
+        _close_ftp_socket(client)
+
+
+def _close_ftp_socket(client: FTP) -> None:
+    try:
         client.close()
+    except all_errors:
+        return
+    except AttributeError:
+        return
+    except OSError:
+        return
+
+
+def _normalize_ftp_error(
+    error: BaseException,
+    *,
+    default_code: str,
+) -> RemoteConnectionOperationError:
+    error_message = str(error).strip() or default_code.replace("_", " ")
+    normalized_message = error_message.lower()
+    error_code = default_code
+    if _matches_any(
+        normalized_message,
+        [
+            "temporary failure in name resolution",
+            "name or service not known",
+            "nodename nor servname provided",
+            "getaddrinfo failed",
+        ],
+    ):
+        error_code = "dns_resolution_failed"
+    elif _matches_any(normalized_message, ["timed out", "timeout"]):
+        error_code = "connection_timeout"
+    elif _matches_any(normalized_message, ["connection refused", "actively refused"]):
+        error_code = "connection_refused"
+    elif _matches_any(
+        normalized_message,
+        ["530", "login failed", "authentication failed", "not logged in"],
+    ):
+        error_code = "authentication_failed"
+    elif _matches_any(
+        normalized_message,
+        [
+            "cwd failed",
+            "can't cwd",
+            "failed to change directory",
+            "no such file",
+            "not found",
+            "missing remote path",
+        ],
+    ):
+        error_code = "remote_path_not_found"
+    elif _matches_any(
+        normalized_message,
+        ["ssl", "tls", "certificate", "handshake", "prot_p", "auth failed"],
+    ):
+        error_code = "tls_handshake_failed"
+    elif "permission denied" in normalized_message:
+        error_code = "remote_permission_denied"
+    return RemoteConnectionOperationError(
+        error_code=error_code,
+        message=error_message,
+    )
+
+
+def _matches_any(message: str, patterns: list[str]) -> bool:
+    return any(pattern in message for pattern in patterns)
 
 
 def _success_result(

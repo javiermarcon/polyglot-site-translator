@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 from typing import Protocol
 
 from polyglot_site_translator.domain.remote_connections.models import (
@@ -32,6 +33,13 @@ class RemoteConnectionProvider(Protocol):
         progress_callback: SyncProgressCallback | None = None,
     ) -> list[RemoteSyncFile]:
         """Return the remote files available for synchronization."""
+
+    def iter_remote_files(
+        self,
+        config: RemoteConnectionConfig,
+        progress_callback: SyncProgressCallback | None = None,
+    ) -> Iterable[RemoteSyncFile]:
+        """Yield remote files available for synchronization incrementally."""
 
     def download_file(
         self,

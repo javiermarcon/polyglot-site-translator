@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable
+from collections.abc import Callable, Iterable
 from dataclasses import dataclass, field
 from pathlib import Path
 import time
@@ -83,6 +83,13 @@ class StubSyncProvider:
                 size_bytes=14,
             ),
         ]
+
+    def iter_remote_files(
+        self,
+        config: RemoteConnectionConfig,
+        progress_callback: Callable[[SyncProgressEvent], None] | None = None,
+    ) -> Iterable[RemoteSyncFile]:
+        return iter(self.list_remote_files(config, progress_callback))
 
     def download_file(
         self,
@@ -283,8 +290,14 @@ def test_project_detail_sync_action_opens_a_progress_window_with_command_log(
     deadline = time.monotonic() + 1
     while time.monotonic() < deadline:
         detail_screen._sync_progress_popup.refresh()
-        if "SFTP LIST /srv/app" in detail_screen._sync_progress_popup._command_log_label.text:
+        command_log_text = detail_screen._sync_progress_popup._command_log_label.text
+        if (
+            "SFTP LIST /srv/app" in command_log_text
+            and "SFTP GET /srv/app/locale/es.po" in command_log_text
+        ):
             break
         time.sleep(0.01)
 
-    assert "SFTP LIST /srv/app" in detail_screen._sync_progress_popup._command_log_label.text
+    command_log_text = detail_screen._sync_progress_popup._command_log_label.text
+    assert "SFTP LIST /srv/app" in command_log_text
+    assert "SFTP GET /srv/app/locale/es.po" in command_log_text

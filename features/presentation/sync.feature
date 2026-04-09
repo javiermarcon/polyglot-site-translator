@@ -49,3 +49,13 @@ Feature: Remote to local project synchronization
     And the operator starts the sync workflow from the project detail screen
     Then the sync progress window is open
     And the sync progress window lists the remote sync commands
+    And the sync progress window shows file download commands while sync is running
+
+  Scenario: Surface a startup sync failure in the progress window
+    Given the frontend shell is wired with a real sync workflow
+    And the registered project "broken-remote-site" fails while listing the remote files
+    When the operator opens the synced detail for project "broken-remote-site"
+    And the operator starts the sync workflow from the project detail screen
+    Then the sync progress window is open
+    And the sync progress window shows a failed status
+    And the sync progress window shows the sync error message

@@ -8,8 +8,21 @@ from typing import Any, cast
 
 import pytest
 
-from polyglot_site_translator.domain.remote_connections.models import RemoteConnectionConfig
-from polyglot_site_translator.infrastructure.remote_connections import ftp, ssh
+from polyglot_site_translator.domain.remote_connections.models import (
+    RemoteConnectionConfig,
+    RemoteConnectionConfigInput,
+    RemoteConnectionTestResult,
+    RemoteConnectionTypeDescriptor,
+)
+from polyglot_site_translator.domain.sync.models import RemoteSyncFile
+from polyglot_site_translator.infrastructure.remote_connections import (
+    ftp,
+    ssh,
+)
+from polyglot_site_translator.infrastructure.remote_connections.base import (
+    BaseRemoteConnectionProvider,
+    RemoteConnectionOperationError,
+)
 
 
 def _build_ftp_config(connection_type: str = "ftp") -> RemoteConnectionConfig:
@@ -110,6 +123,56 @@ def test_ftp_provider_lists_remote_files_recursively(
     ]
 
 
+def test_base_remote_provider_iterates_using_the_list_fallback() -> None:
+    class _ListBackedProvider(BaseRemoteConnectionProvider):
+        descriptor = RemoteConnectionTypeDescriptor(
+            connection_type="sftp",
+            display_name="SFTP",
+            default_port=22,
+        )
+
+        def test_connection(
+            self,
+            config: RemoteConnectionConfigInput,
+        ) -> RemoteConnectionTestResult:
+            return RemoteConnectionTestResult(
+                success=True,
+                connection_type=config.connection_type,
+                host=config.host,
+                port=config.port,
+                message="ok",
+                error_code=None,
+            )
+
+        def list_remote_files(
+            self,
+            config: RemoteConnectionConfig,
+            progress_callback: Any = None,
+        ) -> list[RemoteSyncFile]:
+            return [
+                RemoteSyncFile(
+                    remote_path=f"{config.remote_path}/messages.po",
+                    relative_path="messages.po",
+                    size_bytes=8,
+                )
+            ]
+
+        def download_file(
+            self,
+            config: RemoteConnectionConfig,
+            remote_path: str,
+            progress_callback: Any = None,
+        ) -> bytes:
+            msg = f"download not used in this test for {remote_path}"
+            raise AssertionError(msg)
+
+    provider = _ListBackedProvider()
+
+    remote_files = list(provider.iter_remote_files(_build_ssh_config()))
+
+    assert [remote_file.relative_path for remote_file in remote_files] == ["messages.po"]
+
+
 def test_ftp_provider_downloads_remote_file_bytes(monkeypatch: pytest.MonkeyPatch) -> None:
     actions: list[str] = []
     fake_client = _FakeFtpClient(
@@ -192,6 +255,48 @@ def test_ftp_provider_wraps_listing_failures_as_os_errors(
 
     with pytest.raises(OSError, match=r"listing failed for /srv/app"):
         provider.list_remote_files(_build_ftp_config())
+
+
+def test_close_ftp_client_ignores_quit_failures_from_half_open_connections() -> None:
+    class _HalfOpenFtpClient:
+        def quit(self) -> None:
+            msg = "socket is not connected"
+            raise AttributeError(msg)
+
+        def close(self) -> None:
+            return None
+
+    ftp._close_ftp_client(cast(Any, _HalfOpenFtpClient()))
+
+
+def test_close_ftp_client_ignores_close_failures_after_quit_errors() -> None:
+    class _CloseFailingFtpClient:
+        def quit(self) -> None:
+            msg = "socket is not connected"
+            raise AttributeError(msg)
+
+        def close(self) -> None:
+            msg = "close failed"
+            raise OSError(msg)
+
+    ftp._close_ftp_client(cast(Any, _CloseFailingFtpClient()))
+
+
+def test_close_ftp_client_ignores_library_close_failures_after_os_errors() -> None:
+    class _LibraryCloseFailingFtpClient:
+        def quit(self) -> None:
+            msg = "network down"
+            raise OSError(msg)
+
+        def close(self) -> None:
+            msg = "close failed"
+            raise EOFError(msg)
+
+    ftp._close_ftp_client(cast(Any, _LibraryCloseFailingFtpClient()))
+
+
+def test_ftp_emit_progress_ignores_missing_callbacks() -> None:
+    ftp._emit_progress(None, cast(Any, object()))
 
 
 def test_walk_ftp_directory_skips_navigation_and_unknown_entries() -> None:
@@ -380,6 +485,46 @@ def test_scp_provider_downloads_remote_file_bytes(monkeypatch: pytest.MonkeyPatc
     )
 
     assert payload == b"payload"
+
+
+def test_iter_ssh_files_wraps_listing_errors(monkeypatch: pytest.MonkeyPatch) -> None:
+    class _ListingFailingSftpClient(_FakeSftpClient):
+        def __init__(self) -> None:
+            super().__init__(listing={}, file_bytes={})
+
+        def listdir_attr(self, remote_path: str) -> list[_FakeSftpEntry]:
+            msg = "No such file"
+            raise OSError(msg)
+
+    ssh_client = _FakeSshClient(_ListingFailingSftpClient())
+    monkeypatch.setattr(ssh, "_connect_ssh_client", lambda config: ssh_client)
+
+    with pytest.raises(RemoteConnectionOperationError, match="No such file") as error:
+        list(ssh._iter_ssh_files(_build_ssh_config()))
+
+    assert error.value.error_code == "remote_path_not_found"
+
+
+def test_download_ssh_file_wraps_transport_errors(monkeypatch: pytest.MonkeyPatch) -> None:
+    class _DownloadFailingSftpClient(_FakeSftpClient):
+        def __init__(self) -> None:
+            super().__init__(listing={}, file_bytes={})
+
+        def file(self, remote_path: str, *, mode: str) -> _FakeRemoteFile:
+            msg = "Broken pipe"
+            raise OSError(msg)
+
+    ssh_client = _FakeSshClient(_DownloadFailingSftpClient())
+    monkeypatch.setattr(ssh, "_connect_ssh_client", lambda config: ssh_client)
+
+    with pytest.raises(RemoteConnectionOperationError, match="Broken pipe") as error:
+        ssh._download_ssh_file(_build_ssh_config(), "/srv/app/messages.po", None, "SFTP")
+
+    assert error.value.error_code == "transport_io_failed"
+
+
+def test_ssh_emit_progress_ignores_missing_callbacks() -> None:
+    ssh._emit_progress(None, cast(Any, object()))
 
 
 def test_connect_ssh_client_wraps_paramiko_ssh_exceptions(monkeypatch: pytest.MonkeyPatch) -> None:

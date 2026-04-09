@@ -158,6 +158,7 @@ The frontend baseline now also includes:
 - typed sync progress events used to drive a background execution popup in the frontend
 - local workspace preparation and file writes isolated in infrastructure for sync workflows
 - a dedicated sync progress window opened from Project Detail so remote transfers do not block the Kivy UI thread
+- incremental remote sync downloads so large FTP/SFTP trees can begin writing local files before remote discovery fully completes
 - a real adapter registry for framework detection with typed results
 - dynamic adapter discovery from the `adapters/` package at runtime
 - concrete WordPress, Django, and Flask detection adapters

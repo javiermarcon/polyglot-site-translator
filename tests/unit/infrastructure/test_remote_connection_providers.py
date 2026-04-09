@@ -12,13 +12,28 @@ import pytest
 
 from polyglot_site_translator.domain.remote_connections.models import (
     BuiltinRemoteConnectionType,
+    RemoteConnectionConfig,
     RemoteConnectionConfigInput,
 )
+from polyglot_site_translator.domain.sync.models import RemoteSyncFile
 from polyglot_site_translator.infrastructure.remote_connections import ftp, ssh
 
 
 def _build_config(connection_type: str) -> RemoteConnectionConfigInput:
     return RemoteConnectionConfigInput(
+        connection_type=connection_type,
+        host="example.test",
+        port=22 if connection_type in {"sftp", "scp"} else 21,
+        username="deploy",
+        password="secret",
+        remote_path="/remote/path",
+    )
+
+
+def _build_remote_config(connection_type: str) -> RemoteConnectionConfig:
+    return RemoteConnectionConfig(
+        id="remote-1",
+        site_project_id="site-1",
         connection_type=connection_type,
         host="example.test",
         port=22 if connection_type in {"sftp", "scp"} else 21,
@@ -129,9 +144,65 @@ def test_ftp_provider_closes_client_when_quit_raises(
     )
 
     assert result.success is False
-    assert result.error_code == "ftp_connection_failed"
+    assert result.error_code == "remote_path_not_found"
     assert result.message == "cwd failed"
     assert actions[-2:] == ["quit", "close"]
+
+
+def test_ftp_provider_classifies_dns_resolution_failures(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    actions: list[str] = []
+
+    class _DnsFailingFtpClient(_BaseFakeFtpClient):
+        def connect(self, *, host: str, port: int, timeout: int) -> None:
+            self.actions.append(f"connect:{host}:{port}:{timeout}")
+            msg = "Temporary failure in name resolution"
+            raise socket.gaierror(msg)
+
+    fake_client = _DnsFailingFtpClient(actions=actions)
+    monkeypatch.setattr(ftp, "FTP", lambda: fake_client)
+
+    result = ftp.FTPRemoteConnectionProvider().test_connection(
+        _build_config(BuiltinRemoteConnectionType.FTP.value)
+    )
+
+    assert result.success is False
+    assert result.error_code == "dns_resolution_failed"
+    assert result.message == "Temporary failure in name resolution"
+
+
+def test_ftp_error_normalization_covers_timeout_refusal_and_permission_cases() -> None:
+    timeout_error = ftp._normalize_ftp_error(
+        OSError("timed out"),
+        default_code="ftp_connection_failed",
+    )
+    refusal_error = ftp._normalize_ftp_error(
+        OSError("Connection refused"),
+        default_code="ftp_connection_failed",
+    )
+    permission_error = ftp._normalize_ftp_error(
+        OSError("Permission denied"),
+        default_code="download_failed",
+    )
+
+    assert timeout_error.error_code == "connection_timeout"
+    assert refusal_error.error_code == "connection_refused"
+    assert permission_error.error_code == "remote_permission_denied"
+
+
+def test_ftp_error_normalization_covers_default_and_tls_cases() -> None:
+    default_error = ftp._normalize_ftp_error(
+        OSError("unexpected ftp error"),
+        default_code="ftp_connection_failed",
+    )
+    tls_error = ftp._normalize_ftp_error(
+        OSError("TLS handshake failed"),
+        default_code="ftps_explicit_connection_failed",
+    )
+
+    assert default_error.error_code == "ftp_connection_failed"
+    assert tls_error.error_code == "tls_handshake_failed"
 
 
 def test_explicit_ftps_provider_authenticates_and_protects_data_channel(
@@ -169,9 +240,35 @@ def test_explicit_ftps_provider_returns_failure_on_tls_error(
     )
 
     assert result.success is False
-    assert result.error_code == "ftps_explicit_connection_failed"
+    assert result.error_code == "tls_handshake_failed"
     assert result.message == "auth failed"
     assert actions[-2:] == ["quit", "close"]
+
+
+def test_explicit_ftps_provider_downloads_remote_file(monkeypatch: pytest.MonkeyPatch) -> None:
+    provider = ftp.ExplicitFTPSRemoteConnectionProvider()
+    captured_remote_path: list[str] = []
+
+    def _fake_download(
+        *,
+        config: RemoteConnectionConfigInput,
+        client: Any,
+        remote_path: str,
+        connect_fn: Any,
+        progress_callback: Any = None,
+    ) -> bytes:
+        captured_remote_path.append(remote_path)
+        return b"payload"
+
+    monkeypatch.setattr(ftp, "_download_ftp_file", _fake_download)
+
+    file_bytes = provider.download_file(
+        _build_remote_config("ftps_explicit"),
+        "/srv/app/messages.po",
+    )
+
+    assert file_bytes == b"payload"
+    assert captured_remote_path == ["/srv/app/messages.po"]
 
 
 def test_implicit_ftp_tls_wraps_socket_and_reads_server_response(
@@ -289,9 +386,30 @@ def test_implicit_ftps_provider_returns_failure_when_login_fails(
     )
 
     assert result.success is False
-    assert result.error_code == "ftps_implicit_connection_failed"
+    assert result.error_code == "authentication_failed"
     assert result.message == "login failed"
     assert actions[-2:] == ["quit", "close"]
+
+
+def test_implicit_ftps_provider_lists_remote_files(monkeypatch: pytest.MonkeyPatch) -> None:
+    provider = ftp.ImplicitFTPSRemoteConnectionProvider()
+    monkeypatch.setattr(
+        ftp,
+        "_iter_ftp_files",
+        lambda **_: iter(
+            [
+                RemoteSyncFile(
+                    remote_path="/srv/app/messages.po",
+                    relative_path="messages.po",
+                    size_bytes=8,
+                )
+            ]
+        ),
+    )
+
+    remote_files = provider.list_remote_files(_build_remote_config("ftps_implicit"))
+
+    assert [remote_file.remote_path for remote_file in remote_files] == ["/srv/app/messages.po"]
 
 
 class _FakeSftpClient:
@@ -386,6 +504,38 @@ def test_scp_provider_returns_failure_when_ssh_client_errors(
     assert result.message == "ssh connect failed"
 
 
+def test_scp_provider_classifies_ssh_dns_resolution_failures(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class _DnsFailingSshClient(_FakeSshClient):
+        def connect(
+            self,
+            *,
+            hostname: str,
+            port: int,
+            username: str,
+            password: str,
+            timeout: int,
+        ) -> None:
+            self._actions.append(f"connect:{hostname}:{port}:{username}:{password}:{timeout}")
+            msg = "Temporary failure in name resolution"
+            raise socket.gaierror(msg)
+
+    monkeypatch.setattr(
+        ssh,
+        "_build_ssh_client",
+        lambda: _DnsFailingSshClient([]),
+    )
+
+    result = ssh.SCPRemoteConnectionProvider().test_connection(
+        _build_config(BuiltinRemoteConnectionType.SCP.value)
+    )
+
+    assert result.success is False
+    assert result.error_code == "dns_resolution_failed"
+    assert result.message == "Temporary failure in name resolution"
+
+
 def test_sftp_provider_returns_failure_when_remote_path_is_invalid(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -400,8 +550,51 @@ def test_sftp_provider_returns_failure_when_remote_path_is_invalid(
     )
 
     assert result.success is False
-    assert result.error_code == "ssh_connection_failed"
+    assert result.error_code == "remote_path_not_found"
     assert result.message == "missing remote path"
+
+
+def test_ssh_error_normalization_covers_timeout_refusal_auth_host_key_and_transport_io() -> None:
+    timeout_error = ssh._normalize_ssh_error(
+        OSError("timed out"),
+        default_code="ssh_connection_failed",
+    )
+    refusal_error = ssh._normalize_ssh_error(
+        OSError("Connection refused"),
+        default_code="ssh_connection_failed",
+    )
+    auth_error = ssh._normalize_ssh_error(
+        OSError("Authentication failed"),
+        default_code="ssh_connection_failed",
+    )
+    host_key_error = ssh._normalize_ssh_error(
+        OSError("Host key verification failed"),
+        default_code="ssh_connection_failed",
+    )
+    transport_error = ssh._normalize_ssh_error(
+        OSError("Broken pipe"),
+        default_code="download_failed",
+    )
+
+    assert timeout_error.error_code == "connection_timeout"
+    assert refusal_error.error_code == "connection_refused"
+    assert auth_error.error_code == "authentication_failed"
+    assert host_key_error.error_code == "host_key_failed"
+    assert transport_error.error_code == "transport_io_failed"
+
+
+def test_ssh_error_normalization_covers_remote_path_and_default_cases() -> None:
+    path_error = ssh._normalize_ssh_error(
+        OSError("No such file"),
+        default_code="remote_listing_failed",
+    )
+    default_error = ssh._normalize_ssh_error(
+        OSError("unexpected ssh error"),
+        default_code="ssh_connection_failed",
+    )
+
+    assert path_error.error_code == "remote_path_not_found"
+    assert default_error.error_code == "ssh_connection_failed"
 
 
 def test_ssh_providers_report_missing_paramiko_dependency(

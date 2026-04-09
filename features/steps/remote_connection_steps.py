@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable
+from collections.abc import Callable, Iterable
 from dataclasses import dataclass
 from pathlib import Path
 import tempfile
@@ -60,6 +60,13 @@ class StubRemoteConnectionProvider:
         progress_callback: Callable[[SyncProgressEvent], None] | None = None,
     ) -> list[RemoteSyncFile]:
         return []
+
+    def iter_remote_files(
+        self,
+        config: RemoteConnectionConfig,
+        progress_callback: Callable[[SyncProgressEvent], None] | None = None,
+    ) -> Iterable[RemoteSyncFile]:
+        return iter(())
 
     def download_file(
         self,

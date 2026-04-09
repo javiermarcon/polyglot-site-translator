@@ -56,6 +56,31 @@ class _BlockingWorkflowService:
         return build_seeded_services().workflows.start_po_processing(project_id)
 
 
+@dataclass
+class _FailingBackgroundWorkflowService:
+    def start_sync(
+        self,
+        project_id: str,
+        progress_callback: Callable[[SyncProgressEvent], None] | None = None,
+    ) -> SyncStatusViewModel:
+        if progress_callback is not None:
+            progress_callback(
+                SyncProgressEvent(
+                    stage=SyncProgressStage.LISTING_REMOTE,
+                    message="Connecting to the remote host.",
+                    command_text="FTP CONNECT broken.example.test:21",
+                )
+            )
+        msg = "Temporary failure in name resolution"
+        raise AttributeError(msg)
+
+    def start_audit(self, project_id: str) -> AuditSummaryViewModel:
+        return build_seeded_services().workflows.start_audit(project_id)
+
+    def start_po_processing(self, project_id: str) -> POProcessingSummaryViewModel:
+        return build_seeded_services().workflows.start_po_processing(project_id)
+
+
 def test_dashboard_sections_are_available_on_startup() -> None:
     shell = create_frontend_shell(build_seeded_services())
 
@@ -150,6 +175,34 @@ def test_sync_can_run_in_background_without_leaving_the_project_detail_route() -
     assert shell.sync_state.status == "completed"
     assert shell.sync_progress_state is not None
     assert shell.sync_progress_state.status == "completed"
+
+
+def test_background_sync_failures_are_exposed_in_shell_state_instead_of_crashing() -> None:
+    seeded_services = build_seeded_services()
+    shell = create_frontend_shell(
+        FrontendServices(
+            catalog=seeded_services.catalog,
+            workflows=_FailingBackgroundWorkflowService(),
+            settings=seeded_services.settings,
+            registry=seeded_services.registry,
+        )
+    )
+
+    shell.open_projects()
+    shell.select_project("wp-site")
+    shell.start_sync_async()
+
+    if shell._active_sync_thread is not None:
+        shell._active_sync_thread.join(timeout=1)
+
+    assert shell.sync_state is not None
+    assert shell.sync_state.status == "failed"
+    assert shell.sync_state.summary == "Temporary failure in name resolution"
+    assert shell.sync_state.error_code == "sync_runtime_failure"
+    assert shell.latest_error == "Temporary failure in name resolution"
+    assert shell.sync_progress_state is not None
+    assert shell.sync_progress_state.status == "failed"
+    assert shell.sync_progress_state.message == "Temporary failure in name resolution"
 
 
 def test_audit_and_po_actions_update_independent_panels() -> None:

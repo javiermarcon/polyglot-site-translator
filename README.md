@@ -250,6 +250,8 @@ Si el runtime encuentra una base heredada con columnas `ftp_*`, migra esos datos
 
 El flujo de sync actual usa la conexión remota persistida del proyecto para listar el contenido remoto y descargar archivos al `local_path`.
 Cuando se dispara desde Project Detail, el trabajo corre en background y se abre una ventana dedicada con barra de progreso y log de comandos del transporte y del workspace local.
+La descarga es incremental: el sync empieza a grabar archivos locales a medida que los descubre en el árbol remoto, sin esperar a completar todo el recorrido.
+Si la conexión o el recorrido remoto falla, esa misma ventana queda en estado `failed` y muestra el mensaje concreto del error.
 Si el workspace local no existe, se crea automáticamente.
 Si el remoto está vacío, el sync devuelve un resultado válido con `0` archivos descargados.
 En esta etapa todavía no existe sync `local -> remote`, ni filtros por adapter, ni controles de sync selectivo/full desde la UI.

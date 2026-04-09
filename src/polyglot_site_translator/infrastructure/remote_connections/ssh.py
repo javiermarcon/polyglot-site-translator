@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterator
 from importlib import import_module
 import posixpath
 import stat
@@ -22,6 +23,7 @@ from polyglot_site_translator.domain.sync.models import (
 )
 from polyglot_site_translator.infrastructure.remote_connections.base import (
     BaseRemoteConnectionProvider,
+    RemoteConnectionOperationError,
 )
 
 
@@ -45,7 +47,14 @@ class SFTPRemoteConnectionProvider(BaseRemoteConnectionProvider):
         config: RemoteConnectionConfig,
         progress_callback: SyncProgressCallback | None = None,
     ) -> list[RemoteSyncFile]:
-        return _list_ssh_files(config, progress_callback)
+        return list(self.iter_remote_files(config, progress_callback))
+
+    def iter_remote_files(
+        self,
+        config: RemoteConnectionConfig,
+        progress_callback: SyncProgressCallback | None = None,
+    ) -> Iterator[RemoteSyncFile]:
+        return _iter_ssh_files(config, progress_callback)
 
     def download_file(
         self,
@@ -76,7 +85,14 @@ class SCPRemoteConnectionProvider(BaseRemoteConnectionProvider):
         config: RemoteConnectionConfig,
         progress_callback: SyncProgressCallback | None = None,
     ) -> list[RemoteSyncFile]:
-        return _list_ssh_files(config, progress_callback)
+        return list(self.iter_remote_files(config, progress_callback))
+
+    def iter_remote_files(
+        self,
+        config: RemoteConnectionConfig,
+        progress_callback: SyncProgressCallback | None = None,
+    ) -> Iterator[RemoteSyncFile]:
+        return _iter_ssh_files(config, progress_callback)
 
     def download_file(
         self,
@@ -107,13 +123,17 @@ def _test_ssh_connection(
             error_code="missing_dependency",
         )
     except OSError as error:
+        normalized_error = _normalize_ssh_error(
+            error,
+            default_code="ssh_connection_failed",
+        )
         return RemoteConnectionTestResult(
             success=False,
             connection_type=config.connection_type,
             host=config.host,
             port=config.port,
-            message=str(error),
-            error_code="ssh_connection_failed",
+            message=str(normalized_error),
+            error_code=normalized_error.error_code,
         )
     return RemoteConnectionTestResult(
         success=True,
@@ -155,14 +175,14 @@ def _connect_ssh_client(
         )
     except (OSError, ssh_exception_type) as error:
         ssh_client.close()
-        raise OSError(str(error)) from error
+        raise _normalize_ssh_error(error, default_code="ssh_connection_failed") from error
     return ssh_client
 
 
-def _list_ssh_files(
+def _iter_ssh_files(
     config: RemoteConnectionConfig,
     progress_callback: SyncProgressCallback | None = None,
-) -> list[RemoteSyncFile]:
+) -> Iterator[RemoteSyncFile]:
     _emit_progress(
         progress_callback,
         SyncProgressEvent(
@@ -175,12 +195,14 @@ def _list_ssh_files(
     sftp_client = ssh_client.open_sftp()
     try:
         normalized_root = posixpath.normpath(config.remote_path)
-        return _walk_sftp_directory(
+        yield from _walk_sftp_directory(
             sftp_client=sftp_client,
             base_remote_path=normalized_root,
             current_remote_path=normalized_root,
             progress_callback=progress_callback,
         )
+    except OSError as error:
+        raise _normalize_ssh_error(error, default_code="remote_listing_failed") from error
     finally:
         sftp_client.close()
         ssh_client.close()
@@ -202,21 +224,74 @@ def _download_ssh_file(
     )
     ssh_client = _connect_ssh_client(config)
     sftp_client = ssh_client.open_sftp()
-    _emit_progress(
-        progress_callback,
-        SyncProgressEvent(
-            stage=SyncProgressStage.DOWNLOADING_FILE,
-            message=f"Downloading remote file {remote_path}.",
-            command_text=f"{transport_label} GET {remote_path}",
-        ),
-    )
-    remote_file = sftp_client.file(remote_path, mode="rb")
     try:
-        return cast(bytes, remote_file.read())
+        _emit_progress(
+            progress_callback,
+            SyncProgressEvent(
+                stage=SyncProgressStage.DOWNLOADING_FILE,
+                message=f"Downloading remote file {remote_path}.",
+                command_text=f"{transport_label} GET {remote_path}",
+            ),
+        )
+        remote_file = sftp_client.file(remote_path, mode="rb")
+        try:
+            return cast(bytes, remote_file.read())
+        finally:
+            remote_file.close()
+    except OSError as error:
+        raise _normalize_ssh_error(error, default_code="download_failed") from error
     finally:
-        remote_file.close()
         sftp_client.close()
         ssh_client.close()
+
+
+def _normalize_ssh_error(
+    error: BaseException,
+    *,
+    default_code: str,
+) -> RemoteConnectionOperationError:
+    error_message = str(error).strip() or default_code.replace("_", " ")
+    normalized_message = error_message.lower()
+    error_code = default_code
+    if _matches_any(
+        normalized_message,
+        [
+            "temporary failure in name resolution",
+            "name or service not known",
+            "nodename nor servname provided",
+            "getaddrinfo failed",
+        ],
+    ):
+        error_code = "dns_resolution_failed"
+    elif _matches_any(normalized_message, ["timed out", "timeout"]):
+        error_code = "connection_timeout"
+    elif _matches_any(normalized_message, ["connection refused", "actively refused"]):
+        error_code = "connection_refused"
+    elif _matches_any(
+        normalized_message,
+        ["authentication failed", "auth failed", "permission denied", "login failed"],
+    ):
+        error_code = "authentication_failed"
+    elif _matches_any(
+        normalized_message,
+        ["host key", "known_hosts", "hostkey"],
+    ):
+        error_code = "host_key_failed"
+    elif _matches_any(
+        normalized_message,
+        ["no such file", "missing remote path", "not found"],
+    ):
+        error_code = "remote_path_not_found"
+    elif _matches_any(normalized_message, ["channel", "connection reset", "broken pipe"]):
+        error_code = "transport_io_failed"
+    return RemoteConnectionOperationError(
+        error_code=error_code,
+        message=error_message,
+    )
+
+
+def _matches_any(message: str, patterns: list[str]) -> bool:
+    return any(pattern in message for pattern in patterns)
 
 
 def _walk_sftp_directory(
@@ -225,8 +300,7 @@ def _walk_sftp_directory(
     base_remote_path: str,
     current_remote_path: str,
     progress_callback: SyncProgressCallback | None = None,
-) -> list[RemoteSyncFile]:
-    remote_files: list[RemoteSyncFile] = []
+) -> Iterator[RemoteSyncFile]:
     _emit_progress(
         progress_callback,
         SyncProgressEvent(
@@ -238,23 +312,18 @@ def _walk_sftp_directory(
     for entry in sftp_client.listdir_attr(current_remote_path):
         remote_path = _join_remote_path(current_remote_path, entry.filename)
         if stat.S_ISDIR(entry.st_mode):
-            remote_files.extend(
-                _walk_sftp_directory(
-                    sftp_client=sftp_client,
-                    base_remote_path=base_remote_path,
-                    current_remote_path=remote_path,
-                    progress_callback=progress_callback,
-                )
+            yield from _walk_sftp_directory(
+                sftp_client=sftp_client,
+                base_remote_path=base_remote_path,
+                current_remote_path=remote_path,
+                progress_callback=progress_callback,
             )
             continue
-        remote_files.append(
-            RemoteSyncFile(
-                remote_path=remote_path,
-                relative_path=posixpath.relpath(remote_path, base_remote_path),
-                size_bytes=int(getattr(entry, "st_size", 0)),
-            )
+        yield RemoteSyncFile(
+            remote_path=remote_path,
+            relative_path=posixpath.relpath(remote_path, base_remote_path),
+            size_bytes=int(getattr(entry, "st_size", 0)),
         )
-    return remote_files
 
 
 def _join_remote_path(base_path: str, name: str) -> str:

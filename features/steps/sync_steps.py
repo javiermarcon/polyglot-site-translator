@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable
+from collections.abc import Callable, Iterable
 from dataclasses import dataclass, field
 from pathlib import Path
 import tempfile
+import time
 from typing import Any, Protocol, TypeVar, cast
 
 import behave as behave_module  # type: ignore[import-untyped]
@@ -89,6 +90,13 @@ class ScenarioSyncProvider:
             msg = self.failing_hosts[host]
             raise OSError(msg)
         return list(self.remote_files_by_host.get(host, []))
+
+    def iter_remote_files(
+        self,
+        config: RemoteConnectionConfig,
+        progress_callback: Callable[[SyncProgressEvent], None] | None = None,
+    ) -> Iterable[RemoteSyncFile]:
+        return iter(self.list_remote_files(config, progress_callback))
 
     def download_file(
         self,
@@ -258,8 +266,55 @@ def step_assert_sync_progress_window_commands(context: object) -> None:
     typed_context = _context(context)
     popup = typed_context.detail_screen._sync_progress_popup
     assert popup is not None
-    popup.refresh()
+    deadline = time.monotonic() + 1
+    while time.monotonic() < deadline:
+        popup.refresh()
+        if "SFTP LIST /srv/app" in popup._command_log_label.text:
+            break
+        time.sleep(0.01)
     assert "SFTP LIST /srv/app" in popup._command_log_label.text
+
+
+@then("the sync progress window shows file download commands while sync is running")
+def step_assert_sync_progress_window_download_commands(context: object) -> None:
+    typed_context = _context(context)
+    popup = typed_context.detail_screen._sync_progress_popup
+    assert popup is not None
+    deadline = time.monotonic() + 1
+    while time.monotonic() < deadline:
+        popup.refresh()
+        if "SFTP GET /srv/app/locale/es.po" in popup._command_log_label.text:
+            break
+        time.sleep(0.01)
+    assert "SFTP GET /srv/app/locale/es.po" in popup._command_log_label.text
+
+
+@then("the sync progress window shows a failed status")
+def step_assert_sync_progress_window_failed_status(context: object) -> None:
+    typed_context = _context(context)
+    popup = typed_context.detail_screen._sync_progress_popup
+    assert popup is not None
+    deadline = time.monotonic() + 1
+    while time.monotonic() < deadline:
+        popup.refresh()
+        if popup._status_label.text == "Status: failed":
+            break
+        time.sleep(0.01)
+    assert popup._status_label.text == "Status: failed"
+
+
+@then("the sync progress window shows the sync error message")
+def step_assert_sync_progress_window_error_message(context: object) -> None:
+    typed_context = _context(context)
+    popup = typed_context.detail_screen._sync_progress_popup
+    assert popup is not None
+    deadline = time.monotonic() + 1
+    while time.monotonic() < deadline:
+        popup.refresh()
+        if popup._message_label.text == "Could not list remote files.":
+            break
+        time.sleep(0.01)
+    assert popup._message_label.text == "Could not list remote files."
 
 
 def _create_project(

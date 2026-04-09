@@ -45,6 +45,7 @@ The codebase should be organized around these layers:
    - orchestrate framework detection through a registry-backed detection service
    - validate optional remote connection configs and test them through discoverable providers
    - orchestrate remote-to-local sync through the existing discoverable remote provider registry
+   - start downloading files incrementally as providers discover them, instead of waiting for a full remote-tree listing
 
 3. **Domain logic**
    - shared PO processing
