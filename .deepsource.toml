@@ -6,11 +6,3 @@ enabled = true
 
   [analyzers.meta]
   runtime_version = "3.x"
-
-[[transformers]]
-name = "ruff"
-enabled = true
-
-[[transformers]]
-name = "test-coverage"
-enabled = true
