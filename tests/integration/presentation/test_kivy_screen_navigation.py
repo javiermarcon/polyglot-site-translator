@@ -8,10 +8,11 @@ from pytest import MonkeyPatch
 
 from polyglot_site_translator.app import create_kivy_app
 from polyglot_site_translator.presentation.kivy.screens.base import _route_to_screen_name
+from tests.support.frontend_doubles import build_seeded_services
 
 
 def test_dashboard_screen_buttons_navigate_to_projects_and_settings() -> None:
-    app = cast(Any, create_kivy_app())
+    app = cast(Any, create_kivy_app(services=build_seeded_services()))
     root = app.build()
     dashboard_screen = root.get_screen("dashboard")
 
@@ -25,7 +26,7 @@ def test_dashboard_screen_buttons_navigate_to_projects_and_settings() -> None:
 
 
 def test_projects_screen_refresh_and_navigation_cover_empty_and_populated_states() -> None:
-    app = cast(Any, create_kivy_app())
+    app = cast(Any, create_kivy_app(services=build_seeded_services()))
     root = app.build()
     projects_screen = root.get_screen("projects")
     shell = projects_screen._shell
@@ -50,7 +51,7 @@ def test_projects_screen_refresh_and_navigation_cover_empty_and_populated_states
 
 
 def test_project_detail_screen_refresh_and_action_buttons_navigate() -> None:
-    app = cast(Any, create_kivy_app())
+    app = cast(Any, create_kivy_app(services=build_seeded_services()))
     root = app.build()
     detail_screen = root.get_screen("project_detail")
     shell = detail_screen._shell
@@ -66,7 +67,8 @@ def test_project_detail_screen_refresh_and_action_buttons_navigate() -> None:
     assert "Marketing Site [WordPress]" in detail_screen._detail_label.text
 
     detail_screen._start_sync()
-    assert root.current == "sync"
+    assert root.current == "project_detail"
+    assert detail_screen._sync_progress_popup is not None
 
     shell.select_project("wp-site")
     root.current = "project_detail"
@@ -85,7 +87,7 @@ def test_project_detail_screen_refresh_and_action_buttons_navigate() -> None:
 
 
 def test_workflow_screens_render_empty_and_loaded_states_and_return_to_detail() -> None:
-    app = cast(Any, create_kivy_app())
+    app = cast(Any, create_kivy_app(services=build_seeded_services()))
     root = app.build()
     shell = root.get_screen("dashboard")._shell
     shell.open_projects()
@@ -128,7 +130,7 @@ def test_workflow_screens_render_empty_and_loaded_states_and_return_to_detail() 
 def test_base_screen_helpers_cover_menu_building_copy_updates_and_route_mapping(
     monkeypatch: MonkeyPatch,
 ) -> None:
-    app = cast(Any, create_kivy_app())
+    app = cast(Any, create_kivy_app(services=build_seeded_services()))
     root = app.build()
     dashboard_screen = root.get_screen("dashboard")
 

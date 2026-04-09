@@ -46,6 +46,67 @@ def test_projects_flow_uses_the_real_sqlite_site_registry(tmp_path: Path) -> Non
     assert shell.project_detail_state.project.local_path == "/workspace/marketing-site"
 
 
+def test_editing_a_site_persists_remote_connection_configuration(tmp_path: Path) -> None:
+    isolated_config_dir = tmp_path / "isolated-config"
+    settings_service = build_default_settings_service(config_dir=isolated_config_dir)
+    services = build_default_frontend_services(settings_service=settings_service)
+    shell = create_kivy_app(services=services)._shell
+
+    shell.open_project_editor_create()
+    shell.save_new_project(
+        SiteEditorViewModel(
+            site_id=None,
+            name="Marketing Site",
+            framework_type="wordpress",
+            local_path="/workspace/marketing-site",
+            default_locale="en_US",
+            connection_type="ftp",
+            remote_host="ftp.example.com",
+            remote_port="21",
+            remote_username="deploy",
+            remote_password="super-secret",
+            remote_path="/public_html",
+            is_active=True,
+        )
+    )
+
+    shell.open_projects()
+    created_project = shell.projects_state.projects[0]
+    shell.open_project_editor_edit(created_project.id)
+    assert shell.project_editor_state is not None
+    assert shell.project_editor_state.editor.connection_type == "ftp"
+    assert shell.project_editor_state.editor.remote_host == "ftp.example.com"
+
+    shell.save_project_edits(
+        created_project.id,
+        SiteEditorViewModel(
+            site_id=created_project.id,
+            name="Marketing Site",
+            framework_type="wordpress",
+            local_path="/workspace/marketing-site-v2",
+            default_locale="en_US",
+            connection_type="ftp",
+            remote_host="ftp-v2.example.com",
+            remote_port="21",
+            remote_username="deployer",
+            remote_password="super-secret-v2",
+            remote_path="/public_html/v2",
+            is_active=True,
+        ),
+    )
+
+    shell.open_project_editor_edit(created_project.id)
+
+    assert shell.project_editor_state is not None
+    assert shell.project_editor_state.editor.local_path == "/workspace/marketing-site-v2"
+    assert shell.project_editor_state.editor.connection_type == "ftp"
+    assert shell.project_editor_state.editor.remote_host == "ftp-v2.example.com"
+    assert shell.project_editor_state.editor.remote_port == "21"
+    assert shell.project_editor_state.editor.remote_username == "deployer"
+    assert shell.project_editor_state.editor.remote_password == "super-secret-v2"
+    assert shell.project_editor_state.editor.remote_path == "/public_html/v2"
+
+
 def test_settings_flow_persists_database_directory_and_filename(tmp_path: Path) -> None:
     isolated_config_dir = tmp_path / "isolated-config"
     settings_service = build_default_settings_service(config_dir=isolated_config_dir)

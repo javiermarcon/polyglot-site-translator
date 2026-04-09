@@ -10,13 +10,6 @@ import pytest
 from polyglot_site_translator.bootstrap import create_frontend_shell
 from polyglot_site_translator.presentation.contracts import FrontendServices
 from polyglot_site_translator.presentation.errors import ControlledServiceError
-from polyglot_site_translator.presentation.fakes import (
-    FakeProjectWorkflowService,
-    InMemoryProjectCatalogService,
-    InMemoryProjectRegistryManagementService,
-    InMemorySettingsService,
-    build_seeded_services,
-)
 from polyglot_site_translator.presentation.router import RouteName
 from polyglot_site_translator.presentation.view_models import (
     ProjectDetailViewModel,
@@ -26,6 +19,13 @@ from polyglot_site_translator.presentation.view_models import (
     SettingsStateViewModel,
     SiteEditorViewModel,
     build_default_app_settings,
+)
+from tests.support.frontend_doubles import (
+    InMemoryProjectCatalogService,
+    InMemoryProjectRegistryManagementService,
+    InMemorySettingsService,
+    StubProjectWorkflowService,
+    build_seeded_services,
 )
 
 
@@ -229,7 +229,7 @@ def test_fake_catalog_raises_lookup_error_for_unknown_project() -> None:
 
 
 def test_project_workflow_fake_can_sync_non_wp_site_without_failure() -> None:
-    workflow = FakeProjectWorkflowService(fail_sync=True)
+    workflow = StubProjectWorkflowService(fail_sync=True)
 
     sync_state = workflow.start_sync("dj-admin")
 

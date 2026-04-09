@@ -41,6 +41,7 @@ Configure, validate, test, and later synchronize optional remote sources into lo
 - optional remote connection configs
 - structured connection-test results
 - typed sync direction and structured sync results
+- typed sync progress events and command-log reporting
 - remote file discovery descriptors
 - connection validation
 - remote path handling

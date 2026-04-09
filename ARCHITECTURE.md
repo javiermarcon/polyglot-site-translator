@@ -35,6 +35,7 @@ The codebase should be organized around these layers:
    - widgets
    - user interaction
    - progress and feedback display
+   - dedicated sync progress popups for long-running remote transfers
 
 2. **Application services**
    - orchestrate workflows
@@ -245,6 +246,8 @@ The project editor now also owns:
 The sync screen now also owns:
 - rendering the structured result of a real remote-to-local sync workflow
 - showing the synchronized file count and controlled error code when sync fails
+- opening a dedicated progress window from Project Detail while the sync runs in background
+- rendering the command log emitted by remote providers and local workspace operations
 - staying presentation-only while services/providers own remote listing, download, and local filesystem writes
 
 ### Shared services must remain target-agnostic where feasible
@@ -330,8 +333,8 @@ Key responsibilities:
 - `presentation/view_models.py` defines typed dataclasses for dashboard, projects, project detail, sync, audit, and PO processing states.
 - `presentation/frontend_shell.py` centralizes navigation-safe orchestration without embedding infrastructure logic in widgets.
 - `presentation/frontend_shell.py` now also owns the grouped application menu state and contextual route enabling.
-- `presentation/fakes.py` provides deterministic in-memory services for the initial frontend shell, BDD scenarios, and unit tests.
-- `presentation/fakes.py` also exposes a default runtime bundle that keeps fake workflow services but swaps the project catalog/editor flows to the real SQLite-backed site registry.
+- `presentation/fakes.py` is now limited to real runtime wiring for the graphical entrypoint.
+- test doubles for implemented frontend workflows live in test-only support modules, not in production bundles under `src/`.
 - `presentation/kivy/` contains thin `ScreenManager` wiring and screen classes that render already-prepared state.
 - `presentation/contracts.py` now also defines a settings contract for frontend configuration workflows.
 - `presentation/contracts.py` now also defines a project-registry management contract for create/edit flows.

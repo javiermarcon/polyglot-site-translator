@@ -10,7 +10,7 @@ from polyglot_site_translator.domain.remote_connections.models import (
     RemoteConnectionTestResult,
     RemoteConnectionTypeDescriptor,
 )
-from polyglot_site_translator.domain.sync.models import RemoteSyncFile
+from polyglot_site_translator.domain.sync.models import RemoteSyncFile, SyncProgressCallback
 
 
 class RemoteConnectionProvider(Protocol):
@@ -29,6 +29,7 @@ class RemoteConnectionProvider(Protocol):
     def list_remote_files(
         self,
         config: RemoteConnectionConfig,
+        progress_callback: SyncProgressCallback | None = None,
     ) -> list[RemoteSyncFile]:
         """Return the remote files available for synchronization."""
 
@@ -36,5 +37,6 @@ class RemoteConnectionProvider(Protocol):
         self,
         config: RemoteConnectionConfig,
         remote_path: str,
+        progress_callback: SyncProgressCallback | None = None,
     ) -> bytes:
         """Download a remote file and return its contents."""

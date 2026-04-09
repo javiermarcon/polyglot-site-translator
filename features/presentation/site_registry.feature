@@ -34,8 +34,9 @@ Feature: SQLite-backed site registry management
     Given the frontend shell is wired with SQLite-backed site registry services
     And a site has been registered in the SQLite registry
     When the operator opens the edit project workflow for the persisted site
-    And the operator updates the local path and FTP host
+    And the operator updates the local path and remote connection data
     Then the project detail shows the updated persisted site registry values
+    And reopening the persisted site editor shows the updated remote connection values
 
   Scenario: Surface an invalid SQLite configuration through the projects flow
     Given the frontend shell is wired with SQLite-backed services and invalid database settings

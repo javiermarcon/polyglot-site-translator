@@ -33,6 +33,9 @@ Current entrypoints:
 - `run_app.py`
 - `polyglot_site_translator.presentation.kivy.app.PolyglotSiteTranslatorApp.apply_runtime_settings`
 
+Default runtime wiring:
+- `polyglot_site_translator.app:create_kivy_app` must boot the graphical app with the real TOML settings service and SQLite-backed site registry services unless a test/development bundle is injected explicitly.
+
 ---
 
 ## Service-level entrypoints
@@ -40,7 +43,7 @@ Current entrypoints:
 The application should expose use-case-oriented services such as:
 - site/project registration and CRUD
 - remote connection catalog and test orchestration
-- FTP synchronization
+- remote synchronization
 - PO audit/sync/translation
 - source audit
 - report generation
@@ -57,6 +60,7 @@ Current frontend-facing service entrypoints:
 - `ProjectRegistryManagementService.update_project`
 - `ProjectRegistryManagementService.test_remote_connection`
 - `ProjectWorkflowService.start_sync`
+- `FrontendShell.start_sync_async`
 - `ProjectWorkflowService.start_audit`
 - `ProjectWorkflowService.start_po_processing`
 - `SettingsService.load_settings`
@@ -129,6 +133,7 @@ Current project-registry orchestration entrypoints:
 - `FrontendShell.save_new_project`
 - `FrontendShell.save_project_edits`
 - `FrontendShell.test_project_connection`
+- `FrontendShell.start_sync_async`
 - `polyglot_site_translator.presentation.site_registry_services.SiteRegistryPresentationWorkflowService.start_sync`
 
 Current project-detail enrichment entrypoints:
@@ -139,6 +144,9 @@ Current project-detail enrichment entrypoints:
 
 Current Kivy settings layout entrypoint:
 - `polyglot_site_translator.presentation.kivy.settings_layout.build_settings_layout_spec`
+
+Current Kivy sync-progress entrypoint:
+- `polyglot_site_translator.presentation.kivy.widgets.sync_progress_popup.SyncProgressPopup`
 
 ---
 

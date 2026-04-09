@@ -16,7 +16,12 @@ from polyglot_site_translator.domain.remote_connections.models import (
     RemoteConnectionTestResult,
     RemoteConnectionTypeDescriptor,
 )
-from polyglot_site_translator.domain.sync.models import RemoteSyncFile
+from polyglot_site_translator.domain.sync.models import (
+    RemoteSyncFile,
+    SyncProgressCallback,
+    SyncProgressEvent,
+    SyncProgressStage,
+)
 from polyglot_site_translator.infrastructure.remote_connections.base import (
     BaseRemoteConnectionProvider,
 )
@@ -53,18 +58,25 @@ class FTPRemoteConnectionProvider(BaseRemoteConnectionProvider):
     def list_remote_files(
         self,
         config: RemoteConnectionConfig,
+        progress_callback: SyncProgressCallback | None = None,
     ) -> list[RemoteSyncFile]:
-        return _list_ftp_files(config=config, client=self._build_client())
+        return _list_ftp_files(
+            config=config,
+            client=self._build_client(),
+            progress_callback=progress_callback,
+        )
 
     def download_file(
         self,
         config: RemoteConnectionConfig,
         remote_path: str,
+        progress_callback: SyncProgressCallback | None = None,
     ) -> bytes:
         return _download_ftp_file(
             config=config,
             client=self._build_client(),
             remote_path=remote_path,
+            progress_callback=progress_callback,
         )
 
     def _build_client(self) -> FTP:
@@ -97,23 +109,27 @@ class ExplicitFTPSRemoteConnectionProvider(BaseRemoteConnectionProvider):
     def list_remote_files(
         self,
         config: RemoteConnectionConfig,
+        progress_callback: SyncProgressCallback | None = None,
     ) -> list[RemoteSyncFile]:
         return _list_ftp_files(
             config=config,
             client=self._build_client(),
             connect_fn=_connect_explicit_ftps_client,
+            progress_callback=progress_callback,
         )
 
     def download_file(
         self,
         config: RemoteConnectionConfig,
         remote_path: str,
+        progress_callback: SyncProgressCallback | None = None,
     ) -> bytes:
         return _download_ftp_file(
             config=config,
             client=self._build_client(),
             remote_path=remote_path,
             connect_fn=_connect_explicit_ftps_client,
+            progress_callback=progress_callback,
         )
 
     def _build_client(self) -> FTP_TLS:
@@ -167,23 +183,27 @@ class ImplicitFTPSRemoteConnectionProvider(BaseRemoteConnectionProvider):
     def list_remote_files(
         self,
         config: RemoteConnectionConfig,
+        progress_callback: SyncProgressCallback | None = None,
     ) -> list[RemoteSyncFile]:
         return _list_ftp_files(
             config=config,
             client=self._build_client(),
             connect_fn=_connect_implicit_ftps_client,
+            progress_callback=progress_callback,
         )
 
     def download_file(
         self,
         config: RemoteConnectionConfig,
         remote_path: str,
+        progress_callback: SyncProgressCallback | None = None,
     ) -> bytes:
         return _download_ftp_file(
             config=config,
             client=self._build_client(),
             remote_path=remote_path,
             connect_fn=_connect_implicit_ftps_client,
+            progress_callback=progress_callback,
         )
 
     def _build_client(self) -> ImplicitFtpTls:
@@ -224,14 +244,24 @@ def _list_ftp_files(
     config: RemoteConnectionConfig,
     client: FTP,
     connect_fn: _ConnectFunction = _connect_ftp_client,
+    progress_callback: SyncProgressCallback | None = None,
 ) -> list[RemoteSyncFile]:
     try:
+        _emit_progress(
+            progress_callback,
+            SyncProgressEvent(
+                stage=SyncProgressStage.LISTING_REMOTE,
+                message=f"Connecting to {config.host}:{config.port} for remote listing.",
+                command_text=f"FTP CONNECT {config.host}:{config.port}",
+            ),
+        )
         connect_fn(client, config)
         normalized_root = _normalize_remote_path(config.remote_path)
         return _walk_ftp_directory(
             client=client,
             base_remote_path=normalized_root,
             current_remote_path=normalized_root,
+            progress_callback=progress_callback,
         )
     except all_errors as error:
         raise OSError(str(error)) from error
@@ -245,10 +275,27 @@ def _download_ftp_file(
     client: FTP,
     remote_path: str,
     connect_fn: _ConnectFunction = _connect_ftp_client,
+    progress_callback: SyncProgressCallback | None = None,
 ) -> bytes:
     chunks: list[bytes] = []
     try:
+        _emit_progress(
+            progress_callback,
+            SyncProgressEvent(
+                stage=SyncProgressStage.DOWNLOADING_FILE,
+                message=f"Connecting to {config.host}:{config.port} for file download.",
+                command_text=f"FTP CONNECT {config.host}:{config.port}",
+            ),
+        )
         connect_fn(client, config)
+        _emit_progress(
+            progress_callback,
+            SyncProgressEvent(
+                stage=SyncProgressStage.DOWNLOADING_FILE,
+                message=f"Downloading remote file {remote_path}.",
+                command_text=f"FTP RETR {remote_path}",
+            ),
+        )
         client.retrbinary(f"RETR {remote_path}", chunks.append)
     except all_errors as error:
         raise OSError(str(error)) from error
@@ -262,8 +309,17 @@ def _walk_ftp_directory(
     client: FTP,
     base_remote_path: str,
     current_remote_path: str,
+    progress_callback: SyncProgressCallback | None = None,
 ) -> list[RemoteSyncFile]:
     remote_files: list[RemoteSyncFile] = []
+    _emit_progress(
+        progress_callback,
+        SyncProgressEvent(
+            stage=SyncProgressStage.LISTING_REMOTE,
+            message=f"Listing remote directory {current_remote_path}.",
+            command_text=f"FTP MLSD {current_remote_path}",
+        ),
+    )
     for name, facts in client.mlsd(current_remote_path):
         if name in {".", ".."}:
             continue
@@ -274,6 +330,7 @@ def _walk_ftp_directory(
                     client=client,
                     base_remote_path=base_remote_path,
                     current_remote_path=remote_path,
+                    progress_callback=progress_callback,
                 )
             )
             continue
@@ -336,3 +393,12 @@ def _failure_result(
         message=message,
         error_code=error_code,
     )
+
+
+def _emit_progress(
+    progress_callback: SyncProgressCallback | None,
+    event: SyncProgressEvent,
+) -> None:
+    if progress_callback is None:
+        return
+    progress_callback(event)

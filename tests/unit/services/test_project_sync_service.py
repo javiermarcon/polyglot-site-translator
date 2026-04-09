@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import cast
@@ -15,7 +16,11 @@ from polyglot_site_translator.domain.remote_connections.models import (
     RemoteConnectionTypeDescriptor,
 )
 from polyglot_site_translator.domain.site_registry.models import RegisteredSite, SiteProject
-from polyglot_site_translator.domain.sync.models import RemoteSyncFile
+from polyglot_site_translator.domain.sync.models import (
+    RemoteSyncFile,
+    SyncProgressEvent,
+    SyncProgressStage,
+)
 from polyglot_site_translator.infrastructure.remote_connections.registry import (
     RemoteConnectionRegistry,
 )
@@ -46,7 +51,19 @@ class StubSyncProvider:
         msg = f"test_connection not used in this sync test for {config.connection_type}"
         raise AssertionError(msg)
 
-    def list_remote_files(self, config: RemoteConnectionConfig) -> list[RemoteSyncFile]:
+    def list_remote_files(
+        self,
+        config: RemoteConnectionConfig,
+        progress_callback: Callable[[SyncProgressEvent], None] | None = None,
+    ) -> list[RemoteSyncFile]:
+        if progress_callback is not None:
+            progress_callback(
+                SyncProgressEvent(
+                    stage=SyncProgressStage.LISTING_REMOTE,
+                    message="Listing remote files through the sync test stub.",
+                    command_text=f"SFTP LIST {config.remote_path}",
+                )
+            )
         if self.missing_dependency_on_list:
             msg = "paramiko"
             raise ModuleNotFoundError(msg)
@@ -55,7 +72,20 @@ class StubSyncProvider:
             raise OSError(msg)
         return list(self.remote_files)
 
-    def download_file(self, config: RemoteConnectionConfig, remote_path: str) -> bytes:
+    def download_file(
+        self,
+        config: RemoteConnectionConfig,
+        remote_path: str,
+        progress_callback: Callable[[SyncProgressEvent], None] | None = None,
+    ) -> bytes:
+        if progress_callback is not None:
+            progress_callback(
+                SyncProgressEvent(
+                    stage=SyncProgressStage.DOWNLOADING_FILE,
+                    message=f"Downloading {remote_path} through the sync test stub.",
+                    command_text=f"SFTP GET {remote_path}",
+                )
+            )
         if self.missing_dependency_on_download == remote_path:
             msg = "paramiko"
             raise ModuleNotFoundError(msg)
@@ -101,6 +131,40 @@ def test_project_sync_service_downloads_remote_files_into_the_local_workspace(
     assert result.summary.files_downloaded == 2
     assert (local_root / "locale" / "es.po").read_bytes() == b'msgid "hello"\n'
     assert (local_root / "templates" / "home.html").read_bytes() == b"<h1>Hello</h1>\n"
+
+
+def test_project_sync_service_reports_progress_commands_for_remote_execution(
+    tmp_path: Path,
+) -> None:
+    local_root = tmp_path / "workspace" / "site"
+    provider = StubSyncProvider(
+        remote_files=[
+            RemoteSyncFile(
+                remote_path="/srv/app/locale/es.po",
+                relative_path="locale/es.po",
+                size_bytes=10,
+            )
+        ],
+        downloaded_bytes={"/srv/app/locale/es.po": b'msgid "hello"\n'},
+    )
+    service = ProjectSyncService(
+        registry=RemoteConnectionRegistry.default_registry(providers=[provider])
+    )
+    events: list[SyncProgressEvent] = []
+
+    result = service.sync_remote_to_local(
+        _build_site(local_root=local_root),
+        progress_callback=events.append,
+    )
+
+    assert result.success is True
+    assert [event.command_text for event in events if event.command_text is not None] == [
+        f"LOCAL MKDIR {local_root}",
+        "SFTP LIST /srv/app",
+        "SFTP GET /srv/app/locale/es.po",
+        f"LOCAL WRITE {local_root / 'locale' / 'es.po'}",
+    ]
+    assert events[-1].stage is SyncProgressStage.COMPLETED
 
 
 def test_project_sync_service_rejects_sites_without_remote_connections(tmp_path: Path) -> None:

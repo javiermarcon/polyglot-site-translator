@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import replace
 from pathlib import Path
 
@@ -33,6 +34,7 @@ from polyglot_site_translator.domain.site_registry.models import (
 from polyglot_site_translator.domain.sync.models import (
     RemoteSyncFile,
     SyncDirection,
+    SyncProgressEvent,
     SyncResult,
     SyncSummary,
 )
@@ -125,6 +127,7 @@ class SuccessfulSFTPProvider:
     def list_remote_files(
         self,
         config: RemoteConnectionConfig,
+        progress_callback: Callable[[SyncProgressEvent], None] | None = None,
     ) -> list[RemoteSyncFile]:
         return []
 
@@ -132,6 +135,7 @@ class SuccessfulSFTPProvider:
         self,
         config: RemoteConnectionConfig,
         remote_path: str,
+        progress_callback: Callable[[SyncProgressEvent], None] | None = None,
     ) -> bytes:
         msg = f"download not used in this test for {remote_path}"
         raise AssertionError(msg)
@@ -140,7 +144,11 @@ class SuccessfulSFTPProvider:
 class SyncStub:
     """Project sync stub for workflow-constructor compatibility in audit tests."""
 
-    def sync_remote_to_local(self, site: RegisteredSite) -> SyncResult:
+    def sync_remote_to_local(
+        self,
+        site: RegisteredSite,
+        progress_callback: Callable[[SyncProgressEvent], None] | None = None,
+    ) -> SyncResult:
         return SyncResult(
             direction=SyncDirection.REMOTE_TO_LOCAL,
             success=True,

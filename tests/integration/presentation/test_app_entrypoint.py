@@ -10,13 +10,17 @@ import pytest
 from polyglot_site_translator.app import create_kivy_app
 from polyglot_site_translator.bootstrap import create_frontend_shell
 from polyglot_site_translator.infrastructure.settings import TomlSettingsService
-from polyglot_site_translator.presentation.fakes import (
+from polyglot_site_translator.presentation.kivy.app import PolyglotSiteTranslatorApp
+from polyglot_site_translator.presentation.kivy.theme import get_active_theme_mode
+from polyglot_site_translator.presentation.view_models import (
+    AppSettingsViewModel,
+    SiteEditorViewModel,
+    build_default_app_settings,
+)
+from tests.support.frontend_doubles import (
     build_seeded_services,
     build_seeded_services_with_settings,
 )
-from polyglot_site_translator.presentation.kivy.app import PolyglotSiteTranslatorApp
-from polyglot_site_translator.presentation.kivy.theme import get_active_theme_mode
-from polyglot_site_translator.presentation.view_models import AppSettingsViewModel
 
 
 def test_create_kivy_app_builds_root_with_expected_screens() -> None:
@@ -66,6 +70,43 @@ def test_create_kivy_app_uses_toml_settings_service_by_default(
 
     assert isinstance(app._shell.services.settings, TomlSettingsService)
     assert app._shell.services.settings.settings_path == tmp_path / "settings.toml"
+
+
+def test_create_kivy_app_uses_real_site_registry_services_by_default(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv("POLYGLOT_SITE_TRANSLATOR_CONFIG_DIR", str(tmp_path))
+    TomlSettingsService(tmp_path / "settings.toml").save_settings(
+        build_default_app_settings(database_directory=str(tmp_path / "db"))
+    )
+
+    app = cast(Any, create_kivy_app())
+    shell = app._shell
+
+    shell.open_projects()
+    assert shell.projects_state.projects == []
+
+    shell.open_project_editor_create()
+    shell.save_new_project(
+        SiteEditorViewModel(
+            site_id=None,
+            name="Marketing Site",
+            framework_type="wordpress",
+            local_path="/workspace/marketing-site",
+            default_locale="en_US",
+            connection_type="ftp",
+            remote_host="ftp.example.com",
+            remote_port="21",
+            remote_username="deploy",
+            remote_password="super-secret",
+            remote_path="/public_html",
+            is_active=True,
+        )
+    )
+
+    shell.open_projects()
+    assert [project.name for project in shell.projects_state.projects] == ["Marketing Site"]
 
 
 def test_build_uses_persisted_settings_as_initial_runtime_state(tmp_path: Path) -> None:

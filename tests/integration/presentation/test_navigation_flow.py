@@ -3,8 +3,8 @@
 from __future__ import annotations
 
 from polyglot_site_translator.bootstrap import create_frontend_shell
-from polyglot_site_translator.presentation.fakes import build_seeded_services
 from polyglot_site_translator.presentation.router import RouteName
+from tests.support.frontend_doubles import build_seeded_services
 
 
 def test_navigation_flow_keeps_selected_project_context() -> None:

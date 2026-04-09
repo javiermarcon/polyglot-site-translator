@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from polyglot_site_translator.presentation.contracts import SettingsService
-from polyglot_site_translator.presentation.fakes import build_seeded_services
+from tests.support.frontend_doubles import build_seeded_services
 
 
 def test_fake_settings_service_matches_contract() -> None:

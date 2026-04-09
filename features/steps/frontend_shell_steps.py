@@ -11,7 +11,9 @@ import behave as behave_module  # type: ignore[import-untyped]
 
 from polyglot_site_translator.bootstrap import create_frontend_shell
 from polyglot_site_translator.infrastructure.settings import build_default_settings_service
-from polyglot_site_translator.presentation.fakes import (
+from polyglot_site_translator.presentation.frontend_shell import FrontendShell
+from polyglot_site_translator.presentation.router import RouteName
+from tests.support.frontend_doubles import (
     build_empty_services,
     build_failing_settings_load_services,
     build_failing_settings_save_services,
@@ -19,8 +21,6 @@ from polyglot_site_translator.presentation.fakes import (
     build_seeded_services,
     build_seeded_services_with_settings,
 )
-from polyglot_site_translator.presentation.frontend_shell import FrontendShell
-from polyglot_site_translator.presentation.router import RouteName
 
 SYNCED_FILES = 12
 PROCESSED_FAMILIES = 4
@@ -49,7 +49,7 @@ def _context_with_shell(context: object) -> BehaveShellContext:
     return cast(BehaveShellContext, context)
 
 
-@given("the frontend shell is wired with seeded fake services")
+@given("the frontend shell is wired with seeded frontend test doubles")
 def step_seeded_shell(context: object) -> None:
     typed_context = _context_with_shell(context)
     typed_context.shell = create_frontend_shell(build_seeded_services())
@@ -67,25 +67,25 @@ def step_seeded_toml_shell(context: object) -> None:
     )
 
 
-@given("the frontend shell is wired with an empty fake catalog")
+@given("the frontend shell is wired with an empty frontend test catalog")
 def step_empty_shell(context: object) -> None:
     typed_context = _context_with_shell(context)
     typed_context.shell = create_frontend_shell(build_empty_services())
 
 
-@given("the frontend shell is wired with a failing sync service")
+@given("the frontend shell is wired with a failing sync test double")
 def step_failing_sync_shell(context: object) -> None:
     typed_context = _context_with_shell(context)
     typed_context.shell = create_frontend_shell(build_failing_sync_services())
 
 
-@given("the frontend shell is wired with a failing settings load service")
+@given("the frontend shell is wired with a failing settings-load test double")
 def step_failing_settings_load_shell(context: object) -> None:
     typed_context = _context_with_shell(context)
     typed_context.shell = create_frontend_shell(build_failing_settings_load_services())
 
 
-@given("the frontend shell is wired with a failing settings save service")
+@given("the frontend shell is wired with a failing settings-save test double")
 def step_failing_settings_save_shell(context: object) -> None:
     typed_context = _context_with_shell(context)
     typed_context.shell = create_frontend_shell(build_failing_settings_save_services())

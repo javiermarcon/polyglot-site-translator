@@ -42,6 +42,7 @@ If a section does not apply, explicitly say so.
 - Do not introduce a new module or subsystem without updating repository documentation.
 - Do not introduce a new external dependency without declaring it in the `requirements/` directory using the repository split defined below.
 - Do not leave `README.md` outdated when a task changes behavior, installation, usage, testing commands, architecture visible to contributors, or user/developer-facing capabilities.
+- Do not keep production fake bundles for workflows that already have a real implementation.
 - Do not change architecture without updating:
   - `ARCHITECTURE.md`
   - `REPO_MAP.md`
@@ -64,6 +65,7 @@ A task is not done unless all of the following are true:
   - Ruff
   - mypy
 - The change includes tests for the main behavior introduced or modified.
+- Implemented workflows are wired to real services in production entrypoints; test doubles for those workflows live in test support, not in runtime bundles under `src/`.
 - The implementation respects DRY, SOLID, SRP, and OCP.
 - Shared services remain framework-agnostic where intended.
 - Framework-specific extraction or discovery rules are isolated behind dedicated modules.
@@ -90,6 +92,7 @@ Before finishing any non-trivial change, verify explicitly:
 - No domain logic was pushed into presentation-only modules.
 - No persistence logic was duplicated across UI and services.
 - Shared services still support multiple framework adapters cleanly.
+- No runtime fake bundle remains in use for functionality that is already implemented for production use.
 
 ---
 
@@ -107,6 +110,24 @@ Before finishing any non-trivial change, verify explicitly:
   - framework adapters/plugins
 - Dependency injection or clear constructor-based wiring where useful.
 - Testable services independent of the GUI runtime.
+
+## Policy for fakes, stubs, and mocks
+
+Production code may contain placeholders only for workflows that are explicitly not implemented yet.
+
+If a workflow already has a real implementation:
+
+- the default runtime entrypoints must use the real implementation
+- do not keep or introduce a production fake bundle for that workflow under `src/`
+- tests must validate the implemented behavior using mocks, stubs, fixtures, or temporary files
+- those mocks/stubs must live in test support code (`tests/`, `features/steps/`, or equivalent test-only locations), not in production runtime wiring
+- tests must not depend on external public services such as remote FTP/SFTP servers
+
+If a fake remains temporarily because a workflow is not implemented yet:
+
+- scope it narrowly to the unfinished workflow
+- document that limitation in the relevant architecture/runtime docs
+- remove it once the real workflow exists
 
 ---
 

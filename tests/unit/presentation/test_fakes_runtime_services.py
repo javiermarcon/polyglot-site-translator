@@ -1,7 +1,8 @@
-"""Additional tests for runtime/frontend fake service builders."""
+"""Additional tests for runtime wiring and frontend test doubles."""
 
 from __future__ import annotations
 
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
@@ -11,13 +12,13 @@ from polyglot_site_translator.infrastructure.remote_connections.registry import 
 )
 from polyglot_site_translator.infrastructure.settings import build_default_settings_service
 from polyglot_site_translator.presentation.errors import ControlledServiceError
-from polyglot_site_translator.presentation.fakes import (
-    FailingSiteRegistryCatalogService,
-    build_default_frontend_services,
-    build_seeded_services,
-)
+from polyglot_site_translator.presentation.fakes import build_default_frontend_services
 from polyglot_site_translator.presentation.view_models import SiteEditorViewModel
 from polyglot_site_translator.services.remote_connections import RemoteConnectionService
+from tests.support.frontend_doubles import (
+    FailingSiteRegistryCatalogService,
+    build_seeded_services,
+)
 
 
 def _build_editor(*, connection_type: str, remote_host: str) -> SiteEditorViewModel:
@@ -60,14 +61,12 @@ def test_seeded_registry_fake_reports_invalid_configuration_without_remote_conne
     assert result.message == "Remote connection test requires a configured remote connection."
 
 
-def test_build_default_frontend_services_can_swap_catalog_for_failure_mode(
-    tmp_path: Path,
-) -> None:
+def test_runtime_services_allow_catalog_replacement_with_failure_double(tmp_path: Path) -> None:
     settings_service = build_default_settings_service(config_dir=tmp_path / "config")
 
-    services = build_default_frontend_services(
-        settings_service=settings_service,
-        fail_site_registry=True,
+    services = replace(
+        build_default_frontend_services(settings_service=settings_service),
+        catalog=FailingSiteRegistryCatalogService(),
     )
 
     with pytest.raises(ControlledServiceError, match="temporarily unavailable"):

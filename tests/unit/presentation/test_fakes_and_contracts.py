@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from polyglot_site_translator.presentation.contracts import ProjectCatalogService
-from polyglot_site_translator.presentation.fakes import build_empty_services, build_seeded_services
+from tests.support.frontend_doubles import build_empty_services, build_seeded_services
 
 
 def test_seeded_catalog_matches_ui_contract() -> None:

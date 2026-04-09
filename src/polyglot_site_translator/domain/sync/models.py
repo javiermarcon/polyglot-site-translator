@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass
 from enum import StrEnum
 
@@ -13,6 +14,17 @@ class SyncDirection(StrEnum):
     LOCAL_TO_REMOTE = "local_to_remote"
 
 
+class SyncProgressStage(StrEnum):
+    """Supported progress stages reported during sync execution."""
+
+    PREPARING_LOCAL = "preparing_local"
+    LISTING_REMOTE = "listing_remote"
+    DOWNLOADING_FILE = "downloading_file"
+    WRITING_LOCAL_FILE = "writing_local_file"
+    COMPLETED = "completed"
+    FAILED = "failed"
+
+
 @dataclass(frozen=True)
 class RemoteSyncFile:
     """A file discovered in the remote workspace for synchronization."""
@@ -20,6 +32,19 @@ class RemoteSyncFile:
     remote_path: str
     relative_path: str
     size_bytes: int
+
+
+@dataclass(frozen=True)
+class SyncProgressEvent:
+    """Structured progress event emitted during a sync workflow."""
+
+    stage: SyncProgressStage
+    message: str
+    command_text: str | None = None
+    files_discovered: int | None = None
+    files_downloaded: int | None = None
+    total_files: int | None = None
+    bytes_downloaded: int | None = None
 
 
 @dataclass(frozen=True)
@@ -53,3 +78,6 @@ class SyncResult:
     local_path: str
     summary: SyncSummary
     error: SyncError | None
+
+
+SyncProgressCallback = Callable[[SyncProgressEvent], None]

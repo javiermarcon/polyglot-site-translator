@@ -127,10 +127,13 @@ Current frontend base:
   Typed dataclasses for dashboard, project list/detail, sync, audit, PO processing, and settings.
 
 - `polyglot_site_translator/presentation/frontend_shell.py`
-  Navigation menu state, settings editing, project editor orchestration, and route-safe CRUD wiring independent from Kivy rendering.
+  Navigation menu state, settings editing, project editor orchestration, sync background execution state, and route-safe CRUD wiring independent from Kivy rendering.
 
 - `polyglot_site_translator/presentation/fakes.py`
-  In-memory fake services used by the frontend shell and tests, plus seeded fake catalog/workflow wiring with injectable settings persistence.
+  Default runtime wiring for the real TOML + SQLite-backed frontend services. This module must not keep fake bundles for workflows that already have production implementations.
+
+- `tests/support/frontend_doubles.py`
+  Test-only frontend stubs/in-memory doubles for shell navigation, settings, and still-unfinished workflow behavior. Use these from tests and BDD steps instead of shipping fake bundles in `src/`.
 
 - `polyglot_site_translator/presentation/kivy/`
   Thin Kivy `ScreenManager`, screens, and reusable widget area.
@@ -146,6 +149,9 @@ Current frontend base:
 
 - `polyglot_site_translator/presentation/kivy/screens/project_editor.py`
   Thin create/edit screen for site registry records driven entirely by typed presentation state, including the discoverable remote connection selector and "Test Connection" action.
+
+- `polyglot_site_translator/presentation/kivy/widgets/sync_progress_popup.py`
+  Dedicated Kivy popup that renders background sync progress and command-log output without moving remote work into widgets.
 
 - `services/`
   - use-case orchestration

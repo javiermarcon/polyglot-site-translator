@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import cast
@@ -20,7 +21,7 @@ from polyglot_site_translator.domain.site_registry.models import (
     RegisteredSite,
     SiteRegistrationInput,
 )
-from polyglot_site_translator.domain.sync.models import RemoteSyncFile
+from polyglot_site_translator.domain.sync.models import RemoteSyncFile, SyncProgressEvent
 from polyglot_site_translator.infrastructure.remote_connections.registry import (
     RemoteConnectionRegistry,
 )
@@ -89,6 +90,7 @@ class StubSFTPProvider:
     def list_remote_files(
         self,
         config: RemoteConnectionConfig,
+        progress_callback: Callable[[SyncProgressEvent], None] | None = None,
     ) -> list[RemoteSyncFile]:
         return []
 
@@ -96,6 +98,7 @@ class StubSFTPProvider:
         self,
         config: RemoteConnectionConfig,
         remote_path: str,
+        progress_callback: Callable[[SyncProgressEvent], None] | None = None,
     ) -> bytes:
         msg = f"download not used in this test for {remote_path}"
         raise AssertionError(msg)

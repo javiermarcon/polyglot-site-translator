@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Protocol
 
+from polyglot_site_translator.domain.sync.models import SyncProgressEvent
 from polyglot_site_translator.presentation.view_models import (
     AppSettingsViewModel,
     AuditSummaryViewModel,
@@ -32,7 +34,11 @@ class ProjectCatalogService(Protocol):
 class ProjectWorkflowService(Protocol):
     """Workflow actions exposed to the UI."""
 
-    def start_sync(self, project_id: str) -> SyncStatusViewModel:
+    def start_sync(
+        self,
+        project_id: str,
+        progress_callback: Callable[[SyncProgressEvent], None] | None = None,
+    ) -> SyncStatusViewModel:
         """Start or preview a sync workflow for a project."""
 
     def start_audit(self, project_id: str) -> AuditSummaryViewModel:

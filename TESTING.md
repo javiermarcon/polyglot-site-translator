@@ -23,7 +23,7 @@ Use:
 - `pytest`
 - `pytest` fixtures
 - parametrization where it improves coverage and clarity
-- mocks/stubs for external services
+- mocks/stubs for external services and implemented workflows
 - temporary directories/files for filesystem-heavy behavior
 
 Avoid tests that depend on:
@@ -104,6 +104,28 @@ If a bug is caused by:
 - report rendering edge cases
 
 the fix should include a targeted test.
+
+---
+
+## Rule for implemented workflows
+
+If a workflow is already implemented in production code, tests must exercise that implemented behavior through:
+
+- mocks
+- stubs
+- fixtures
+- temporary directories/databases/files
+
+Do not rely on production fake bundles for those implemented workflows.
+Production fake bundles are only acceptable for workflows that are still explicitly unfinished.
+
+Test doubles for implemented flows should live in test-only support code such as:
+
+- `tests/`
+- `tests/support/`
+- `features/steps/`
+
+Do not keep those doubles in runtime bundles under `src/` once the real workflow exists.
 
 ---
 
@@ -239,10 +261,12 @@ Mock external dependencies such as:
 
 - translation provider
 - FTP client
+- SFTP/SCP/SSH clients
 - platform-specific integrations
 - time-sensitive or OS-specific behavior where needed
 
 Do not over-mock internal domain logic.
+Do not hit external public services to test implemented features when a controlled stub or fixture can validate the same contract.
 
 ---
 

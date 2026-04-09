@@ -8,12 +8,12 @@ from kivy.uix.spinner import Spinner
 import pytest
 
 from polyglot_site_translator.app import create_kivy_app
-from polyglot_site_translator.presentation.fakes import build_seeded_services
 from polyglot_site_translator.presentation.kivy.screens.project_editor import (
     _find_option_label,
     _find_option_value,
 )
 from polyglot_site_translator.presentation.view_models import SiteEditorViewModel
+from tests.support.frontend_doubles import build_seeded_services
 
 
 def test_project_editor_screen_renders_empty_state_and_requires_loaded_state() -> None:

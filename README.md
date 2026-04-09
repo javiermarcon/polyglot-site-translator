@@ -31,6 +31,8 @@ El repositorio está en una etapa temprana y hoy incluye principalmente:
 - primera base real de sync `remote -> local` usando la configuración remota persistida del proyecto
 - descarga real de archivos remotos al `local_path` con creación automática de directorios locales faltantes
 - resultado tipado y controlado de sync con conteo de archivos y código de error cuando falla
+- ejecución de sync en background desde Project Detail, con una ventana dedicada de progreso
+- barra de progreso y log visible de comandos remotos/locales durante el sync
 - migración automática de columnas heredadas `ftp_*` a una tabla relacionada de conexiones remotas
 - registry real de adapters/framework detection con resultados tipados
 - detección efectiva de proyectos WordPress, Django y Flask a partir de `local_path`
@@ -82,7 +84,7 @@ La base actual implementa una base funcional de presentación, settings y `site_
 - `domain/framework_detection/`: contratos, resultados tipados y errores explícitos para detección de framework
 - `services/site_registry.py`: validación y CRUD del site registry
 - `services/remote_connections.py`: validación opcional, catálogo discoverable y test de conexión
-- `services/project_sync.py`: sync real `remote -> local` con resultados tipados y errores controlados
+- `services/project_sync.py`: sync real `remote -> local` con resultados tipados, errores controlados y eventos de progreso
 - `services/framework_detection.py`: orquestación de detección desde el registry de adapters
 - `adapters/base.py`: contrato base discoverable para nuevos adapters
 - `infrastructure/settings.py`: persistencia TOML de settings generales por usuario
@@ -97,7 +99,7 @@ La base actual implementa una base funcional de presentación, settings y `site_
 - `presentation/view_models.py`: modelos tipados para pantallas y paneles
 - `presentation/frontend_shell.py`: orquestación de navegación y estado
 - `presentation/site_registry_services.py`: adapters entre el servicio real de site registry, el subsistema remoto, la detección de framework y la UI
-- `presentation/fakes.py`: workflows fake, doubles de settings y wiring runtime del site registry + framework detection real
+- `presentation/fakes.py`: wiring real del runtime para settings TOML + `site_registry` SQLite; los dobles seeded de tests viven fuera de `src/`
 - `presentation/kivy/`: app Kivy, `ScreenManager`, screens y widgets
 
 La UI no debe hablar directamente con:
@@ -120,11 +122,15 @@ La base actual del frontend incluye:
 - acción "Test Connection" en el editor, resuelta por servicios y con resultado estructurado en pantalla
 - Audit Screen con preview basado en la detección real del proyecto en vez de un conteo fijo del runtime
 - Sync Screen con wiring real de `remote -> local` y resumen estructurado del resultado
+- ventana de progreso de sync abierta desde Project Detail para no bloquear el hilo principal de Kivy
 - Audit Screen para mostrar resultados fake de auditoría
 - PO Processing Screen para mostrar resultados fake de procesamiento
 - Settings generales con persistencia TOML y campos para configurar la ubicación/nombre de la base SQLite
 
 La navegación mantiene el contexto del proyecto seleccionado. El flujo principal de create/list/detail/update y el sync `remote -> local` ya usan servicios reales para `site_registry` y el subsistema remoto; audit y PO processing siguen usando servicios fake detrás de los mismos contratos de UI.
+
+El entrypoint gráfico por defecto (`create_kivy_app()` / `python -m polyglot_site_translator`) arranca con settings TOML y `site_registry` SQLite reales. Los bundles fake seeded quedan reservados para tests y escenarios de desarrollo controlados.
+Los doubles/stubs de test para funcionalidades ya implementadas viven en soporte de tests y no forman parte del runtime productivo.
 
 ## Estructura del repositorio
 
@@ -243,6 +249,7 @@ Se persiste cifrada con una key local almacenada junto al config dir de la app.
 Si el runtime encuentra una base heredada con columnas `ftp_*`, migra esos datos a la tabla de conexiones remotas relacionadas sin convertir el ciphertext a texto plano durante la migración.
 
 El flujo de sync actual usa la conexión remota persistida del proyecto para listar el contenido remoto y descargar archivos al `local_path`.
+Cuando se dispara desde Project Detail, el trabajo corre en background y se abre una ventana dedicada con barra de progreso y log de comandos del transporte y del workspace local.
 Si el workspace local no existe, se crea automáticamente.
 Si el remoto está vacío, el sync devuelve un resultado válido con `0` archivos descargados.
 En esta etapa todavía no existe sync `local -> remote`, ni filtros por adapter, ni controles de sync selectivo/full desde la UI.

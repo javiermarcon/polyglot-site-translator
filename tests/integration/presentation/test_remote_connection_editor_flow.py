@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, cast
@@ -15,7 +16,7 @@ from polyglot_site_translator.domain.remote_connections.models import (
     RemoteConnectionTestResult,
     RemoteConnectionTypeDescriptor,
 )
-from polyglot_site_translator.domain.sync.models import RemoteSyncFile
+from polyglot_site_translator.domain.sync.models import RemoteSyncFile, SyncProgressEvent
 from polyglot_site_translator.infrastructure.remote_connections.registry import (
     RemoteConnectionRegistry,
 )
@@ -52,6 +53,7 @@ class SuccessfulSFTPProvider:
     def list_remote_files(
         self,
         config: RemoteConnectionConfig,
+        progress_callback: Callable[[SyncProgressEvent], None] | None = None,
     ) -> list[RemoteSyncFile]:
         return []
 
@@ -59,6 +61,7 @@ class SuccessfulSFTPProvider:
         self,
         config: RemoteConnectionConfig,
         remote_path: str,
+        progress_callback: Callable[[SyncProgressEvent], None] | None = None,
     ) -> bytes:
         msg = f"download not used in this test for {remote_path}"
         raise AssertionError(msg)
@@ -131,3 +134,58 @@ def test_project_editor_runs_connection_tests_and_surfaces_the_result(tmp_path: 
     assert shell.project_editor_state.connection_test_result is not None
     assert shell.project_editor_state.connection_test_result.success is True
     assert "Connected successfully" in shell.project_editor_state.connection_test_result.message
+
+
+def test_project_editor_persists_remote_connection_data_when_editing_site(
+    tmp_path: Path,
+) -> None:
+    settings_service = build_default_settings_service(config_dir=tmp_path / "config")
+    app = cast(
+        Any,
+        create_kivy_app(
+            services=build_default_frontend_services(settings_service=settings_service)
+        ),
+    )
+    root = app.build()
+    editor_screen = root.get_screen("project_editor")
+    shell = editor_screen._shell
+
+    shell.open_project_editor_create()
+    root.current = "project_editor"
+    editor_screen.refresh()
+    editor_screen._name_input.text = "Marketing Site"
+    editor_screen._framework_spinner.text = "WordPress"
+    editor_screen._local_path_input.text = "/workspace/marketing-site"
+    editor_screen._default_locale_input.text = "en_US"
+    editor_screen._connection_type_spinner.text = "FTP"
+    editor_screen._remote_host_input.text = "ftp.example.com"
+    editor_screen._remote_port_input.text = "21"
+    editor_screen._remote_username_input.text = "deploy"
+    editor_screen._remote_password_input.text = "super-secret"
+    editor_screen._remote_path_input.text = "/public_html"
+    editor_screen._save_editor()
+
+    assert shell.project_detail_state is not None
+    project_id = shell.project_detail_state.project.id
+
+    shell.open_project_editor_edit(project_id)
+    root.current = "project_editor"
+    editor_screen.refresh()
+    editor_screen._connection_type_spinner.text = "FTP"
+    editor_screen._remote_host_input.text = "ftp-v2.example.com"
+    editor_screen._remote_port_input.text = "21"
+    editor_screen._remote_username_input.text = "deployer"
+    editor_screen._remote_password_input.text = "super-secret-v2"
+    editor_screen._remote_path_input.text = "/public_html/v2"
+    editor_screen._save_editor()
+
+    shell.open_project_editor_edit(project_id)
+    editor_screen.refresh()
+
+    assert shell.project_editor_state is not None
+    assert shell.project_editor_state.editor.connection_type == "ftp"
+    assert shell.project_editor_state.editor.remote_host == "ftp-v2.example.com"
+    assert shell.project_editor_state.editor.remote_port == "21"
+    assert shell.project_editor_state.editor.remote_username == "deployer"
+    assert shell.project_editor_state.editor.remote_password == "super-secret-v2"
+    assert shell.project_editor_state.editor.remote_path == "/public_html/v2"
