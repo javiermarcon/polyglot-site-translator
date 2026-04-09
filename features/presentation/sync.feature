@@ -68,3 +68,12 @@ Feature: Remote to local project synchronization
     And the operator starts the sync workflow from the project detail screen
     Then the sync progress window is open
     And the sync progress window keeps only the last 2 operations
+
+  Scenario: Reuse a single remote session for a multi-file sync
+    Given the frontend shell is wired with a real sync workflow
+    And the registered project "marketing-site" has remote files available
+    When the operator opens the synced detail for project "marketing-site"
+    And the operator starts the sync workflow from the project detail screen
+    Then the sync progress window is open
+    And the sync progress window shows a single remote connect command
+    And the sync progress window shows a single remote close command

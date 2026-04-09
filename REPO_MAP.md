@@ -79,7 +79,7 @@ Current frontend base:
   TOML-backed settings persistence, validation, and per-user config-path resolution.
 
 - `polyglot_site_translator/infrastructure/remote_connections/base.py`
-  Shared provider base class, structured remote-operation errors, bounded `list_remote_files()` materialization, and the incremental `iter_remote_files()` contract used by real sync flows.
+  Shared provider and reusable-session base classes, structured remote-operation errors, controlled connect retry behavior, bounded `list_remote_files()` materialization, and incremental traversal helpers.
 
 - `polyglot_site_translator/infrastructure/database_location.py`
   Resolution and validation of the configured SQLite directory/filename into a final database path.
@@ -91,7 +91,7 @@ Current frontend base:
   Local reversible encryption helper used to store remote passwords encrypted at rest.
 
 - `polyglot_site_translator/domain/remote_connections/`
-  Typed remote-connection descriptors, configs, test results, and provider contracts.
+  Typed remote-connection descriptors, configs, session state, test results, and provider/session contracts.
 
 - `polyglot_site_translator/domain/sync/`
   Typed sync direction, remote file descriptors, summaries, results, and explicit sync errors.
@@ -115,10 +115,10 @@ Current frontend base:
   Validation, discoverable catalog exposure, and connection-test orchestration for remote connection providers.
 
 - `polyglot_site_translator/services/project_sync.py`
-  Remote-to-local sync orchestration over the existing remote provider registry, including typed results and controlled failures.
+  Remote-to-local sync orchestration over the existing remote provider registry, including one reusable remote session per sync run, typed results, and controlled failures.
 
 - `polyglot_site_translator/infrastructure/remote_connections/`
-  Discoverable FTP/FTPS/SFTP/SCP provider implementations and the runtime provider registry.
+  Discoverable FTP/FTPS/SFTP/SCP provider implementations, reusable transport sessions, and the runtime provider registry.
 
 - `polyglot_site_translator/infrastructure/sync_local.py`
   Local workspace directory creation and downloaded-file persistence for sync workflows.

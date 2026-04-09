@@ -96,7 +96,7 @@ Examples:
 
 Current first real implementation:
 - `domain/site_registry/` defines typed models, contracts, and explicit errors
-- `domain/remote_connections/` defines typed descriptors, configs, contracts, and test results
+- `domain/remote_connections/` defines typed descriptors, configs, provider/session contracts, session state, and test results
 - `domain/sync/` defines sync direction, remote file descriptors, summaries, results, and explicit sync errors
 - `services/site_registry.py` validates and orchestrates CRUD use cases
 - `services/remote_connections.py` validates optional remote configs, exposes the discoverable catalog, and dispatches connection tests
@@ -122,6 +122,7 @@ Current first sync stage:
 - real remote-to-local download only
 - reuses persisted `RemoteConnectionConfig`
 - reuses the existing discoverable remote provider registry
+- opens one reusable remote session per sync run, so listing and all downloads share the same connection lifecycle
 - returns typed sync results with structured success/failure details
 - prepares the local workspace automatically when directories are missing
 
@@ -254,10 +255,11 @@ The sync screen now also owns:
 - staying presentation-only while services/providers own remote listing, download, and local filesystem writes
 
 The remote-provider contract now distinguishes clearly between:
+- `open_session()` for a reusable connection lifecycle with state, listing, download, close, and controlled connect retry behavior
 - `iter_remote_files()` for full incremental traversal
 - `list_remote_files()` for bounded materialization only
 
-That keeps sync workflows stream-oriented while preventing accidental full-tree materialization from protocol-specific helper paths.
+Sync services must use `open_session()` for multi-file remote workflows. Provider-level `iter_remote_files()`, `list_remote_files()`, and `download_file()` are compatibility/convenience paths for bounded or one-off calls, not the orchestration model for a full sync run. That keeps sync workflows stream-oriented, prevents accidental full-tree materialization from protocol-specific helper paths, and avoids reconnecting once per downloaded file.
 
 ### Shared services must remain target-agnostic where feasible
 

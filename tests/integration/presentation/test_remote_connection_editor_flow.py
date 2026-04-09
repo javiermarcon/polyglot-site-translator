@@ -66,6 +66,10 @@ class SuccessfulSFTPProvider:
     ) -> Iterable[RemoteSyncFile]:
         return iter(())
 
+    def open_session(self, config: RemoteConnectionConfig) -> Any:
+        msg = f"open_session not used in this test for {config.connection_type}"
+        raise AssertionError(msg)
+
     def download_file(
         self,
         config: RemoteConnectionConfig,

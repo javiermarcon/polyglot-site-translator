@@ -7,6 +7,7 @@ from pathlib import Path
 
 from polyglot_site_translator.domain.remote_connections.contracts import (
     RemoteConnectionProvider,
+    RemoteConnectionSession,
 )
 from polyglot_site_translator.domain.remote_connections.models import (
     RemoteConnectionConfig,
@@ -188,7 +189,7 @@ class ProjectSyncService:
                 ),
             )
 
-    def _sync_remote_files_incrementally(  # noqa: PLR0911, PLR0915
+    def _sync_remote_files_incrementally(  # noqa: PLR0911, PLR0912, PLR0915
         self,
         *,
         context: _DownloadContext,
@@ -199,10 +200,7 @@ class ProjectSyncService:
         directories_created = context.summary.directories_created
         bytes_downloaded = 0
         try:
-            remote_files = context.provider.iter_remote_files(
-                context.remote_connection,
-                progress_callback=progress_callback,
-            )
+            session = context.provider.open_session(context.remote_connection)
         except RemoteConnectionOperationError as error:
             result = self._failure_result(
                 context=_FailureContext(
@@ -217,53 +215,15 @@ class ProjectSyncService:
             )
             self._emit_failure(progress_callback, result)
             return result
-        except ModuleNotFoundError:
-            result = self._failure_result(
-                context=_FailureContext(
-                    site=context.site,
-                    connection_type=context.connection_type,
-                    summary=context.summary,
-                ),
-                error=SyncError(
-                    code="missing_dependency",
-                    message=(
-                        "The selected remote sync provider requires an unavailable dependency."
-                    ),
-                ),
-            )
-            self._emit_failure(progress_callback, result)
-            return result
-        except OSError as error:
-            result = self._failure_result(
-                context=_FailureContext(
-                    site=context.site,
-                    connection_type=context.connection_type,
-                    summary=context.summary,
-                ),
-                error=SyncError(
-                    code="remote_listing_failed",
-                    message=str(error),
-                ),
-            )
-            self._emit_failure(progress_callback, result)
-            return result
-        remote_file_iterator = iter(remote_files)
-        while True:
+        try:
             try:
-                remote_file = next(remote_file_iterator)
-            except StopIteration:
-                break
+                remote_files = session.iter_remote_files(progress_callback=progress_callback)
             except RemoteConnectionOperationError as error:
                 result = self._failure_result(
                     context=_FailureContext(
                         site=context.site,
                         connection_type=context.connection_type,
-                        summary=SyncSummary(
-                            files_discovered=files_discovered,
-                            files_downloaded=files_downloaded,
-                            directories_created=directories_created,
-                            bytes_downloaded=bytes_downloaded,
-                        ),
+                        summary=context.summary,
                     ),
                     error=SyncError(
                         code=error.error_code,
@@ -277,12 +237,7 @@ class ProjectSyncService:
                     context=_FailureContext(
                         site=context.site,
                         connection_type=context.connection_type,
-                        summary=SyncSummary(
-                            files_discovered=files_discovered,
-                            files_downloaded=files_downloaded,
-                            directories_created=directories_created,
-                            bytes_downloaded=bytes_downloaded,
-                        ),
+                        summary=context.summary,
                     ),
                     error=SyncError(
                         code="missing_dependency",
@@ -298,12 +253,7 @@ class ProjectSyncService:
                     context=_FailureContext(
                         site=context.site,
                         connection_type=context.connection_type,
-                        summary=SyncSummary(
-                            files_discovered=files_discovered,
-                            files_downloaded=files_downloaded,
-                            directories_created=directories_created,
-                            bytes_downloaded=bytes_downloaded,
-                        ),
+                        summary=context.summary,
                     ),
                     error=SyncError(
                         code="remote_listing_failed",
@@ -312,106 +262,174 @@ class ProjectSyncService:
                 )
                 self._emit_failure(progress_callback, result)
                 return result
-            files_discovered += 1
-            self._emit_progress(
-                progress_callback,
-                SyncProgressEvent(
-                    stage=SyncProgressStage.LISTING_REMOTE,
-                    message=f"Discovered remote file {remote_file.relative_path}.",
-                    files_discovered=files_discovered,
-                    files_downloaded=files_downloaded,
-                    bytes_downloaded=bytes_downloaded,
-                ),
-            )
-            local_file_path = context.local_root / Path(remote_file.relative_path)
-            try:
-                directories_created += self._local_workspace.ensure_directory(
-                    local_file_path.parent
-                )
-                file_bytes = context.provider.download_file(
-                    context.remote_connection,
-                    remote_file.remote_path,
-                    progress_callback=progress_callback,
-                )
-                self._local_workspace.write_file(local_file_path, file_bytes)
-            except RemoteConnectionOperationError as error:
-                result = self._failure_result(
-                    context=_FailureContext(
-                        site=context.site,
-                        connection_type=context.connection_type,
-                        summary=SyncSummary(
-                            files_discovered=files_discovered,
-                            files_downloaded=files_downloaded,
-                            directories_created=directories_created,
-                            bytes_downloaded=bytes_downloaded,
+            remote_file_iterator = iter(remote_files)
+            while True:
+                try:
+                    remote_file = next(remote_file_iterator)
+                except StopIteration:
+                    break
+                except RemoteConnectionOperationError as error:
+                    result = self._failure_result(
+                        context=_FailureContext(
+                            site=context.site,
+                            connection_type=context.connection_type,
+                            summary=SyncSummary(
+                                files_discovered=files_discovered,
+                                files_downloaded=files_downloaded,
+                                directories_created=directories_created,
+                                bytes_downloaded=bytes_downloaded,
+                            ),
                         ),
-                    ),
-                    error=SyncError(
-                        code=error.error_code,
-                        message=str(error),
-                        remote_path=remote_file.remote_path,
-                        local_path=str(local_file_path),
+                        error=SyncError(
+                            code=error.error_code,
+                            message=str(error),
+                        ),
+                    )
+                    self._emit_failure(progress_callback, result)
+                    return result
+                except ModuleNotFoundError:
+                    result = self._failure_result(
+                        context=_FailureContext(
+                            site=context.site,
+                            connection_type=context.connection_type,
+                            summary=SyncSummary(
+                                files_discovered=files_discovered,
+                                files_downloaded=files_downloaded,
+                                directories_created=directories_created,
+                                bytes_downloaded=bytes_downloaded,
+                            ),
+                        ),
+                        error=SyncError(
+                            code="missing_dependency",
+                            message=(
+                                "The selected remote sync provider requires an unavailable "
+                                "dependency."
+                            ),
+                        ),
+                    )
+                    self._emit_failure(progress_callback, result)
+                    return result
+                except OSError as error:
+                    result = self._failure_result(
+                        context=_FailureContext(
+                            site=context.site,
+                            connection_type=context.connection_type,
+                            summary=SyncSummary(
+                                files_discovered=files_discovered,
+                                files_downloaded=files_downloaded,
+                                directories_created=directories_created,
+                                bytes_downloaded=bytes_downloaded,
+                            ),
+                        ),
+                        error=SyncError(
+                            code="remote_listing_failed",
+                            message=str(error),
+                        ),
+                    )
+                    self._emit_failure(progress_callback, result)
+                    return result
+                files_discovered += 1
+                self._emit_progress(
+                    progress_callback,
+                    SyncProgressEvent(
+                        stage=SyncProgressStage.LISTING_REMOTE,
+                        message=f"Discovered remote file {remote_file.relative_path}.",
+                        files_discovered=files_discovered,
+                        files_downloaded=files_downloaded,
+                        bytes_downloaded=bytes_downloaded,
                     ),
                 )
-                self._emit_failure(progress_callback, result)
-                return result
-            except ModuleNotFoundError:
-                result = self._failure_result(
-                    context=_FailureContext(
-                        site=context.site,
-                        connection_type=context.connection_type,
-                        summary=SyncSummary(
-                            files_discovered=files_discovered,
-                            files_downloaded=files_downloaded,
-                            directories_created=directories_created,
-                            bytes_downloaded=bytes_downloaded,
+                local_file_path = context.local_root / Path(remote_file.relative_path)
+                try:
+                    directories_created += self._local_workspace.ensure_directory(
+                        local_file_path.parent
+                    )
+                    file_bytes = session.download_file(
+                        remote_file.remote_path,
+                        progress_callback=progress_callback,
+                    )
+                    self._local_workspace.write_file(local_file_path, file_bytes)
+                except RemoteConnectionOperationError as error:
+                    result = self._failure_result(
+                        context=_FailureContext(
+                            site=context.site,
+                            connection_type=context.connection_type,
+                            summary=SyncSummary(
+                                files_discovered=files_discovered,
+                                files_downloaded=files_downloaded,
+                                directories_created=directories_created,
+                                bytes_downloaded=bytes_downloaded,
+                            ),
                         ),
-                    ),
-                    error=SyncError(
-                        code="missing_dependency",
-                        message=(
-                            "The selected remote sync provider requires an unavailable dependency."
+                        error=SyncError(
+                            code=error.error_code,
+                            message=str(error),
+                            remote_path=remote_file.remote_path,
+                            local_path=str(local_file_path),
                         ),
-                        remote_path=remote_file.remote_path,
-                        local_path=str(local_file_path),
+                    )
+                    self._emit_failure(progress_callback, result)
+                    return result
+                except ModuleNotFoundError:
+                    result = self._failure_result(
+                        context=_FailureContext(
+                            site=context.site,
+                            connection_type=context.connection_type,
+                            summary=SyncSummary(
+                                files_discovered=files_discovered,
+                                files_downloaded=files_downloaded,
+                                directories_created=directories_created,
+                                bytes_downloaded=bytes_downloaded,
+                            ),
+                        ),
+                        error=SyncError(
+                            code="missing_dependency",
+                            message=(
+                                "The selected remote sync provider requires an unavailable "
+                                "dependency."
+                            ),
+                            remote_path=remote_file.remote_path,
+                            local_path=str(local_file_path),
+                        ),
+                    )
+                    self._emit_failure(progress_callback, result)
+                    return result
+                except OSError as error:
+                    result = self._failure_result(
+                        context=_FailureContext(
+                            site=context.site,
+                            connection_type=context.connection_type,
+                            summary=SyncSummary(
+                                files_discovered=files_discovered,
+                                files_downloaded=files_downloaded,
+                                directories_created=directories_created,
+                                bytes_downloaded=bytes_downloaded,
+                            ),
+                        ),
+                        error=SyncError(
+                            code="download_failed",
+                            message=str(error),
+                            remote_path=remote_file.remote_path,
+                            local_path=str(local_file_path),
+                        ),
+                    )
+                    self._emit_failure(progress_callback, result)
+                    return result
+                files_downloaded += 1
+                bytes_downloaded += len(file_bytes)
+                self._emit_progress(
+                    progress_callback,
+                    SyncProgressEvent(
+                        stage=SyncProgressStage.WRITING_LOCAL_FILE,
+                        message=(f"Wrote {remote_file.relative_path} into the local workspace."),
+                        command_text=f"LOCAL WRITE {local_file_path}",
+                        files_discovered=files_discovered,
+                        files_downloaded=files_downloaded,
+                        bytes_downloaded=bytes_downloaded,
                     ),
                 )
-                self._emit_failure(progress_callback, result)
-                return result
-            except OSError as error:
-                result = self._failure_result(
-                    context=_FailureContext(
-                        site=context.site,
-                        connection_type=context.connection_type,
-                        summary=SyncSummary(
-                            files_discovered=files_discovered,
-                            files_downloaded=files_downloaded,
-                            directories_created=directories_created,
-                            bytes_downloaded=bytes_downloaded,
-                        ),
-                    ),
-                    error=SyncError(
-                        code="download_failed",
-                        message=str(error),
-                        remote_path=remote_file.remote_path,
-                        local_path=str(local_file_path),
-                    ),
-                )
-                self._emit_failure(progress_callback, result)
-                return result
-            files_downloaded += 1
-            bytes_downloaded += len(file_bytes)
-            self._emit_progress(
-                progress_callback,
-                SyncProgressEvent(
-                    stage=SyncProgressStage.WRITING_LOCAL_FILE,
-                    message=f"Wrote {remote_file.relative_path} into the local workspace.",
-                    command_text=f"LOCAL WRITE {local_file_path}",
-                    files_discovered=files_discovered,
-                    files_downloaded=files_downloaded,
-                    bytes_downloaded=bytes_downloaded,
-                ),
-            )
+        finally:
+            self._close_remote_session(session, progress_callback)
         if files_discovered == 0:
             result = SyncResult(
                 direction=SyncDirection.REMOTE_TO_LOCAL,
@@ -445,6 +463,30 @@ class ProjectSyncService:
         )
         self._emit_completion(progress_callback, result)
         return result
+
+    def _close_remote_session(
+        self,
+        session: RemoteConnectionSession,
+        progress_callback: SyncProgressCallback | None,
+    ) -> None:
+        try:
+            session.close(progress_callback=progress_callback)
+        except RemoteConnectionOperationError as error:
+            self._emit_progress(
+                progress_callback,
+                SyncProgressEvent(
+                    stage=SyncProgressStage.FAILED,
+                    message=f"Remote session close failed: {error}",
+                ),
+            )
+        except OSError as error:
+            self._emit_progress(
+                progress_callback,
+                SyncProgressEvent(
+                    stage=SyncProgressStage.FAILED,
+                    message=f"Remote session close failed: {error}",
+                ),
+            )
 
     def _failure_result(
         self,

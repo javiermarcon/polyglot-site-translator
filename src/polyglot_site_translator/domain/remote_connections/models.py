@@ -18,6 +18,14 @@ class BuiltinRemoteConnectionType(StrEnum):
     SCP = "scp"
 
 
+class RemoteConnectionSessionState(StrEnum):
+    """Lifecycle states for a reusable remote session."""
+
+    CLOSED = "closed"
+    OPEN = "open"
+    FAILED = "failed"
+
+
 @dataclass(frozen=True)
 class RemoteConnectionFlags:
     """Optional remote connection flags persisted with the connection config."""

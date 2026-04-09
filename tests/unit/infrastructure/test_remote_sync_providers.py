@@ -12,6 +12,7 @@ import pytest
 from polyglot_site_translator.domain.remote_connections.models import (
     RemoteConnectionConfig,
     RemoteConnectionConfigInput,
+    RemoteConnectionSessionState,
     RemoteConnectionTestResult,
     RemoteConnectionTypeDescriptor,
 )
@@ -22,8 +23,67 @@ from polyglot_site_translator.infrastructure.remote_connections import (
 )
 from polyglot_site_translator.infrastructure.remote_connections.base import (
     BaseRemoteConnectionProvider,
+    BaseRemoteConnectionSession,
     RemoteConnectionOperationError,
 )
+
+
+@dataclass
+class _ListBackedSession:
+    files: list[RemoteSyncFile]
+    state: RemoteConnectionSessionState = RemoteConnectionSessionState.OPEN
+    close_calls: int = 0
+
+    def iter_remote_files(self, progress_callback: Any = None) -> Iterator[RemoteSyncFile]:
+        return iter(self.files)
+
+    def download_file(self, remote_path: str, progress_callback: Any = None) -> bytes:
+        msg = f"download not used in this test for {remote_path}"
+        raise AssertionError(msg)
+
+    def close(self, progress_callback: Any = None) -> None:
+        self.close_calls += 1
+        self.state = RemoteConnectionSessionState.CLOSED
+
+
+class _ControlledBaseSession(BaseRemoteConnectionSession):
+    def __init__(
+        self,
+        config: RemoteConnectionConfig,
+        *,
+        connect_errors: list[RemoteConnectionOperationError] | None = None,
+        close_error: RemoteConnectionOperationError | None = None,
+        max_connect_attempts: int = 2,
+    ) -> None:
+        super().__init__(config, max_connect_attempts=max_connect_attempts)
+        self.connect_errors = connect_errors or []
+        self.close_error = close_error
+        self.connect_calls = 0
+        self.reset_calls = 0
+        self.close_calls = 0
+
+    def _connect(self, progress_callback: Any = None) -> None:
+        self.connect_calls += 1
+        if self.connect_errors:
+            raise self.connect_errors.pop(0)
+
+    def _iter_remote_files(self, progress_callback: Any = None) -> Iterator[RemoteSyncFile]:
+        yield RemoteSyncFile(
+            remote_path="/srv/app/messages.po",
+            relative_path="messages.po",
+            size_bytes=8,
+        )
+
+    def _download_file(self, remote_path: str, progress_callback: Any = None) -> bytes:
+        return remote_path.encode()
+
+    def _close(self, progress_callback: Any = None) -> None:
+        self.close_calls += 1
+        if self.close_error is not None:
+            raise self.close_error
+
+    def _reset_after_failed_connect(self) -> None:
+        self.reset_calls += 1
 
 
 def _build_ftp_config(connection_type: str = "ftp") -> RemoteConnectionConfig:
@@ -124,6 +184,100 @@ def test_ftp_provider_lists_remote_files_recursively(
     ]
 
 
+def test_base_remote_session_rejects_invalid_retry_attempts() -> None:
+    with pytest.raises(ValueError, match="max_connect_attempts must be a positive integer"):
+        _ControlledBaseSession(_build_ssh_config(), max_connect_attempts=0)
+
+
+def test_base_remote_session_retries_retryable_connect_failures() -> None:
+    session = _ControlledBaseSession(
+        _build_ssh_config(),
+        connect_errors=[
+            RemoteConnectionOperationError(
+                error_code="connection_timeout",
+                message="timed out",
+            )
+        ],
+    )
+
+    remote_files = list(session.iter_remote_files())
+
+    assert [remote_file.relative_path for remote_file in remote_files] == ["messages.po"]
+    assert session.connect_calls == 2
+    assert session.reset_calls == 1
+    assert session.state is RemoteConnectionSessionState.OPEN
+
+
+def test_base_remote_session_close_is_noop_before_open() -> None:
+    session = _ControlledBaseSession(_build_ssh_config())
+
+    session.close()
+
+    assert session.close_calls == 0
+    assert session.state is RemoteConnectionSessionState.CLOSED
+
+
+def test_base_remote_session_exhausts_retryable_connect_failures() -> None:
+    session = _ControlledBaseSession(
+        _build_ssh_config(),
+        connect_errors=[
+            RemoteConnectionOperationError(
+                error_code="connection_timeout",
+                message="first timeout",
+            ),
+            RemoteConnectionOperationError(
+                error_code="connection_timeout",
+                message="second timeout",
+            ),
+        ],
+    )
+
+    with pytest.raises(RemoteConnectionOperationError, match="second timeout"):
+        list(session.iter_remote_files())
+
+    assert session.connect_calls == 2
+    assert session.reset_calls == 2
+    assert session.state is RemoteConnectionSessionState.FAILED
+
+
+def test_base_remote_session_fails_without_retry_for_non_retryable_connect_errors() -> None:
+    session = _ControlledBaseSession(
+        _build_ssh_config(),
+        connect_errors=[
+            RemoteConnectionOperationError(
+                error_code="authentication_failed",
+                message="auth failed",
+            )
+        ],
+    )
+
+    with pytest.raises(RemoteConnectionOperationError, match="auth failed"):
+        list(session.iter_remote_files())
+
+    assert session.connect_calls == 1
+    assert session.reset_calls == 1
+    assert session.state is RemoteConnectionSessionState.FAILED
+    with pytest.raises(RemoteConnectionOperationError, match="Remote session is in a failed state"):
+        session.download_file("/srv/app/messages.po")
+
+
+def test_base_remote_session_marks_failed_when_close_fails() -> None:
+    session = _ControlledBaseSession(
+        _build_ssh_config(),
+        close_error=RemoteConnectionOperationError(
+            error_code="close_failed",
+            message="close failed",
+        ),
+    )
+    session.download_file("/srv/app/messages.po")
+
+    with pytest.raises(RemoteConnectionOperationError, match="close failed"):
+        session.close()
+
+    assert session.close_calls == 1
+    assert session.state is RemoteConnectionSessionState.FAILED
+
+
 def test_base_remote_provider_materializes_a_bounded_remote_file_list() -> None:
     class _IteratorBackedProvider(BaseRemoteConnectionProvider):
         descriptor = RemoteConnectionTypeDescriptor(
@@ -145,37 +299,29 @@ def test_base_remote_provider_materializes_a_bounded_remote_file_list() -> None:
                 error_code=None,
             )
 
-        def iter_remote_files(
-            self,
-            config: RemoteConnectionConfig,
-            progress_callback: Any = None,
-        ) -> Iterator[RemoteSyncFile]:
-            yield from [
-                RemoteSyncFile(
-                    remote_path=f"{config.remote_path}/messages-1.po",
-                    relative_path="messages-1.po",
-                    size_bytes=8,
-                ),
-                RemoteSyncFile(
-                    remote_path=f"{config.remote_path}/messages-2.po",
-                    relative_path="messages-2.po",
-                    size_bytes=8,
-                ),
-                RemoteSyncFile(
-                    remote_path=f"{config.remote_path}/messages-3.po",
-                    relative_path="messages-3.po",
-                    size_bytes=8,
-                ),
-            ]
+        def __init__(self) -> None:
+            self.session = _ListBackedSession(
+                files=[
+                    RemoteSyncFile(
+                        remote_path="/srv/app/messages-1.po",
+                        relative_path="messages-1.po",
+                        size_bytes=8,
+                    ),
+                    RemoteSyncFile(
+                        remote_path="/srv/app/messages-2.po",
+                        relative_path="messages-2.po",
+                        size_bytes=8,
+                    ),
+                    RemoteSyncFile(
+                        remote_path="/srv/app/messages-3.po",
+                        relative_path="messages-3.po",
+                        size_bytes=8,
+                    ),
+                ]
+            )
 
-        def download_file(
-            self,
-            config: RemoteConnectionConfig,
-            remote_path: str,
-            progress_callback: Any = None,
-        ) -> bytes:
-            msg = f"download not used in this test for {remote_path}"
-            raise AssertionError(msg)
+        def open_session(self, config: RemoteConnectionConfig) -> _ListBackedSession:
+            return self.session
 
     provider = _IteratorBackedProvider()
 
@@ -185,13 +331,20 @@ def test_base_remote_provider_materializes_a_bounded_remote_file_list() -> None:
         "messages-1.po",
         "messages-2.po",
     ]
+    assert provider.session.close_calls == 1
 
 
-def test_base_remote_provider_closes_the_iterator_when_materialization_is_truncated() -> None:
-    class _ClosingIterator:
+def test_base_remote_provider_closes_the_session_when_materialization_is_truncated() -> None:
+    class _IteratorBackedProvider(BaseRemoteConnectionProvider):
+        descriptor = RemoteConnectionTypeDescriptor(
+            connection_type="sftp",
+            display_name="SFTP",
+            default_port=22,
+        )
+
         def __init__(self) -> None:
-            self._items = iter(
-                [
+            self.session = _ListBackedSession(
+                files=[
                     RemoteSyncFile(
                         remote_path="/srv/app/messages-1.po",
                         relative_path="messages-1.po",
@@ -204,26 +357,6 @@ def test_base_remote_provider_closes_the_iterator_when_materialization_is_trunca
                     ),
                 ]
             )
-            self.closed = False
-
-        def __iter__(self) -> _ClosingIterator:
-            return self
-
-        def __next__(self) -> RemoteSyncFile:
-            return next(self._items)
-
-        def close(self) -> None:
-            self.closed = True
-
-    class _IteratorBackedProvider(BaseRemoteConnectionProvider):
-        descriptor = RemoteConnectionTypeDescriptor(
-            connection_type="sftp",
-            display_name="SFTP",
-            default_port=22,
-        )
-
-        def __init__(self) -> None:
-            self.iterator = _ClosingIterator()
 
         def test_connection(
             self,
@@ -238,28 +371,59 @@ def test_base_remote_provider_closes_the_iterator_when_materialization_is_trunca
                 error_code=None,
             )
 
-        def iter_remote_files(
-            self,
-            config: RemoteConnectionConfig,
-            progress_callback: Any = None,
-        ) -> _ClosingIterator:
-            return self.iterator
-
-        def download_file(
-            self,
-            config: RemoteConnectionConfig,
-            remote_path: str,
-            progress_callback: Any = None,
-        ) -> bytes:
-            msg = f"download not used in this test for {remote_path}"
-            raise AssertionError(msg)
+        def open_session(self, config: RemoteConnectionConfig) -> _ListBackedSession:
+            return self.session
 
     provider = _IteratorBackedProvider()
 
     remote_files = provider.list_remote_files(_build_ssh_config(), max_files=1)
 
     assert [remote_file.relative_path for remote_file in remote_files] == ["messages-1.po"]
-    assert provider.iterator.closed is True
+    assert provider.session.close_calls == 1
+    assert provider.session.state is RemoteConnectionSessionState.CLOSED
+
+
+def test_base_remote_provider_iter_remote_files_closes_the_session() -> None:
+    class _IteratorBackedProvider(BaseRemoteConnectionProvider):
+        descriptor = RemoteConnectionTypeDescriptor(
+            connection_type="sftp",
+            display_name="SFTP",
+            default_port=22,
+        )
+
+        def __init__(self) -> None:
+            self.session = _ListBackedSession(
+                files=[
+                    RemoteSyncFile(
+                        remote_path="/srv/app/messages.po",
+                        relative_path="messages.po",
+                        size_bytes=8,
+                    )
+                ]
+            )
+
+        def test_connection(
+            self,
+            config: RemoteConnectionConfigInput,
+        ) -> RemoteConnectionTestResult:
+            return RemoteConnectionTestResult(
+                success=True,
+                connection_type=config.connection_type,
+                host=config.host,
+                port=config.port,
+                message="ok",
+                error_code=None,
+            )
+
+        def open_session(self, config: RemoteConnectionConfig) -> _ListBackedSession:
+            return self.session
+
+    provider = _IteratorBackedProvider()
+
+    remote_files = list(provider.iter_remote_files(_build_ssh_config()))
+
+    assert [remote_file.relative_path for remote_file in remote_files] == ["messages.po"]
+    assert provider.session.close_calls == 1
 
 
 def test_base_remote_provider_rejects_non_positive_materialization_limits() -> None:
@@ -283,30 +447,226 @@ def test_base_remote_provider_rejects_non_positive_materialization_limits() -> N
                 error_code=None,
             )
 
-        def iter_remote_files(
-            self,
-            config: RemoteConnectionConfig,
-            progress_callback: Any = None,
-        ) -> Iterator[RemoteSyncFile]:
-            yield RemoteSyncFile(
-                remote_path="/srv/app/messages.po",
-                relative_path="messages.po",
-                size_bytes=8,
+        def open_session(self, config: RemoteConnectionConfig) -> _ListBackedSession:
+            return _ListBackedSession(
+                files=[
+                    RemoteSyncFile(
+                        remote_path="/srv/app/messages.po",
+                        relative_path="messages.po",
+                        size_bytes=8,
+                    )
+                ]
             )
-
-        def download_file(
-            self,
-            config: RemoteConnectionConfig,
-            remote_path: str,
-            progress_callback: Any = None,
-        ) -> bytes:
-            msg = f"download not used in this test for {remote_path}"
-            raise AssertionError(msg)
 
     provider = _IteratorBackedProvider()
 
     with pytest.raises(ValueError, match="max_files must be a positive integer"):
         provider.list_remote_files(_build_ssh_config(), max_files=0)
+
+
+def test_ftp_provider_reuses_one_session_for_listing_and_multiple_downloads(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    actions: list[str] = []
+    fake_client = _FakeFtpClient(
+        actions=actions,
+        listing={
+            "/srv/app": [
+                ("messages.po", {"type": "file", "size": "8"}),
+                ("theme.po", {"type": "file", "size": "10"}),
+            ],
+        },
+        file_bytes={
+            "/srv/app/messages.po": b"messages",
+            "/srv/app/theme.po": b"theme",
+        },
+    )
+    provider = ftp.FTPRemoteConnectionProvider()
+    monkeypatch.setattr(provider, "_build_client", lambda: fake_client)
+
+    session = provider.open_session(_build_ftp_config())
+    remote_files = list(session.iter_remote_files())
+    payloads = [session.download_file(remote_file.remote_path) for remote_file in remote_files]
+    session.close()
+
+    assert [remote_file.relative_path for remote_file in remote_files] == [
+        "messages.po",
+        "theme.po",
+    ]
+    assert payloads == [b"messages", b"theme"]
+    assert actions == [
+        "connect:example.test:21:10",
+        "login:deploy:secret",
+        "mlsd:/srv/app",
+        "retrbinary:RETR /srv/app/messages.po",
+        "retrbinary:RETR /srv/app/theme.po",
+        "quit",
+    ]
+
+
+def test_ftp_session_wraps_connect_failures_and_resets_client(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    clients = [
+        _FakeFtpClient(actions=[], listing={}, file_bytes={}),
+        _FakeFtpClient(actions=[], listing={}, file_bytes={}),
+    ]
+
+    def _failing_connect(
+        client: Any,
+        config: RemoteConnectionConfig | RemoteConnectionConfigInput,
+    ) -> None:
+        msg = "login failed"
+        raise OSError(msg)
+
+    provider = ftp.FTPRemoteConnectionProvider()
+    monkeypatch.setattr(provider, "_build_client", lambda: clients.pop(0))
+    session = ftp._FtpRemoteConnectionSession(
+        config=_build_ftp_config(),
+        client_factory=provider._build_client,
+        connect_fn=_failing_connect,
+        connect_error_code="ftp_connection_failed",
+        transport_label="FTP",
+    )
+
+    with pytest.raises(RemoteConnectionOperationError, match="login failed") as error:
+        list(session.iter_remote_files())
+
+    assert error.value.error_code == "authentication_failed"
+
+
+def test_ftp_normalizes_empty_error_messages_to_default_code() -> None:
+    error = ftp._normalize_ftp_error(OSError(), default_code="download_failed")
+
+    assert error.error_code == "download_failed"
+    assert str(error) == "download failed"
+
+
+def test_sftp_provider_reuses_one_session_for_listing_and_multiple_downloads(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    sftp_client = _FakeSftpClient(
+        listing={
+            "/srv/app": [
+                _FakeSftpEntry("messages.po", 0o100644, 8),
+                _FakeSftpEntry("theme.po", 0o100644, 5),
+            ],
+        },
+        file_bytes={
+            "/srv/app/messages.po": b"messages",
+            "/srv/app/theme.po": b"theme",
+        },
+    )
+    ssh_client = _FakeSshClient(sftp_client)
+    monkeypatch.setattr(ssh, "_connect_ssh_client", lambda config: ssh_client)
+    provider = ssh.SFTPRemoteConnectionProvider()
+
+    session = provider.open_session(_build_ssh_config())
+    remote_files = list(session.iter_remote_files())
+    payloads = [session.download_file(remote_file.remote_path) for remote_file in remote_files]
+    session.close()
+
+    assert [remote_file.relative_path for remote_file in remote_files] == [
+        "messages.po",
+        "theme.po",
+    ]
+    assert payloads == [b"messages", b"theme"]
+    assert sftp_client.actions == [
+        "listdir_attr:/srv/app",
+        "file:/srv/app/messages.po:rb",
+        "file:/srv/app/theme.po:rb",
+        "sftp_close",
+    ]
+    assert ssh_client.actions == [
+        "open_sftp",
+        "ssh_close",
+    ]
+
+
+def test_sftp_session_wraps_open_sftp_failures(monkeypatch: pytest.MonkeyPatch) -> None:
+    class _OpenSftpFailingSshClient(_FakeSshClient):
+        def open_sftp(self) -> _FakeSftpClient:
+            msg = "Broken pipe"
+            raise OSError(msg)
+
+    ssh_client = _OpenSftpFailingSshClient(_FakeSftpClient(listing={}, file_bytes={}))
+    monkeypatch.setattr(ssh, "_connect_ssh_client", lambda config: ssh_client)
+    provider = ssh.SFTPRemoteConnectionProvider()
+
+    with pytest.raises(RemoteConnectionOperationError, match="Broken pipe") as error:
+        list(provider.open_session(_build_ssh_config()).iter_remote_files())
+
+    assert error.value.error_code == "transport_io_failed"
+    assert ssh_client.actions == ["ssh_close", "ssh_close"]
+
+
+def test_sftp_session_rejects_listing_without_open_client() -> None:
+    session = ssh.SFTPRemoteConnectionProvider().open_session(_build_ssh_config())
+
+    with pytest.raises(RemoteConnectionOperationError, match="SFTP client is not open"):
+        list(session._iter_remote_files(None))
+
+
+def test_sftp_session_rejects_download_without_open_client() -> None:
+    session = ssh.SFTPRemoteConnectionProvider().open_session(_build_ssh_config())
+
+    with pytest.raises(RemoteConnectionOperationError, match="SFTP client is not open"):
+        session._download_file("/srv/app/messages.po", None)
+
+
+def test_sftp_session_wraps_incremental_listing_errors(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class _ListingFailingSftpClient(_FakeSftpClient):
+        def listdir_attr(self, remote_path: str) -> list[_FakeSftpEntry]:
+            msg = "No such file"
+            raise OSError(msg)
+
+    ssh_client = _FakeSshClient(_ListingFailingSftpClient(listing={}, file_bytes={}))
+    monkeypatch.setattr(ssh, "_connect_ssh_client", lambda config: ssh_client)
+    session = ssh.SFTPRemoteConnectionProvider().open_session(_build_ssh_config())
+
+    with pytest.raises(RemoteConnectionOperationError, match="No such file") as error:
+        list(session.iter_remote_files())
+
+    assert error.value.error_code == "remote_path_not_found"
+
+
+def test_sftp_session_wraps_incremental_download_errors(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class _DownloadFailingSftpClient(_FakeSftpClient):
+        def file(self, remote_path: str, *, mode: str) -> _FakeRemoteFile:
+            msg = "Broken pipe"
+            raise OSError(msg)
+
+    ssh_client = _FakeSshClient(_DownloadFailingSftpClient(listing={}, file_bytes={}))
+    monkeypatch.setattr(ssh, "_connect_ssh_client", lambda config: ssh_client)
+    session = ssh.SFTPRemoteConnectionProvider().open_session(_build_ssh_config())
+
+    with pytest.raises(RemoteConnectionOperationError, match="Broken pipe") as error:
+        session.download_file("/srv/app/messages.po")
+
+    assert error.value.error_code == "transport_io_failed"
+
+
+def test_ssh_close_helpers_ignore_missing_and_failing_clients() -> None:
+    class _FailingCloseClient:
+        def close(self) -> None:
+            msg = "close failed"
+            raise OSError(msg)
+
+    class _AttributeFailingCloseClient:
+        def close(self) -> None:
+            msg = "close unavailable"
+            raise AttributeError(msg)
+
+    ssh._close_sftp_client(None)
+    ssh._close_ssh_client(None)
+    ssh._close_sftp_client(_FailingCloseClient())
+    ssh._close_sftp_client(_AttributeFailingCloseClient())
+    ssh._close_ssh_client(_FailingCloseClient())
+    ssh._close_ssh_client(_AttributeFailingCloseClient())
 
 
 def test_ftp_provider_downloads_remote_file_bytes(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -659,8 +1019,37 @@ def test_download_ssh_file_wraps_transport_errors(monkeypatch: pytest.MonkeyPatc
     assert error.value.error_code == "transport_io_failed"
 
 
+def test_download_ssh_file_reads_and_closes_remote_file(monkeypatch: pytest.MonkeyPatch) -> None:
+    sftp_client = _FakeSftpClient(
+        listing={},
+        file_bytes={"/srv/app/messages.po": b"payload"},
+    )
+    ssh_client = _FakeSshClient(sftp_client)
+    monkeypatch.setattr(ssh, "_connect_ssh_client", lambda config: ssh_client)
+
+    payload = ssh._download_ssh_file(_build_ssh_config(), "/srv/app/messages.po", None, "SFTP")
+
+    assert payload == b"payload"
+    assert sftp_client.actions == [
+        "file:/srv/app/messages.po:rb",
+        "sftp_close",
+    ]
+    assert ssh_client.actions == [
+        "open_sftp",
+        "ssh_close",
+    ]
+
+
 def test_ssh_emit_progress_ignores_missing_callbacks() -> None:
     ssh._emit_progress(None, cast(Any, object()))
+
+
+def test_ssh_emit_progress_calls_callback() -> None:
+    events: list[object] = []
+
+    ssh._emit_progress(events.append, cast(Any, object()))
+
+    assert len(events) == 1
 
 
 def test_connect_ssh_client_wraps_paramiko_ssh_exceptions(monkeypatch: pytest.MonkeyPatch) -> None:

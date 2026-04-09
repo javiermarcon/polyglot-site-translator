@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections.abc import Callable, Iterable
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import cast
+from typing import Any, cast
 
 import pytest
 
@@ -102,6 +102,10 @@ class StubSFTPProvider:
         progress_callback: Callable[[SyncProgressEvent], None] | None = None,
     ) -> Iterable[RemoteSyncFile]:
         return iter(())
+
+    def open_session(self, config: RemoteConnectionConfig) -> Any:
+        msg = f"open_session not used in this test for {config.connection_type}"
+        raise AssertionError(msg)
 
     def download_file(
         self,

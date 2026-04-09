@@ -136,6 +136,8 @@ Current project-registry orchestration entrypoints:
 - `FrontendShell.test_project_connection`
 - `FrontendShell.start_sync_async`
 - `polyglot_site_translator.presentation.site_registry_services.SiteRegistryPresentationWorkflowService.start_sync`
+- `polyglot_site_translator.services.project_sync.ProjectSyncService.sync_remote_to_local`
+- `polyglot_site_translator.domain.remote_connections.contracts.RemoteConnectionProvider.open_session`
 
 Current project-detail enrichment entrypoints:
 - `polyglot_site_translator.services.site_registry.SiteRegistryService.detect_framework`

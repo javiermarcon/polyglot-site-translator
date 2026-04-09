@@ -255,6 +255,7 @@ Cuando se dispara desde Project Detail, el trabajo corre en background y se abre
 Ese log no crece sin límite: conserva solo las últimas `N` operaciones según `sync_progress_log_limit`, para evitar crecimiento de memoria cuando el remoto tiene árboles muy grandes.
 En el subsistema remoto, la iteración completa del árbol se hace por `iter_remote_files()`. La API `list_remote_files()` queda reservada para casos acotados y materializa como máximo un conjunto seguro de archivos por llamada, para no reintroducir cargas masivas en memoria desde otro protocolo o caller.
 La descarga es incremental: el sync empieza a grabar archivos locales a medida que los descubre en el árbol remoto, sin esperar a completar todo el recorrido.
+Para un sync completo, el servicio abre una única sesión remota reutilizable con estado explícito y la usa para listar, descargar todos los archivos y cerrar la conexión; no reconecta por cada archivo.
 Si la conexión o el recorrido remoto falla, esa misma ventana queda en estado `failed` y muestra el mensaje concreto del error.
 Si el workspace local no existe, se crea automáticamente.
 Si el remoto está vacío, el sync devuelve un resultado válido con `0` archivos descargados.

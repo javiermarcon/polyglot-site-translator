@@ -24,6 +24,7 @@ from polyglot_site_translator.domain.sync.models import (
 )
 from polyglot_site_translator.infrastructure.remote_connections.base import (
     BaseRemoteConnectionProvider,
+    BaseRemoteConnectionSession,
     RemoteConnectionOperationError,
 )
 
@@ -65,28 +66,13 @@ class FTPRemoteConnectionProvider(BaseRemoteConnectionProvider):
             _close_ftp_client(client)
         return _success_result(config, "Connected successfully using FTP.")
 
-    def iter_remote_files(
-        self,
-        config: RemoteConnectionConfig,
-        progress_callback: SyncProgressCallback | None = None,
-    ) -> Iterator[RemoteSyncFile]:
-        return _iter_ftp_files(
+    def open_session(self, config: RemoteConnectionConfig) -> _FtpRemoteConnectionSession:
+        return _FtpRemoteConnectionSession(
             config=config,
-            client=self._build_client(),
-            progress_callback=progress_callback,
-        )
-
-    def download_file(
-        self,
-        config: RemoteConnectionConfig,
-        remote_path: str,
-        progress_callback: SyncProgressCallback | None = None,
-    ) -> bytes:
-        return _download_ftp_file(
-            config=config,
-            client=self._build_client(),
-            remote_path=remote_path,
-            progress_callback=progress_callback,
+            client_factory=self._build_client,
+            connect_fn=_connect_ftp_client,
+            connect_error_code="ftp_connection_failed",
+            transport_label="FTP",
         )
 
     def _build_client(self) -> FTP:
@@ -124,30 +110,13 @@ class ExplicitFTPSRemoteConnectionProvider(BaseRemoteConnectionProvider):
             _close_ftp_client(client)
         return _success_result(config, "Connected successfully using explicit FTPS.")
 
-    def iter_remote_files(
-        self,
-        config: RemoteConnectionConfig,
-        progress_callback: SyncProgressCallback | None = None,
-    ) -> Iterator[RemoteSyncFile]:
-        return _iter_ftp_files(
+    def open_session(self, config: RemoteConnectionConfig) -> _FtpRemoteConnectionSession:
+        return _FtpRemoteConnectionSession(
             config=config,
-            client=self._build_client(),
+            client_factory=self._build_client,
             connect_fn=_connect_explicit_ftps_client,
-            progress_callback=progress_callback,
-        )
-
-    def download_file(
-        self,
-        config: RemoteConnectionConfig,
-        remote_path: str,
-        progress_callback: SyncProgressCallback | None = None,
-    ) -> bytes:
-        return _download_ftp_file(
-            config=config,
-            client=self._build_client(),
-            remote_path=remote_path,
-            connect_fn=_connect_explicit_ftps_client,
-            progress_callback=progress_callback,
+            connect_error_code="ftps_explicit_connection_failed",
+            transport_label="FTPS",
         )
 
     def _build_client(self) -> FTP_TLS:
@@ -206,34 +175,107 @@ class ImplicitFTPSRemoteConnectionProvider(BaseRemoteConnectionProvider):
             _close_ftp_client(client)
         return _success_result(config, "Connected successfully using implicit FTPS.")
 
-    def iter_remote_files(
-        self,
-        config: RemoteConnectionConfig,
-        progress_callback: SyncProgressCallback | None = None,
-    ) -> Iterator[RemoteSyncFile]:
-        return _iter_ftp_files(
+    def open_session(self, config: RemoteConnectionConfig) -> _FtpRemoteConnectionSession:
+        return _FtpRemoteConnectionSession(
             config=config,
-            client=self._build_client(),
+            client_factory=self._build_client,
             connect_fn=_connect_implicit_ftps_client,
-            progress_callback=progress_callback,
-        )
-
-    def download_file(
-        self,
-        config: RemoteConnectionConfig,
-        remote_path: str,
-        progress_callback: SyncProgressCallback | None = None,
-    ) -> bytes:
-        return _download_ftp_file(
-            config=config,
-            client=self._build_client(),
-            remote_path=remote_path,
-            connect_fn=_connect_implicit_ftps_client,
-            progress_callback=progress_callback,
+            connect_error_code="ftps_implicit_connection_failed",
+            transport_label="FTPS",
         )
 
     def _build_client(self) -> ImplicitFtpTls:
         return ImplicitFtpTls(context=ssl.create_default_context())
+
+
+class _FtpRemoteConnectionSession(BaseRemoteConnectionSession):
+    """Reusable FTP/FTPS session for listing and downloading multiple files."""
+
+    def __init__(
+        self,
+        *,
+        config: RemoteConnectionConfig,
+        client_factory: Callable[[], FTP],
+        connect_fn: _ConnectFunction,
+        connect_error_code: str,
+        transport_label: str,
+    ) -> None:
+        super().__init__(config)
+        self._client_factory = client_factory
+        self._connect_fn = connect_fn
+        self._connect_error_code = connect_error_code
+        self._transport_label = transport_label
+        self._client = self._client_factory()
+
+    def _connect(self, progress_callback: SyncProgressCallback | None) -> None:
+        try:
+            _emit_progress(
+                progress_callback,
+                SyncProgressEvent(
+                    stage=SyncProgressStage.LISTING_REMOTE,
+                    message=(
+                        f"Connecting to {self._config.host}:{self._config.port} for remote sync."
+                    ),
+                    command_text=(
+                        f"{self._transport_label} CONNECT {self._config.host}:{self._config.port}"
+                    ),
+                ),
+            )
+            self._connect_fn(self._client, self._config)
+        except all_errors as error:
+            raise _normalize_ftp_error(
+                error,
+                default_code=self._connect_error_code,
+            ) from error
+
+    def _iter_remote_files(
+        self,
+        progress_callback: SyncProgressCallback | None,
+    ) -> Iterator[RemoteSyncFile]:
+        normalized_root = _normalize_remote_path(self._config.remote_path)
+        yield from _walk_ftp_directory(
+            client=self._client,
+            base_remote_path=normalized_root,
+            current_remote_path=normalized_root,
+            progress_callback=progress_callback,
+        )
+
+    def _download_file(
+        self,
+        remote_path: str,
+        progress_callback: SyncProgressCallback | None,
+    ) -> bytes:
+        chunks: list[bytes] = []
+        try:
+            _emit_progress(
+                progress_callback,
+                SyncProgressEvent(
+                    stage=SyncProgressStage.DOWNLOADING_FILE,
+                    message=f"Downloading remote file {remote_path}.",
+                    command_text=f"{self._transport_label} RETR {remote_path}",
+                ),
+            )
+            self._client.retrbinary(f"RETR {remote_path}", chunks.append)
+        except all_errors as error:
+            raise _normalize_ftp_error(error, default_code="download_failed") from error
+        return b"".join(chunks)
+
+    def _close(self, progress_callback: SyncProgressCallback | None) -> None:
+        _emit_progress(
+            progress_callback,
+            SyncProgressEvent(
+                stage=SyncProgressStage.DOWNLOADING_FILE,
+                message=f"Closing {self._transport_label} remote sync session.",
+                command_text=(
+                    f"{self._transport_label} CLOSE {self._config.host}:{self._config.port}"
+                ),
+            ),
+        )
+        _close_ftp_client(self._client)
+
+    def _reset_after_failed_connect(self) -> None:
+        _close_ftp_client(self._client)
+        self._client = self._client_factory()
 
 
 def _connect_ftp_client(
@@ -263,71 +305,6 @@ def _connect_implicit_ftps_client(
     typed_client.connect(host=config.host, port=config.port, timeout=10)
     typed_client.login(user=config.username, passwd=config.password)
     typed_client.prot_p()
-
-
-def _iter_ftp_files(
-    *,
-    config: RemoteConnectionConfig,
-    client: FTP,
-    connect_fn: _ConnectFunction = _connect_ftp_client,
-    progress_callback: SyncProgressCallback | None = None,
-) -> Iterator[RemoteSyncFile]:
-    try:
-        _emit_progress(
-            progress_callback,
-            SyncProgressEvent(
-                stage=SyncProgressStage.LISTING_REMOTE,
-                message=f"Connecting to {config.host}:{config.port} for remote listing.",
-                command_text=f"FTP CONNECT {config.host}:{config.port}",
-            ),
-        )
-        connect_fn(client, config)
-        normalized_root = _normalize_remote_path(config.remote_path)
-        yield from _walk_ftp_directory(
-            client=client,
-            base_remote_path=normalized_root,
-            current_remote_path=normalized_root,
-            progress_callback=progress_callback,
-        )
-    except all_errors as error:
-        raise _normalize_ftp_error(error, default_code="remote_listing_failed") from error
-    finally:
-        _close_ftp_client(client)
-
-
-def _download_ftp_file(
-    *,
-    config: RemoteConnectionConfig,
-    client: FTP,
-    remote_path: str,
-    connect_fn: _ConnectFunction = _connect_ftp_client,
-    progress_callback: SyncProgressCallback | None = None,
-) -> bytes:
-    chunks: list[bytes] = []
-    try:
-        _emit_progress(
-            progress_callback,
-            SyncProgressEvent(
-                stage=SyncProgressStage.DOWNLOADING_FILE,
-                message=f"Connecting to {config.host}:{config.port} for file download.",
-                command_text=f"FTP CONNECT {config.host}:{config.port}",
-            ),
-        )
-        connect_fn(client, config)
-        _emit_progress(
-            progress_callback,
-            SyncProgressEvent(
-                stage=SyncProgressStage.DOWNLOADING_FILE,
-                message=f"Downloading remote file {remote_path}.",
-                command_text=f"FTP RETR {remote_path}",
-            ),
-        )
-        client.retrbinary(f"RETR {remote_path}", chunks.append)
-    except all_errors as error:
-        raise _normalize_ftp_error(error, default_code="download_failed") from error
-    finally:
-        _close_ftp_client(client)
-    return b"".join(chunks)
 
 
 def _walk_ftp_directory(

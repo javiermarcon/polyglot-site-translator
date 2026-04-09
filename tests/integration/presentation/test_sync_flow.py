@@ -11,6 +11,7 @@ from polyglot_site_translator.app import create_kivy_app
 from polyglot_site_translator.domain.remote_connections.models import (
     RemoteConnectionConfig,
     RemoteConnectionConfigInput,
+    RemoteConnectionSessionState,
     RemoteConnectionTestResult,
     RemoteConnectionTypeDescriptor,
 )
@@ -42,6 +43,45 @@ class StubSyncProvider:
         )
     )
 
+    def open_session(self, config: RemoteConnectionConfig) -> _StubSyncSession:
+        return _StubSyncSession(config=config)
+
+    def list_remote_files(
+        self,
+        config: RemoteConnectionConfig,
+        progress_callback: Callable[[SyncProgressEvent], None] | None = None,
+        *,
+        max_files: int = 1000,
+    ) -> list[RemoteSyncFile]:
+        session = self.open_session(config)
+        try:
+            return list(session.iter_remote_files(progress_callback))[:max_files]
+        finally:
+            session.close(progress_callback)
+
+    def iter_remote_files(
+        self,
+        config: RemoteConnectionConfig,
+        progress_callback: Callable[[SyncProgressEvent], None] | None = None,
+    ) -> Iterable[RemoteSyncFile]:
+        session = self.open_session(config)
+        try:
+            yield from session.iter_remote_files(progress_callback)
+        finally:
+            session.close(progress_callback)
+
+    def download_file(
+        self,
+        config: RemoteConnectionConfig,
+        remote_path: str,
+        progress_callback: Callable[[SyncProgressEvent], None] | None = None,
+    ) -> bytes:
+        session = self.open_session(config)
+        try:
+            return session.download_file(remote_path, progress_callback)
+        finally:
+            session.close(progress_callback)
+
     def test_connection(
         self,
         config: RemoteConnectionConfigInput,
@@ -55,47 +95,47 @@ class StubSyncProvider:
             error_code=None,
         )
 
-    def list_remote_files(
+
+@dataclass
+class _StubSyncSession:
+    config: RemoteConnectionConfig
+    state: RemoteConnectionSessionState = RemoteConnectionSessionState.OPEN
+
+    def iter_remote_files(
         self,
-        config: RemoteConnectionConfig,
         progress_callback: Callable[[SyncProgressEvent], None] | None = None,
-        *,
-        max_files: int = 1000,
-    ) -> list[RemoteSyncFile]:
+    ) -> Iterable[RemoteSyncFile]:
         if progress_callback is not None:
             progress_callback(
                 SyncProgressEvent(
                     stage=SyncProgressStage.LISTING_REMOTE,
-                    message="Listing remote files through the sync integration stub.",
-                    command_text=f"SFTP LIST {config.remote_path}",
+                    message="Connecting through the sync integration stub session.",
+                    command_text=f"SFTP CONNECT {self.config.host}:{self.config.port}",
                 )
             )
-        if config.host == "broken.example.test":
+            progress_callback(
+                SyncProgressEvent(
+                    stage=SyncProgressStage.LISTING_REMOTE,
+                    message="Listing remote files through the sync integration stub.",
+                    command_text=f"SFTP LIST {self.config.remote_path}",
+                )
+            )
+        if self.config.host == "broken.example.test":
             msg = "Remote listing failed."
             raise OSError(msg)
-        return [
-            RemoteSyncFile(
-                remote_path="/srv/app/locale/es.po",
-                relative_path="locale/es.po",
-                size_bytes=16,
-            ),
-            RemoteSyncFile(
-                remote_path="/srv/app/templates/home.html",
-                relative_path="templates/home.html",
-                size_bytes=14,
-            ),
-        ][:max_files]
-
-    def iter_remote_files(
-        self,
-        config: RemoteConnectionConfig,
-        progress_callback: Callable[[SyncProgressEvent], None] | None = None,
-    ) -> Iterable[RemoteSyncFile]:
-        return iter(self.list_remote_files(config, progress_callback))
+        yield RemoteSyncFile(
+            remote_path="/srv/app/locale/es.po",
+            relative_path="locale/es.po",
+            size_bytes=16,
+        )
+        yield RemoteSyncFile(
+            remote_path="/srv/app/templates/home.html",
+            relative_path="templates/home.html",
+            size_bytes=14,
+        )
 
     def download_file(
         self,
-        config: RemoteConnectionConfig,
         remote_path: str,
         progress_callback: Callable[[SyncProgressEvent], None] | None = None,
     ) -> bytes:
@@ -112,6 +152,20 @@ class StubSyncProvider:
             "/srv/app/templates/home.html": b"<h1>Hello</h1>\n",
         }
         return payloads[remote_path]
+
+    def close(
+        self,
+        progress_callback: Callable[[SyncProgressEvent], None] | None = None,
+    ) -> None:
+        self.state = RemoteConnectionSessionState.CLOSED
+        if progress_callback is not None:
+            progress_callback(
+                SyncProgressEvent(
+                    stage=SyncProgressStage.DOWNLOADING_FILE,
+                    message="Closing the sync integration stub session.",
+                    command_text=f"SFTP CLOSE {self.config.host}:{self.config.port}",
+                )
+            )
 
 
 def test_real_sync_flow_downloads_files_into_the_project_workspace(tmp_path: Path) -> None:
@@ -305,6 +359,61 @@ def test_project_detail_sync_action_opens_a_progress_window_with_command_log(
     assert "SFTP GET /srv/app/locale/es.po" in command_log_text
 
 
+def test_project_detail_sync_action_reuses_a_single_remote_session(
+    tmp_path: Path,
+) -> None:
+    settings_service = build_default_settings_service(config_dir=tmp_path / "config")
+    remote_registry = RemoteConnectionRegistry.default_registry(providers=[StubSyncProvider()])
+    app = create_kivy_app(
+        services=build_default_frontend_services(
+            settings_service=settings_service,
+            remote_connection_service=RemoteConnectionService(registry=remote_registry),
+            project_sync_service=ProjectSyncService(registry=remote_registry),
+        )
+    )
+    root = app.build()
+    detail_screen = root.get_screen("project_detail")
+    shell = detail_screen._shell
+    local_root = tmp_path / "workspace" / "marketing-site"
+
+    shell.open_project_editor_create()
+    shell.save_new_project(
+        SiteEditorViewModel(
+            site_id=None,
+            name="Marketing Site",
+            framework_type="wordpress",
+            local_path=str(local_root),
+            default_locale="en_US",
+            connection_type="sftp",
+            remote_host="example.test",
+            remote_port="22",
+            remote_username="deploy",
+            remote_password="secret",
+            remote_path="/srv/app",
+            is_active=True,
+        )
+    )
+    shell.open_projects()
+    created_project = shell.projects_state.projects[0]
+    shell.select_project(created_project.id)
+    root.current = "project_detail"
+
+    detail_screen._start_sync()
+
+    assert detail_screen._sync_progress_popup is not None
+    deadline = time.monotonic() + 1
+    while time.monotonic() < deadline:
+        detail_screen._sync_progress_popup.refresh()
+        command_log_text = detail_screen._sync_progress_popup._command_log_label.text
+        if "SFTP CLOSE example.test:22" in command_log_text:
+            break
+        time.sleep(0.01)
+
+    command_log_text = detail_screen._sync_progress_popup._command_log_label.text
+    assert command_log_text.count("SFTP CONNECT example.test:22") == 1
+    assert command_log_text.count("SFTP CLOSE example.test:22") == 1
+
+
 def test_project_detail_progress_window_keeps_only_the_latest_configured_commands(
     tmp_path: Path,
 ) -> None:
@@ -357,10 +466,7 @@ def test_project_detail_progress_window_keeps_only_the_latest_configured_command
             for line in detail_screen._sync_progress_popup._command_log_label.text.splitlines()
             if line.strip()
         ]
-        if (
-            len(command_lines) == 2
-            and f"LOCAL WRITE {local_root / 'templates' / 'home.html'}" in command_lines
-        ):
+        if len(command_lines) == 2 and "SFTP CLOSE example.test:22" in command_lines:
             break
         time.sleep(0.01)
 
@@ -370,6 +476,6 @@ def test_project_detail_progress_window_keeps_only_the_latest_configured_command
         if line.strip()
     ]
     assert command_lines == [
-        "SFTP GET /srv/app/templates/home.html",
         f"LOCAL WRITE {local_root / 'templates' / 'home.html'}",
+        "SFTP CLOSE example.test:22",
     ]

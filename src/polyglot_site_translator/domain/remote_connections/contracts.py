@@ -8,12 +8,40 @@ from typing import Protocol
 from polyglot_site_translator.domain.remote_connections.models import (
     RemoteConnectionConfig,
     RemoteConnectionConfigInput,
+    RemoteConnectionSessionState,
     RemoteConnectionTestResult,
     RemoteConnectionTypeDescriptor,
 )
 from polyglot_site_translator.domain.sync.models import RemoteSyncFile, SyncProgressCallback
 
 DEFAULT_MATERIALIZED_REMOTE_FILE_LIMIT = 1000
+
+
+class RemoteConnectionSession(Protocol):
+    """Reusable remote session used for multi-step sync workflows."""
+
+    @property
+    def state(self) -> RemoteConnectionSessionState:
+        """Return the current session lifecycle state."""
+
+    def iter_remote_files(
+        self,
+        progress_callback: SyncProgressCallback | None = None,
+    ) -> Iterable[RemoteSyncFile]:
+        """Yield remote files incrementally using the existing session."""
+
+    def download_file(
+        self,
+        remote_path: str,
+        progress_callback: SyncProgressCallback | None = None,
+    ) -> bytes:
+        """Download a remote file through the existing session."""
+
+    def close(
+        self,
+        progress_callback: SyncProgressCallback | None = None,
+    ) -> None:
+        """Close the session and release remote resources."""
 
 
 class RemoteConnectionProvider(Protocol):
@@ -28,6 +56,12 @@ class RemoteConnectionProvider(Protocol):
         config: RemoteConnectionConfigInput,
     ) -> RemoteConnectionTestResult:
         """Attempt a connection test and return a structured result."""
+
+    def open_session(
+        self,
+        config: RemoteConnectionConfig,
+    ) -> RemoteConnectionSession:
+        """Open a reusable session for listing and downloading remote files."""
 
     def list_remote_files(
         self,

@@ -15,6 +15,7 @@ from polyglot_site_translator.app import create_kivy_app
 from polyglot_site_translator.domain.remote_connections.models import (
     RemoteConnectionConfig,
     RemoteConnectionConfigInput,
+    RemoteConnectionSessionState,
     RemoteConnectionTestResult,
     RemoteConnectionTypeDescriptor,
 )
@@ -45,6 +46,69 @@ then = cast(Callable[[str], Callable[[StepFunction], StepFunction]], behave_modu
 
 
 @dataclass
+class ScenarioSyncSession:
+    """Reusable session stub used by sync BDD scenarios."""
+
+    config: RemoteConnectionConfig
+    provider: ScenarioSyncProvider
+    state: RemoteConnectionSessionState = RemoteConnectionSessionState.OPEN
+
+    def iter_remote_files(
+        self,
+        progress_callback: Callable[[SyncProgressEvent], None] | None = None,
+    ) -> Iterable[RemoteSyncFile]:
+        if progress_callback is not None:
+            progress_callback(
+                SyncProgressEvent(
+                    stage=SyncProgressStage.LISTING_REMOTE,
+                    message="Connecting through the behave sync provider session.",
+                    command_text=f"SFTP CONNECT {self.config.host}:{self.config.port}",
+                )
+            )
+            progress_callback(
+                SyncProgressEvent(
+                    stage=SyncProgressStage.LISTING_REMOTE,
+                    message="Listing remote files through the behave sync provider session.",
+                    command_text=f"SFTP LIST {self.config.remote_path}",
+                )
+            )
+        host = self.config.host
+        if host in self.provider.failing_hosts:
+            msg = self.provider.failing_hosts[host]
+            raise OSError(msg)
+        return iter(self.provider.remote_files_by_host.get(host, []))
+
+    def download_file(
+        self,
+        remote_path: str,
+        progress_callback: Callable[[SyncProgressEvent], None] | None = None,
+    ) -> bytes:
+        if progress_callback is not None:
+            progress_callback(
+                SyncProgressEvent(
+                    stage=SyncProgressStage.DOWNLOADING_FILE,
+                    message=f"Downloading {remote_path} through the behave sync session.",
+                    command_text=f"SFTP GET {remote_path}",
+                )
+            )
+        return self.provider.file_contents_by_path[remote_path]
+
+    def close(
+        self,
+        progress_callback: Callable[[SyncProgressEvent], None] | None = None,
+    ) -> None:
+        self.state = RemoteConnectionSessionState.CLOSED
+        if progress_callback is not None:
+            progress_callback(
+                SyncProgressEvent(
+                    stage=SyncProgressStage.DOWNLOADING_FILE,
+                    message="Closing the behave sync provider session.",
+                    command_text=f"SFTP CLOSE {self.config.host}:{self.config.port}",
+                )
+            )
+
+
+@dataclass
 class ScenarioSyncProvider:
     """In-memory provider stub used by sync BDD scenarios."""
 
@@ -71,6 +135,9 @@ class ScenarioSyncProvider:
             message="Connected successfully using the behave sync provider.",
             error_code=None,
         )
+
+    def open_session(self, config: RemoteConnectionConfig) -> ScenarioSyncSession:
+        return ScenarioSyncSession(config=config, provider=self)
 
     def list_remote_files(
         self,
@@ -346,17 +413,42 @@ def step_assert_sync_progress_window_limit(context: object, limit: int) -> None:
         command_lines = [
             line for line in popup._command_log_label.text.splitlines() if line.strip()
         ]
-        if (
-            len(command_lines) == limit
-            and f"LOCAL WRITE {local_root / 'templates' / 'home.html'}" in command_lines
-        ):
+        if len(command_lines) == limit and "SFTP CLOSE marketing.example.test:22" in command_lines:
             break
         time.sleep(0.01)
     command_lines = [line for line in popup._command_log_label.text.splitlines() if line.strip()]
     assert len(command_lines) == limit
     assert "SFTP LIST /srv/app" not in command_lines
-    assert "SFTP GET /srv/app/templates/home.html" in command_lines
     assert f"LOCAL WRITE {local_root / 'templates' / 'home.html'}" in command_lines
+    assert "SFTP CLOSE marketing.example.test:22" in command_lines
+
+
+@then("the sync progress window shows a single remote connect command")
+def step_assert_single_remote_connect(context: object) -> None:
+    typed_context = _context(context)
+    popup = typed_context.detail_screen._sync_progress_popup
+    assert popup is not None
+    deadline = time.monotonic() + 1
+    while time.monotonic() < deadline:
+        popup.refresh()
+        if popup._command_log_label.text.count("SFTP CONNECT marketing.example.test:22") == 1:
+            break
+        time.sleep(0.01)
+    assert popup._command_log_label.text.count("SFTP CONNECT marketing.example.test:22") == 1
+
+
+@then("the sync progress window shows a single remote close command")
+def step_assert_single_remote_close(context: object) -> None:
+    typed_context = _context(context)
+    popup = typed_context.detail_screen._sync_progress_popup
+    assert popup is not None
+    deadline = time.monotonic() + 1
+    while time.monotonic() < deadline:
+        popup.refresh()
+        if popup._command_log_label.text.count("SFTP CLOSE marketing.example.test:22") == 1:
+            break
+        time.sleep(0.01)
+    assert popup._command_log_label.text.count("SFTP CLOSE marketing.example.test:22") == 1
 
 
 def _create_project(

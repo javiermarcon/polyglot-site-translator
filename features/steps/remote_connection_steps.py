@@ -6,7 +6,7 @@ from collections.abc import Callable, Iterable
 from dataclasses import dataclass
 from pathlib import Path
 import tempfile
-from typing import Protocol, TypeVar, cast
+from typing import Any, Protocol, TypeVar, cast
 
 import behave as behave_module  # type: ignore[import-untyped]
 
@@ -69,6 +69,10 @@ class StubRemoteConnectionProvider:
         progress_callback: Callable[[SyncProgressEvent], None] | None = None,
     ) -> Iterable[RemoteSyncFile]:
         return iter(())
+
+    def open_session(self, config: RemoteConnectionConfig) -> Any:
+        msg = f"open_session not used in this BDD provider for {config.connection_type}"
+        raise AssertionError(msg)
 
     def download_file(
         self,

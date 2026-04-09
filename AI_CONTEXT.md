@@ -155,6 +155,7 @@ The frontend baseline now also includes:
 - encrypted-at-rest remote passwords through a local key file stored alongside app config
 - migration of legacy `ftp_*` columns into a related remote-connection table without decrypting stored ciphertext during migration
 - a first real remote-to-local sync service that reuses the discoverable remote provider registry
+- reusable remote provider sessions with explicit state for connect/list/download/close across a full sync run
 - typed sync direction, remote file descriptors, summaries, results, and controlled sync errors
 - typed sync progress events used to drive a background execution popup in the frontend
 - local workspace preparation and file writes isolated in infrastructure for sync workflows

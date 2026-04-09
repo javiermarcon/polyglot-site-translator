@@ -40,6 +40,7 @@ Configure, validate, test, and later synchronize optional remote sources into lo
 - discoverable connection-type catalogs
 - optional remote connection configs
 - structured connection-test results
+- reusable remote session contracts and session state
 - typed sync direction and structured sync results
 - typed sync progress events and command-log reporting
 - remote file discovery descriptors

@@ -15,7 +15,6 @@ from polyglot_site_translator.domain.remote_connections.models import (
     RemoteConnectionConfig,
     RemoteConnectionConfigInput,
 )
-from polyglot_site_translator.domain.sync.models import RemoteSyncFile
 from polyglot_site_translator.infrastructure.remote_connections import ftp, ssh
 
 
@@ -66,6 +65,14 @@ class _BaseFakeFtpClient:
         if self.fail_on == "cwd":
             msg = "cwd failed"
             raise OSError(msg)
+
+    def mlsd(self, remote_path: str) -> list[tuple[str, dict[str, str]]]:
+        self.actions.append(f"mlsd:{remote_path}")
+        return [("messages.po", {"type": "file", "size": "7"})]
+
+    def retrbinary(self, command: str, callback: Any) -> None:
+        self.actions.append(f"retrbinary:{command}")
+        callback(b"payload")
 
     def quit(self) -> None:
         self.actions.append("quit")
@@ -246,21 +253,10 @@ def test_explicit_ftps_provider_returns_failure_on_tls_error(
 
 
 def test_explicit_ftps_provider_downloads_remote_file(monkeypatch: pytest.MonkeyPatch) -> None:
+    actions: list[str] = []
+    fake_client = _FakeExplicitFtpsClient(actions=actions)
     provider = ftp.ExplicitFTPSRemoteConnectionProvider()
-    captured_remote_path: list[str] = []
-
-    def _fake_download(
-        *,
-        config: RemoteConnectionConfigInput,
-        client: Any,
-        remote_path: str,
-        connect_fn: Any,
-        progress_callback: Any = None,
-    ) -> bytes:
-        captured_remote_path.append(remote_path)
-        return b"payload"
-
-    monkeypatch.setattr(ftp, "_download_ftp_file", _fake_download)
+    monkeypatch.setattr(provider, "_build_client", lambda: fake_client)
 
     file_bytes = provider.download_file(
         _build_remote_config("ftps_explicit"),
@@ -268,7 +264,14 @@ def test_explicit_ftps_provider_downloads_remote_file(monkeypatch: pytest.Monkey
     )
 
     assert file_bytes == b"payload"
-    assert captured_remote_path == ["/srv/app/messages.po"]
+    assert actions == [
+        "connect:example.test:21:10",
+        "auth",
+        "login:deploy:secret",
+        "prot_p",
+        "retrbinary:RETR /srv/app/messages.po",
+        "quit",
+    ]
 
 
 def test_implicit_ftp_tls_wraps_socket_and_reads_server_response(
@@ -392,24 +395,21 @@ def test_implicit_ftps_provider_returns_failure_when_login_fails(
 
 
 def test_implicit_ftps_provider_lists_remote_files(monkeypatch: pytest.MonkeyPatch) -> None:
+    actions: list[str] = []
+    fake_client = _FakeImplicitFtpsClient(actions=actions, context=object())
     provider = ftp.ImplicitFTPSRemoteConnectionProvider()
-    monkeypatch.setattr(
-        ftp,
-        "_iter_ftp_files",
-        lambda **_: iter(
-            [
-                RemoteSyncFile(
-                    remote_path="/srv/app/messages.po",
-                    relative_path="messages.po",
-                    size_bytes=8,
-                )
-            ]
-        ),
-    )
+    monkeypatch.setattr(provider, "_build_client", lambda: fake_client)
 
     remote_files = provider.list_remote_files(_build_remote_config("ftps_implicit"))
 
-    assert [remote_file.remote_path for remote_file in remote_files] == ["/srv/app/messages.po"]
+    assert [remote_file.remote_path for remote_file in remote_files] == ["/remote/path/messages.po"]
+    assert actions == [
+        "connect:example.test:21:10",
+        "login:deploy:secret",
+        "prot_p",
+        "mlsd:/remote/path",
+        "quit",
+    ]
 
 
 class _FakeSftpClient:

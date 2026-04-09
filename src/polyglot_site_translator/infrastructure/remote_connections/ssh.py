@@ -23,6 +23,7 @@ from polyglot_site_translator.domain.sync.models import (
 )
 from polyglot_site_translator.infrastructure.remote_connections.base import (
     BaseRemoteConnectionProvider,
+    BaseRemoteConnectionSession,
     RemoteConnectionOperationError,
 )
 
@@ -42,20 +43,11 @@ class SFTPRemoteConnectionProvider(BaseRemoteConnectionProvider):
     ) -> RemoteConnectionTestResult:
         return _test_ssh_connection(config, "Connected successfully using SFTP.")
 
-    def iter_remote_files(
+    def open_session(
         self,
         config: RemoteConnectionConfig,
-        progress_callback: SyncProgressCallback | None = None,
-    ) -> Iterator[RemoteSyncFile]:
-        return _iter_ssh_files(config, progress_callback)
-
-    def download_file(
-        self,
-        config: RemoteConnectionConfig,
-        remote_path: str,
-        progress_callback: SyncProgressCallback | None = None,
-    ) -> bytes:
-        return _download_ssh_file(config, remote_path, progress_callback, "SFTP")
+    ) -> _SshRemoteConnectionSession:
+        return _SshRemoteConnectionSession(config=config, transport_label="SFTP")
 
 
 class SCPRemoteConnectionProvider(BaseRemoteConnectionProvider):
@@ -73,20 +65,114 @@ class SCPRemoteConnectionProvider(BaseRemoteConnectionProvider):
     ) -> RemoteConnectionTestResult:
         return _test_ssh_connection(config, "Connected successfully using SCP.")
 
-    def iter_remote_files(
+    def open_session(
         self,
         config: RemoteConnectionConfig,
-        progress_callback: SyncProgressCallback | None = None,
-    ) -> Iterator[RemoteSyncFile]:
-        return _iter_ssh_files(config, progress_callback)
+    ) -> _SshRemoteConnectionSession:
+        return _SshRemoteConnectionSession(config=config, transport_label="SCP")
 
-    def download_file(
+
+class _SshRemoteConnectionSession(BaseRemoteConnectionSession):
+    """Reusable SSH-backed session for SFTP/SCP listing and downloads."""
+
+    def __init__(
         self,
+        *,
         config: RemoteConnectionConfig,
+        transport_label: str,
+    ) -> None:
+        super().__init__(config)
+        self._transport_label = transport_label
+        self._ssh_client: Any | None = None
+        self._sftp_client: Any | None = None
+
+    def _connect(self, progress_callback: SyncProgressCallback | None) -> None:
+        _emit_progress(
+            progress_callback,
+            SyncProgressEvent(
+                stage=SyncProgressStage.LISTING_REMOTE,
+                message=f"Connecting to {self._config.host}:{self._config.port}.",
+                command_text=f"SSH CONNECT {self._config.host}:{self._config.port}",
+            ),
+        )
+        self._ssh_client = _connect_ssh_client(self._config)
+        try:
+            self._sftp_client = self._ssh_client.open_sftp()
+        except OSError as error:
+            self._reset_after_failed_connect()
+            raise _normalize_ssh_error(
+                error,
+                default_code="ssh_connection_failed",
+            ) from error
+
+    def _iter_remote_files(
+        self,
+        progress_callback: SyncProgressCallback | None,
+    ) -> Iterator[RemoteSyncFile]:
+        if self._sftp_client is None:
+            msg = "SFTP client is not open."
+            raise RemoteConnectionOperationError(
+                error_code="remote_session_not_open",
+                message=msg,
+            )
+        try:
+            normalized_root = posixpath.normpath(self._config.remote_path)
+            yield from _walk_sftp_directory(
+                sftp_client=self._sftp_client,
+                base_remote_path=normalized_root,
+                current_remote_path=normalized_root,
+                progress_callback=progress_callback,
+            )
+        except OSError as error:
+            raise _normalize_ssh_error(error, default_code="remote_listing_failed") from error
+
+    def _download_file(
+        self,
         remote_path: str,
-        progress_callback: SyncProgressCallback | None = None,
+        progress_callback: SyncProgressCallback | None,
     ) -> bytes:
-        return _download_ssh_file(config, remote_path, progress_callback, "SCP")
+        if self._sftp_client is None:
+            msg = "SFTP client is not open."
+            raise RemoteConnectionOperationError(
+                error_code="remote_session_not_open",
+                message=msg,
+            )
+        try:
+            _emit_progress(
+                progress_callback,
+                SyncProgressEvent(
+                    stage=SyncProgressStage.DOWNLOADING_FILE,
+                    message=f"Downloading remote file {remote_path}.",
+                    command_text=f"{self._transport_label} GET {remote_path}",
+                ),
+            )
+            remote_file = self._sftp_client.file(remote_path, mode="rb")
+            try:
+                return cast(bytes, remote_file.read())
+            finally:
+                remote_file.close()
+        except OSError as error:
+            raise _normalize_ssh_error(error, default_code="download_failed") from error
+
+    def _close(self, progress_callback: SyncProgressCallback | None) -> None:
+        _emit_progress(
+            progress_callback,
+            SyncProgressEvent(
+                stage=SyncProgressStage.DOWNLOADING_FILE,
+                message="Closing SSH remote sync session.",
+                command_text=f"SSH CLOSE {self._config.host}:{self._config.port}",
+            ),
+        )
+        _close_sftp_client(self._sftp_client)
+        self._sftp_client = None
+        _close_ssh_client(self._ssh_client)
+        self._ssh_client = None
+
+    def _reset_after_failed_connect(self) -> None:
+        _close_sftp_client(self._sftp_client)
+        _close_ssh_client(self._ssh_client)
+        self._sftp_client = None
+        self._ssh_client = None
 
 
 def _test_ssh_connection(
@@ -229,6 +315,28 @@ def _download_ssh_file(
     finally:
         sftp_client.close()
         ssh_client.close()
+
+
+def _close_sftp_client(sftp_client: Any | None) -> None:
+    if sftp_client is None:
+        return
+    try:
+        sftp_client.close()
+    except OSError:
+        return
+    except AttributeError:
+        return
+
+
+def _close_ssh_client(ssh_client: Any | None) -> None:
+    if ssh_client is None:
+        return
+    try:
+        ssh_client.close()
+    except OSError:
+        return
+    except AttributeError:
+        return
 
 
 def _normalize_ssh_error(

@@ -12,6 +12,7 @@ import pytest
 from polyglot_site_translator.domain.remote_connections.models import (
     RemoteConnectionConfig,
     RemoteConnectionConfigInput,
+    RemoteConnectionSessionState,
     RemoteConnectionTestResult,
     RemoteConnectionTypeDescriptor,
 )
@@ -32,6 +33,90 @@ from polyglot_site_translator.infrastructure.remote_connections.registry import 
 )
 from polyglot_site_translator.infrastructure.sync_local import LocalSyncWorkspace
 from polyglot_site_translator.services.project_sync import ProjectSyncService
+
+
+@dataclass
+class StubSyncSession:
+    config: RemoteConnectionConfig
+    provider: StubSyncProvider
+    state: RemoteConnectionSessionState = RemoteConnectionSessionState.OPEN
+    close_calls: int = 0
+
+    def iter_remote_files(
+        self,
+        progress_callback: Callable[[SyncProgressEvent], None] | None = None,
+    ) -> Iterable[RemoteSyncFile]:
+        self.provider.session_events.append("iter")
+        if progress_callback is not None:
+            progress_callback(
+                SyncProgressEvent(
+                    stage=SyncProgressStage.LISTING_REMOTE,
+                    message="Listing remote files through the sync test stub session.",
+                    command_text=f"SFTP CONNECT {self.config.host}:{self.config.port}",
+                )
+            )
+            progress_callback(
+                SyncProgressEvent(
+                    stage=SyncProgressStage.LISTING_REMOTE,
+                    message="Listing remote files through the sync test stub session.",
+                    command_text=f"SFTP LIST {self.config.remote_path}",
+                )
+            )
+        if self.provider.missing_dependency_on_list:
+            msg = "paramiko"
+            raise ModuleNotFoundError(msg)
+        if self.provider.fail_on_list:
+            msg = "Could not list remote files."
+            raise OSError(msg)
+        if self.provider.iter_remote_files_impl is not None:
+            return self.provider.iter_remote_files_impl(self.config, progress_callback)
+        return iter(self.provider.remote_files)
+
+    def download_file(
+        self,
+        remote_path: str,
+        progress_callback: Callable[[SyncProgressEvent], None] | None = None,
+    ) -> bytes:
+        self.provider.session_events.append(f"download:{remote_path}")
+        if progress_callback is not None:
+            progress_callback(
+                SyncProgressEvent(
+                    stage=SyncProgressStage.DOWNLOADING_FILE,
+                    message=f"Downloading {remote_path} through the sync test stub session.",
+                    command_text=f"SFTP GET {remote_path}",
+                )
+            )
+        if self.provider.missing_dependency_on_download == remote_path:
+            msg = "paramiko"
+            raise ModuleNotFoundError(msg)
+        if self.provider.download_file_impl is not None:
+            return self.provider.download_file_impl(
+                self.config,
+                remote_path,
+                progress_callback,
+            )
+        if self.provider.fail_on_download == remote_path:
+            msg = f"Download failed for {remote_path}."
+            raise OSError(msg)
+        return self.provider.downloaded_bytes[remote_path]
+
+    def close(
+        self,
+        progress_callback: Callable[[SyncProgressEvent], None] | None = None,
+    ) -> None:
+        self.provider.session_events.append("close")
+        self.close_calls += 1
+        self.state = RemoteConnectionSessionState.CLOSED
+        if self.provider.close_error is not None:
+            raise self.provider.close_error
+        if progress_callback is not None:
+            progress_callback(
+                SyncProgressEvent(
+                    stage=SyncProgressStage.DOWNLOADING_FILE,
+                    message="Closing the sync test stub session.",
+                    command_text=f"SFTP CLOSE {self.config.host}:{self.config.port}",
+                )
+            )
 
 
 @dataclass
@@ -56,6 +141,18 @@ class StubSyncProvider:
         ]
         | None
     ) = None
+    download_file_impl: (
+        Callable[
+            [RemoteConnectionConfig, str, Callable[[SyncProgressEvent], None] | None],
+            bytes,
+        ]
+        | None
+    ) = None
+    open_session_error: RemoteConnectionOperationError | None = None
+    close_error: OSError | None = None
+    open_session_calls: int = 0
+    session_events: list[str] = field(default_factory=list)
+    opened_sessions: list[StubSyncSession] = field(default_factory=list)
 
     def test_connection(
         self,
@@ -63,6 +160,14 @@ class StubSyncProvider:
     ) -> RemoteConnectionTestResult:
         msg = f"test_connection not used in this sync test for {config.connection_type}"
         raise AssertionError(msg)
+
+    def open_session(self, config: RemoteConnectionConfig) -> StubSyncSession:
+        self.open_session_calls += 1
+        if self.open_session_error is not None:
+            raise self.open_session_error
+        session = StubSyncSession(config=config, provider=self)
+        self.opened_sessions.append(session)
+        return session
 
     def list_remote_files(
         self,
@@ -184,11 +289,54 @@ def test_project_sync_service_reports_progress_commands_for_remote_execution(
     assert result.success is True
     assert [event.command_text for event in events if event.command_text is not None] == [
         f"LOCAL MKDIR {local_root}",
+        "SFTP CONNECT example.test:22",
         "SFTP LIST /srv/app",
         "SFTP GET /srv/app/locale/es.po",
         f"LOCAL WRITE {local_root / 'locale' / 'es.po'}",
+        "SFTP CLOSE example.test:22",
     ]
     assert events[-1].stage is SyncProgressStage.COMPLETED
+
+
+def test_project_sync_service_reuses_a_single_remote_session_for_a_multi_file_sync(
+    tmp_path: Path,
+) -> None:
+    local_root = tmp_path / "workspace" / "site"
+    provider = StubSyncProvider(
+        remote_files=[
+            RemoteSyncFile(
+                remote_path="/srv/app/locale/es.po",
+                relative_path="locale/es.po",
+                size_bytes=10,
+            ),
+            RemoteSyncFile(
+                remote_path="/srv/app/templates/home.html",
+                relative_path="templates/home.html",
+                size_bytes=20,
+            ),
+        ],
+        downloaded_bytes={
+            "/srv/app/locale/es.po": b'msgid "hello"\n',
+            "/srv/app/templates/home.html": b"<h1>Hello</h1>\n",
+        },
+    )
+    service = ProjectSyncService(
+        registry=RemoteConnectionRegistry.default_registry(providers=[provider])
+    )
+
+    result = service.sync_remote_to_local(_build_site(local_root=local_root))
+
+    assert result.success is True
+    assert provider.open_session_calls == 1
+    assert provider.session_events == [
+        "iter",
+        "download:/srv/app/locale/es.po",
+        "download:/srv/app/templates/home.html",
+        "close",
+    ]
+    assert len(provider.opened_sessions) == 1
+    assert provider.opened_sessions[0].state is RemoteConnectionSessionState.CLOSED
+    assert provider.opened_sessions[0].close_calls == 1
 
 
 def test_project_sync_service_downloads_files_while_remote_listing_is_still_in_progress(
@@ -428,7 +576,7 @@ def test_project_sync_service_preserves_specific_download_error_codes(
             message="Authentication failed",
         )
 
-    provider.download_file = _download_file  # type: ignore[method-assign]
+    provider.download_file_impl = _download_file
     service = ProjectSyncService(
         registry=RemoteConnectionRegistry.default_registry(providers=[provider])
     )
@@ -556,6 +704,104 @@ def test_project_sync_service_returns_missing_dependency_when_download_requires_
     assert result.error is not None
     assert result.error.code == "missing_dependency"
     assert result.error.remote_path == remote_path
+
+
+def test_project_sync_service_returns_controlled_error_when_session_open_fails(
+    tmp_path: Path,
+) -> None:
+    provider = StubSyncProvider(
+        open_session_error=RemoteConnectionOperationError(
+            error_code="connection_timeout",
+            message="Connection timed out.",
+        )
+    )
+    service = ProjectSyncService(
+        registry=RemoteConnectionRegistry.default_registry(providers=[provider])
+    )
+
+    result = service.sync_remote_to_local(_build_site(local_root=tmp_path))
+
+    assert result.success is False
+    assert result.error is not None
+    assert result.error.code == "connection_timeout"
+
+
+def test_project_sync_service_handles_incremental_remote_listing_operation_errors(
+    tmp_path: Path,
+) -> None:
+    first_remote_file = RemoteSyncFile(
+        remote_path="/srv/app/locale/es.po",
+        relative_path="locale/es.po",
+        size_bytes=10,
+    )
+
+    def _iter_remote_files(
+        config: RemoteConnectionConfig,
+        progress_callback: Callable[[SyncProgressEvent], None] | None = None,
+    ) -> Iterable[RemoteSyncFile]:
+        yield first_remote_file
+        raise RemoteConnectionOperationError(
+            error_code="transport_io_failed",
+            message="Remote channel reset.",
+        )
+
+    provider = StubSyncProvider(
+        downloaded_bytes={"/srv/app/locale/es.po": b"payload"},
+        iter_remote_files_impl=_iter_remote_files,
+    )
+    service = ProjectSyncService(
+        registry=RemoteConnectionRegistry.default_registry(providers=[provider])
+    )
+
+    result = service.sync_remote_to_local(_build_site(local_root=tmp_path))
+
+    assert result.success is False
+    assert result.error is not None
+    assert result.error.code == "transport_io_failed"
+    assert result.summary.files_discovered == 1
+    assert result.summary.files_downloaded == 1
+
+
+def test_project_sync_service_reports_remote_session_close_operation_errors(
+    tmp_path: Path,
+) -> None:
+    provider = StubSyncProvider(
+        remote_files=[],
+        close_error=RemoteConnectionOperationError(
+            error_code="close_failed",
+            message="Close failed.",
+        ),
+    )
+    service = ProjectSyncService(
+        registry=RemoteConnectionRegistry.default_registry(providers=[provider])
+    )
+    events: list[SyncProgressEvent] = []
+
+    result = service.sync_remote_to_local(
+        _build_site(local_root=tmp_path),
+        progress_callback=events.append,
+    )
+
+    assert result.success is True
+    assert any(event.message == "Remote session close failed: Close failed." for event in events)
+
+
+def test_project_sync_service_reports_remote_session_close_os_errors(
+    tmp_path: Path,
+) -> None:
+    provider = StubSyncProvider(remote_files=[], close_error=OSError("Socket closed."))
+    service = ProjectSyncService(
+        registry=RemoteConnectionRegistry.default_registry(providers=[provider])
+    )
+    events: list[SyncProgressEvent] = []
+
+    result = service.sync_remote_to_local(
+        _build_site(local_root=tmp_path),
+        progress_callback=events.append,
+    )
+
+    assert result.success is True
+    assert any(event.message == "Remote session close failed: Socket closed." for event in events)
 
 
 def test_project_sync_service_raises_if_provider_resolution_returns_none(

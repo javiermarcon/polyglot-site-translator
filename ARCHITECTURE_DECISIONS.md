@@ -222,6 +222,7 @@ The repository already has typed optional remote connections and a discoverable 
 - Sync direction, summaries, results, remote file descriptors, and errors need explicit typed models.
 - Presentation triggers sync through services and renders structured results; widgets do not open sockets or touch the filesystem directly.
 - Remote providers now own both connection testing and transport-specific remote listing/download behavior.
+- Multi-file sync must use a reusable remote session opened from the provider instead of reconnecting for each file.
 - Local workspace preparation and file writes stay in infrastructure, separate from presentation and domain logic.
 - The first stage supports remote-to-local only; local-to-remote, filtering, and richer sync controls remain future work.
 
@@ -240,3 +241,19 @@ Remote sync can block on FTP/SFTP/SSH I/O. Running that workflow directly in a K
 - The presentation shell owns background orchestration state for sync execution.
 - Application and infrastructure layers emit typed progress events and command-log entries that the popup can render.
 - The Project Detail action opens a progress window instead of blocking the current screen while the workflow runs.
+
+---
+
+## AD-016: Remote sync uses reusable provider sessions
+
+**Decision**
+Remote providers expose `open_session()` for sync workflows. A session owns connect, list, download, close, connection state, and controlled retry behavior for connection establishment.
+
+**Why**
+Listing once and reconnecting for every downloaded file is fragile, slow, and hard to reason about when FTP/SFTP/SCP transports fail mid-run. A single session-level abstraction makes lifecycle, state, close behavior, progress commands, and retry policy explicit while keeping transport details outside services and widgets.
+
+**Implications**
+- `ProjectSyncService` opens one session for a remote-to-local sync run and reuses it for listing and every file download.
+- FTP, FTPS, SFTP, and SCP providers implement the same session contract.
+- Provider convenience methods remain available for bounded materialization or one-off operations, but they must delegate through sessions.
+- Transport errors are normalized into structured remote-operation errors where possible; widgets only render typed progress and final sync results.
