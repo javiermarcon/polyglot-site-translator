@@ -42,13 +42,6 @@ class SFTPRemoteConnectionProvider(BaseRemoteConnectionProvider):
     ) -> RemoteConnectionTestResult:
         return _test_ssh_connection(config, "Connected successfully using SFTP.")
 
-    def list_remote_files(
-        self,
-        config: RemoteConnectionConfig,
-        progress_callback: SyncProgressCallback | None = None,
-    ) -> list[RemoteSyncFile]:
-        return list(self.iter_remote_files(config, progress_callback))
-
     def iter_remote_files(
         self,
         config: RemoteConnectionConfig,
@@ -79,13 +72,6 @@ class SCPRemoteConnectionProvider(BaseRemoteConnectionProvider):
         config: RemoteConnectionConfigInput,
     ) -> RemoteConnectionTestResult:
         return _test_ssh_connection(config, "Connected successfully using SCP.")
-
-    def list_remote_files(
-        self,
-        config: RemoteConnectionConfig,
-        progress_callback: SyncProgressCallback | None = None,
-    ) -> list[RemoteSyncFile]:
-        return list(self.iter_remote_files(config, progress_callback))
 
     def iter_remote_files(
         self,

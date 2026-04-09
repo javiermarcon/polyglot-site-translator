@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from dataclasses import replace
+
 from polyglot_site_translator.bootstrap import create_frontend_shell
 from polyglot_site_translator.presentation.router import RouteName
 from tests.support.frontend_doubles import (
@@ -21,6 +23,7 @@ def test_open_settings_loads_sections_and_defaults() -> None:
     assert shell.settings_state.selected_section_key == "app-ui-kivy"
     assert shell.settings_state.app_settings.window_width == 1280
     assert shell.settings_state.app_settings.remember_last_screen is False
+    assert shell.settings_state.app_settings.sync_progress_log_limit == 200
     assert shell.settings_state.theme_mode_field.control_type == "choice"
     assert [option.value for option in shell.settings_state.theme_mode_field.options] == [
         "system",
@@ -45,10 +48,14 @@ def test_update_and_save_settings_persists_fake_state() -> None:
     shell = create_frontend_shell(build_seeded_services())
 
     shell.open_settings()
+    assert shell.settings_state is not None
     shell.set_settings_theme_mode("dark")
     shell.toggle_remember_last_screen()
     shell.toggle_developer_mode()
     shell.set_settings_window_size(width=1440, height=900)
+    shell.update_settings_draft(
+        replace(shell.settings_state.app_settings, sync_progress_log_limit=25)
+    )
     shell.save_settings()
 
     assert shell.settings_state is not None
@@ -62,6 +69,7 @@ def test_update_and_save_settings_persists_fake_state() -> None:
     assert shell.settings_state.app_settings.developer_mode is True
     assert shell.settings_state.app_settings.window_width == 1440
     assert shell.settings_state.app_settings.window_height == 900
+    assert shell.settings_state.app_settings.sync_progress_log_limit == 25
     assert shell.settings_state.status == "loaded"
 
 

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterator
 from dataclasses import dataclass
 from types import SimpleNamespace
 from typing import Any, cast
@@ -123,8 +124,8 @@ def test_ftp_provider_lists_remote_files_recursively(
     ]
 
 
-def test_base_remote_provider_iterates_using_the_list_fallback() -> None:
-    class _ListBackedProvider(BaseRemoteConnectionProvider):
+def test_base_remote_provider_materializes_a_bounded_remote_file_list() -> None:
+    class _IteratorBackedProvider(BaseRemoteConnectionProvider):
         descriptor = RemoteConnectionTypeDescriptor(
             connection_type="sftp",
             display_name="SFTP",
@@ -144,17 +145,27 @@ def test_base_remote_provider_iterates_using_the_list_fallback() -> None:
                 error_code=None,
             )
 
-        def list_remote_files(
+        def iter_remote_files(
             self,
             config: RemoteConnectionConfig,
             progress_callback: Any = None,
-        ) -> list[RemoteSyncFile]:
-            return [
+        ) -> Iterator[RemoteSyncFile]:
+            yield from [
                 RemoteSyncFile(
-                    remote_path=f"{config.remote_path}/messages.po",
-                    relative_path="messages.po",
+                    remote_path=f"{config.remote_path}/messages-1.po",
+                    relative_path="messages-1.po",
                     size_bytes=8,
-                )
+                ),
+                RemoteSyncFile(
+                    remote_path=f"{config.remote_path}/messages-2.po",
+                    relative_path="messages-2.po",
+                    size_bytes=8,
+                ),
+                RemoteSyncFile(
+                    remote_path=f"{config.remote_path}/messages-3.po",
+                    relative_path="messages-3.po",
+                    size_bytes=8,
+                ),
             ]
 
         def download_file(
@@ -166,11 +177,136 @@ def test_base_remote_provider_iterates_using_the_list_fallback() -> None:
             msg = f"download not used in this test for {remote_path}"
             raise AssertionError(msg)
 
-    provider = _ListBackedProvider()
+    provider = _IteratorBackedProvider()
 
-    remote_files = list(provider.iter_remote_files(_build_ssh_config()))
+    remote_files = provider.list_remote_files(_build_ssh_config(), max_files=2)
 
-    assert [remote_file.relative_path for remote_file in remote_files] == ["messages.po"]
+    assert [remote_file.relative_path for remote_file in remote_files] == [
+        "messages-1.po",
+        "messages-2.po",
+    ]
+
+
+def test_base_remote_provider_closes_the_iterator_when_materialization_is_truncated() -> None:
+    class _ClosingIterator:
+        def __init__(self) -> None:
+            self._items = iter(
+                [
+                    RemoteSyncFile(
+                        remote_path="/srv/app/messages-1.po",
+                        relative_path="messages-1.po",
+                        size_bytes=8,
+                    ),
+                    RemoteSyncFile(
+                        remote_path="/srv/app/messages-2.po",
+                        relative_path="messages-2.po",
+                        size_bytes=8,
+                    ),
+                ]
+            )
+            self.closed = False
+
+        def __iter__(self) -> _ClosingIterator:
+            return self
+
+        def __next__(self) -> RemoteSyncFile:
+            return next(self._items)
+
+        def close(self) -> None:
+            self.closed = True
+
+    class _IteratorBackedProvider(BaseRemoteConnectionProvider):
+        descriptor = RemoteConnectionTypeDescriptor(
+            connection_type="sftp",
+            display_name="SFTP",
+            default_port=22,
+        )
+
+        def __init__(self) -> None:
+            self.iterator = _ClosingIterator()
+
+        def test_connection(
+            self,
+            config: RemoteConnectionConfigInput,
+        ) -> RemoteConnectionTestResult:
+            return RemoteConnectionTestResult(
+                success=True,
+                connection_type=config.connection_type,
+                host=config.host,
+                port=config.port,
+                message="ok",
+                error_code=None,
+            )
+
+        def iter_remote_files(
+            self,
+            config: RemoteConnectionConfig,
+            progress_callback: Any = None,
+        ) -> _ClosingIterator:
+            return self.iterator
+
+        def download_file(
+            self,
+            config: RemoteConnectionConfig,
+            remote_path: str,
+            progress_callback: Any = None,
+        ) -> bytes:
+            msg = f"download not used in this test for {remote_path}"
+            raise AssertionError(msg)
+
+    provider = _IteratorBackedProvider()
+
+    remote_files = provider.list_remote_files(_build_ssh_config(), max_files=1)
+
+    assert [remote_file.relative_path for remote_file in remote_files] == ["messages-1.po"]
+    assert provider.iterator.closed is True
+
+
+def test_base_remote_provider_rejects_non_positive_materialization_limits() -> None:
+    class _IteratorBackedProvider(BaseRemoteConnectionProvider):
+        descriptor = RemoteConnectionTypeDescriptor(
+            connection_type="sftp",
+            display_name="SFTP",
+            default_port=22,
+        )
+
+        def test_connection(
+            self,
+            config: RemoteConnectionConfigInput,
+        ) -> RemoteConnectionTestResult:
+            return RemoteConnectionTestResult(
+                success=True,
+                connection_type=config.connection_type,
+                host=config.host,
+                port=config.port,
+                message="ok",
+                error_code=None,
+            )
+
+        def iter_remote_files(
+            self,
+            config: RemoteConnectionConfig,
+            progress_callback: Any = None,
+        ) -> Iterator[RemoteSyncFile]:
+            yield RemoteSyncFile(
+                remote_path="/srv/app/messages.po",
+                relative_path="messages.po",
+                size_bytes=8,
+            )
+
+        def download_file(
+            self,
+            config: RemoteConnectionConfig,
+            remote_path: str,
+            progress_callback: Any = None,
+        ) -> bytes:
+            msg = f"download not used in this test for {remote_path}"
+            raise AssertionError(msg)
+
+    provider = _IteratorBackedProvider()
+
+    with pytest.raises(ValueError, match="max_files must be a positive integer"):
+        provider.list_remote_files(_build_ssh_config(), max_files=0)
 
 
 def test_ftp_provider_downloads_remote_file_bytes(monkeypatch: pytest.MonkeyPatch) -> None:

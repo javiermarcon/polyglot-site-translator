@@ -78,6 +78,9 @@ Current frontend base:
 - `polyglot_site_translator/infrastructure/settings.py`
   TOML-backed settings persistence, validation, and per-user config-path resolution.
 
+- `polyglot_site_translator/infrastructure/remote_connections/base.py`
+  Shared provider base class, structured remote-operation errors, bounded `list_remote_files()` materialization, and the incremental `iter_remote_files()` contract used by real sync flows.
+
 - `polyglot_site_translator/infrastructure/database_location.py`
   Resolution and validation of the configured SQLite directory/filename into a final database path.
 
@@ -145,13 +148,13 @@ Current frontend base:
   Responsive layout rules for the settings screen so compact windows switch to a usable stacked layout.
 
 - `polyglot_site_translator/presentation/kivy/screens/settings.py`
-  Extensible settings screen with the initial App / UI / Kivy section, including editable SQLite directory/filename fields.
+  Extensible settings screen with the initial App / UI / Kivy section, including editable SQLite directory/filename fields and the configurable sync progress log limit.
 
 - `polyglot_site_translator/presentation/kivy/screens/project_editor.py`
   Thin create/edit screen for site registry records driven entirely by typed presentation state, including the discoverable remote connection selector and "Test Connection" action.
 
 - `polyglot_site_translator/presentation/kivy/widgets/sync_progress_popup.py`
-  Dedicated Kivy popup that renders background sync progress and command-log output without moving remote work into widgets.
+  Dedicated Kivy popup that renders background sync progress and a bounded command-log output without moving remote work into widgets.
 
 - `services/`
   - use-case orchestration

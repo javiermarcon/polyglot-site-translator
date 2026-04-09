@@ -126,6 +126,7 @@ Current settings orchestration entrypoints:
 - `FrontendShell.update_settings_draft`
 - `FrontendShell.save_settings`
 - `FrontendShell.restore_default_settings`
+- `FrontendShell.start_sync_async` resolves the configured sync command-log limit before opening progress state for the popup
 
 Current project-registry orchestration entrypoints:
 - `FrontendShell.open_project_editor_create`
@@ -230,6 +231,7 @@ Current frontend test-covered entrypoints:
 - `FrontendShell.select_settings_section`
 - `FrontendShell.save_settings`
 - `FrontendShell.restore_default_settings`
+- `FrontendShell.start_sync_async`
 
 ---
 

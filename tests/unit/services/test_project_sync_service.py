@@ -68,6 +68,8 @@ class StubSyncProvider:
         self,
         config: RemoteConnectionConfig,
         progress_callback: Callable[[SyncProgressEvent], None] | None = None,
+        *,
+        max_files: int = 1000,
     ) -> list[RemoteSyncFile]:
         if progress_callback is not None:
             progress_callback(
@@ -83,7 +85,7 @@ class StubSyncProvider:
         if self.fail_on_list:
             msg = "Could not list remote files."
             raise OSError(msg)
-        return list(self.remote_files)
+        return list(self.remote_files)[:max_files]
 
     def iter_remote_files(
         self,

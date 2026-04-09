@@ -174,6 +174,11 @@ class TomlSettingsService:
                 "database_filename",
                 default_settings.database_filename,
             ),
+            sync_progress_log_limit=_read_int(
+                raw_settings,
+                "sync_progress_log_limit",
+                default_settings.sync_progress_log_limit,
+            ),
         )
         return _validate_app_settings(app_settings)
 
@@ -239,6 +244,9 @@ def _validate_app_settings(app_settings: AppSettingsViewModel) -> AppSettingsVie
     if app_settings.last_opened_screen not in _ALLOWED_ROUTE_NAMES:
         msg = f"Unsupported last opened screen: {app_settings.last_opened_screen}"
         raise ControlledServiceError(msg)
+    if app_settings.sync_progress_log_limit <= 0:
+        msg = "Sync progress log limit must be a positive integer."
+        raise ControlledServiceError(msg)
     try:
         database_directory = str(validate_database_directory(app_settings.database_directory))
         database_filename = normalize_database_filename(app_settings.database_filename)
@@ -266,6 +274,7 @@ def _serialize_settings_document(app_settings: AppSettingsViewModel) -> str:
         f"ui_language = {_format_toml_string(app_settings.ui_language)}\n"
         f"database_directory = {_format_toml_string(app_settings.database_directory)}\n"
         f"database_filename = {_format_toml_string(app_settings.database_filename)}\n"
+        f"sync_progress_log_limit = {app_settings.sync_progress_log_limit}\n"
     )
 
 

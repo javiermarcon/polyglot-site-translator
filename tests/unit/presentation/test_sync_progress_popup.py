@@ -44,6 +44,7 @@ def test_sync_progress_popup_renders_empty_and_populated_states() -> None:
         progress_current=0,
         progress_total=0,
         progress_is_indeterminate=False,
+        command_log_limit=10,
         command_log=[],
     )
     popup.refresh()
@@ -61,6 +62,7 @@ def test_sync_progress_popup_renders_empty_and_populated_states() -> None:
         progress_current=1,
         progress_total=2,
         progress_is_indeterminate=False,
+        command_log_limit=10,
         command_log=[
             SyncCommandLogEntryViewModel(
                 command_text="SFTP LIST /srv/app",

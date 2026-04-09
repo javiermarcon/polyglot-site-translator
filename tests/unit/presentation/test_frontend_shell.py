@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from threading import Event
 
 from polyglot_site_translator.bootstrap import create_frontend_shell
@@ -13,6 +13,7 @@ from polyglot_site_translator.presentation.router import RouteName
 from polyglot_site_translator.presentation.view_models import (
     AuditSummaryViewModel,
     POProcessingSummaryViewModel,
+    SyncProgressStateViewModel,
     SyncStatusViewModel,
 )
 from tests.support.frontend_doubles import (
@@ -203,6 +204,56 @@ def test_background_sync_failures_are_exposed_in_shell_state_instead_of_crashing
     assert shell.sync_progress_state is not None
     assert shell.sync_progress_state.status == "failed"
     assert shell.sync_progress_state.message == "Temporary failure in name resolution"
+
+
+def test_background_sync_progress_keeps_only_the_last_configured_operations() -> None:
+    seeded_services = build_seeded_services()
+    shell = create_frontend_shell(seeded_services)
+
+    shell.open_settings()
+    assert shell.settings_state is not None
+    shell.update_settings_draft(
+        replace(shell.settings_state.app_settings, sync_progress_log_limit=2)
+    )
+    shell.save_settings()
+    shell.sync_progress_state = SyncProgressStateViewModel(
+        project_id="wp-site",
+        project_name="WordPress Site",
+        status="running",
+        message="Starting remote sync.",
+        progress_current=0,
+        progress_total=0,
+        progress_is_indeterminate=True,
+        command_log_limit=2,
+        command_log=[],
+    )
+    shell._record_sync_progress_event(
+        SyncProgressEvent(
+            stage=SyncProgressStage.LISTING_REMOTE,
+            message="Listing remote files.",
+            command_text="SFTP LIST /srv/app",
+        )
+    )
+    shell._record_sync_progress_event(
+        SyncProgressEvent(
+            stage=SyncProgressStage.DOWNLOADING_FILE,
+            message="Downloading a file.",
+            command_text="SFTP GET /srv/app/locale/es.po",
+        )
+    )
+    shell._record_sync_progress_event(
+        SyncProgressEvent(
+            stage=SyncProgressStage.DOWNLOADING_FILE,
+            message="Writing the file locally.",
+            command_text="LOCAL WRITE /workspace/wp-site/locale/es.po",
+        )
+    )
+
+    assert shell.sync_progress_state is not None
+    assert [entry.command_text for entry in shell.sync_progress_state.command_log] == [
+        "SFTP GET /srv/app/locale/es.po",
+        "LOCAL WRITE /workspace/wp-site/locale/es.po",
+    ]
 
 
 def test_audit_and_po_actions_update_independent_panels() -> None:

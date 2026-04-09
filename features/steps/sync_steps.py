@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable, Iterable
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 import tempfile
 import time
@@ -76,6 +76,8 @@ class ScenarioSyncProvider:
         self,
         config: RemoteConnectionConfig,
         progress_callback: Callable[[SyncProgressEvent], None] | None = None,
+        *,
+        max_files: int = 1000,
     ) -> list[RemoteSyncFile]:
         if progress_callback is not None:
             progress_callback(
@@ -89,7 +91,7 @@ class ScenarioSyncProvider:
         if host in self.failing_hosts:
             msg = self.failing_hosts[host]
             raise OSError(msg)
-        return list(self.remote_files_by_host.get(host, []))
+        return list(self.remote_files_by_host.get(host, []))[:max_files]
 
     def iter_remote_files(
         self,
@@ -155,6 +157,20 @@ def step_real_sync_shell(context: object) -> None:
         ProjectDetailScreen,
         typed_context.sync_root.get_screen("project_detail"),
     )
+
+
+@given("the sync command log limit is {limit:d} operations")
+def step_set_sync_command_log_limit(context: object, limit: int) -> None:
+    typed_context = _context(context)
+    typed_context.shell.open_settings()
+    assert typed_context.shell.settings_state is not None
+    typed_context.shell.update_settings_draft(
+        replace(
+            typed_context.shell.settings_state.app_settings,
+            sync_progress_log_limit=limit,
+        )
+    )
+    typed_context.shell.save_settings()
 
 
 @given('the registered project "{project_key}" has remote files available')
@@ -315,6 +331,32 @@ def step_assert_sync_progress_window_error_message(context: object) -> None:
             break
         time.sleep(0.01)
     assert popup._message_label.text == "Could not list remote files."
+
+
+@then("the sync progress window keeps only the last {limit:d} operations")
+def step_assert_sync_progress_window_limit(context: object, limit: int) -> None:
+    typed_context = _context(context)
+    popup = typed_context.detail_screen._sync_progress_popup
+    assert popup is not None
+    assert typed_context.shell.project_detail_state is not None
+    deadline = time.monotonic() + 1
+    local_root = Path(typed_context.shell.project_detail_state.project.local_path)
+    while time.monotonic() < deadline:
+        popup.refresh()
+        command_lines = [
+            line for line in popup._command_log_label.text.splitlines() if line.strip()
+        ]
+        if (
+            len(command_lines) == limit
+            and f"LOCAL WRITE {local_root / 'templates' / 'home.html'}" in command_lines
+        ):
+            break
+        time.sleep(0.01)
+    command_lines = [line for line in popup._command_log_label.text.splitlines() if line.strip()]
+    assert len(command_lines) == limit
+    assert "SFTP LIST /srv/app" not in command_lines
+    assert "SFTP GET /srv/app/templates/home.html" in command_lines
+    assert f"LOCAL WRITE {local_root / 'templates' / 'home.html'}" in command_lines
 
 
 def _create_project(

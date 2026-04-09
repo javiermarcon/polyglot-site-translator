@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable, Iterable
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 import time
 
@@ -59,6 +59,8 @@ class StubSyncProvider:
         self,
         config: RemoteConnectionConfig,
         progress_callback: Callable[[SyncProgressEvent], None] | None = None,
+        *,
+        max_files: int = 1000,
     ) -> list[RemoteSyncFile]:
         if progress_callback is not None:
             progress_callback(
@@ -82,7 +84,7 @@ class StubSyncProvider:
                 relative_path="templates/home.html",
                 size_bytes=14,
             ),
-        ]
+        ][:max_files]
 
     def iter_remote_files(
         self,
@@ -301,3 +303,73 @@ def test_project_detail_sync_action_opens_a_progress_window_with_command_log(
     command_log_text = detail_screen._sync_progress_popup._command_log_label.text
     assert "SFTP LIST /srv/app" in command_log_text
     assert "SFTP GET /srv/app/locale/es.po" in command_log_text
+
+
+def test_project_detail_progress_window_keeps_only_the_latest_configured_commands(
+    tmp_path: Path,
+) -> None:
+    settings_service = build_default_settings_service(config_dir=tmp_path / "config")
+    initial_state = settings_service.load_settings()
+    settings_service.save_settings(replace(initial_state.app_settings, sync_progress_log_limit=2))
+    remote_registry = RemoteConnectionRegistry.default_registry(providers=[StubSyncProvider()])
+    app = create_kivy_app(
+        services=build_default_frontend_services(
+            settings_service=settings_service,
+            remote_connection_service=RemoteConnectionService(registry=remote_registry),
+            project_sync_service=ProjectSyncService(registry=remote_registry),
+        )
+    )
+    root = app.build()
+    detail_screen = root.get_screen("project_detail")
+    shell = detail_screen._shell
+    local_root = tmp_path / "workspace" / "marketing-site"
+
+    shell.open_project_editor_create()
+    shell.save_new_project(
+        SiteEditorViewModel(
+            site_id=None,
+            name="Marketing Site",
+            framework_type="wordpress",
+            local_path=str(local_root),
+            default_locale="en_US",
+            connection_type="sftp",
+            remote_host="example.test",
+            remote_port="22",
+            remote_username="deploy",
+            remote_password="secret",
+            remote_path="/srv/app",
+            is_active=True,
+        )
+    )
+    shell.open_projects()
+    created_project = shell.projects_state.projects[0]
+    shell.select_project(created_project.id)
+    root.current = "project_detail"
+
+    detail_screen._start_sync()
+
+    assert detail_screen._sync_progress_popup is not None
+    deadline = time.monotonic() + 1
+    while time.monotonic() < deadline:
+        detail_screen._sync_progress_popup.refresh()
+        command_lines = [
+            line
+            for line in detail_screen._sync_progress_popup._command_log_label.text.splitlines()
+            if line.strip()
+        ]
+        if (
+            len(command_lines) == 2
+            and f"LOCAL WRITE {local_root / 'templates' / 'home.html'}" in command_lines
+        ):
+            break
+        time.sleep(0.01)
+
+    command_lines = [
+        line
+        for line in detail_screen._sync_progress_popup._command_log_label.text.splitlines()
+        if line.strip()
+    ]
+    assert command_lines == [
+        "SFTP GET /srv/app/templates/home.html",
+        f"LOCAL WRITE {local_root / 'templates' / 'home.html'}",
+    ]

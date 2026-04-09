@@ -4,7 +4,11 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from collections.abc import Iterable
+from itertools import islice
 
+from polyglot_site_translator.domain.remote_connections.contracts import (
+    DEFAULT_MATERIALIZED_REMOTE_FILE_LIMIT,
+)
 from polyglot_site_translator.domain.remote_connections.models import (
     RemoteConnectionConfig,
     RemoteConnectionConfigInput,
@@ -34,21 +38,33 @@ class BaseRemoteConnectionProvider(ABC):
     ) -> RemoteConnectionTestResult:
         """Attempt a transport-level connection test."""
 
-    @abstractmethod
     def list_remote_files(
         self,
         config: RemoteConnectionConfig,
         progress_callback: SyncProgressCallback | None = None,
+        *,
+        max_files: int = DEFAULT_MATERIALIZED_REMOTE_FILE_LIMIT,
     ) -> list[RemoteSyncFile]:
-        """Return the remote files available for synchronization."""
+        """Return a bounded materialized list of remote files."""
+        if max_files <= 0:
+            msg = "max_files must be a positive integer."
+            raise ValueError(msg)
+        iterator = iter(self.iter_remote_files(config, progress_callback))
+        try:
+            return list(islice(iterator, max_files))
+        finally:
+            iterator_close = getattr(iterator, "close", None)
+            if callable(iterator_close):
+                cast_close = iterator_close
+                cast_close()
 
+    @abstractmethod
     def iter_remote_files(
         self,
         config: RemoteConnectionConfig,
         progress_callback: SyncProgressCallback | None = None,
     ) -> Iterable[RemoteSyncFile]:
-        """Yield remote files incrementally using the list-based implementation."""
-        return iter(self.list_remote_files(config, progress_callback))
+        """Yield remote files incrementally."""
 
     @abstractmethod
     def download_file(

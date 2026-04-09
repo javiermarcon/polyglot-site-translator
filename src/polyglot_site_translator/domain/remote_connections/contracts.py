@@ -13,6 +13,8 @@ from polyglot_site_translator.domain.remote_connections.models import (
 )
 from polyglot_site_translator.domain.sync.models import RemoteSyncFile, SyncProgressCallback
 
+DEFAULT_MATERIALIZED_REMOTE_FILE_LIMIT = 1000
+
 
 class RemoteConnectionProvider(Protocol):
     """Infrastructure provider capable of validating a connection type."""
@@ -31,8 +33,10 @@ class RemoteConnectionProvider(Protocol):
         self,
         config: RemoteConnectionConfig,
         progress_callback: SyncProgressCallback | None = None,
+        *,
+        max_files: int = DEFAULT_MATERIALIZED_REMOTE_FILE_LIMIT,
     ) -> list[RemoteSyncFile]:
-        """Return the remote files available for synchronization."""
+        """Return a bounded materialized list of remote files."""
 
     def iter_remote_files(
         self,

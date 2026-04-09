@@ -170,6 +170,7 @@ class FrontendShell:
                 progress_current=0,
                 progress_total=0,
                 progress_is_indeterminate=True,
+                command_log_limit=self._resolve_sync_progress_log_limit(),
                 command_log=[],
             )
         worker = Thread(
@@ -561,6 +562,7 @@ class FrontendShell:
                         message=event.message,
                     )
                 )
+                command_log = command_log[-current_state.command_log_limit :]
             progress_total = current_state.progress_total
             if event.total_files is not None:
                 progress_total = event.total_files
@@ -581,6 +583,16 @@ class FrontendShell:
                 progress_is_indeterminate=progress_total == 0 and status == "running",
                 command_log=command_log,
             )
+
+    def _resolve_sync_progress_log_limit(self) -> int:
+        state = self.settings_state
+        if state is not None and state.status != "failed":
+            return state.app_settings.sync_progress_log_limit
+        try:
+            loaded_state = self.services.settings.load_settings()
+        except ControlledServiceError:
+            return build_default_app_settings().sync_progress_log_limit
+        return loaded_state.app_settings.sync_progress_log_limit
 
     def _require_settings_state(self) -> SettingsStateViewModel:
         state = self.settings_state

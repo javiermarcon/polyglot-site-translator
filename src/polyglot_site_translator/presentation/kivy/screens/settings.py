@@ -53,6 +53,7 @@ class SettingsScreen(BaseShellScreen):
         self._height_input: TextInput | None = None
         self._database_directory_input: TextInput | None = None
         self._database_filename_input: TextInput | None = None
+        self._sync_progress_log_limit_input: TextInput | None = None
         self._draft_settings: AppSettingsViewModel | None = None
         self._layout_spec = build_settings_layout_spec(Window.width)
         self.refresh()
@@ -231,6 +232,9 @@ class SettingsScreen(BaseShellScreen):
                 filename_value=draft.database_filename,
             )
         )
+        form.add_widget(
+            self._build_sync_progress_field(limit_value=str(draft.sync_progress_log_limit))
+        )
         actions = BoxLayout(
             orientation=self._layout_spec.action_orientation,
             spacing=12,
@@ -382,6 +386,32 @@ class SettingsScreen(BaseShellScreen):
         card.add_widget(row)
         return card
 
+    def _build_sync_progress_field(self, *, limit_value: str) -> SurfaceBoxLayout:
+        palette = get_active_theme()
+        card = _build_field_card(
+            title="Sync Progress Command Log",
+            help_text=(
+                "Keep only the latest N sync operations in the progress window. "
+                "This limits in-memory command-log growth while large remote trees are listed."
+            ),
+        )
+        column = BoxLayout(orientation="vertical", spacing=12, size_hint_y=None)
+        column.bind(minimum_height=column.setter("height"))
+        self._sync_progress_log_limit_input = TextInput(
+            text=limit_value,
+            multiline=False,
+            input_filter="int",
+            size_hint_y=None,
+            height=44,
+            background_color=palette.card_subtle_background,
+            foreground_color=palette.text_primary,
+            cursor_color=palette.text_primary,
+        )
+        column.add_widget(WrappedLabel(text="Maximum Stored Operations", font_size=14, bold=True))
+        column.add_widget(self._sync_progress_log_limit_input)
+        card.add_widget(column)
+        return card
+
     def _back_to_dashboard(self, *_args: object) -> None:
         self._shell.open_dashboard()
         self.show_route("dashboard")
@@ -403,6 +433,10 @@ class SettingsScreen(BaseShellScreen):
                 database_directory=self._database_directory_input.text.strip(),
                 database_filename=self._database_filename_input.text.strip(),
             )
+        if self._sync_progress_log_limit_input is not None:
+            limit_text = self._sync_progress_log_limit_input.text.strip()
+            if limit_text:
+                draft = replace(draft, sync_progress_log_limit=int(limit_text))
         self._draft_settings = draft
         self._shell.update_settings_draft(draft)
         self._shell.save_settings()

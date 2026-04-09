@@ -91,6 +91,7 @@ La base actual implementa una base funcional de presentación, settings y `site_
 - `infrastructure/database_location.py`: resolución del path final de SQLite desde settings
 - `infrastructure/site_registry_sqlite.py`: repositorio SQLite real con schema y mapeo fila ↔ modelo
 - `infrastructure/remote_connections/`: registry discoverable y providers concretos de conexión remota
+- `infrastructure/remote_connections/base.py`: contrato base compartido para materialización acotada de listados remotos e iteración incremental completa
 - `infrastructure/sync_local.py`: preparación del workspace local y persistencia de archivos descargados durante sync
 - `infrastructure/site_secrets.py`: cifrado local de secretos persistidos del site registry
 - `adapters/framework_registry.py`: registry/resolver real de adapters con descubrimiento dinámico por paquete
@@ -242,7 +243,8 @@ Si querés ejecutar la app local sin instalación editable, usá el launcher del
 
 Los settings generales se guardan en `settings.toml` dentro del directorio de configuración del usuario.
 Para desarrollo o pruebas locales, podés overridear la ubicación con `POLYGLOT_SITE_TRANSLATOR_CONFIG_DIR`.
-Dentro de esos settings también se persisten `database_directory` y `database_filename`, que determinan dónde se crea/usa la base SQLite real del `site_registry`.
+Dentro de esos settings también se persisten `database_directory`, `database_filename` y `sync_progress_log_limit`.
+Ese último valor define cuántas operaciones recientes conserva en memoria y muestra la ventana de progreso del sync remoto.
 
 La contraseña remota no se guarda en texto plano en SQLite.
 Se persiste cifrada con una key local almacenada junto al config dir de la app.
@@ -250,6 +252,8 @@ Si el runtime encuentra una base heredada con columnas `ftp_*`, migra esos datos
 
 El flujo de sync actual usa la conexión remota persistida del proyecto para listar el contenido remoto y descargar archivos al `local_path`.
 Cuando se dispara desde Project Detail, el trabajo corre en background y se abre una ventana dedicada con barra de progreso y log de comandos del transporte y del workspace local.
+Ese log no crece sin límite: conserva solo las últimas `N` operaciones según `sync_progress_log_limit`, para evitar crecimiento de memoria cuando el remoto tiene árboles muy grandes.
+En el subsistema remoto, la iteración completa del árbol se hace por `iter_remote_files()`. La API `list_remote_files()` queda reservada para casos acotados y materializa como máximo un conjunto seguro de archivos por llamada, para no reintroducir cargas masivas en memoria desde otro protocolo o caller.
 La descarga es incremental: el sync empieza a grabar archivos locales a medida que los descubre en el árbol remoto, sin esperar a completar todo el recorrido.
 Si la conexión o el recorrido remoto falla, esa misma ventana queda en estado `failed` y muestra el mensaje concreto del error.
 Si el workspace local no existe, se crea automáticamente.

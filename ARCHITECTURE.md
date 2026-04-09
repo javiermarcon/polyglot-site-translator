@@ -236,6 +236,7 @@ Frontend settings persistence remains behind the `SettingsService` contract and 
 The general settings flow now also owns:
 - `database_directory`
 - `database_filename`
+- `sync_progress_log_limit`
 
 The final SQLite path is resolved in infrastructure from typed settings. Widgets never compose the database path manually.
 
@@ -249,7 +250,14 @@ The sync screen now also owns:
 - showing the synchronized file count and controlled error code when sync fails
 - opening a dedicated progress window from Project Detail while the sync runs in background
 - rendering the command log emitted by remote providers and local workspace operations
+- truncating that command log to the latest configured `N` operations so large remote listings do not grow presentation state without bound
 - staying presentation-only while services/providers own remote listing, download, and local filesystem writes
+
+The remote-provider contract now distinguishes clearly between:
+- `iter_remote_files()` for full incremental traversal
+- `list_remote_files()` for bounded materialization only
+
+That keeps sync workflows stream-oriented while preventing accidental full-tree materialization from protocol-specific helper paths.
 
 ### Shared services must remain target-agnostic where feasible
 

@@ -59,3 +59,12 @@ Feature: Remote to local project synchronization
     Then the sync progress window is open
     And the sync progress window shows a failed status
     And the sync progress window shows the sync error message
+
+  Scenario: Keep only the latest sync operations in the progress window regardless of transport
+    Given the frontend shell is wired with a real sync workflow
+    And the sync command log limit is 2 operations
+    And the registered project "marketing-site" has remote files available
+    When the operator opens the synced detail for project "marketing-site"
+    And the operator starts the sync workflow from the project detail screen
+    Then the sync progress window is open
+    And the sync progress window keeps only the last 2 operations

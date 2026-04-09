@@ -65,18 +65,6 @@ class FTPRemoteConnectionProvider(BaseRemoteConnectionProvider):
             _close_ftp_client(client)
         return _success_result(config, "Connected successfully using FTP.")
 
-    def list_remote_files(
-        self,
-        config: RemoteConnectionConfig,
-        progress_callback: SyncProgressCallback | None = None,
-    ) -> list[RemoteSyncFile]:
-        return list(
-            self.iter_remote_files(
-                config=config,
-                progress_callback=progress_callback,
-            )
-        )
-
     def iter_remote_files(
         self,
         config: RemoteConnectionConfig,
@@ -135,18 +123,6 @@ class ExplicitFTPSRemoteConnectionProvider(BaseRemoteConnectionProvider):
         finally:
             _close_ftp_client(client)
         return _success_result(config, "Connected successfully using explicit FTPS.")
-
-    def list_remote_files(
-        self,
-        config: RemoteConnectionConfig,
-        progress_callback: SyncProgressCallback | None = None,
-    ) -> list[RemoteSyncFile]:
-        return list(
-            self.iter_remote_files(
-                config=config,
-                progress_callback=progress_callback,
-            )
-        )
 
     def iter_remote_files(
         self,
@@ -229,18 +205,6 @@ class ImplicitFTPSRemoteConnectionProvider(BaseRemoteConnectionProvider):
         finally:
             _close_ftp_client(client)
         return _success_result(config, "Connected successfully using implicit FTPS.")
-
-    def list_remote_files(
-        self,
-        config: RemoteConnectionConfig,
-        progress_callback: SyncProgressCallback | None = None,
-    ) -> list[RemoteSyncFile]:
-        return list(
-            self.iter_remote_files(
-                config=config,
-                progress_callback=progress_callback,
-            )
-        )
 
     def iter_remote_files(
         self,

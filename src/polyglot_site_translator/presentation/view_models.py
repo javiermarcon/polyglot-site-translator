@@ -91,6 +91,7 @@ class AppSettingsViewModel:
     ui_language: str = "en"
     database_directory: str = ""
     database_filename: str = "site_registry.sqlite3"
+    sync_progress_log_limit: int = 200
 
 
 @dataclass(frozen=True)
@@ -236,6 +237,7 @@ class SyncProgressStateViewModel:
     progress_current: int
     progress_total: int
     progress_is_indeterminate: bool
+    command_log_limit: int
     command_log: list[SyncCommandLogEntryViewModel]
 
 
@@ -372,6 +374,7 @@ def build_default_app_settings(
         ui_language="en",
         database_directory=database_directory,
         database_filename=database_filename,
+        sync_progress_log_limit=200,
     )
 
 
