@@ -257,7 +257,8 @@ Ese log no crece sin límite: conserva solo las últimas `N` operaciones según 
 En el subsistema remoto, la iteración completa del árbol se hace por `iter_remote_files()`. La API `list_remote_files()` queda reservada para casos acotados y materializa como máximo un conjunto seguro de archivos por llamada, para no reintroducir cargas masivas en memoria desde otro protocolo o caller.
 La descarga es incremental: el sync empieza a grabar archivos locales a medida que los descubre en el árbol remoto, sin esperar a completar todo el recorrido.
 Para un sync completo, el servicio abre una única sesión remota reutilizable con estado explícito y la usa para listar, descargar todos los archivos y cerrar la conexión; no reconecta por cada archivo.
-Si la conexión o el recorrido remoto falla, esa misma ventana queda en estado `failed` y muestra el mensaje concreto del error.
+En SFTP/SCP, el recorrido remoto descarga solo archivos regulares y saltea symlinks, sockets, devices u otros tipos especiales con operaciones `SFTP SKIP` en el log, para evitar fallos genéricos del servidor al intentar leer rutas que no son archivos descargables.
+Si la conexión, el recorrido remoto o una descarga falla, esa misma ventana queda en estado `failed` y muestra el mensaje concreto del error con operación, ruta remota y causa reportada por el transporte cuando está disponible.
 Si el workspace local no existe, se crea automáticamente.
 Si el remoto está vacío, el sync devuelve un resultado válido con `0` archivos descargados.
 En esta etapa todavía no existe sync `local -> remote`, ni filtros por adapter, ni controles de sync selectivo/full desde la UI.

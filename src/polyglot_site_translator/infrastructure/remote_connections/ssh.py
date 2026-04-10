@@ -153,7 +153,12 @@ class _SshRemoteConnectionSession(BaseRemoteConnectionSession):
             finally:
                 remote_file.close()
         except OSError as error:
-            raise _normalize_ssh_error(error, default_code="download_failed") from error
+            raise _normalize_ssh_operation_error(
+                error,
+                default_code="download_failed",
+                operation="download remote file",
+                remote_path=remote_path,
+            ) from error
 
     def _close(self, progress_callback: SyncProgressCallback | None) -> None:
         _emit_progress(
@@ -340,7 +345,12 @@ def _download_ssh_file(
         finally:
             remote_file.close()
     except OSError as error:
-        raise _normalize_ssh_error(error, default_code="download_failed") from error
+        raise _normalize_ssh_operation_error(
+            error,
+            default_code="download_failed",
+            operation="download remote file",
+            remote_path=remote_path,
+        ) from error
     finally:
         sftp_client.close()
         ssh_client.close()
@@ -418,6 +428,29 @@ def _normalize_ssh_error(
     )
 
 
+def _normalize_ssh_operation_error(
+    error: BaseException,
+    *,
+    default_code: str,
+    operation: str,
+    remote_path: str,
+) -> RemoteConnectionOperationError:
+    normalized_error = _normalize_ssh_error(error, default_code=default_code)
+    reason = str(normalized_error).strip()
+    message = f"Failed to {operation} '{remote_path}'. SSH/SFTP reported: {reason}."
+    if reason.lower() == "failure":
+        message = (
+            f"Failed to {operation} '{remote_path}'. The server returned a generic SFTP "
+            "failure without details. The path may be a directory, symlink, special file, "
+            "or a file blocked by server permissions. Verify the remote path type and "
+            "read permissions on the server."
+        )
+    return RemoteConnectionOperationError(
+        error_code=normalized_error.error_code,
+        message=message,
+    )
+
+
 def _matches_any(message: str, patterns: list[str]) -> bool:
     return any(pattern in message for pattern in patterns)
 
@@ -439,12 +472,25 @@ def _walk_sftp_directory(
     )
     for entry in sftp_client.listdir_attr(current_remote_path):
         remote_path = _join_remote_path(current_remote_path, entry.filename)
-        if stat.S_ISDIR(entry.st_mode):
+        entry_mode = int(getattr(entry, "st_mode", 0) or 0)
+        if stat.S_ISDIR(entry_mode):
             yield from _walk_sftp_directory(
                 sftp_client=sftp_client,
                 base_remote_path=base_remote_path,
                 current_remote_path=remote_path,
                 progress_callback=progress_callback,
+            )
+            continue
+        if not stat.S_ISREG(entry_mode):
+            _emit_progress(
+                progress_callback,
+                SyncProgressEvent(
+                    stage=SyncProgressStage.LISTING_REMOTE,
+                    message=(
+                        f"Skipping remote path {remote_path} because it is not a regular file."
+                    ),
+                    command_text=f"SFTP SKIP {remote_path}",
+                ),
             )
             continue
         yield RemoteSyncFile(

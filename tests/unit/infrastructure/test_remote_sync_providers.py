@@ -932,6 +932,33 @@ def test_sftp_provider_lists_remote_files_recursively(
     ]
 
 
+def test_sftp_provider_skips_symlinks_and_special_files_during_listing(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    sftp_client = _FakeSftpClient(
+        listing={
+            "/srv/app": [
+                _FakeSftpEntry("messages.po", 0o100644, 8),
+                _FakeSftpEntry("venv-lib64", 0o120777, 0),
+                _FakeSftpEntry("socket", 0o140777, 0),
+            ],
+        },
+        file_bytes={},
+    )
+    ssh_client = _FakeSshClient(sftp_client)
+    progress_events: list[str] = []
+    monkeypatch.setattr(ssh, "_connect_ssh_client", lambda config: ssh_client)
+
+    remote_files = ssh.SFTPRemoteConnectionProvider().list_remote_files(
+        _build_ssh_config(),
+        progress_callback=lambda event: progress_events.append(event.command_text or ""),
+    )
+
+    assert [remote_file.relative_path for remote_file in remote_files] == ["messages.po"]
+    assert "SFTP SKIP /srv/app/venv-lib64" in progress_events
+    assert "SFTP SKIP /srv/app/socket" in progress_events
+
+
 def test_sftp_provider_downloads_remote_file_bytes(monkeypatch: pytest.MonkeyPatch) -> None:
     sftp_client = _FakeSftpClient(
         listing={},
@@ -1013,10 +1040,36 @@ def test_download_ssh_file_wraps_transport_errors(monkeypatch: pytest.MonkeyPatc
     ssh_client = _FakeSshClient(_DownloadFailingSftpClient())
     monkeypatch.setattr(ssh, "_connect_ssh_client", lambda config: ssh_client)
 
-    with pytest.raises(RemoteConnectionOperationError, match="Broken pipe") as error:
+    with pytest.raises(
+        RemoteConnectionOperationError,
+        match=r"Failed to download remote file '/srv/app/messages\.po'.*Broken pipe",
+    ) as error:
         ssh._download_ssh_file(_build_ssh_config(), "/srv/app/messages.po", None, "SFTP")
 
     assert error.value.error_code == "transport_io_failed"
+
+
+def test_download_ssh_file_explains_generic_sftp_failures(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class _DownloadFailingSftpClient(_FakeSftpClient):
+        def __init__(self) -> None:
+            super().__init__(listing={}, file_bytes={})
+
+        def file(self, remote_path: str, *, mode: str) -> _FakeRemoteFile:
+            msg = "Failure"
+            raise OSError(msg)
+
+    ssh_client = _FakeSshClient(_DownloadFailingSftpClient())
+    monkeypatch.setattr(ssh, "_connect_ssh_client", lambda config: ssh_client)
+
+    with pytest.raises(
+        RemoteConnectionOperationError,
+        match=r"generic SFTP failure.*directory, symlink, special file",
+    ) as error:
+        ssh._download_ssh_file(_build_ssh_config(), "/srv/app/venv/lib64", None, "SCP")
+
+    assert error.value.error_code == "download_failed"
 
 
 def test_download_ssh_file_reads_and_closes_remote_file(monkeypatch: pytest.MonkeyPatch) -> None:
