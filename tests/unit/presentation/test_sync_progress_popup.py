@@ -167,6 +167,33 @@ def test_sync_progress_popup_offers_host_key_trust_only_for_unknown_ssh_hosts() 
     assert popup._trust_host_key_button.disabled is True
 
 
+def test_sync_progress_popup_hides_host_key_trust_while_retry_is_running() -> None:
+    shell = create_frontend_shell(build_seeded_services())
+    popup = SyncProgressPopup(shell=shell)
+    shell.sync_state = SyncStatusViewModel(
+        status="failed",
+        files_synced=0,
+        summary="Server '127.0.0.1' not found in known_hosts",
+        error_code="unknown_ssh_host_key",
+    )
+    shell.sync_progress_state = SyncProgressStateViewModel(
+        project_id="site-123",
+        project_name="Marketing Site",
+        status="running",
+        message="Starting remote sync after trusting the SSH host key.",
+        progress_current=0,
+        progress_total=0,
+        progress_is_indeterminate=True,
+        command_log_limit=10,
+        command_log=[],
+    )
+
+    popup.refresh()
+
+    assert popup._trust_host_key_button.opacity == 0
+    assert popup._trust_host_key_button.disabled is True
+
+
 def test_sync_progress_popup_trust_confirmation_delegates_to_shell(
     monkeypatch: MonkeyPatch,
 ) -> None:

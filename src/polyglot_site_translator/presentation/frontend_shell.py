@@ -162,6 +162,7 @@ class FrontendShell:
         with self._sync_state_lock:
             if self._active_sync_thread is not None and self._active_sync_thread.is_alive():
                 return
+            self.sync_state = None
             self.sync_progress_state = SyncProgressStateViewModel(
                 project_id=project_id,
                 project_name=project_name,

@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections.abc import Callable
 from dataclasses import dataclass, replace
 from threading import Event
+from typing import Any
 
 from polyglot_site_translator.bootstrap import create_frontend_shell
 from polyglot_site_translator.domain.sync.models import SyncProgressEvent, SyncProgressStage
@@ -185,6 +186,35 @@ def test_sync_can_run_in_background_without_leaving_the_project_detail_route() -
     assert shell.sync_progress_state.status == "completed"
 
 
+def test_background_sync_clears_stale_failed_sync_state_when_retry_starts() -> None:
+    seeded_services = build_seeded_services()
+    workflow = _BlockingWorkflowService(started=Event(), release=Event())
+    shell = create_frontend_shell(
+        FrontendServices(
+            catalog=seeded_services.catalog,
+            workflows=workflow,
+            settings=seeded_services.settings,
+            registry=seeded_services.registry,
+        )
+    )
+    shell.open_projects()
+    shell.select_project("wp-site")
+    shell.sync_state = SyncStatusViewModel(
+        status="failed",
+        files_synced=0,
+        summary="Server '127.0.0.1' not found in known_hosts",
+        error_code="unknown_ssh_host_key",
+    )
+
+    shell.start_sync_async()
+
+    assert workflow.started.wait(timeout=1) is True
+    assert _sync_state_is_cleared(shell) is True
+    workflow.release.set()
+    assert shell._active_sync_thread is not None
+    shell._active_sync_thread.join(timeout=1)
+
+
 def test_background_sync_failures_are_exposed_in_shell_state_instead_of_crashing() -> None:
     seeded_services = build_seeded_services()
     shell = create_frontend_shell(
@@ -261,6 +291,10 @@ def test_background_sync_progress_keeps_only_the_last_configured_operations() ->
         "SFTP GET /srv/app/locale/es.po",
         "LOCAL WRITE /workspace/wp-site/locale/es.po",
     ]
+
+
+def _sync_state_is_cleared(shell: Any) -> bool:
+    return shell.sync_state is None
 
 
 def test_audit_and_po_actions_update_independent_panels() -> None:

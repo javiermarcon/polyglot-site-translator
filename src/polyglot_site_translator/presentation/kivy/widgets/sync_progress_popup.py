@@ -88,7 +88,8 @@ class SyncProgressPopup(Popup):  # type: ignore[misc]
         else:
             self._command_log_label.text = "Waiting for sync commands."
         can_trust_host_key = (
-            self._shell.sync_state is not None
+            state.status == "failed"
+            and self._shell.sync_state is not None
             and self._shell.sync_state.error_code == "unknown_ssh_host_key"
         )
         self._trust_host_key_button.disabled = not can_trust_host_key
