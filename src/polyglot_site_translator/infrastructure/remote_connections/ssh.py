@@ -210,7 +210,10 @@ def _test_ssh_connection(
             connection_type=config.connection_type,
             host=config.host,
             port=config.port,
-            message=str(normalized_error),
+            message=_format_connection_test_error(
+                config=config,
+                error=normalized_error,
+            ),
             error_code=normalized_error.error_code,
         )
     return RemoteConnectionTestResult(
@@ -448,6 +451,18 @@ def _normalize_ssh_operation_error(
     return RemoteConnectionOperationError(
         error_code=normalized_error.error_code,
         message=message,
+    )
+
+
+def _format_connection_test_error(
+    *,
+    config: RemoteConnectionConfigInput,
+    error: RemoteConnectionOperationError,
+) -> str:
+    return (
+        f"SSH connection test failed for {config.connection_type} "
+        f"{config.host}:{config.port} at remote path '{config.remote_path}'. "
+        f"Cause ({error.error_code}): {error}"
     )
 
 

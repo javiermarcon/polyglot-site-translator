@@ -173,6 +173,37 @@ def test_sync_workflow_service_maps_controlled_failures() -> None:
     assert state.summary == "Download failed for /srv/app/locale/es.po."
 
 
+def test_sync_workflow_service_uses_context_when_failure_has_no_error() -> None:
+    workflow = SiteRegistryPresentationWorkflowService(
+        service=_ServiceStub(site=_build_site()),
+        project_sync_service=_ProjectSyncStub(
+            result=SyncResult(
+                direction=SyncDirection.REMOTE_TO_LOCAL,
+                success=False,
+                project_id="site-123",
+                connection_type="sftp",
+                local_path="/workspace/site",
+                summary=SyncSummary(
+                    files_discovered=2,
+                    files_downloaded=1,
+                    directories_created=1,
+                    bytes_downloaded=32,
+                ),
+                error=None,
+            )
+        ),
+    )
+
+    state = workflow.start_sync("site-123")
+
+    assert state.status == "failed"
+    assert state.error_code == "sync_failed"
+    assert state.summary == (
+        "Remote sync failed for project 'site-123' using sftp into "
+        "'/workspace/site', but no detailed sync error was provided."
+    )
+
+
 def test_sync_workflow_service_wraps_missing_site_errors() -> None:
     workflow = SiteRegistryPresentationWorkflowService(
         service=_ServiceStub(site=_build_site(), missing=True),

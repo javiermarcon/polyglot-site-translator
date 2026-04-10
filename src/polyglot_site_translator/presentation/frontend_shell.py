@@ -561,7 +561,16 @@ class FrontendShell:
         self,
         error: AttributeError | LookupError | OSError | RuntimeError | ValueError,
     ) -> None:
-        error_message = str(error) or "Background sync failed."
+        project_id = (
+            self.project_detail_state.project.id
+            if self.project_detail_state is not None
+            else "unknown"
+        )
+        cause = str(error).strip() or error.__class__.__name__
+        error_message = (
+            "Unexpected background sync failure while synchronizing project "
+            f"'{project_id}'. Cause: {cause}"
+        )
         self.sync_state = SyncStatusViewModel(
             status="failed",
             files_synced=0,

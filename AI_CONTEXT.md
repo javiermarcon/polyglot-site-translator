@@ -157,7 +157,7 @@ The frontend baseline now also includes:
 - migration of legacy `ftp_*` columns into a related remote-connection table without decrypting stored ciphertext during migration
 - a first real remote-to-local sync service that reuses the discoverable remote provider registry
 - reusable remote provider sessions with explicit state for connect/list/download/close across a full sync run
-- SSH-backed sync skips non-regular remote entries and reports operation/path-specific errors instead of raw generic transport messages
+- remote connection tests and sync failures report operation/project/protocol/host/port/path-specific errors instead of raw generic transport messages
 - typed sync direction, remote file descriptors, summaries, results, and controlled sync errors
 - typed sync progress events used to drive a background execution popup in the frontend
 - local workspace preparation and file writes isolated in infrastructure for sync workflows

@@ -345,6 +345,20 @@ def test_management_service_tests_remote_connections_successfully(tmp_path: Path
     assert result.message == "Connected successfully."
 
 
+def test_management_service_wraps_remote_connection_test_payload_errors(
+    tmp_path: Path,
+) -> None:
+    settings_service = TomlSettingsService(tmp_path / "settings.toml")
+    settings_service.reset_settings()
+    management = SiteRegistryPresentationManagementService(
+        service=_build_domain_service(InMemorySiteRegistryRepository()),
+        settings_service=settings_service,
+    )
+
+    with pytest.raises(ControlledServiceError, match=r"invalid literal for int"):
+        management.test_remote_connection(replace(_build_editor(), remote_port="invalid-port"))
+
+
 def test_management_service_preserves_remote_host_verification_choice(
     tmp_path: Path,
 ) -> None:
@@ -377,6 +391,19 @@ def test_framework_aware_workflow_service_builds_audit_preview_from_detection() 
     assert audit.status == "completed"
     assert audit.findings_count == 0
     assert "No supported framework was detected" in audit.findings_summary
+
+
+def test_workflow_service_builds_po_processing_preview() -> None:
+    workflow = SiteRegistryPresentationWorkflowService(
+        service=_build_domain_service(InMemorySiteRegistryRepository()),
+        project_sync_service=SyncStub(),
+    )
+
+    preview = workflow.start_po_processing("site-1")
+
+    assert preview.status == "completed"
+    assert preview.processed_families == 4
+    assert preview.summary == "Prepared 4 locale families for future PO synchronization."
 
 
 def test_workflow_service_trusts_remote_host_key_with_explicit_confirmation() -> None:
@@ -486,6 +513,25 @@ def test_build_project_detail_without_detection_keeps_base_metadata_only() -> No
         detail.metadata_summary
         == "Framework: WordPress | Remote user: deploy | Connection type: ftp"
     )
+
+
+def test_build_project_detail_without_remote_connection_is_explicit() -> None:
+    detail = _build_project_detail(
+        RegisteredSite(
+            project=SiteProject(
+                id="site-1",
+                name="Local Only",
+                framework_type="django",
+                local_path="/workspace/local-only",
+                default_locale="en_US",
+                is_active=True,
+            ),
+            remote_connection=None,
+        )
+    )
+
+    assert detail.configuration_summary == "Locale: en_US | Remote connection: None"
+    assert detail.metadata_summary == "Framework: Django | Remote connection: none configured"
 
 
 def test_catalog_service_wraps_framework_detection_ambiguity() -> None:

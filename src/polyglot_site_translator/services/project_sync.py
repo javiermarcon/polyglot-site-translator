@@ -136,6 +136,11 @@ class ProjectSyncService:
         try:
             directories_created = self._local_workspace.ensure_directory(local_root)
         except OSError as error:
+            message = _format_local_workspace_error(
+                site=site,
+                local_root=local_root,
+                error=error,
+            )
             return summary, self._failure_result(
                 context=_FailureContext(
                     site=site,
@@ -144,7 +149,7 @@ class ProjectSyncService:
                 ),
                 error=SyncError(
                     code="local_workspace_failed",
-                    message=str(error),
+                    message=message,
                     local_path=str(local_root),
                 ),
             )
@@ -249,6 +254,10 @@ class ProjectSyncService:
                 self._emit_failure(progress_callback, result)
                 return result
             except OSError as error:
+                message = _format_remote_listing_error(
+                    context=context,
+                    error=error,
+                )
                 result = self._failure_result(
                     context=_FailureContext(
                         site=context.site,
@@ -257,7 +266,7 @@ class ProjectSyncService:
                     ),
                     error=SyncError(
                         code="remote_listing_failed",
-                        message=str(error),
+                        message=message,
                     ),
                 )
                 self._emit_failure(progress_callback, result)
@@ -310,6 +319,10 @@ class ProjectSyncService:
                     self._emit_failure(progress_callback, result)
                     return result
                 except OSError as error:
+                    message = _format_remote_listing_error(
+                        context=context,
+                        error=error,
+                    )
                     result = self._failure_result(
                         context=_FailureContext(
                             site=context.site,
@@ -323,7 +336,7 @@ class ProjectSyncService:
                         ),
                         error=SyncError(
                             code="remote_listing_failed",
-                            message=str(error),
+                            message=message,
                         ),
                     )
                     self._emit_failure(progress_callback, result)
@@ -395,6 +408,11 @@ class ProjectSyncService:
                     self._emit_failure(progress_callback, result)
                     return result
                 except OSError as error:
+                    message = _format_remote_download_error(
+                        remote_path=remote_file.remote_path,
+                        local_path=local_file_path,
+                        error=error,
+                    )
                     result = self._failure_result(
                         context=_FailureContext(
                             site=context.site,
@@ -408,7 +426,7 @@ class ProjectSyncService:
                         ),
                         error=SyncError(
                             code="download_failed",
-                            message=str(error),
+                            message=message,
                             remote_path=remote_file.remote_path,
                             local_path=str(local_file_path),
                         ),
@@ -549,3 +567,45 @@ class ProjectSyncService:
                 bytes_downloaded=result.summary.bytes_downloaded,
             ),
         )
+
+
+def _format_local_workspace_error(
+    *,
+    site: RegisteredSite,
+    local_root: Path,
+    error: OSError,
+) -> str:
+    return (
+        f"Failed to prepare local workspace '{local_root}' for project '{site.name}'. "
+        f"Cause: {_format_error_cause(error)}"
+    )
+
+
+def _format_remote_listing_error(
+    *,
+    context: _DownloadContext,
+    error: OSError,
+) -> str:
+    remote_connection = context.remote_connection
+    return (
+        f"Failed to list remote files for project '{context.site.name}' from "
+        f"{remote_connection.connection_type} {remote_connection.host}:{remote_connection.port} "
+        f"at remote path '{remote_connection.remote_path}'. "
+        f"Cause: {_format_error_cause(error)}"
+    )
+
+
+def _format_remote_download_error(
+    *,
+    remote_path: str,
+    local_path: Path,
+    error: OSError,
+) -> str:
+    return (
+        f"Failed to download remote file '{remote_path}' into local path '{local_path}'. "
+        f"Cause: {_format_error_cause(error)}"
+    )
+
+
+def _format_error_cause(error: BaseException) -> str:
+    return str(error).strip() or error.__class__.__name__

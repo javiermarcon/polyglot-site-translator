@@ -59,7 +59,11 @@ class FTPRemoteConnectionProvider(BaseRemoteConnectionProvider):
             )
             return _failure_result(
                 config,
-                str(normalized_error),
+                _format_connection_test_error(
+                    config=config,
+                    transport_label="FTP",
+                    error=normalized_error,
+                ),
                 normalized_error.error_code,
             )
         finally:
@@ -103,7 +107,11 @@ class ExplicitFTPSRemoteConnectionProvider(BaseRemoteConnectionProvider):
             )
             return _failure_result(
                 config,
-                str(normalized_error),
+                _format_connection_test_error(
+                    config=config,
+                    transport_label="FTPS explicit",
+                    error=normalized_error,
+                ),
                 normalized_error.error_code,
             )
         finally:
@@ -168,7 +176,11 @@ class ImplicitFTPSRemoteConnectionProvider(BaseRemoteConnectionProvider):
             )
             return _failure_result(
                 config,
-                str(normalized_error),
+                _format_connection_test_error(
+                    config=config,
+                    transport_label="FTPS implicit",
+                    error=normalized_error,
+                ),
                 normalized_error.error_code,
             )
         finally:
@@ -460,6 +472,19 @@ def _failure_result(
         port=config.port,
         message=message,
         error_code=error_code,
+    )
+
+
+def _format_connection_test_error(
+    *,
+    config: RemoteConnectionConfigInput,
+    transport_label: str,
+    error: RemoteConnectionOperationError,
+) -> str:
+    return (
+        f"{transport_label} connection test failed for {config.connection_type} "
+        f"{config.host}:{config.port} at remote path '{config.remote_path}'. "
+        f"Cause ({error.error_code}): {error}"
     )
 
 

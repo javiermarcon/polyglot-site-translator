@@ -254,7 +254,7 @@ The sync screen now also owns:
 - truncating that command log to the latest configured `N` operations so large remote listings do not grow presentation state without bound
 - showing an explicit SSH host-key trust confirmation popup when SFTP/SCP fails because the host is absent from `known_hosts`; strict verification remains the default, and trust-on-first-use host-key addition only runs after that confirmation
 - staying presentation-only while services/providers own remote listing, download, and local filesystem writes
-- surfacing remote sync failures with operation/path context instead of raw transport-only messages such as generic SFTP `Failure`
+- surfacing remote connection and sync failures with operation, project, protocol, host, port, path, stable error-code, and transport-cause context instead of raw library messages such as generic SFTP `Failure`
 
 The remote-provider contract now distinguishes clearly between:
 - `open_session()` for a reusable connection lifecycle with state, listing, download, close, and controlled connect retry behavior

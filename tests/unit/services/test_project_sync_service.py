@@ -494,6 +494,10 @@ def test_project_sync_service_returns_a_controlled_result_when_listing_fails(
     assert result.success is False
     assert result.error is not None
     assert result.error.code == "remote_listing_failed"
+    assert result.error.message == (
+        "Failed to list remote files for project 'Marketing Site' from sftp "
+        "example.test:22 at remote path '/srv/app'. Cause: Could not list remote files."
+    )
 
 
 def test_project_sync_service_preserves_specific_remote_listing_error_codes(
@@ -549,6 +553,11 @@ def test_project_sync_service_returns_a_controlled_result_when_a_download_fails(
     assert result.success is False
     assert result.error is not None
     assert result.error.code == "download_failed"
+    assert result.error.message == (
+        "Failed to download remote file '/srv/app/locale/es.po' into local path "
+        f"'{tmp_path / 'locale' / 'es.po'}'. Cause: Download failed for "
+        "/srv/app/locale/es.po."
+    )
 
 
 def test_project_sync_service_preserves_specific_download_error_codes(
@@ -630,6 +639,10 @@ def test_project_sync_service_returns_a_controlled_result_when_local_workspace_f
     assert result.success is False
     assert result.error is not None
     assert result.error.code == "local_workspace_failed"
+    assert result.error.message == (
+        f"Failed to prepare local workspace '{tmp_path}' for project 'Marketing Site'. "
+        "Cause: workspace unavailable"
+    )
 
 
 def test_project_sync_service_returns_a_controlled_result_for_unsupported_connections(

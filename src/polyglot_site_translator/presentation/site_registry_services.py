@@ -518,8 +518,12 @@ def _build_sync_status(result: SyncResult) -> SyncStatusViewModel:
             error_code=None,
         )
     error = result.error
-    error_message = "Sync failed."
-    error_code = None
+    error_message = (
+        f"Remote sync failed for project '{result.project_id}' using "
+        f"{result.connection_type} into '{result.local_path}', but no detailed sync "
+        "error was provided."
+    )
+    error_code = "sync_failed"
     if error is not None:
         error_message = error.message
         error_code = error.code

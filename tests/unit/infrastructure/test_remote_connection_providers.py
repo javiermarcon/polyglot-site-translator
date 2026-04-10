@@ -154,7 +154,10 @@ def test_ftp_provider_closes_client_when_quit_raises(
 
     assert result.success is False
     assert result.error_code == "remote_path_not_found"
-    assert result.message == "cwd failed"
+    assert result.message == (
+        "FTP connection test failed for ftp example.test:21 at remote path "
+        "'/remote/path'. Cause (remote_path_not_found): cwd failed"
+    )
     assert actions[-2:] == ["quit", "close"]
 
 
@@ -178,7 +181,10 @@ def test_ftp_provider_classifies_dns_resolution_failures(
 
     assert result.success is False
     assert result.error_code == "dns_resolution_failed"
-    assert result.message == "Temporary failure in name resolution"
+    assert result.message == (
+        "FTP connection test failed for ftp example.test:21 at remote path "
+        "'/remote/path'. Cause (dns_resolution_failed): Temporary failure in name resolution"
+    )
 
 
 def test_ftp_error_normalization_covers_timeout_refusal_and_permission_cases() -> None:
@@ -250,7 +256,10 @@ def test_explicit_ftps_provider_returns_failure_on_tls_error(
 
     assert result.success is False
     assert result.error_code == "tls_handshake_failed"
-    assert result.message == "auth failed"
+    assert result.message == (
+        "FTPS explicit connection test failed for ftps_explicit example.test:21 "
+        "at remote path '/remote/path'. Cause (tls_handshake_failed): auth failed"
+    )
     assert actions[-2:] == ["quit", "close"]
 
 
@@ -392,7 +401,10 @@ def test_implicit_ftps_provider_returns_failure_when_login_fails(
 
     assert result.success is False
     assert result.error_code == "authentication_failed"
-    assert result.message == "login failed"
+    assert result.message == (
+        "FTPS implicit connection test failed for ftps_implicit example.test:21 "
+        "at remote path '/remote/path'. Cause (authentication_failed): login failed"
+    )
     assert actions[-2:] == ["quit", "close"]
 
 
@@ -550,7 +562,10 @@ def test_scp_provider_returns_failure_when_ssh_client_errors(
 
     assert result.success is False
     assert result.error_code == "ssh_connection_failed"
-    assert result.message == "ssh connect failed"
+    assert result.message == (
+        "SSH connection test failed for scp example.test:22 at remote path "
+        "'/remote/path'. Cause (ssh_connection_failed): ssh connect failed"
+    )
 
 
 def test_scp_provider_classifies_ssh_dns_resolution_failures(
@@ -582,7 +597,10 @@ def test_scp_provider_classifies_ssh_dns_resolution_failures(
 
     assert result.success is False
     assert result.error_code == "dns_resolution_failed"
-    assert result.message == "Temporary failure in name resolution"
+    assert result.message == (
+        "SSH connection test failed for scp example.test:22 at remote path "
+        "'/remote/path'. Cause (dns_resolution_failed): Temporary failure in name resolution"
+    )
 
 
 def test_sftp_provider_returns_failure_when_remote_path_is_invalid(
@@ -600,7 +618,10 @@ def test_sftp_provider_returns_failure_when_remote_path_is_invalid(
 
     assert result.success is False
     assert result.error_code == "remote_path_not_found"
-    assert result.message == "missing remote path"
+    assert result.message == (
+        "SSH connection test failed for sftp example.test:22 at remote path "
+        "'/remote/path'. Cause (remote_path_not_found): missing remote path"
+    )
 
 
 def test_ssh_error_normalization_covers_timeout_refusal_auth_host_key_and_transport_io() -> None:

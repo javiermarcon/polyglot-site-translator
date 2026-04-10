@@ -5,21 +5,27 @@ from __future__ import annotations
 from collections.abc import Callable
 from dataclasses import dataclass, replace
 from threading import Event
-from typing import Any
+from typing import Any, cast
 
 from polyglot_site_translator.bootstrap import create_frontend_shell
 from polyglot_site_translator.domain.sync.models import SyncProgressEvent, SyncProgressStage
 from polyglot_site_translator.presentation.contracts import FrontendServices
+from polyglot_site_translator.presentation.errors import ControlledServiceError
 from polyglot_site_translator.presentation.router import RouteName
 from polyglot_site_translator.presentation.view_models import (
     AuditSummaryViewModel,
     POProcessingSummaryViewModel,
     RemoteConnectionTestResultViewModel,
+    SiteEditorViewModel,
     SyncProgressStateViewModel,
     SyncStatusViewModel,
+    build_default_app_settings,
 )
 from tests.support.frontend_doubles import (
+    InMemoryProjectCatalogService,
+    InMemoryProjectRegistryManagementService,
     build_empty_services,
+    build_failing_settings_load_services,
     build_failing_sync_services,
     build_seeded_services,
 )
@@ -88,6 +94,15 @@ class _FailingBackgroundWorkflowService:
 
     def start_po_processing(self, project_id: str) -> POProcessingSummaryViewModel:
         return build_seeded_services().workflows.start_po_processing(project_id)
+
+
+class _FailingConnectionTestRegistry(InMemoryProjectRegistryManagementService):
+    def test_remote_connection(
+        self,
+        editor: SiteEditorViewModel,
+    ) -> RemoteConnectionTestResultViewModel:
+        msg = "Remote connection draft is invalid."
+        raise ControlledServiceError(msg)
 
 
 def test_dashboard_sections_are_available_on_startup() -> None:
@@ -186,6 +201,31 @@ def test_sync_can_run_in_background_without_leaving_the_project_detail_route() -
     assert shell.sync_progress_state.status == "completed"
 
 
+def test_background_sync_does_not_start_a_second_worker_while_running() -> None:
+    seeded_services = build_seeded_services()
+    workflow = _BlockingWorkflowService(started=Event(), release=Event())
+    shell = create_frontend_shell(
+        FrontendServices(
+            catalog=seeded_services.catalog,
+            workflows=workflow,
+            settings=seeded_services.settings,
+            registry=seeded_services.registry,
+        )
+    )
+    shell.open_projects()
+    shell.select_project("wp-site")
+
+    shell.start_sync_async()
+    assert workflow.started.wait(timeout=1) is True
+    active_thread = shell._active_sync_thread
+    shell.start_sync_async()
+
+    assert shell._active_sync_thread is active_thread
+    workflow.release.set()
+    assert shell._active_sync_thread is not None
+    shell._active_sync_thread.join(timeout=1)
+
+
 def test_background_sync_clears_stale_failed_sync_state_when_retry_starts() -> None:
     seeded_services = build_seeded_services()
     workflow = _BlockingWorkflowService(started=Event(), release=Event())
@@ -235,12 +275,37 @@ def test_background_sync_failures_are_exposed_in_shell_state_instead_of_crashing
 
     assert shell.sync_state is not None
     assert shell.sync_state.status == "failed"
-    assert shell.sync_state.summary == "Temporary failure in name resolution"
+    assert shell.sync_state.summary == (
+        "Unexpected background sync failure while synchronizing project 'wp-site'. "
+        "Cause: Temporary failure in name resolution"
+    )
     assert shell.sync_state.error_code == "sync_runtime_failure"
-    assert shell.latest_error == "Temporary failure in name resolution"
+    assert shell.latest_error == (
+        "Unexpected background sync failure while synchronizing project 'wp-site'. "
+        "Cause: Temporary failure in name resolution"
+    )
     assert shell.sync_progress_state is not None
     assert shell.sync_progress_state.status == "failed"
-    assert shell.sync_progress_state.message == "Temporary failure in name resolution"
+    assert shell.sync_progress_state.message == (
+        "Unexpected background sync failure while synchronizing project 'wp-site'. "
+        "Cause: Temporary failure in name resolution"
+    )
+
+
+def test_background_sync_uses_default_command_limit_when_settings_load_fails() -> None:
+    shell = create_frontend_shell(build_failing_settings_load_services())
+    shell.open_projects()
+    shell.select_project("wp-site")
+
+    shell.start_sync_async()
+
+    assert shell.sync_progress_state is not None
+    assert (
+        shell.sync_progress_state.command_log_limit
+        == build_default_app_settings().sync_progress_log_limit
+    )
+    if shell._active_sync_thread is not None:
+        shell._active_sync_thread.join(timeout=1)
 
 
 def test_background_sync_progress_keeps_only_the_last_configured_operations() -> None:
@@ -291,6 +356,45 @@ def test_background_sync_progress_keeps_only_the_last_configured_operations() ->
         "SFTP GET /srv/app/locale/es.po",
         "LOCAL WRITE /workspace/wp-site/locale/es.po",
     ]
+
+
+def test_sync_progress_event_is_ignored_when_no_progress_state_exists() -> None:
+    shell = create_frontend_shell(build_seeded_services())
+
+    shell._record_sync_progress_event(
+        SyncProgressEvent(
+            stage=SyncProgressStage.LISTING_REMOTE,
+            message="Listing remote files.",
+            command_text="SFTP LIST /srv/app",
+        )
+    )
+
+    assert shell.sync_progress_state is None
+
+
+def test_project_connection_test_failure_is_exposed_in_editor_state() -> None:
+    services = build_seeded_services()
+    shell = create_frontend_shell(
+        FrontendServices(
+            catalog=services.catalog,
+            workflows=services.workflows,
+            settings=services.settings,
+            registry=_FailingConnectionTestRegistry(
+                catalog=cast(InMemoryProjectCatalogService, services.catalog)
+            ),
+        )
+    )
+    shell.open_project_editor_create()
+    assert shell.project_editor_state is not None
+    editor = shell.project_editor_state.editor
+
+    shell.test_project_connection(editor)
+
+    assert shell.project_editor_state is not None
+    assert shell.project_editor_state.status == "failed"
+    assert shell.project_editor_state.status_message == "Remote connection draft is invalid."
+    assert shell.project_editor_state.connection_test_enabled is False
+    assert shell.latest_error == "Remote connection draft is invalid."
 
 
 def _sync_state_is_cleared(shell: Any) -> bool:

@@ -258,7 +258,7 @@ En el subsistema remoto, la iteración completa del árbol se hace por `iter_rem
 La descarga es incremental: el sync empieza a grabar archivos locales a medida que los descubre en el árbol remoto, sin esperar a completar todo el recorrido.
 Para un sync completo, el servicio abre una única sesión remota reutilizable con estado explícito y la usa para listar, descargar todos los archivos y cerrar la conexión; no reconecta por cada archivo.
 En SFTP/SCP, el recorrido remoto descarga solo archivos regulares y saltea symlinks, sockets, devices u otros tipos especiales con operaciones `SFTP SKIP` en el log, para evitar fallos genéricos del servidor al intentar leer rutas que no son archivos descargables.
-Si la conexión, el recorrido remoto o una descarga falla, esa misma ventana queda en estado `failed` y muestra el mensaje concreto del error con operación, ruta remota y causa reportada por el transporte cuando está disponible.
+Si la conexión, el recorrido remoto o una descarga falla, esa misma ventana queda en estado `failed` y muestra un mensaje accionable con operación, proyecto, protocolo, host, puerto, ruta remota/local relevante y causa reportada por el transporte cuando está disponible. Los tests de conexión remota también devuelven mensajes con contexto de host, puerto, tipo de conexión, ruta remota y código estable de error, no solo el texto crudo de la librería.
 Si el workspace local no existe, se crea automáticamente.
 Si el remoto está vacío, el sync devuelve un resultado válido con `0` archivos descargados.
 En esta etapa todavía no existe sync `local -> remote`, ni filtros por adapter, ni controles de sync selectivo/full desde la UI.

@@ -423,13 +423,18 @@ def step_assert_sync_progress_window_error_message(context: object) -> None:
     typed_context = _context(context)
     popup = typed_context.detail_screen._sync_progress_popup
     assert popup is not None
+    expected_message = (
+        "Failed to list remote files for project 'Broken Remote Site' from "
+        "sftp broken.example.test:22 at remote path '/srv/app'. "
+        "Cause: Could not list remote files."
+    )
     deadline = time.monotonic() + 1
     while time.monotonic() < deadline:
         popup.refresh()
-        if popup._message_label.text == "Could not list remote files.":
+        if expected_message in popup._message_label.text:
             break
         time.sleep(0.01)
-    assert popup._message_label.text == "Could not list remote files."
+    assert expected_message in popup._message_label.text
 
 
 @then("the sync progress window offers the SSH host-key trust action")
