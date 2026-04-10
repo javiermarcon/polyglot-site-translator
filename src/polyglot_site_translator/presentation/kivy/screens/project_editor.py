@@ -212,6 +212,7 @@ class ProjectEditorScreen(BaseShellScreen):
             remote_password=self._optional_text(self._remote_password_input),
             remote_path=self._optional_text(self._remote_path_input),
             is_active=self._is_active_switch.active if self._is_active_switch is not None else True,
+            remote_verify_host=True,
         )
         self._draft_editor = editor
         if state.mode == "edit" and editor.site_id is not None:
@@ -244,6 +245,7 @@ class ProjectEditorScreen(BaseShellScreen):
             remote_password=self._optional_text(self._remote_password_input),
             remote_path=self._optional_text(self._remote_path_input),
             is_active=self._is_active_switch.active if self._is_active_switch is not None else True,
+            remote_verify_host=True,
         )
         self._draft_editor = editor
         self._shell.test_project_connection(editor)

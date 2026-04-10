@@ -182,6 +182,32 @@ class FrontendShell:
         self._active_sync_thread = worker
         worker.start()
 
+    def trust_selected_project_remote_host_key(self) -> None:
+        """Trust the selected project's SSH host key and retry sync."""
+        project_id = self._require_project_id()
+        try:
+            result = self.services.workflows.trust_remote_host_key(project_id)
+        except ControlledServiceError as error:
+            self.latest_error = str(error)
+            self._record_sync_progress_event(
+                SyncProgressEvent(
+                    stage=SyncProgressStage.FAILED,
+                    message=str(error),
+                )
+            )
+            return
+        if not result.success:
+            self.latest_error = result.message
+            self._record_sync_progress_event(
+                SyncProgressEvent(
+                    stage=SyncProgressStage.FAILED,
+                    message=result.message,
+                )
+            )
+            return
+        self.latest_error = None
+        self.start_sync_async()
+
     def start_audit(self) -> None:
         """Trigger audit through the workflow contract."""
         project_id = self._require_project_id()

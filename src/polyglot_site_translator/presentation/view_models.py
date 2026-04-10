@@ -181,6 +181,7 @@ class SiteEditorViewModel:
     remote_password: str
     remote_path: str
     is_active: bool
+    remote_verify_host: bool = True
 
 
 @dataclass(frozen=True)
@@ -393,6 +394,7 @@ def build_default_site_editor() -> SiteEditorViewModel:
         remote_password="",
         remote_path="",
         is_active=True,
+        remote_verify_host=True,
     )
 
 

@@ -41,6 +41,9 @@ class ProjectWorkflowService(Protocol):
     ) -> SyncStatusViewModel:
         """Start or preview a sync workflow for a project."""
 
+    def trust_remote_host_key(self, project_id: str) -> RemoteConnectionTestResultViewModel:
+        """Trust the configured SSH host key for a project after user confirmation."""
+
     def start_audit(self, project_id: str) -> AuditSummaryViewModel:
         """Start an audit workflow for a project."""
 

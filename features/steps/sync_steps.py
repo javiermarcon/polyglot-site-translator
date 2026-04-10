@@ -24,6 +24,9 @@ from polyglot_site_translator.domain.sync.models import (
     SyncProgressEvent,
     SyncProgressStage,
 )
+from polyglot_site_translator.infrastructure.remote_connections.base import (
+    RemoteConnectionOperationError,
+)
 from polyglot_site_translator.infrastructure.remote_connections.registry import (
     RemoteConnectionRegistry,
 )
@@ -73,6 +76,12 @@ class ScenarioSyncSession:
                 )
             )
         host = self.config.host
+        if host in self.provider.failing_hosts_with_error_codes:
+            error_code, message = self.provider.failing_hosts_with_error_codes[host]
+            raise RemoteConnectionOperationError(
+                error_code=error_code,
+                message=message,
+            )
         if host in self.provider.failing_hosts:
             msg = self.provider.failing_hosts[host]
             raise OSError(msg)
@@ -122,6 +131,7 @@ class ScenarioSyncProvider:
     remote_files_by_host: dict[str, list[RemoteSyncFile]] = field(default_factory=dict)
     file_contents_by_path: dict[str, bytes] = field(default_factory=dict)
     failing_hosts: dict[str, str] = field(default_factory=dict)
+    failing_hosts_with_error_codes: dict[str, tuple[str, str]] = field(default_factory=dict)
 
     def test_connection(
         self,
@@ -155,6 +165,12 @@ class ScenarioSyncProvider:
                 )
             )
         host = config.host
+        if host in self.failing_hosts_with_error_codes:
+            error_code, message = self.failing_hosts_with_error_codes[host]
+            raise RemoteConnectionOperationError(
+                error_code=error_code,
+                message=message,
+            )
         if host in self.failing_hosts:
             msg = self.failing_hosts[host]
             raise OSError(msg)
@@ -297,6 +313,22 @@ def step_project_listing_failure(context: object, project_key: str) -> None:
     )
 
 
+@given('the registered project "{project_key}" fails because the SSH host key is unknown')
+def step_project_unknown_ssh_host_key(context: object, project_key: str) -> None:
+    typed_context = _context(context)
+    typed_context.sync_provider.failing_hosts_with_error_codes["unknown-ssh.example.test"] = (
+        "unknown_ssh_host_key",
+        "Server 'unknown-ssh.example.test' not found in known_hosts",
+    )
+    _create_project(
+        typed_context,
+        project_key=project_key,
+        local_directory_name="unknown-ssh-host-site",
+        connection_type="sftp",
+        remote_host="unknown-ssh.example.test",
+    )
+
+
 @given('the registered project "{project_key}" has an empty remote source')
 def step_project_empty_remote(context: object, project_key: str) -> None:
     typed_context = _context(context)
@@ -398,6 +430,21 @@ def step_assert_sync_progress_window_error_message(context: object) -> None:
             break
         time.sleep(0.01)
     assert popup._message_label.text == "Could not list remote files."
+
+
+@then("the sync progress window offers the SSH host-key trust action")
+def step_assert_sync_progress_window_host_key_trust_action(context: object) -> None:
+    typed_context = _context(context)
+    popup = typed_context.detail_screen._sync_progress_popup
+    assert popup is not None
+    deadline = time.monotonic() + 1
+    while time.monotonic() < deadline:
+        popup.refresh()
+        if not popup._trust_host_key_button.disabled:
+            break
+        time.sleep(0.01)
+    assert popup._trust_host_key_button.opacity == 1
+    assert popup._trust_host_key_button.disabled is False
 
 
 @then("the sync progress window keeps only the last {limit:d} operations")

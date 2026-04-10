@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from pathlib import Path
 import socket
 import ssl
 from types import SimpleNamespace
@@ -14,6 +15,7 @@ from polyglot_site_translator.domain.remote_connections.models import (
     BuiltinRemoteConnectionType,
     RemoteConnectionConfig,
     RemoteConnectionConfigInput,
+    RemoteConnectionFlags,
 )
 from polyglot_site_translator.infrastructure.remote_connections import ftp, ssh
 
@@ -442,6 +444,12 @@ class _FakeSshClient:
     def load_system_host_keys(self) -> None:
         self._actions.append("load_system_host_keys")
 
+    def load_host_keys(self, filename: str) -> None:
+        self._actions.append(f"load_host_keys:{filename}")
+
+    def set_missing_host_key_policy(self, policy: object) -> None:
+        self._actions.append(f"set_missing_host_key_policy:{policy.__class__.__name__}")
+
     def connect(
         self,
         *,
@@ -484,6 +492,47 @@ def test_sftp_provider_returns_success_when_ssh_transport_succeeds(
         "sftp_close",
         "ssh_close",
     ]
+
+
+def test_sftp_provider_can_auto_add_unknown_hosts_when_verification_is_disabled(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    actions: list[str] = []
+
+    class _FakeAutoAddPolicy:
+        pass
+
+    monkeypatch.setattr(Path, "home", lambda: tmp_path)
+    monkeypatch.setattr(
+        ssh,
+        "import_module",
+        lambda module_name: SimpleNamespace(
+            SSHClient=lambda: _FakeSshClient(actions),
+            SSHException=OSError,
+            AutoAddPolicy=_FakeAutoAddPolicy,
+        ),
+    )
+    config = RemoteConnectionConfigInput(
+        connection_type=BuiltinRemoteConnectionType.SFTP.value,
+        host="example.test",
+        port=22,
+        username="deploy",
+        password="secret",
+        remote_path="/remote/path",
+        flags=RemoteConnectionFlags(verify_host=False),
+    )
+
+    result = ssh.SFTPRemoteConnectionProvider().test_connection(config)
+
+    assert result.success is True
+    assert actions[:4] == [
+        "load_system_host_keys",
+        f"load_host_keys:{tmp_path / '.ssh' / 'known_hosts'}",
+        "set_missing_host_key_policy:_FakeAutoAddPolicy",
+        "connect:example.test:22:deploy:secret:10",
+    ]
+    assert (tmp_path / ".ssh" / "known_hosts").exists()
 
 
 def test_scp_provider_returns_failure_when_ssh_client_errors(
@@ -584,6 +633,10 @@ def test_ssh_error_normalization_covers_timeout_refusal_auth_host_key_and_transp
 
 
 def test_ssh_error_normalization_covers_remote_path_and_default_cases() -> None:
+    unknown_host_error = ssh._normalize_ssh_error(
+        OSError("Server '127.0.0.1' not found in known_hosts"),
+        default_code="ssh_connection_failed",
+    )
     path_error = ssh._normalize_ssh_error(
         OSError("No such file"),
         default_code="remote_listing_failed",
@@ -593,6 +646,7 @@ def test_ssh_error_normalization_covers_remote_path_and_default_cases() -> None:
         default_code="ssh_connection_failed",
     )
 
+    assert unknown_host_error.error_code == "unknown_ssh_host_key"
     assert path_error.error_code == "remote_path_not_found"
     assert default_error.error_code == "ssh_connection_failed"
 

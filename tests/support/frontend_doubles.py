@@ -127,6 +127,13 @@ class StubProjectWorkflowService:
             error_code=None,
         )
 
+    def trust_remote_host_key(self, project_id: str) -> RemoteConnectionTestResultViewModel:
+        return RemoteConnectionTestResultViewModel(
+            success=True,
+            message=f"Trusted SSH host key for {project_id}.",
+            error_code=None,
+        )
+
     def start_audit(self, project_id: str) -> AuditSummaryViewModel:
         return AuditSummaryViewModel(
             status="completed",

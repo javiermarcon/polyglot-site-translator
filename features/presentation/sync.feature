@@ -60,6 +60,15 @@ Feature: Remote to local project synchronization
     And the sync progress window shows a failed status
     And the sync progress window shows the sync error message
 
+  Scenario: Offer explicit host-key trust when an SSH host is unknown
+    Given the frontend shell is wired with a real sync workflow
+    And the registered project "unknown-ssh-host-site" fails because the SSH host key is unknown
+    When the operator opens the synced detail for project "unknown-ssh-host-site"
+    And the operator starts the sync workflow from the project detail screen
+    Then the sync progress window is open
+    And the sync progress window shows a failed status
+    And the sync progress window offers the SSH host-key trust action
+
   Scenario: Keep only the latest sync operations in the progress window regardless of transport
     Given the frontend shell is wired with a real sync workflow
     And the sync command log limit is 2 operations

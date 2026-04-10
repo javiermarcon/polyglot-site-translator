@@ -345,6 +345,24 @@ def test_management_service_tests_remote_connections_successfully(tmp_path: Path
     assert result.message == "Connected successfully."
 
 
+def test_management_service_preserves_remote_host_verification_choice(
+    tmp_path: Path,
+) -> None:
+    settings_service = TomlSettingsService(tmp_path / "settings.toml")
+    settings_service.reset_settings()
+    domain_service = _build_domain_service(InMemorySiteRegistryRepository())
+    management = SiteRegistryPresentationManagementService(
+        service=domain_service,
+        settings_service=settings_service,
+    )
+
+    created_project = management.create_project(replace(_build_editor(), remote_verify_host=False))
+
+    persisted_site = domain_service.get_site(created_project.project.id)
+    assert persisted_site.remote_connection is not None
+    assert persisted_site.remote_connection.flags.verify_host is False
+
+
 def test_framework_aware_workflow_service_builds_audit_preview_from_detection() -> None:
     repository = InMemorySiteRegistryRepository()
     service = _build_domain_service(repository)
@@ -359,6 +377,46 @@ def test_framework_aware_workflow_service_builds_audit_preview_from_detection() 
     assert audit.status == "completed"
     assert audit.findings_count == 0
     assert "No supported framework was detected" in audit.findings_summary
+
+
+def test_workflow_service_trusts_remote_host_key_with_explicit_confirmation() -> None:
+    repository = InMemorySiteRegistryRepository()
+    service = _build_domain_service(repository)
+    created = service.create_site(_build_registration())
+    workflow = SiteRegistryPresentationWorkflowService(
+        service=service,
+        project_sync_service=SyncStub(),
+    )
+
+    result = workflow.trust_remote_host_key(created.id)
+
+    assert result.success is True
+    assert result.message == "Connected successfully."
+
+
+def test_workflow_service_wraps_host_key_trust_without_remote_connection() -> None:
+    repository = InMemorySiteRegistryRepository()
+    service = _build_domain_service(repository)
+    created = service.create_site(
+        SiteRegistrationInput(
+            name="Local Only",
+            framework_type="wordpress",
+            local_path="/workspace/local-only",
+            default_locale="en_US",
+            remote_connection=None,
+            is_active=True,
+        )
+    )
+    workflow = SiteRegistryPresentationWorkflowService(
+        service=service,
+        project_sync_service=SyncStub(),
+    )
+
+    with pytest.raises(
+        ControlledServiceError,
+        match=r"Remote host-key trust requires a configured remote connection\.",
+    ):
+        workflow.trust_remote_host_key(created.id)
 
 
 def test_framework_aware_workflow_service_builds_matched_audit_preview(tmp_path: Path) -> None:

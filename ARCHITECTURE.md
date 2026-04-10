@@ -252,6 +252,7 @@ The sync screen now also owns:
 - opening a dedicated progress window from Project Detail while the sync runs in background
 - rendering the command log emitted by remote providers and local workspace operations
 - truncating that command log to the latest configured `N` operations so large remote listings do not grow presentation state without bound
+- showing an explicit SSH host-key trust confirmation popup when SFTP/SCP fails because the host is absent from `known_hosts`; strict verification remains the default, and trust-on-first-use host-key addition only runs after that confirmation
 - staying presentation-only while services/providers own remote listing, download, and local filesystem writes
 
 The remote-provider contract now distinguishes clearly between:

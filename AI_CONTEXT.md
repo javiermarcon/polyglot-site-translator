@@ -152,6 +152,7 @@ The frontend baseline now also includes:
 - a thin project editor screen for create/edit flows through the presentation shell
 - a discoverable remote connection combo with a "No Remote Connection" option
 - an editor-level "Test Connection" action delegated through presentation/application services
+- an explicit SSH host-key trust popup during sync for unknown SFTP/SCP hosts, with strict verification on by default and TOFU auto-add only after user confirmation
 - encrypted-at-rest remote passwords through a local key file stored alongside app config
 - migration of legacy `ftp_*` columns into a related remote-connection table without decrypting stored ciphertext during migration
 - a first real remote-to-local sync service that reuses the discoverable remote provider registry

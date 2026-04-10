@@ -13,6 +13,7 @@ from polyglot_site_translator.presentation.router import RouteName
 from polyglot_site_translator.presentation.view_models import (
     AuditSummaryViewModel,
     POProcessingSummaryViewModel,
+    RemoteConnectionTestResultViewModel,
     SyncProgressStateViewModel,
     SyncStatusViewModel,
 )
@@ -50,6 +51,9 @@ class _BlockingWorkflowService:
             error_code=None,
         )
 
+    def trust_remote_host_key(self, project_id: str) -> RemoteConnectionTestResultViewModel:
+        return build_seeded_services().workflows.trust_remote_host_key(project_id)
+
     def start_audit(self, project_id: str) -> AuditSummaryViewModel:
         return build_seeded_services().workflows.start_audit(project_id)
 
@@ -74,6 +78,9 @@ class _FailingBackgroundWorkflowService:
             )
         msg = "Temporary failure in name resolution"
         raise AttributeError(msg)
+
+    def trust_remote_host_key(self, project_id: str) -> RemoteConnectionTestResultViewModel:
+        return build_seeded_services().workflows.trust_remote_host_key(project_id)
 
     def start_audit(self, project_id: str) -> AuditSummaryViewModel:
         return build_seeded_services().workflows.start_audit(project_id)

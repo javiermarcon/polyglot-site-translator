@@ -10,9 +10,16 @@ import pytest
 from polyglot_site_translator.domain.framework_detection.models import (
     FrameworkDetectionResult,
 )
-from polyglot_site_translator.domain.remote_connections.models import RemoteConnectionConfig
+from polyglot_site_translator.domain.remote_connections.models import (
+    RemoteConnectionConfig,
+    RemoteConnectionTestResult,
+)
 from polyglot_site_translator.domain.site_registry.errors import SiteRegistryNotFoundError
-from polyglot_site_translator.domain.site_registry.models import RegisteredSite, SiteProject
+from polyglot_site_translator.domain.site_registry.models import (
+    RegisteredSite,
+    SiteProject,
+    SiteRegistrationInput,
+)
 from polyglot_site_translator.domain.sync.models import (
     SyncDirection,
     SyncError,
@@ -41,6 +48,25 @@ class _ServiceStub:
         return FrameworkDetectionResult.unmatched(
             project_path=project_path,
             warnings=["Framework detection is not used in this sync workflow test."],
+        )
+
+    def test_remote_connection(
+        self,
+        registration: SiteRegistrationInput,
+    ) -> RemoteConnectionTestResult:
+        return RemoteConnectionTestResult(
+            success=True,
+            connection_type=registration.remote_connection.connection_type
+            if registration.remote_connection is not None
+            else "none",
+            host=registration.remote_connection.host
+            if registration.remote_connection is not None
+            else "",
+            port=registration.remote_connection.port
+            if registration.remote_connection is not None
+            else 0,
+            message="Connected successfully.",
+            error_code=None,
         )
 
 

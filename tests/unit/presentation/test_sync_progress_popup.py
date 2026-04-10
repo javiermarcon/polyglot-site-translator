@@ -14,6 +14,7 @@ from polyglot_site_translator.presentation.kivy.widgets.sync_progress_popup impo
 from polyglot_site_translator.presentation.view_models import (
     SyncCommandLogEntryViewModel,
     SyncProgressStateViewModel,
+    SyncStatusViewModel,
 )
 from tests.support.frontend_doubles import build_seeded_services
 
@@ -24,6 +25,22 @@ class _FakeClockEvent:
 
     def cancel(self) -> None:
         self.cancelled = True
+
+
+@dataclass
+class _FakeConfirmationPopup:
+    title: str = ""
+    size_hint: tuple[float, float] | None = None
+    auto_dismiss: bool = False
+    content: object | None = None
+    opened: bool = False
+    dismissed: bool = False
+
+    def dismiss(self) -> None:
+        self.dismissed = True
+
+    def open(self) -> None:
+        self.opened = True
 
 
 def test_sync_progress_popup_renders_empty_and_populated_states() -> None:
@@ -112,3 +129,93 @@ def test_sync_progress_popup_open_and_dismiss_manage_refresh_loop(
 
     assert scheduled_events[0].cancelled is True
     assert popup._refresh_event is None
+
+
+def test_sync_progress_popup_offers_host_key_trust_only_for_unknown_ssh_hosts() -> None:
+    shell = create_frontend_shell(build_seeded_services())
+    popup = SyncProgressPopup(shell=shell)
+    shell.sync_progress_state = SyncProgressStateViewModel(
+        project_id="site-123",
+        project_name="Marketing Site",
+        status="failed",
+        message="Server '127.0.0.1' not found in known_hosts",
+        progress_current=0,
+        progress_total=0,
+        progress_is_indeterminate=True,
+        command_log_limit=10,
+        command_log=[],
+    )
+
+    shell.sync_state = SyncStatusViewModel(
+        status="failed",
+        files_synced=0,
+        summary="Server '127.0.0.1' not found in known_hosts",
+        error_code="unknown_ssh_host_key",
+    )
+    popup.refresh()
+    assert popup._trust_host_key_button.disabled is False
+    assert popup._trust_host_key_button.opacity == 1
+
+    shell.sync_state = SyncStatusViewModel(
+        status="failed",
+        files_synced=0,
+        summary="Authentication failed.",
+        error_code="ssh_authentication_failed",
+    )
+    popup.refresh()
+    assert popup._trust_host_key_button.opacity == 0
+    assert popup._trust_host_key_button.disabled is True
+
+
+def test_sync_progress_popup_trust_confirmation_delegates_to_shell(
+    monkeypatch: MonkeyPatch,
+) -> None:
+    shell = create_frontend_shell(build_seeded_services())
+    popup = SyncProgressPopup(shell=shell)
+    confirmation = _FakeConfirmationPopup()
+    trust_calls: list[str] = []
+
+    def record_trust() -> None:
+        trust_calls.append("trusted")
+
+    monkeypatch.setattr(shell, "trust_selected_project_remote_host_key", record_trust)
+
+    popup._accept_host_key_confirmation(cast(Any, confirmation))
+
+    assert confirmation.dismissed is True
+    assert trust_calls == ["trusted"]
+
+
+def test_sync_progress_popup_opens_host_key_confirmation(
+    monkeypatch: MonkeyPatch,
+) -> None:
+    shell = create_frontend_shell(build_seeded_services())
+    popup = SyncProgressPopup(shell=shell)
+    confirmations: list[_FakeConfirmationPopup] = []
+
+    def build_confirmation_popup(
+        *,
+        title: str,
+        size_hint: tuple[float, float],
+        auto_dismiss: bool,
+    ) -> _FakeConfirmationPopup:
+        confirmation = _FakeConfirmationPopup(
+            title=title,
+            size_hint=size_hint,
+            auto_dismiss=auto_dismiss,
+        )
+        confirmations.append(confirmation)
+        return confirmation
+
+    monkeypatch.setattr(
+        "polyglot_site_translator.presentation.kivy.widgets.sync_progress_popup.Popup",
+        build_confirmation_popup,
+    )
+
+    popup._open_host_key_confirmation()
+
+    assert len(confirmations) == 1
+    assert confirmations[0].title == "Trust SSH Host Key?"
+    assert confirmations[0].auto_dismiss is False
+    assert confirmations[0].content is not None
+    assert confirmations[0].opened is True

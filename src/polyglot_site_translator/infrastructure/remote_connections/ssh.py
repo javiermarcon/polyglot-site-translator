@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Iterator
 from importlib import import_module
+from pathlib import Path
 import posixpath
 import stat
 from typing import Any, cast
@@ -227,6 +228,7 @@ def _connect_ssh_client(
 ) -> Any:
     ssh_client = _build_ssh_client()
     ssh_exception_type: type[BaseException] = OSError
+    paramiko_module: Any | None = None
     try:
         paramiko_module = import_module("paramiko")
     except ModuleNotFoundError:
@@ -236,8 +238,12 @@ def _connect_ssh_client(
             type[BaseException],
             paramiko_module.SSHException,
         )
-    ssh_client.load_system_host_keys()
     try:
+        _configure_host_key_policy(
+            ssh_client=ssh_client,
+            config=config,
+            paramiko_module=paramiko_module,
+        )
         ssh_client.connect(
             hostname=config.host,
             port=config.port,
@@ -249,6 +255,29 @@ def _connect_ssh_client(
         ssh_client.close()
         raise _normalize_ssh_error(error, default_code="ssh_connection_failed") from error
     return ssh_client
+
+
+def _configure_host_key_policy(
+    *,
+    ssh_client: Any,
+    config: RemoteConnectionConfig | RemoteConnectionConfigInput,
+    paramiko_module: Any | None,
+) -> None:
+    ssh_client.load_system_host_keys()
+    if config.flags.verify_host:
+        return
+    if paramiko_module is None:
+        paramiko_module = import_module("paramiko")
+    known_hosts_path = _ensure_user_known_hosts_file()
+    ssh_client.load_host_keys(str(known_hosts_path))
+    ssh_client.set_missing_host_key_policy(paramiko_module.AutoAddPolicy())
+
+
+def _ensure_user_known_hosts_file() -> Path:
+    known_hosts_path = Path.home() / ".ssh" / "known_hosts"
+    known_hosts_path.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
+    known_hosts_path.touch(mode=0o600, exist_ok=True)
+    return known_hosts_path
 
 
 def _iter_ssh_files(
@@ -366,6 +395,11 @@ def _normalize_ssh_error(
         ["authentication failed", "auth failed", "permission denied", "login failed"],
     ):
         error_code = "authentication_failed"
+    elif _matches_any(
+        normalized_message,
+        ["not found in known_hosts", "server not found in known_hosts"],
+    ):
+        error_code = "unknown_ssh_host_key"
     elif _matches_any(
         normalized_message,
         ["host key", "known_hosts", "hostkey"],

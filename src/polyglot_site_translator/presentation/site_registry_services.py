@@ -16,6 +16,8 @@ from polyglot_site_translator.domain.framework_detection.models import (
 from polyglot_site_translator.domain.remote_connections.models import (
     NO_REMOTE_CONNECTION_VALUE,
     RemoteConnectionConfigInput,
+    RemoteConnectionFlags,
+    RemoteConnectionTestResult,
 )
 from polyglot_site_translator.domain.site_registry.errors import (
     SiteRegistryConfigurationError,
@@ -64,6 +66,12 @@ class SiteRegistryWorkflowService(Protocol):
 
     def detect_framework(self, project_path: str) -> FrameworkDetectionResult:
         """Return framework detection data for a local path."""
+
+    def test_remote_connection(
+        self,
+        registration: SiteRegistrationInput,
+    ) -> RemoteConnectionTestResult:
+        """Test a remote connection from site registration input."""
 
 
 class ProjectSyncWorkflowService(Protocol):
@@ -260,6 +268,47 @@ class SiteRegistryPresentationWorkflowService(ProjectWorkflowService):
         )
         return _build_sync_status(result)
 
+    def trust_remote_host_key(self, project_id: str) -> RemoteConnectionTestResultViewModel:
+        """Trust a selected project's SSH host key after explicit UI confirmation."""
+        try:
+            site = self._service.get_site(project_id)
+            _require_remote_connection_for_host_key_trust(site)
+            remote_connection = site.remote_connection
+            if remote_connection is None:
+                msg = "Remote connection unexpectedly missing after validation."
+                raise AssertionError(msg)
+            result = self._service.test_remote_connection(
+                SiteRegistrationInput(
+                    name=site.name,
+                    framework_type=site.framework_type,
+                    local_path=site.local_path,
+                    default_locale=site.default_locale,
+                    remote_connection=RemoteConnectionConfigInput(
+                        connection_type=remote_connection.connection_type,
+                        host=remote_connection.host,
+                        port=remote_connection.port,
+                        username=remote_connection.username,
+                        password=remote_connection.password,
+                        remote_path=remote_connection.remote_path,
+                        flags=replace(remote_connection.flags, verify_host=False),
+                    ),
+                    is_active=site.is_active,
+                )
+            )
+        except (
+            ValueError,
+            SiteRegistryValidationError,
+            SiteRegistryNotFoundError,
+            SiteRegistryPersistenceError,
+            SiteRegistryConfigurationError,
+        ) as error:
+            raise ControlledServiceError(str(error)) from error
+        return RemoteConnectionTestResultViewModel(
+            success=result.success,
+            message=result.message,
+            error_code=result.error_code,
+        )
+
     def start_audit(self, project_id: str) -> AuditSummaryViewModel:
         """Return a framework-aware audit preview for the selected project."""
         try:
@@ -323,6 +372,13 @@ def _build_editor_state(  # noqa: PLR0913
     )
 
 
+def _require_remote_connection_for_host_key_trust(site: RegisteredSite) -> None:
+    if site.remote_connection is not None:
+        return
+    msg = "Remote host-key trust requires a configured remote connection."
+    raise SiteRegistryValidationError(msg)
+
+
 def _build_service_payload(editor: SiteEditorViewModel) -> SiteRegistrationInput:
     remote_connection: RemoteConnectionConfigInput | None = None
     if editor.connection_type != NO_REMOTE_CONNECTION_VALUE:
@@ -333,6 +389,7 @@ def _build_service_payload(editor: SiteEditorViewModel) -> SiteRegistrationInput
             username=editor.remote_username,
             password=editor.remote_password,
             remote_path=editor.remote_path,
+            flags=RemoteConnectionFlags(verify_host=editor.remote_verify_host),
         )
     return SiteRegistrationInput(
         name=editor.name,
@@ -382,6 +439,7 @@ def _build_site_editor(site: RegisteredSite) -> SiteEditorViewModel:
             remote_password="",
             remote_path="",
             is_active=site.is_active,
+            remote_verify_host=True,
         )
     return SiteEditorViewModel(
         site_id=site.id,
@@ -396,6 +454,7 @@ def _build_site_editor(site: RegisteredSite) -> SiteEditorViewModel:
         remote_password=remote_connection.password,
         remote_path=remote_connection.remote_path,
         is_active=site.is_active,
+        remote_verify_host=remote_connection.flags.verify_host,
     )
 
 
