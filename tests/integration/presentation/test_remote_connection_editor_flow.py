@@ -221,3 +221,43 @@ def test_project_editor_persists_remote_connection_data_when_editing_site(
     assert shell.project_editor_state.editor.remote_username == "deployer"
     assert shell.project_editor_state.editor.remote_password == "super-secret-v2"
     assert shell.project_editor_state.editor.remote_path == "/public_html/v2"
+
+
+def test_project_editor_persists_filtered_sync_preference_when_editing_site(
+    tmp_path: Path,
+) -> None:
+    settings_service = build_default_settings_service(config_dir=tmp_path / "config")
+    app = cast(
+        Any,
+        create_kivy_app(
+            services=build_default_frontend_services(settings_service=settings_service)
+        ),
+    )
+    root = app.build()
+    editor_screen = root.get_screen("project_editor")
+    shell = editor_screen._shell
+
+    shell.open_project_editor_create()
+    root.current = "project_editor"
+    editor_screen.refresh()
+    editor_screen._name_input.text = "Filtered Site"
+    editor_screen._framework_spinner.text = "WordPress"
+    editor_screen._local_path_input.text = "/workspace/filtered-site"
+    editor_screen._default_locale_input.text = "en_US"
+    editor_screen._connection_type_spinner.text = "FTP"
+    editor_screen._remote_host_input.text = "ftp.example.com"
+    editor_screen._remote_port_input.text = "21"
+    editor_screen._remote_username_input.text = "deploy"
+    editor_screen._remote_password_input.text = "super-secret"
+    editor_screen._remote_path_input.text = "/public_html"
+    editor_screen._use_adapter_sync_filters_switch.active = True
+    editor_screen._save_editor()
+
+    assert shell.project_detail_state is not None
+    project_id = shell.project_detail_state.project.id
+    shell.open_project_editor_edit(project_id)
+    root.current = "project_editor"
+    editor_screen.refresh()
+
+    assert shell.project_editor_state is not None
+    assert shell.project_editor_state.editor.use_adapter_sync_filters is True

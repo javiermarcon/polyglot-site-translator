@@ -19,6 +19,9 @@ from polyglot_site_translator.presentation.site_registry_services import (
 from polyglot_site_translator.services.framework_detection import (
     FrameworkDetectionService,
 )
+from polyglot_site_translator.services.framework_sync_scope import (
+    FrameworkSyncScopeService,
+)
 from polyglot_site_translator.services.project_sync import ProjectSyncService
 from polyglot_site_translator.services.remote_connections import RemoteConnectionService
 from polyglot_site_translator.services.site_registry import SiteRegistryService
@@ -32,9 +35,8 @@ def build_default_frontend_services(
 ) -> FrontendServices:
     """Return the default runtime services with real SQLite site registry persistence."""
     repository = ConfiguredSqliteSiteRegistryRepository(settings_service)
-    framework_detection_service = FrameworkDetectionService(
-        registry=FrameworkAdapterRegistry.discover_installed()
-    )
+    framework_registry = FrameworkAdapterRegistry.discover_installed()
+    framework_detection_service = FrameworkDetectionService(registry=framework_registry)
     resolved_remote_connection_service = remote_connection_service or RemoteConnectionService(
         registry=RemoteConnectionRegistry.discover_installed()
     )
@@ -44,7 +46,8 @@ def build_default_frontend_services(
         remote_connection_service=resolved_remote_connection_service,
     )
     resolved_project_sync_service = project_sync_service or ProjectSyncService(
-        registry=RemoteConnectionRegistry.discover_installed()
+        registry=RemoteConnectionRegistry.discover_installed(),
+        framework_sync_scope_service=FrameworkSyncScopeService(registry=framework_registry),
     )
     return FrontendServices(
         catalog=SiteRegistryPresentationCatalogService(site_registry_service),

@@ -144,6 +144,30 @@ def step_submit_new_site(context: object) -> None:
     typed_context.created_site_id = typed_context.shell.project_detail_state.project.id
 
 
+@when("the operator submits a new site registry entry with adapter sync filters enabled")
+def step_submit_new_site_with_adapter_sync_filters(context: object) -> None:
+    typed_context = _context_with_shell(context)
+    typed_context.shell.save_new_project(
+        SiteEditorViewModel(
+            site_id=None,
+            name="Filtered Site",
+            framework_type="wordpress",
+            local_path="/workspace/filtered-site",
+            default_locale="en_US",
+            connection_type="ftp",
+            remote_host="ftp.example.com",
+            remote_port="21",
+            remote_username="deploy",
+            remote_password="super-secret",
+            remote_path="/public_html",
+            is_active=True,
+            use_adapter_sync_filters=True,
+        )
+    )
+    assert typed_context.shell.project_detail_state is not None
+    typed_context.created_site_id = typed_context.shell.project_detail_state.project.id
+
+
 @when("the operator restarts the SQLite-backed frontend shell")
 def step_restart_sqlite_shell(context: object) -> None:
     typed_context = _context_with_shell(context)
@@ -236,6 +260,21 @@ def step_assert_updated_remote_connection(context: object) -> None:
     assert typed_context.shell.project_editor_state.editor.remote_username == "deployer"
     assert typed_context.shell.project_editor_state.editor.remote_password == "super-secret-v2"
     assert typed_context.shell.project_editor_state.editor.remote_path == "/public_html/v2"
+
+
+@then('the project detail shows the persisted sync mode "{mode}"')
+def step_assert_persisted_sync_mode(context: object, mode: str) -> None:
+    typed_context = _context_with_shell(context)
+    assert typed_context.shell.project_detail_state is not None
+    assert f"Sync mode: {mode}" in typed_context.shell.project_detail_state.configuration_summary
+
+
+@then("reopening the persisted site editor shows adapter sync filters enabled")
+def step_assert_persisted_adapter_sync_filters(context: object) -> None:
+    typed_context = _context_with_shell(context)
+    typed_context.shell.open_project_editor_edit(typed_context.created_site_id)
+    assert typed_context.shell.project_editor_state is not None
+    assert typed_context.shell.project_editor_state.editor.use_adapter_sync_filters is True
 
 
 @then("the settings draft shows the configured database directory")

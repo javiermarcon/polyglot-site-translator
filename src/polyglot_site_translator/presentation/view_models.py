@@ -182,6 +182,7 @@ class SiteEditorViewModel:
     remote_path: str
     is_active: bool
     remote_verify_host: bool = True
+    use_adapter_sync_filters: bool = False
 
 
 @dataclass(frozen=True)
@@ -395,6 +396,7 @@ def build_default_site_editor() -> SiteEditorViewModel:
         remote_path="",
         is_active=True,
         remote_verify_host=True,
+        use_adapter_sync_filters=False,
     )
 
 

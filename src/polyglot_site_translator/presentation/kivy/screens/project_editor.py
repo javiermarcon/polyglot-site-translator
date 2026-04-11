@@ -48,6 +48,7 @@ class ProjectEditorScreen(BaseShellScreen):
         self._remote_password_input: TextInput | None = None
         self._remote_path_input: TextInput | None = None
         self._is_active_switch: Switch | None = None
+        self._use_adapter_sync_filters_switch: Switch | None = None
         self._test_connection_button: AppButton | None = None
         self.refresh()
 
@@ -123,6 +124,9 @@ class ProjectEditorScreen(BaseShellScreen):
         panel.add_widget(_build_field("Remote Password", self._remote_password_input))
         self._remote_path_input = self._build_text_input(state.editor.remote_path)
         panel.add_widget(_build_field("Remote Path", self._remote_path_input))
+        panel.add_widget(
+            self._build_adapter_sync_filters_toggle(state.editor.use_adapter_sync_filters)
+        )
         if state.connection_test_result is not None:
             panel.add_widget(
                 _build_information_card(
@@ -191,6 +195,34 @@ class ProjectEditorScreen(BaseShellScreen):
         card.add_widget(row)
         return card
 
+    def _build_adapter_sync_filters_toggle(self, is_enabled: bool) -> SurfaceBoxLayout:
+        card = SurfaceBoxLayout(
+            orientation="vertical",
+            spacing=8,
+            padding=14,
+            size_hint_y=None,
+            background_role="card_subtle_background",
+        )
+        card.bind(minimum_height=card.setter("height"))
+        card.add_widget(WrappedLabel(text="Use Adapter Sync Filters", font_size=16, bold=True))
+        row = BoxLayout(orientation="horizontal", spacing=12, size_hint_y=None, height=40)
+        row.add_widget(
+            WrappedLabel(
+                text=(
+                    "When enabled, sync uses the current framework adapter scope instead "
+                    "of transferring the full remote/local tree."
+                )
+            )
+        )
+        self._use_adapter_sync_filters_switch = Switch(
+            active=is_enabled,
+            size_hint=(None, None),
+            size=(72, 36),
+        )
+        row.add_widget(self._use_adapter_sync_filters_switch)
+        card.add_widget(row)
+        return card
+
     def _save_editor(self, *_args: object) -> None:
         state = self._require_state()
         editor = SiteEditorViewModel(
@@ -213,6 +245,11 @@ class ProjectEditorScreen(BaseShellScreen):
             remote_path=self._optional_text(self._remote_path_input),
             is_active=self._is_active_switch.active if self._is_active_switch is not None else True,
             remote_verify_host=True,
+            use_adapter_sync_filters=(
+                self._use_adapter_sync_filters_switch.active
+                if self._use_adapter_sync_filters_switch is not None
+                else False
+            ),
         )
         self._draft_editor = editor
         if state.mode == "edit" and editor.site_id is not None:
@@ -246,6 +283,11 @@ class ProjectEditorScreen(BaseShellScreen):
             remote_path=self._optional_text(self._remote_path_input),
             is_active=self._is_active_switch.active if self._is_active_switch is not None else True,
             remote_verify_host=True,
+            use_adapter_sync_filters=(
+                self._use_adapter_sync_filters_switch.active
+                if self._use_adapter_sync_filters_switch is not None
+                else False
+            ),
         )
         self._draft_editor = editor
         self._shell.test_project_connection(editor)

@@ -239,6 +239,27 @@ def test_catalog_service_maps_project_summaries_and_detail() -> None:
     assert "No framework detected" in detail.metadata_summary
 
 
+def test_management_service_preserves_filtered_sync_preference_in_payloads(
+    tmp_path: Path,
+) -> None:
+    settings_service = TomlSettingsService(tmp_path / "settings.toml")
+    settings_service.reset_settings()
+    repository = InMemorySiteRegistryRepository()
+    management = SiteRegistryPresentationManagementService(
+        service=_build_domain_service(repository),
+        settings_service=settings_service,
+    )
+
+    created_project = management.create_project(
+        replace(_build_editor(), use_adapter_sync_filters=True)
+    )
+
+    persisted_site = repository.get_site(created_project.project.id)
+
+    assert persisted_site.remote_connection is not None
+    assert persisted_site.remote_connection.flags.use_adapter_sync_filters is True
+
+
 def test_catalog_service_wraps_controlled_errors() -> None:
     catalog = SiteRegistryPresentationCatalogService(
         SiteRegistryService(repository=PersistenceFailingRepository())
@@ -648,4 +669,5 @@ def _build_editor() -> SiteEditorViewModel:
         remote_password="super-secret",
         remote_path="/srv/app",
         is_active=True,
+        use_adapter_sync_filters=False,
     )

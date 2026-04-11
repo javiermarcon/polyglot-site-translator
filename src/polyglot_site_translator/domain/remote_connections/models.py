@@ -32,6 +32,7 @@ class RemoteConnectionFlags:
 
     passive_mode: bool = True
     verify_host: bool = True
+    use_adapter_sync_filters: bool = False
 
 
 @dataclass(frozen=True)

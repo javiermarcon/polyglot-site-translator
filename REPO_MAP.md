@@ -85,7 +85,7 @@ Current frontend base:
   Resolution and validation of the configured SQLite directory/filename into a final database path.
 
 - `polyglot_site_translator/infrastructure/site_registry_sqlite.py`
-  Real SQLite repository for the site registry, including schema setup, legacy FTP migration, related remote-connection persistence, and configured runtime wiring from settings.
+  Real SQLite repository for the site registry, including schema setup, legacy FTP migration, related remote-connection persistence, persisted filtered-vs-full sync preference, and configured runtime wiring from settings.
 
 - `polyglot_site_translator/infrastructure/site_secrets.py`
   Local reversible encryption helper used to store remote passwords encrypted at rest.
@@ -157,7 +157,7 @@ Current frontend base:
   Extensible settings screen with the initial App / UI / Kivy section, including editable SQLite directory/filename fields and the configurable sync progress log limit.
 
 - `polyglot_site_translator/presentation/kivy/screens/project_editor.py`
-  Thin create/edit screen for site registry records driven entirely by typed presentation state, including the discoverable remote connection selector and "Test Connection" action.
+  Thin create/edit screen for site registry records driven entirely by typed presentation state, including the discoverable remote connection selector, the persisted "Use Adapter Sync Filters" switch, and the "Test Connection" action.
 
 - `polyglot_site_translator/presentation/kivy/widgets/sync_progress_popup.py`
   Dedicated Kivy popup that renders background sync progress and a bounded command-log output without moving remote work into widgets.

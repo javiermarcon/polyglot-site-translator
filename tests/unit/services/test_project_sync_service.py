@@ -12,6 +12,7 @@ import pytest
 from polyglot_site_translator.domain.remote_connections.models import (
     RemoteConnectionConfig,
     RemoteConnectionConfigInput,
+    RemoteConnectionFlags,
     RemoteConnectionSessionState,
     RemoteConnectionTestResult,
     RemoteConnectionTypeDescriptor,
@@ -39,6 +40,16 @@ from polyglot_site_translator.infrastructure.remote_connections.registry import 
 )
 from polyglot_site_translator.infrastructure.sync_local import LocalSyncWorkspace
 from polyglot_site_translator.services.project_sync import ProjectSyncService
+
+
+@dataclass
+class StubFrameworkSyncScopeService:
+    resolved_scope: ResolvedSyncScope
+    calls: list[str] = field(default_factory=list)
+
+    def resolve_for_site(self, site: RegisteredSite) -> ResolvedSyncScope:
+        self.calls.append(site.id)
+        return self.resolved_scope
 
 
 @dataclass
@@ -614,6 +625,213 @@ def test_project_sync_service_filters_local_to_remote_sync_with_a_resolved_scope
     assert result.summary.files_uploaded == 1
     assert "/srv/app/locale/es.po" in provider.uploaded_bytes
     assert "/srv/app/templates/home.html" not in provider.uploaded_bytes
+
+
+def test_project_sync_service_uses_the_persisted_filtered_sync_preference(
+    tmp_path: Path,
+) -> None:
+    local_root = tmp_path / "workspace" / "site"
+    provider = StubSyncProvider(
+        remote_files=[
+            RemoteSyncFile(
+                remote_path="/srv/app/wp-content/themes/theme/style.css",
+                relative_path="wp-content/themes/theme/style.css",
+                size_bytes=10,
+            ),
+            RemoteSyncFile(
+                remote_path="/srv/app/readme.html",
+                relative_path="readme.html",
+                size_bytes=20,
+            ),
+        ],
+        downloaded_bytes={
+            "/srv/app/wp-content/themes/theme/style.css": b"body{}\n",
+            "/srv/app/readme.html": b"readme\n",
+        },
+    )
+    scope_service = StubFrameworkSyncScopeService(
+        resolved_scope=ResolvedSyncScope(
+            framework_type="wordpress",
+            adapter_name="wordpress_adapter",
+            status=SyncScopeStatus.FILTERED,
+            filters=(
+                SyncFilterSpec(
+                    relative_path="wp-content/themes",
+                    filter_type=SyncFilterType.DIRECTORY,
+                    description="WordPress theme sources.",
+                ),
+            ),
+            message="WordPress sync filters were resolved.",
+        )
+    )
+    service = ProjectSyncService(
+        registry=RemoteConnectionRegistry.default_registry(providers=[provider]),
+        framework_sync_scope_service=scope_service,
+    )
+
+    result = service.sync_remote_to_local(
+        _build_site(
+            local_root=local_root,
+            remote_connection=RemoteConnectionConfig(
+                id="remote-site-123",
+                site_project_id="site-123",
+                connection_type="sftp",
+                host="example.test",
+                port=22,
+                username="deploy",
+                password="secret",
+                remote_path="/srv/app",
+                flags=RemoteConnectionFlags(use_adapter_sync_filters=True),
+            ),
+        )
+    )
+
+    assert result.success is True
+    assert result.summary.files_downloaded == 1
+    assert scope_service.calls == ["site-123"]
+
+
+def test_project_sync_service_uses_full_sync_when_the_project_preference_disables_filters(
+    tmp_path: Path,
+) -> None:
+    local_root = tmp_path / "workspace" / "site"
+    provider = StubSyncProvider(
+        remote_files=[
+            RemoteSyncFile(
+                remote_path="/srv/app/wp-content/themes/theme/style.css",
+                relative_path="wp-content/themes/theme/style.css",
+                size_bytes=10,
+            ),
+            RemoteSyncFile(
+                remote_path="/srv/app/readme.html",
+                relative_path="readme.html",
+                size_bytes=20,
+            ),
+        ],
+        downloaded_bytes={
+            "/srv/app/wp-content/themes/theme/style.css": b"body{}\n",
+            "/srv/app/readme.html": b"readme\n",
+        },
+    )
+    scope_service = StubFrameworkSyncScopeService(
+        resolved_scope=ResolvedSyncScope(
+            framework_type="wordpress",
+            adapter_name="wordpress_adapter",
+            status=SyncScopeStatus.FILTERED,
+            filters=(
+                SyncFilterSpec(
+                    relative_path="wp-content/themes",
+                    filter_type=SyncFilterType.DIRECTORY,
+                    description="WordPress theme sources.",
+                ),
+            ),
+            message="WordPress sync filters were resolved.",
+        )
+    )
+    service = ProjectSyncService(
+        registry=RemoteConnectionRegistry.default_registry(providers=[provider]),
+        framework_sync_scope_service=scope_service,
+    )
+
+    result = service.sync_remote_to_local(_build_site(local_root=local_root))
+
+    assert result.success is True
+    assert result.summary.files_downloaded == 2
+    assert scope_service.calls == []
+
+
+def test_project_sync_service_uses_the_persisted_filtered_sync_preference_for_uploads(
+    tmp_path: Path,
+) -> None:
+    local_root = tmp_path / "workspace" / "site"
+    (local_root / "wp-content" / "themes" / "theme").mkdir(parents=True)
+    (local_root / "wp-content" / "themes" / "theme" / "style.css").write_text(
+        "body{}\n",
+        encoding="utf-8",
+    )
+    (local_root / "readme.html").write_text("readme\n", encoding="utf-8")
+    scope_service = StubFrameworkSyncScopeService(
+        resolved_scope=ResolvedSyncScope(
+            framework_type="wordpress",
+            adapter_name="wordpress_adapter",
+            status=SyncScopeStatus.FILTERED,
+            filters=(
+                SyncFilterSpec(
+                    relative_path="wp-content/themes",
+                    filter_type=SyncFilterType.DIRECTORY,
+                    description="WordPress theme sources.",
+                ),
+            ),
+            message="WordPress sync filters were resolved.",
+        )
+    )
+    provider = StubSyncProvider()
+    service = ProjectSyncService(
+        registry=RemoteConnectionRegistry.default_registry(providers=[provider]),
+        framework_sync_scope_service=scope_service,
+    )
+
+    result = service.sync_local_to_remote(
+        _build_site(
+            local_root=local_root,
+            remote_connection=RemoteConnectionConfig(
+                id="remote-site-123",
+                site_project_id="site-123",
+                connection_type="sftp",
+                host="example.test",
+                port=22,
+                username="deploy",
+                password="secret",
+                remote_path="/srv/app",
+                flags=RemoteConnectionFlags(use_adapter_sync_filters=True),
+            ),
+        )
+    )
+
+    assert result.success is True
+    assert result.summary.files_uploaded == 1
+    assert "/srv/app/wp-content/themes/theme/style.css" in provider.uploaded_bytes
+    assert "/srv/app/readme.html" not in provider.uploaded_bytes
+    assert scope_service.calls == ["site-123"]
+
+
+def test_project_sync_service_returns_a_controlled_error_when_filtered_sync_scope_is_unavailable(
+    tmp_path: Path,
+) -> None:
+    scope_service = StubFrameworkSyncScopeService(
+        resolved_scope=ResolvedSyncScope(
+            framework_type="unknown",
+            adapter_name=None,
+            status=SyncScopeStatus.FRAMEWORK_UNRESOLVED,
+            filters=(),
+            message="The project does not expose a supported framework type.",
+        )
+    )
+    service = ProjectSyncService(
+        registry=RemoteConnectionRegistry.default_registry(providers=[StubSyncProvider()]),
+        framework_sync_scope_service=scope_service,
+    )
+
+    result = service.sync_remote_to_local(
+        _build_site(
+            local_root=tmp_path,
+            remote_connection=RemoteConnectionConfig(
+                id="remote-site-123",
+                site_project_id="site-123",
+                connection_type="sftp",
+                host="example.test",
+                port=22,
+                username="deploy",
+                password="secret",
+                remote_path="/srv/app",
+                flags=RemoteConnectionFlags(use_adapter_sync_filters=True),
+            ),
+        )
+    )
+
+    assert result.success is False
+    assert result.error is not None
+    assert result.error.code == "sync_scope_unavailable"
 
 
 def test_project_sync_service_returns_a_controlled_result_when_incremental_listing_fails(

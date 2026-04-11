@@ -38,6 +38,13 @@ Feature: SQLite-backed site registry management
     Then the project detail shows the updated persisted site registry values
     And reopening the persisted site editor shows the updated remote connection values
 
+  Scenario: Persist the adapter-filter sync preference in the remote configuration
+    Given the frontend shell is wired with SQLite-backed site registry services
+    When the operator opens the create project workflow
+    And the operator submits a new site registry entry with adapter sync filters enabled
+    Then the project detail shows the persisted sync mode "filtered"
+    And reopening the persisted site editor shows adapter sync filters enabled
+
   Scenario: Surface an invalid SQLite configuration through the projects flow
     Given the frontend shell is wired with SQLite-backed services and invalid database settings
     When the operator opens the projects list

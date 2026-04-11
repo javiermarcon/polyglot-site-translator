@@ -98,6 +98,7 @@ Examples:
 Current first real implementation:
 - `domain/site_registry/` defines typed models, contracts, and explicit errors
 - `domain/remote_connections/` defines typed descriptors, configs, provider/session contracts, session state, and test results
+- `domain/remote_connections/` also persists per-project remote flags such as the filtered-vs-full sync preference
 - `domain/sync/` defines sync direction, remote/local file descriptors, summaries, results, and explicit sync errors
 - `domain/sync/scope.py` defines typed adapter-owned sync filters and resolved sync scopes
 - `services/site_registry.py` validates and orchestrates CRUD use cases
@@ -125,6 +126,7 @@ Current implemented sync stage:
 - real remote-to-local download
 - real local-to-remote upload
 - adapter-defined sync filtering reusable by both sync directions
+- persisted per-project selection between adapter-filtered sync and full sync
 - reuses persisted `RemoteConnectionConfig`
 - reuses the existing discoverable remote provider registry
 - opens one reusable remote session per sync run, so listing/download or mkdir/upload share the same connection lifecycle
@@ -132,8 +134,12 @@ Current implemented sync stage:
 - prepares the local workspace automatically when directories are missing
 - prepares missing remote directories automatically before upload
 
+Current UI behavior for sync mode:
+- the project editor persists a per-project remote setting that selects adapter-filtered sync or full sync
+- `ProjectSyncService` reads that persisted preference and resolves the effective sync scope outside the Kivy layer
+
 Not yet implemented in this stage:
-- selective vs full sync controls in the UI
+- more granular selective-sync controls beyond the current filtered-vs-full project setting
 
 Current concrete connection types:
 - FTP

@@ -145,6 +145,8 @@ Current project-registry orchestration entrypoints:
 - `FrontendShell.start_sync_to_remote_async`
 - `polyglot_site_translator.presentation.site_registry_services.SiteRegistryPresentationWorkflowService.start_sync`
 - `polyglot_site_translator.presentation.site_registry_services.SiteRegistryPresentationWorkflowService.start_sync_to_remote`
+- `polyglot_site_translator.presentation.site_registry_services.SiteRegistryPresentationManagementService._build_service_payload`
+- `polyglot_site_translator.presentation.site_registry_services.SiteRegistryPresentationManagementService._build_site_editor`
 - `polyglot_site_translator.services.project_sync.ProjectSyncService.sync_remote_to_local`
 - `polyglot_site_translator.services.project_sync.ProjectSyncService.sync_local_to_remote`
 - `polyglot_site_translator.domain.remote_connections.contracts.RemoteConnectionProvider.open_session`
@@ -187,6 +189,7 @@ Current site-registry persistence entrypoints:
 - `polyglot_site_translator.infrastructure.remote_connections.registry.RemoteConnectionRegistry`
 - `polyglot_site_translator.infrastructure.remote_connections.registry.RemoteConnectionRegistry.discover_installed`
 - `polyglot_site_translator.infrastructure.sync_local.LocalSyncWorkspace`
+- `polyglot_site_translator.infrastructure.site_registry_sqlite.SqliteSiteRegistryRepository._ensure_remote_table`
 
 ---
 

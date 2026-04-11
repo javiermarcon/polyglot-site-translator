@@ -7,6 +7,7 @@ from dataclasses import dataclass, field, replace
 from pathlib import Path
 import time
 
+from polyglot_site_translator.adapters.framework_registry import FrameworkAdapterRegistry
 from polyglot_site_translator.app import create_kivy_app
 from polyglot_site_translator.domain.remote_connections.models import (
     RemoteConnectionConfig,
@@ -27,6 +28,9 @@ from polyglot_site_translator.infrastructure.settings import build_default_setti
 from polyglot_site_translator.presentation.fakes import build_default_frontend_services
 from polyglot_site_translator.presentation.kivy.screens.sync import SyncScreen
 from polyglot_site_translator.presentation.view_models import SiteEditorViewModel
+from polyglot_site_translator.services.framework_sync_scope import (
+    FrameworkSyncScopeService,
+)
 from polyglot_site_translator.services.project_sync import ProjectSyncService
 from polyglot_site_translator.services.remote_connections import RemoteConnectionService
 
@@ -121,6 +125,17 @@ class StubSyncProvider:
         )
 
 
+def _build_project_sync_service(
+    remote_registry: RemoteConnectionRegistry,
+) -> ProjectSyncService:
+    return ProjectSyncService(
+        registry=remote_registry,
+        framework_sync_scope_service=FrameworkSyncScopeService(
+            registry=FrameworkAdapterRegistry.discover_installed()
+        ),
+    )
+
+
 @dataclass
 class _StubSyncSession:
     config: RemoteConnectionConfig
@@ -158,6 +173,18 @@ class _StubSyncSession:
         if self.config.host == "broken.example.test":
             msg = "Remote listing failed."
             raise OSError(msg)
+        if self.config.host == "filtered.example.test":
+            yield RemoteSyncFile(
+                remote_path="/srv/app/wp-content/themes/theme/style.css",
+                relative_path="wp-content/themes/theme/style.css",
+                size_bytes=16,
+            )
+            yield RemoteSyncFile(
+                remote_path="/srv/app/readme.html",
+                relative_path="readme.html",
+                size_bytes=14,
+            )
+            return
         yield RemoteSyncFile(
             remote_path="/srv/app/locale/es.po",
             relative_path="locale/es.po",
@@ -186,6 +213,8 @@ class _StubSyncSession:
         payloads = {
             "/srv/app/locale/es.po": b'msgid "hello"\n',
             "/srv/app/templates/home.html": b"<h1>Hello</h1>\n",
+            "/srv/app/wp-content/themes/theme/style.css": b"body{}\n",
+            "/srv/app/readme.html": b"readme\n",
         }
         return payloads[remote_path]
 
@@ -243,7 +272,7 @@ def test_real_sync_flow_downloads_files_into_the_project_workspace(tmp_path: Pat
         services=build_default_frontend_services(
             settings_service=settings_service,
             remote_connection_service=RemoteConnectionService(registry=remote_registry),
-            project_sync_service=ProjectSyncService(registry=remote_registry),
+            project_sync_service=_build_project_sync_service(remote_registry),
         )
     )
     shell = app._shell
@@ -280,6 +309,52 @@ def test_real_sync_flow_downloads_files_into_the_project_workspace(tmp_path: Pat
     assert (local_root / "templates" / "home.html").read_bytes() == b"<h1>Hello</h1>\n"
 
 
+def test_real_sync_flow_uses_filtered_mode_when_the_project_preference_enables_it(
+    tmp_path: Path,
+) -> None:
+    settings_service = build_default_settings_service(config_dir=tmp_path / "config")
+    remote_registry = RemoteConnectionRegistry.default_registry(providers=[StubSyncProvider()])
+    app = create_kivy_app(
+        services=build_default_frontend_services(
+            settings_service=settings_service,
+            remote_connection_service=RemoteConnectionService(registry=remote_registry),
+            project_sync_service=_build_project_sync_service(remote_registry),
+        )
+    )
+    shell = app._shell
+    local_root = tmp_path / "workspace" / "filtered-site"
+
+    shell.open_project_editor_create()
+    shell.save_new_project(
+        SiteEditorViewModel(
+            site_id=None,
+            name="Filtered Site",
+            framework_type="wordpress",
+            local_path=str(local_root),
+            default_locale="en_US",
+            connection_type="sftp",
+            remote_host="filtered.example.test",
+            remote_port="22",
+            remote_username="deploy",
+            remote_password="secret",
+            remote_path="/srv/app",
+            is_active=True,
+            use_adapter_sync_filters=True,
+        )
+    )
+
+    shell.open_projects()
+    created_project = shell.projects_state.projects[0]
+    shell.select_project(created_project.id)
+    shell.start_sync()
+
+    assert shell.sync_state is not None
+    assert shell.sync_state.status == "completed"
+    assert shell.sync_state.files_synced == 1
+    assert (local_root / "wp-content" / "themes" / "theme" / "style.css").exists() is True
+    assert (local_root / "readme.html").exists() is False
+
+
 def test_sync_screen_renders_real_sync_results(tmp_path: Path) -> None:
     settings_service = build_default_settings_service(config_dir=tmp_path / "config")
     remote_registry = RemoteConnectionRegistry.default_registry(providers=[StubSyncProvider()])
@@ -287,7 +362,7 @@ def test_sync_screen_renders_real_sync_results(tmp_path: Path) -> None:
         services=build_default_frontend_services(
             settings_service=settings_service,
             remote_connection_service=RemoteConnectionService(registry=remote_registry),
-            project_sync_service=ProjectSyncService(registry=remote_registry),
+            project_sync_service=_build_project_sync_service(remote_registry),
         )
     )
     root = app.build()
@@ -331,7 +406,7 @@ def test_sync_screen_renders_structured_errors(tmp_path: Path) -> None:
         services=build_default_frontend_services(
             settings_service=settings_service,
             remote_connection_service=RemoteConnectionService(registry=remote_registry),
-            project_sync_service=ProjectSyncService(registry=remote_registry),
+            project_sync_service=_build_project_sync_service(remote_registry),
         )
     )
     root = app.build()
@@ -377,7 +452,7 @@ def test_project_detail_sync_action_opens_a_progress_window_with_command_log(
         services=build_default_frontend_services(
             settings_service=settings_service,
             remote_connection_service=RemoteConnectionService(registry=remote_registry),
-            project_sync_service=ProjectSyncService(registry=remote_registry),
+            project_sync_service=_build_project_sync_service(remote_registry),
         )
     )
     root = app.build()
@@ -436,7 +511,7 @@ def test_project_detail_sync_action_reuses_a_single_remote_session(
         services=build_default_frontend_services(
             settings_service=settings_service,
             remote_connection_service=RemoteConnectionService(registry=remote_registry),
-            project_sync_service=ProjectSyncService(registry=remote_registry),
+            project_sync_service=_build_project_sync_service(remote_registry),
         )
     )
     root = app.build()
@@ -493,7 +568,7 @@ def test_project_detail_progress_window_keeps_only_the_latest_configured_command
         services=build_default_frontend_services(
             settings_service=settings_service,
             remote_connection_service=RemoteConnectionService(registry=remote_registry),
-            project_sync_service=ProjectSyncService(registry=remote_registry),
+            project_sync_service=_build_project_sync_service(remote_registry),
         )
     )
     root = app.build()
@@ -556,7 +631,7 @@ def test_real_sync_flow_uploads_local_files_into_the_remote_workspace(tmp_path: 
         services=build_default_frontend_services(
             settings_service=settings_service,
             remote_connection_service=RemoteConnectionService(registry=remote_registry),
-            project_sync_service=ProjectSyncService(registry=remote_registry),
+            project_sync_service=_build_project_sync_service(remote_registry),
         )
     )
     shell = app._shell

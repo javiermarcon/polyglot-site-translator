@@ -11,6 +11,7 @@ from typing import Any, Protocol, TypeVar, cast
 
 import behave as behave_module  # type: ignore[import-untyped]
 
+from polyglot_site_translator.adapters.framework_registry import FrameworkAdapterRegistry
 from polyglot_site_translator.app import create_kivy_app
 from polyglot_site_translator.domain.remote_connections.models import (
     RemoteConnectionConfig,
@@ -38,6 +39,9 @@ from polyglot_site_translator.presentation.kivy.screens.project_detail import (
 )
 from polyglot_site_translator.presentation.kivy.screens.sync import SyncScreen
 from polyglot_site_translator.presentation.view_models import SiteEditorViewModel
+from polyglot_site_translator.services.framework_sync_scope import (
+    FrameworkSyncScopeService,
+)
 from polyglot_site_translator.services.project_sync import ProjectSyncService
 from polyglot_site_translator.services.remote_connections import RemoteConnectionService
 
@@ -289,6 +293,17 @@ class BehaveSyncContext(Protocol):
     detail_screen: ProjectDetailScreen
 
 
+@dataclass(frozen=True)
+class ProjectSetupSpec:
+    """Parameters used to create a test project for sync scenarios."""
+
+    project_key: str
+    local_directory_name: str
+    connection_type: str
+    remote_host: str
+    use_adapter_sync_filters: bool = False
+
+
 def _context(context: object) -> BehaveSyncContext:
     return cast(BehaveSyncContext, context)
 
@@ -303,11 +318,15 @@ def step_real_sync_shell(context: object) -> None:
         config_dir=Path(typed_context.settings_temp_dir.name)
     )
     registry = RemoteConnectionRegistry.default_registry(providers=[typed_context.sync_provider])
+    framework_registry = FrameworkAdapterRegistry.discover_installed()
     app = create_kivy_app(
         services=build_default_frontend_services(
             settings_service=settings_service,
             remote_connection_service=RemoteConnectionService(registry=registry),
-            project_sync_service=ProjectSyncService(registry=registry),
+            project_sync_service=ProjectSyncService(
+                registry=registry,
+                framework_sync_scope_service=FrameworkSyncScopeService(registry=framework_registry),
+            ),
         )
     )
     typed_context.sync_root = app.build()
@@ -356,10 +375,12 @@ def step_project_has_remote_files(context: object, project_key: str) -> None:
     )
     _create_project(
         typed_context,
-        project_key=project_key,
-        local_directory_name="marketing-site",
-        connection_type="sftp",
-        remote_host="marketing.example.test",
+        ProjectSetupSpec(
+            project_key=project_key,
+            local_directory_name="marketing-site",
+            connection_type="sftp",
+            remote_host="marketing.example.test",
+        ),
     )
 
 
@@ -368,10 +389,12 @@ def step_project_has_local_files_for_upload(context: object, project_key: str) -
     typed_context = _context(context)
     local_root = _create_project(
         typed_context,
-        project_key=project_key,
-        local_directory_name="marketing-site-upload",
-        connection_type="sftp",
-        remote_host="upload.example.test",
+        ProjectSetupSpec(
+            project_key=project_key,
+            local_directory_name="marketing-site-upload",
+            connection_type="sftp",
+            remote_host="upload.example.test",
+        ),
     )
     (local_root / "locale").mkdir(parents=True, exist_ok=True)
     (local_root / "templates").mkdir(parents=True, exist_ok=True)
@@ -379,15 +402,88 @@ def step_project_has_local_files_for_upload(context: object, project_key: str) -
     (local_root / "templates" / "home.html").write_text("<h1>Hola</h1>\n", encoding="utf-8")
 
 
+@given(
+    'the registered project "{project_key}" has mixed remote files and adapter sync filters enabled'
+)
+def step_project_has_filtered_remote_files(context: object, project_key: str) -> None:
+    typed_context = _context(context)
+    typed_context.sync_provider.remote_files_by_host["filtered.example.test"] = [
+        RemoteSyncFile(
+            remote_path="/srv/app/wp-content/themes/theme/style.css",
+            relative_path="wp-content/themes/theme/style.css",
+            size_bytes=16,
+        ),
+        RemoteSyncFile(
+            remote_path="/srv/app/readme.html",
+            relative_path="readme.html",
+            size_bytes=14,
+        ),
+    ]
+    typed_context.sync_provider.file_contents_by_path.update(
+        {
+            "/srv/app/wp-content/themes/theme/style.css": b"body{}\n",
+            "/srv/app/readme.html": b"readme\n",
+        }
+    )
+    _create_project(
+        typed_context,
+        ProjectSetupSpec(
+            project_key=project_key,
+            local_directory_name="filtered-sync-site",
+            connection_type="sftp",
+            remote_host="filtered.example.test",
+            use_adapter_sync_filters=True,
+        ),
+    )
+
+
+@given(
+    'the registered project "{project_key}" has mixed remote files and '
+    "adapter sync filters disabled"
+)
+def step_project_has_full_remote_files(context: object, project_key: str) -> None:
+    typed_context = _context(context)
+    typed_context.sync_provider.remote_files_by_host["full.example.test"] = [
+        RemoteSyncFile(
+            remote_path="/srv/app/wp-content/themes/theme/style.css",
+            relative_path="wp-content/themes/theme/style.css",
+            size_bytes=16,
+        ),
+        RemoteSyncFile(
+            remote_path="/srv/app/readme.html",
+            relative_path="readme.html",
+            size_bytes=14,
+        ),
+    ]
+    typed_context.sync_provider.file_contents_by_path.update(
+        {
+            "/srv/app/wp-content/themes/theme/style.css": b"body{}\n",
+            "/srv/app/readme.html": b"readme\n",
+        }
+    )
+    _create_project(
+        typed_context,
+        ProjectSetupSpec(
+            project_key=project_key,
+            local_directory_name="full-sync-site",
+            connection_type="sftp",
+            remote_host="full.example.test",
+            use_adapter_sync_filters=False,
+        ),
+    )
+
+
 @given('the registered project "{project_key}" has no remote connection')
 def step_project_without_remote_connection(context: object, project_key: str) -> None:
     typed_context = _context(context)
     _create_project(
         typed_context,
-        project_key=project_key,
-        local_directory_name="local-only-site",
-        connection_type="none",
-        remote_host="",
+        ProjectSetupSpec(
+            project_key=project_key,
+            local_directory_name="local-only-site",
+            connection_type="none",
+            remote_host="",
+        ),
     )
 
 
@@ -399,10 +495,12 @@ def step_project_listing_failure(context: object, project_key: str) -> None:
     )
     _create_project(
         typed_context,
-        project_key=project_key,
-        local_directory_name="broken-remote-site",
-        connection_type="sftp",
-        remote_host="broken.example.test",
+        ProjectSetupSpec(
+            project_key=project_key,
+            local_directory_name="broken-remote-site",
+            connection_type="sftp",
+            remote_host="broken.example.test",
+        ),
     )
 
 
@@ -415,10 +513,12 @@ def step_project_unknown_ssh_host_key(context: object, project_key: str) -> None
     )
     _create_project(
         typed_context,
-        project_key=project_key,
-        local_directory_name="unknown-ssh-host-site",
-        connection_type="sftp",
-        remote_host="unknown-ssh.example.test",
+        ProjectSetupSpec(
+            project_key=project_key,
+            local_directory_name="unknown-ssh-host-site",
+            connection_type="sftp",
+            remote_host="unknown-ssh.example.test",
+        ),
     )
 
 
@@ -428,10 +528,12 @@ def step_project_empty_remote(context: object, project_key: str) -> None:
     typed_context.sync_provider.remote_files_by_host["empty.example.test"] = []
     _create_project(
         typed_context,
-        project_key=project_key,
-        local_directory_name="empty-remote-site",
-        connection_type="sftp",
-        remote_host="empty.example.test",
+        ProjectSetupSpec(
+            project_key=project_key,
+            local_directory_name="empty-remote-site",
+            connection_type="sftp",
+            remote_host="empty.example.test",
+        ),
     )
 
 
@@ -443,10 +545,12 @@ def step_project_upload_failure(context: object, project_key: str) -> None:
     )
     local_root = _create_project(
         typed_context,
-        project_key=project_key,
-        local_directory_name="broken-upload-site",
-        connection_type="sftp",
-        remote_host="upload-broken.example.test",
+        ProjectSetupSpec(
+            project_key=project_key,
+            local_directory_name="broken-upload-site",
+            connection_type="sftp",
+            remote_host="upload-broken.example.test",
+        ),
     )
     (local_root / "locale").mkdir(parents=True, exist_ok=True)
     (local_root / "locale" / "es.po").write_text('msgid "hola"\n', encoding="utf-8")
@@ -457,10 +561,12 @@ def step_project_empty_local_source(context: object, project_key: str) -> None:
     typed_context = _context(context)
     local_root = _create_project(
         typed_context,
-        project_key=project_key,
-        local_directory_name="empty-local-site",
-        connection_type="sftp",
-        remote_host="empty-upload.example.test",
+        ProjectSetupSpec(
+            project_key=project_key,
+            local_directory_name="empty-local-site",
+            connection_type="sftp",
+            remote_host="empty-upload.example.test",
+        ),
     )
     local_root.mkdir(parents=True, exist_ok=True)
 
@@ -648,33 +754,30 @@ def step_assert_single_remote_close(context: object) -> None:
 
 def _create_project(
     context: BehaveSyncContext,
-    *,
-    project_key: str,
-    local_directory_name: str,
-    connection_type: str,
-    remote_host: str,
+    spec: ProjectSetupSpec,
 ) -> Path:
-    local_root = Path(context.settings_temp_dir.name) / "workspace" / local_directory_name
+    local_root = Path(context.settings_temp_dir.name) / "workspace" / spec.local_directory_name
     context.shell.open_project_editor_create()
     context.shell.save_new_project(
         SiteEditorViewModel(
             site_id=None,
-            name=project_key.replace("-", " ").title(),
+            name=spec.project_key.replace("-", " ").title(),
             framework_type="wordpress",
             local_path=str(local_root),
             default_locale="en_US",
-            connection_type=connection_type,
-            remote_host=remote_host,
-            remote_port="22" if connection_type == "sftp" else "",
-            remote_username="deploy" if connection_type == "sftp" else "",
-            remote_password="secret" if connection_type == "sftp" else "",
-            remote_path="/srv/app" if connection_type == "sftp" else "",
+            connection_type=spec.connection_type,
+            remote_host=spec.remote_host,
+            remote_port="22" if spec.connection_type == "sftp" else "",
+            remote_username="deploy" if spec.connection_type == "sftp" else "",
+            remote_password="secret" if spec.connection_type == "sftp" else "",
+            remote_path="/srv/app" if spec.connection_type == "sftp" else "",
             is_active=True,
+            use_adapter_sync_filters=spec.use_adapter_sync_filters,
         )
     )
     context.shell.open_projects()
     created_project = context.shell.projects_state.projects[-1]
-    context.project_ids[project_key] = created_project.id
+    context.project_ids[spec.project_key] = created_project.id
     return local_root
 
 

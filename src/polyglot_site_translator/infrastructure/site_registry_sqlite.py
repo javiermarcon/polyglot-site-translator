@@ -64,8 +64,9 @@ class SqliteSiteRegistryRepository:
                 password_encrypted,
                 remote_path,
                 passive_mode,
-                verify_host
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                verify_host,
+                use_adapter_sync_filters
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """
         try:
             with self._connect() as connection:
@@ -100,7 +101,8 @@ class SqliteSiteRegistryRepository:
                 remote.password_encrypted,
                 remote.remote_path,
                 remote.passive_mode,
-                remote.verify_host
+                remote.verify_host,
+                remote.use_adapter_sync_filters
             FROM site_registry AS project
             LEFT JOIN site_remote_connections AS remote
                 ON remote.site_project_id = project.id
@@ -132,7 +134,8 @@ class SqliteSiteRegistryRepository:
                 remote.password_encrypted,
                 remote.remote_path,
                 remote.passive_mode,
-                remote.verify_host
+                remote.verify_host,
+                remote.use_adapter_sync_filters
             FROM site_registry AS project
             LEFT JOIN site_remote_connections AS remote
                 ON remote.site_project_id = project.id
@@ -175,8 +178,9 @@ class SqliteSiteRegistryRepository:
                 password_encrypted,
                 remote_path,
                 passive_mode,
-                verify_host
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                verify_host,
+                use_adapter_sync_filters
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """
         try:
             with self._connect() as connection:
@@ -271,14 +275,25 @@ def _ensure_remote_table(connection: sqlite3.Connection) -> None:
             host TEXT NOT NULL,
             port INTEGER NOT NULL,
             username TEXT NOT NULL,
-            password_encrypted TEXT NOT NULL,
-            remote_path TEXT NOT NULL,
-            passive_mode INTEGER NOT NULL CHECK (passive_mode IN (0, 1)),
-            verify_host INTEGER NOT NULL CHECK (verify_host IN (0, 1)),
-            FOREIGN KEY (site_project_id) REFERENCES site_registry(id) ON DELETE CASCADE
-        )
-        """
+                password_encrypted TEXT NOT NULL,
+                remote_path TEXT NOT NULL,
+                passive_mode INTEGER NOT NULL CHECK (passive_mode IN (0, 1)),
+                verify_host INTEGER NOT NULL CHECK (verify_host IN (0, 1)),
+                use_adapter_sync_filters INTEGER NOT NULL CHECK (
+                    use_adapter_sync_filters IN (0, 1)
+                ) DEFAULT 0,
+                FOREIGN KEY (site_project_id) REFERENCES site_registry(id) ON DELETE CASCADE
+            )
+            """
     )
+    columns = _get_table_columns(connection, "site_remote_connections")
+    if "use_adapter_sync_filters" not in columns:
+        connection.execute(
+            """
+            ALTER TABLE site_remote_connections
+            ADD COLUMN use_adapter_sync_filters INTEGER NOT NULL DEFAULT 0
+            """
+        )
 
 
 def _migrate_legacy_ftp_schema(connection: sqlite3.Connection) -> None:
@@ -305,7 +320,8 @@ def _migrate_legacy_ftp_schema(connection: sqlite3.Connection) -> None:
             ftp_password_encrypted AS password_encrypted,
             ftp_remote_path AS remote_path,
             1 AS passive_mode,
-            1 AS verify_host
+            1 AS verify_host,
+            0 AS use_adapter_sync_filters
         FROM site_registry
         WHERE TRIM(COALESCE(ftp_host, '')) != ''
         """,
@@ -357,7 +373,8 @@ def _migrate_legacy_ftp_schema(connection: sqlite3.Connection) -> None:
             password_encrypted,
             remote_path,
             passive_mode,
-            verify_host
+            verify_host,
+            use_adapter_sync_filters
         )
         SELECT
             legacy.id,
@@ -369,7 +386,8 @@ def _migrate_legacy_ftp_schema(connection: sqlite3.Connection) -> None:
             legacy.password_encrypted,
             legacy.remote_path,
             legacy.passive_mode,
-            legacy.verify_host
+            legacy.verify_host,
+            legacy.use_adapter_sync_filters
         FROM site_remote_connections_legacy_migration AS legacy
         WHERE NOT EXISTS (
             SELECT 1
@@ -423,6 +441,7 @@ def _connection_params(
         connection.remote_path,
         int(connection.flags.passive_mode),
         int(connection.flags.verify_host),
+        int(connection.flags.use_adapter_sync_filters),
     )
 
 
@@ -452,6 +471,7 @@ def _map_row_to_site(
             flags=RemoteConnectionFlags(
                 passive_mode=bool(row["passive_mode"]),
                 verify_host=bool(row["verify_host"]),
+                use_adapter_sync_filters=bool(row["use_adapter_sync_filters"]),
             ),
         )
     return RegisteredSite(project=project, remote_connection=remote_connection)

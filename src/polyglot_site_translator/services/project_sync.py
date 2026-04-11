@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 import posixpath
+from typing import Protocol
 
 from polyglot_site_translator.domain.remote_connections.contracts import (
     RemoteConnectionProvider,
@@ -32,6 +33,13 @@ from polyglot_site_translator.infrastructure.remote_connections.registry import 
     RemoteConnectionRegistry,
 )
 from polyglot_site_translator.infrastructure.sync_local import LocalSyncWorkspace
+
+
+class FrameworkSyncScopeResolver(Protocol):
+    """Resolve adapter-defined sync scopes for a registered site."""
+
+    def resolve_for_site(self, site: RegisteredSite) -> ResolvedSyncScope:
+        """Return the resolved sync scope for the provided site."""
 
 
 @dataclass(frozen=True)
@@ -69,9 +77,11 @@ class ProjectSyncService:
         *,
         registry: RemoteConnectionRegistry,
         local_workspace: LocalSyncWorkspace | None = None,
+        framework_sync_scope_service: FrameworkSyncScopeResolver | None = None,
     ) -> None:
         self._registry = registry
         self._local_workspace = local_workspace or LocalSyncWorkspace()
+        self._framework_sync_scope_service = framework_sync_scope_service
 
     def sync_remote_to_local(
         self,
@@ -98,6 +108,15 @@ class ProjectSyncService:
             )
             self._emit_failure(progress_callback, result)
             return result
+        resolved_scope, scope_failure = self._resolve_requested_scope(
+            site=site,
+            summary=summary,
+            direction=SyncDirection.REMOTE_TO_LOCAL,
+            resolved_scope=resolved_scope,
+        )
+        if scope_failure is not None:
+            self._emit_failure(progress_callback, scope_failure)
+            return scope_failure
         local_root = Path(site.local_path)
         prepared_summary, preparation_failure = self._prepare_local_workspace(
             site=site,
@@ -160,6 +179,15 @@ class ProjectSyncService:
             )
             self._emit_failure(progress_callback, result)
             return result
+        resolved_scope, scope_failure = self._resolve_requested_scope(
+            site=site,
+            summary=summary,
+            direction=SyncDirection.LOCAL_TO_REMOTE,
+            resolved_scope=resolved_scope,
+        )
+        if scope_failure is not None:
+            self._emit_failure(progress_callback, scope_failure)
+            return scope_failure
         local_root = Path(site.local_path)
         try:
             local_files = self._list_local_files(
@@ -294,6 +322,55 @@ class ProjectSyncService:
                     message=str(error),
                 ),
             )
+
+    def _resolve_requested_scope(
+        self,
+        *,
+        site: RegisteredSite,
+        summary: SyncSummary,
+        direction: SyncDirection,
+        resolved_scope: ResolvedSyncScope | None,
+    ) -> tuple[ResolvedSyncScope | None, SyncResult | None]:
+        remote_connection = site.remote_connection
+        if resolved_scope is not None:
+            return resolved_scope, None
+        if remote_connection is None or not remote_connection.flags.use_adapter_sync_filters:
+            return None, None
+        if self._framework_sync_scope_service is None:
+            return None, self._failure_result(
+                direction=direction,
+                context=_FailureContext(
+                    site=site,
+                    connection_type=remote_connection.connection_type,
+                    summary=summary,
+                ),
+                error=SyncError(
+                    code="sync_scope_resolution_not_configured",
+                    message=(
+                        "Adapter-filtered sync is enabled for project "
+                        f"'{site.name}', but framework sync scope resolution is not configured."
+                    ),
+                ),
+            )
+        scope = self._framework_sync_scope_service.resolve_for_site(site)
+        if scope.is_filtered:
+            return scope, None
+        return None, self._failure_result(
+            direction=direction,
+            context=_FailureContext(
+                site=site,
+                connection_type=remote_connection.connection_type,
+                summary=summary,
+            ),
+            error=SyncError(
+                code="sync_scope_unavailable",
+                message=(
+                    "Adapter-filtered sync is enabled for project "
+                    f"'{site.name}', but no usable adapter sync scope was resolved. "
+                    f"Cause: {scope.message}"
+                ),
+            ),
+        )
 
     def _sync_local_files_incrementally(
         self,

@@ -32,6 +32,7 @@ El repositorio está en una etapa temprana y hoy incluye principalmente:
 - descarga real `remote -> local` al `local_path` con creación automática de directorios locales faltantes
 - subida real `local -> remote` con creación automática de directorios remotos faltantes
 - filtros de sync definidos por adapter/framework y reutilizables por ambos sentidos
+- preferencia persistida por proyecto para elegir entre `filtered sync` y `full sync`
 - resultado tipado y controlado de sync con conteo de archivos y código de error cuando falla
 - ejecución de sync en background desde Project Detail, con una ventana dedicada de progreso
 - barra de progreso y log visible de comandos remotos/locales durante el sync
@@ -47,7 +48,7 @@ El repositorio está en una etapa temprana y hoy incluye principalmente:
 
 Todavía no están implementados en forma real:
 
-- controles de sync full/selectivo en UI
+- controles más granulares de sync selectivo por subsets/rules en UI
 - scanner de auditoría
 - procesamiento real de `.po/.mo`
 - reporting final
@@ -121,7 +122,7 @@ La base actual del frontend incluye:
 - Home / Dashboard como punto de entrada
 - Projects / Sites List para listar proyectos persistidos en SQLite
 - Project / Site Detail con lectura real del registry persistido y metadata de detección de framework
-- Project Editor con combo dinámico de framework y combo dinámico de tipo de conexión remota
+- Project Editor con combo dinámico de framework, combo dinámico de tipo de conexión remota y switch persistido para elegir `Use Adapter Sync Filters`
 - acción "Test Connection" en el editor, resuelta por servicios y con resultado estructurado en pantalla
 - Audit Screen con preview basado en la detección real del proyecto en vez de un conteo fijo del runtime
 - Sync Screen con wiring real de `remote -> local` y `local -> remote`, con resumen estructurado del resultado
@@ -131,6 +132,7 @@ La base actual del frontend incluye:
 - Settings generales con persistencia TOML y campos para configurar la ubicación/nombre de la base SQLite
 
 La navegación mantiene el contexto del proyecto seleccionado. El flujo principal de create/list/detail/update y el sync bidireccional ya usan servicios reales para `site_registry` y el subsistema remoto; audit y PO processing siguen usando servicios fake detrás de los mismos contratos de UI.
+Cuando la preferencia `Use Adapter Sync Filters` está activa en la configuración remota persistida del proyecto, ambos sentidos de sync usan el scope resuelto por `FrameworkSyncScopeService`; cuando está desactivada, el servicio ejecuta full sync. Si el proyecto pide sync filtrado pero no existe un scope utilizable, el sync falla de forma explícita en vez de caer en un fallback silencioso.
 
 El entrypoint gráfico por defecto (`create_kivy_app()` / `python -m polyglot_site_translator`) arranca con settings TOML y `site_registry` SQLite reales. Los bundles fake seeded quedan reservados para tests y escenarios de desarrollo controlados.
 Los doubles/stubs de test para funcionalidades ya implementadas viven en soporte de tests y no forman parte del runtime productivo.

@@ -256,8 +256,8 @@ WordPress, Django, and Flask care about different localization-relevant paths. K
 **Implications**
 - `BaseFrameworkAdapter` and the framework-adapter contract now expose `get_sync_filters(project_path)`.
 - `FrameworkSyncScopeService` returns an explicit `ResolvedSyncScope` with statuses such as `filtered`, `no_filters`, `framework_unresolved`, and `adapter_unavailable`.
-- `ProjectSyncService` accepts an optional resolved scope and applies it symmetrically to download and upload workflows.
-- UI controls for choosing filtered vs full sync still remain a later stage.
+- `ProjectSyncService` can resolve the effective scope from the persisted remote-config preference and applies it symmetrically to download and upload workflows.
+- The project editor persists a per-project `Use Adapter Sync Filters` choice, while scope resolution itself still stays outside the Kivy layer.
 
 ---
 

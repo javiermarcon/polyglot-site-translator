@@ -420,7 +420,10 @@ def _build_service_payload(editor: SiteEditorViewModel) -> SiteRegistrationInput
             username=editor.remote_username,
             password=editor.remote_password,
             remote_path=editor.remote_path,
-            flags=RemoteConnectionFlags(verify_host=editor.remote_verify_host),
+            flags=RemoteConnectionFlags(
+                verify_host=editor.remote_verify_host,
+                use_adapter_sync_filters=editor.use_adapter_sync_filters,
+            ),
         )
     return SiteRegistrationInput(
         name=editor.name,
@@ -471,6 +474,7 @@ def _build_site_editor(site: RegisteredSite) -> SiteEditorViewModel:
             remote_path="",
             is_active=site.is_active,
             remote_verify_host=True,
+            use_adapter_sync_filters=False,
         )
     return SiteEditorViewModel(
         site_id=site.id,
@@ -486,6 +490,7 @@ def _build_site_editor(site: RegisteredSite) -> SiteEditorViewModel:
         remote_path=remote_connection.remote_path,
         is_active=site.is_active,
         remote_verify_host=remote_connection.flags.verify_host,
+        use_adapter_sync_filters=remote_connection.flags.use_adapter_sync_filters,
     )
 
 
@@ -501,10 +506,11 @@ def _format_framework_name(framework_type: str) -> str:
 def _build_configuration_summary(site: RegisteredSite) -> str:
     if site.remote_connection is None:
         return f"Locale: {site.default_locale} | Remote connection: None"
+    sync_mode = "filtered" if site.remote_connection.flags.use_adapter_sync_filters else "full"
     return (
         f"Locale: {site.default_locale} | Remote: {site.remote_connection.connection_type} "
         f"{site.remote_connection.host}:{site.remote_connection.port} "
-        f"| Path: {site.remote_connection.remote_path}"
+        f"| Path: {site.remote_connection.remote_path} | Sync mode: {sync_mode}"
     )
 
 

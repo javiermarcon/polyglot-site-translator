@@ -125,3 +125,19 @@ Feature: Remote to local project synchronization
     When the operator opens the synced detail for project "marketing-site"
     And the operator starts the local to remote sync workflow
     Then the sync screen shows the uploaded file count
+
+  Scenario: Use adapter sync filters when the persisted project preference enables them
+    Given the frontend shell is wired with a real sync workflow
+    And the registered project "filtered-sync-site" has mixed remote files and adapter sync filters enabled
+    When the operator opens the synced detail for project "filtered-sync-site"
+    And the operator starts the sync workflow
+    Then the sync panel shows a completed status
+    And the sync panel reports 1 downloaded files
+
+  Scenario: Use full sync when the persisted project preference disables adapter filters
+    Given the frontend shell is wired with a real sync workflow
+    And the registered project "full-sync-site" has mixed remote files and adapter sync filters disabled
+    When the operator opens the synced detail for project "full-sync-site"
+    And the operator starts the sync workflow
+    Then the sync panel shows a completed status
+    And the sync panel reports 2 downloaded files

@@ -7,7 +7,10 @@ import sqlite3
 
 import pytest
 
-from polyglot_site_translator.domain.remote_connections.models import RemoteConnectionConfig
+from polyglot_site_translator.domain.remote_connections.models import (
+    RemoteConnectionConfig,
+    RemoteConnectionFlags,
+)
 from polyglot_site_translator.domain.site_registry.errors import (
     SiteRegistryConfigurationError,
     SiteRegistryNotFoundError,
@@ -34,6 +37,17 @@ def test_sqlite_repository_creates_schema_and_roundtrips_a_site(tmp_path: Path) 
 
     assert loaded_site == site
     assert repository.list_sites() == [site]
+
+
+def test_sqlite_repository_roundtrips_the_filtered_sync_preference(tmp_path: Path) -> None:
+    repository = _build_repository(tmp_path)
+    site = _build_site(use_adapter_sync_filters=True)
+
+    repository.create_site(site)
+    loaded_site = repository.get_site(site.id)
+
+    assert loaded_site.remote_connection is not None
+    assert loaded_site.remote_connection.flags.use_adapter_sync_filters is True
 
 
 def test_sqlite_repository_updates_a_site(tmp_path: Path) -> None:
@@ -332,7 +346,7 @@ def _build_repository(tmp_path: Path) -> SqliteSiteRegistryRepository:
     )
 
 
-def _build_site() -> RegisteredSite:
+def _build_site(*, use_adapter_sync_filters: bool = False) -> RegisteredSite:
     return RegisteredSite(
         project=SiteProject(
             id="site-1",
@@ -351,5 +365,8 @@ def _build_site() -> RegisteredSite:
             username="deploy",
             password="super-secret",
             remote_path="/public_html",
+            flags=RemoteConnectionFlags(
+                use_adapter_sync_filters=use_adapter_sync_filters,
+            ),
         ),
     )
