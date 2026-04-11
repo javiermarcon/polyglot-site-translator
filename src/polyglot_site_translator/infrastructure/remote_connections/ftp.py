@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Callable, Iterator
 from ftplib import FTP, FTP_TLS, all_errors
+from io import BytesIO
 import posixpath
 import socket
 import ssl
@@ -271,6 +272,59 @@ class _FtpRemoteConnectionSession(BaseRemoteConnectionSession):
         except all_errors as error:
             raise _normalize_ftp_error(error, default_code="download_failed") from error
         return b"".join(chunks)
+
+    def _ensure_remote_directory(
+        self,
+        remote_path: str,
+        progress_callback: SyncProgressCallback | None,
+    ) -> int:
+        normalized_path = _normalize_remote_path(remote_path)
+        if normalized_path == "/":
+            return 0
+        created_segments = 0
+        current_path = ""
+        for segment in [part for part in normalized_path.split("/") if part]:
+            current_path = f"{current_path}/{segment}" if current_path else f"/{segment}"
+            try:
+                self._client.cwd(current_path)
+            except all_errors:
+                try:
+                    _emit_progress(
+                        progress_callback,
+                        SyncProgressEvent(
+                            stage=SyncProgressStage.PREPARING_REMOTE,
+                            message=f"Creating remote directory {current_path}.",
+                            command_text=f"{self._transport_label} MKDIR {current_path}",
+                        ),
+                    )
+                    self._client.mkd(current_path)
+                    created_segments += 1
+                    self._client.cwd(current_path)
+                except all_errors as error:
+                    raise _normalize_ftp_error(
+                        error,
+                        default_code="remote_directory_failed",
+                    ) from error
+        return created_segments
+
+    def _upload_file(
+        self,
+        remote_path: str,
+        contents: bytes,
+        progress_callback: SyncProgressCallback | None,
+    ) -> None:
+        try:
+            _emit_progress(
+                progress_callback,
+                SyncProgressEvent(
+                    stage=SyncProgressStage.UPLOADING_FILE,
+                    message=f"Uploading local file into {remote_path}.",
+                    command_text=f"{self._transport_label} STOR {remote_path}",
+                ),
+            )
+            self._client.storbinary(f"STOR {remote_path}", BytesIO(contents))
+        except all_errors as error:
+            raise _normalize_ftp_error(error, default_code="upload_failed") from error
 
     def _close(self, progress_callback: SyncProgressCallback | None) -> None:
         _emit_progress(

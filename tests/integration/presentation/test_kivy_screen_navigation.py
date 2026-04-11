@@ -72,6 +72,12 @@ def test_project_detail_screen_refresh_and_action_buttons_navigate() -> None:
 
     shell.select_project("wp-site")
     root.current = "project_detail"
+    detail_screen._start_sync_to_remote()
+    assert root.current == "project_detail"
+    assert detail_screen._sync_progress_popup is not None
+
+    shell.select_project("wp-site")
+    root.current = "project_detail"
     detail_screen._start_audit()
     assert root.current == "audit"
 

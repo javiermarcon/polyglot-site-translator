@@ -81,6 +81,13 @@ class _ProjectSyncStub:
     ) -> SyncResult:
         return self.result
 
+    def sync_local_to_remote(
+        self,
+        site: RegisteredSite,
+        progress_callback: Callable[[SyncProgressEvent], None] | None = None,
+    ) -> SyncResult:
+        return self.result
+
 
 def test_sync_workflow_service_maps_successful_sync_results() -> None:
     workflow = SiteRegistryPresentationWorkflowService(
@@ -227,6 +234,37 @@ def test_sync_workflow_service_wraps_missing_site_errors() -> None:
 
     with pytest.raises(ControlledServiceError, match="Unknown site id: site-123"):
         workflow.start_sync("site-123")
+
+
+def test_sync_workflow_service_maps_successful_local_to_remote_sync_results() -> None:
+    workflow = SiteRegistryPresentationWorkflowService(
+        service=_ServiceStub(site=_build_site()),
+        project_sync_service=_ProjectSyncStub(
+            result=SyncResult(
+                direction=SyncDirection.LOCAL_TO_REMOTE,
+                success=True,
+                project_id="site-123",
+                connection_type="sftp",
+                local_path="/workspace/site",
+                summary=SyncSummary(
+                    files_discovered=2,
+                    files_downloaded=0,
+                    directories_created=1,
+                    bytes_downloaded=0,
+                    files_uploaded=2,
+                    bytes_uploaded=64,
+                ),
+                error=None,
+            )
+        ),
+    )
+
+    state = workflow.start_sync_to_remote("site-123")
+
+    assert state.status == "completed"
+    assert state.files_synced == 2
+    assert state.error_code is None
+    assert state.summary == "Uploaded 2 files from /workspace/site into the remote workspace."
 
 
 def _build_site() -> RegisteredSite:

@@ -77,6 +77,25 @@ class BaseRemoteConnectionSession(ABC):
             if self._state is not RemoteConnectionSessionState.FAILED:
                 self._state = RemoteConnectionSessionState.CLOSED
 
+    def ensure_remote_directory(
+        self,
+        remote_path: str,
+        progress_callback: SyncProgressCallback | None = None,
+    ) -> int:
+        """Create a remote directory path through the current session."""
+        self._ensure_open(progress_callback)
+        return self._ensure_remote_directory(remote_path, progress_callback)
+
+    def upload_file(
+        self,
+        remote_path: str,
+        contents: bytes,
+        progress_callback: SyncProgressCallback | None = None,
+    ) -> None:
+        """Upload file contents through the current session."""
+        self._ensure_open(progress_callback)
+        self._upload_file(remote_path, contents, progress_callback)
+
     def _ensure_open(self, progress_callback: SyncProgressCallback | None) -> None:
         if self._state is RemoteConnectionSessionState.OPEN:
             return
@@ -130,6 +149,23 @@ class BaseRemoteConnectionSession(ABC):
         progress_callback: SyncProgressCallback | None,
     ) -> bytes:
         """Download a remote file using an open concrete transport session."""
+
+    @abstractmethod
+    def _ensure_remote_directory(
+        self,
+        remote_path: str,
+        progress_callback: SyncProgressCallback | None,
+    ) -> int:
+        """Create a remote directory path using an open concrete transport session."""
+
+    @abstractmethod
+    def _upload_file(
+        self,
+        remote_path: str,
+        contents: bytes,
+        progress_callback: SyncProgressCallback | None,
+    ) -> None:
+        """Upload file contents using an open concrete transport session."""
 
     @abstractmethod
     def _close(self, progress_callback: SyncProgressCallback | None) -> None:
@@ -196,5 +232,32 @@ class BaseRemoteConnectionProvider(ABC):
         session = self.open_session(config)
         try:
             return session.download_file(remote_path, progress_callback)
+        finally:
+            session.close(progress_callback)
+
+    def ensure_remote_directory(
+        self,
+        config: RemoteConnectionConfig,
+        remote_path: str,
+        progress_callback: SyncProgressCallback | None = None,
+    ) -> int:
+        """Create a remote directory path through a short-lived reusable session."""
+        session = self.open_session(config)
+        try:
+            return session.ensure_remote_directory(remote_path, progress_callback)
+        finally:
+            session.close(progress_callback)
+
+    def upload_file(
+        self,
+        config: RemoteConnectionConfig,
+        remote_path: str,
+        contents: bytes,
+        progress_callback: SyncProgressCallback | None = None,
+    ) -> None:
+        """Upload one local file through a short-lived reusable session."""
+        session = self.open_session(config)
+        try:
+            session.upload_file(remote_path, contents, progress_callback)
         finally:
             session.close(progress_callback)

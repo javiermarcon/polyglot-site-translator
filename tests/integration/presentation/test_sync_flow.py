@@ -1,4 +1,4 @@
-"""Integration tests for the real remote-to-local sync flow."""
+"""Integration tests for the real sync flows."""
 
 from __future__ import annotations
 
@@ -82,6 +82,31 @@ class StubSyncProvider:
         finally:
             session.close(progress_callback)
 
+    def ensure_remote_directory(
+        self,
+        config: RemoteConnectionConfig,
+        remote_path: str,
+        progress_callback: Callable[[SyncProgressEvent], None] | None = None,
+    ) -> int:
+        session = self.open_session(config)
+        try:
+            return session.ensure_remote_directory(remote_path, progress_callback)
+        finally:
+            session.close(progress_callback)
+
+    def upload_file(
+        self,
+        config: RemoteConnectionConfig,
+        remote_path: str,
+        contents: bytes,
+        progress_callback: Callable[[SyncProgressEvent], None] | None = None,
+    ) -> None:
+        session = self.open_session(config)
+        try:
+            session.upload_file(remote_path, contents, progress_callback)
+        finally:
+            session.close(progress_callback)
+
     def test_connection(
         self,
         config: RemoteConnectionConfigInput,
@@ -100,19 +125,29 @@ class StubSyncProvider:
 class _StubSyncSession:
     config: RemoteConnectionConfig
     state: RemoteConnectionSessionState = RemoteConnectionSessionState.OPEN
+    _connect_emitted: bool = False
+
+    def _emit_connect_if_needed(
+        self,
+        progress_callback: Callable[[SyncProgressEvent], None] | None,
+    ) -> None:
+        if self._connect_emitted or progress_callback is None:
+            return
+        progress_callback(
+            SyncProgressEvent(
+                stage=SyncProgressStage.LISTING_REMOTE,
+                message="Connecting through the sync integration stub session.",
+                command_text=f"SFTP CONNECT {self.config.host}:{self.config.port}",
+            )
+        )
+        self._connect_emitted = True
 
     def iter_remote_files(
         self,
         progress_callback: Callable[[SyncProgressEvent], None] | None = None,
     ) -> Iterable[RemoteSyncFile]:
         if progress_callback is not None:
-            progress_callback(
-                SyncProgressEvent(
-                    stage=SyncProgressStage.LISTING_REMOTE,
-                    message="Connecting through the sync integration stub session.",
-                    command_text=f"SFTP CONNECT {self.config.host}:{self.config.port}",
-                )
-            )
+            self._emit_connect_if_needed(progress_callback)
             progress_callback(
                 SyncProgressEvent(
                     stage=SyncProgressStage.LISTING_REMOTE,
@@ -140,6 +175,7 @@ class _StubSyncSession:
         progress_callback: Callable[[SyncProgressEvent], None] | None = None,
     ) -> bytes:
         if progress_callback is not None:
+            self._emit_connect_if_needed(progress_callback)
             progress_callback(
                 SyncProgressEvent(
                     stage=SyncProgressStage.DOWNLOADING_FILE,
@@ -152,6 +188,38 @@ class _StubSyncSession:
             "/srv/app/templates/home.html": b"<h1>Hello</h1>\n",
         }
         return payloads[remote_path]
+
+    def ensure_remote_directory(
+        self,
+        remote_path: str,
+        progress_callback: Callable[[SyncProgressEvent], None] | None = None,
+    ) -> int:
+        if progress_callback is not None:
+            self._emit_connect_if_needed(progress_callback)
+            progress_callback(
+                SyncProgressEvent(
+                    stage=SyncProgressStage.PREPARING_REMOTE,
+                    message=f"Preparing remote directory {remote_path}.",
+                    command_text=f"SFTP MKDIR {remote_path}",
+                )
+            )
+        return 1
+
+    def upload_file(
+        self,
+        remote_path: str,
+        contents: bytes,
+        progress_callback: Callable[[SyncProgressEvent], None] | None = None,
+    ) -> None:
+        if progress_callback is not None:
+            self._emit_connect_if_needed(progress_callback)
+            progress_callback(
+                SyncProgressEvent(
+                    stage=SyncProgressStage.UPLOADING_FILE,
+                    message=f"Uploading {remote_path} through the sync integration stub.",
+                    command_text=f"SFTP PUT {remote_path}",
+                )
+            )
 
     def close(
         self,
@@ -479,3 +547,48 @@ def test_project_detail_progress_window_keeps_only_the_latest_configured_command
         f"LOCAL WRITE {local_root / 'templates' / 'home.html'}",
         "SFTP CLOSE example.test:22",
     ]
+
+
+def test_real_sync_flow_uploads_local_files_into_the_remote_workspace(tmp_path: Path) -> None:
+    settings_service = build_default_settings_service(config_dir=tmp_path / "config")
+    remote_registry = RemoteConnectionRegistry.default_registry(providers=[StubSyncProvider()])
+    app = create_kivy_app(
+        services=build_default_frontend_services(
+            settings_service=settings_service,
+            remote_connection_service=RemoteConnectionService(registry=remote_registry),
+            project_sync_service=ProjectSyncService(registry=remote_registry),
+        )
+    )
+    shell = app._shell
+    local_root = tmp_path / "workspace" / "marketing-site"
+    (local_root / "locale").mkdir(parents=True)
+    (local_root / "templates").mkdir(parents=True)
+    (local_root / "locale" / "es.po").write_bytes(b'msgid "hola"\n')
+    (local_root / "templates" / "home.html").write_bytes(b"<h1>Hola</h1>\n")
+
+    shell.open_project_editor_create()
+    shell.save_new_project(
+        SiteEditorViewModel(
+            site_id=None,
+            name="Marketing Site",
+            framework_type="wordpress",
+            local_path=str(local_root),
+            default_locale="en_US",
+            connection_type="sftp",
+            remote_host="example.test",
+            remote_port="22",
+            remote_username="deploy",
+            remote_password="secret",
+            remote_path="/srv/app",
+            is_active=True,
+        )
+    )
+
+    shell.open_projects()
+    created_project = shell.projects_state.projects[0]
+    shell.select_project(created_project.id)
+    shell.start_sync_to_remote()
+
+    assert shell.sync_state is not None
+    assert shell.sync_state.status == "completed"
+    assert shell.sync_state.files_synced == 2

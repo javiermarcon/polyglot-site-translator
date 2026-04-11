@@ -79,6 +79,25 @@ class SuccessfulSFTPProvider:
         msg = f"download not used in this test for {remote_path}"
         raise AssertionError(msg)
 
+    def ensure_remote_directory(
+        self,
+        config: RemoteConnectionConfig,
+        remote_path: str,
+        progress_callback: Callable[[SyncProgressEvent], None] | None = None,
+    ) -> int:
+        msg = f"ensure_remote_directory not used in this test for {remote_path}"
+        raise AssertionError(msg)
+
+    def upload_file(
+        self,
+        config: RemoteConnectionConfig,
+        remote_path: str,
+        contents: bytes,
+        progress_callback: Callable[[SyncProgressEvent], None] | None = None,
+    ) -> None:
+        msg = f"upload not used in this test for {remote_path}"
+        raise AssertionError(msg)
+
 
 def test_project_editor_exposes_dynamic_remote_connection_options(tmp_path: Path) -> None:
     settings_service = build_default_settings_service(config_dir=tmp_path)

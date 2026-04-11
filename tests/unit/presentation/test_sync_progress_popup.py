@@ -65,7 +65,7 @@ def test_sync_progress_popup_renders_empty_and_populated_states() -> None:
         command_log=[],
     )
     popup.refresh()
-    assert popup.title == "Remote Sync Progress: Marketing Site"
+    assert popup.title == "Sync Progress: Marketing Site"
     assert popup._status_label.text == "Status: completed"
     assert popup._progress_bar.max == 1
     assert popup._progress_bar.value == 1

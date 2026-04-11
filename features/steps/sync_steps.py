@@ -1,4 +1,4 @@
-"""BDD steps for real remote-to-local sync workflows."""
+"""BDD steps for real sync workflows."""
 
 from __future__ import annotations
 
@@ -55,19 +55,29 @@ class ScenarioSyncSession:
     config: RemoteConnectionConfig
     provider: ScenarioSyncProvider
     state: RemoteConnectionSessionState = RemoteConnectionSessionState.OPEN
+    _connect_emitted: bool = False
+
+    def _emit_connect_if_needed(
+        self,
+        progress_callback: Callable[[SyncProgressEvent], None] | None,
+    ) -> None:
+        if self._connect_emitted or progress_callback is None:
+            return
+        progress_callback(
+            SyncProgressEvent(
+                stage=SyncProgressStage.LISTING_REMOTE,
+                message="Connecting through the behave sync provider session.",
+                command_text=f"SFTP CONNECT {self.config.host}:{self.config.port}",
+            )
+        )
+        self._connect_emitted = True
 
     def iter_remote_files(
         self,
         progress_callback: Callable[[SyncProgressEvent], None] | None = None,
     ) -> Iterable[RemoteSyncFile]:
         if progress_callback is not None:
-            progress_callback(
-                SyncProgressEvent(
-                    stage=SyncProgressStage.LISTING_REMOTE,
-                    message="Connecting through the behave sync provider session.",
-                    command_text=f"SFTP CONNECT {self.config.host}:{self.config.port}",
-                )
-            )
+            self._emit_connect_if_needed(progress_callback)
             progress_callback(
                 SyncProgressEvent(
                     stage=SyncProgressStage.LISTING_REMOTE,
@@ -93,6 +103,7 @@ class ScenarioSyncSession:
         progress_callback: Callable[[SyncProgressEvent], None] | None = None,
     ) -> bytes:
         if progress_callback is not None:
+            self._emit_connect_if_needed(progress_callback)
             progress_callback(
                 SyncProgressEvent(
                     stage=SyncProgressStage.DOWNLOADING_FILE,
@@ -101,6 +112,44 @@ class ScenarioSyncSession:
                 )
             )
         return self.provider.file_contents_by_path[remote_path]
+
+    def ensure_remote_directory(
+        self,
+        remote_path: str,
+        progress_callback: Callable[[SyncProgressEvent], None] | None = None,
+    ) -> int:
+        if progress_callback is not None:
+            self._emit_connect_if_needed(progress_callback)
+            progress_callback(
+                SyncProgressEvent(
+                    stage=SyncProgressStage.PREPARING_REMOTE,
+                    message=f"Preparing remote directory {remote_path}.",
+                    command_text=f"SFTP MKDIR {remote_path}",
+                )
+            )
+        self.provider.created_remote_directories.append(remote_path)
+        return 1
+
+    def upload_file(
+        self,
+        remote_path: str,
+        contents: bytes,
+        progress_callback: Callable[[SyncProgressEvent], None] | None = None,
+    ) -> None:
+        if progress_callback is not None:
+            self._emit_connect_if_needed(progress_callback)
+            progress_callback(
+                SyncProgressEvent(
+                    stage=SyncProgressStage.UPLOADING_FILE,
+                    message=f"Uploading {remote_path} through the behave sync session.",
+                    command_text=f"SFTP PUT {remote_path}",
+                )
+            )
+        host = self.config.host
+        if host in self.provider.upload_failing_hosts:
+            msg = self.provider.upload_failing_hosts[host]
+            raise OSError(msg)
+        self.provider.uploaded_file_contents[remote_path] = contents
 
     def close(
         self,
@@ -132,6 +181,9 @@ class ScenarioSyncProvider:
     file_contents_by_path: dict[str, bytes] = field(default_factory=dict)
     failing_hosts: dict[str, str] = field(default_factory=dict)
     failing_hosts_with_error_codes: dict[str, tuple[str, str]] = field(default_factory=dict)
+    uploaded_file_contents: dict[str, bytes] = field(default_factory=dict)
+    upload_failing_hosts: dict[str, str] = field(default_factory=dict)
+    created_remote_directories: list[str] = field(default_factory=list)
 
     def test_connection(
         self,
@@ -198,6 +250,31 @@ class ScenarioSyncProvider:
                 )
             )
         return self.file_contents_by_path[remote_path]
+
+    def ensure_remote_directory(
+        self,
+        config: RemoteConnectionConfig,
+        remote_path: str,
+        progress_callback: Callable[[SyncProgressEvent], None] | None = None,
+    ) -> int:
+        session = self.open_session(config)
+        try:
+            return session.ensure_remote_directory(remote_path, progress_callback)
+        finally:
+            session.close(progress_callback)
+
+    def upload_file(
+        self,
+        config: RemoteConnectionConfig,
+        remote_path: str,
+        contents: bytes,
+        progress_callback: Callable[[SyncProgressEvent], None] | None = None,
+    ) -> None:
+        session = self.open_session(config)
+        try:
+            session.upload_file(remote_path, contents, progress_callback)
+        finally:
+            session.close(progress_callback)
 
 
 class BehaveSyncContext(Protocol):
@@ -286,6 +363,22 @@ def step_project_has_remote_files(context: object, project_key: str) -> None:
     )
 
 
+@given('the registered project "{project_key}" has local files available for upload')
+def step_project_has_local_files_for_upload(context: object, project_key: str) -> None:
+    typed_context = _context(context)
+    local_root = _create_project(
+        typed_context,
+        project_key=project_key,
+        local_directory_name="marketing-site-upload",
+        connection_type="sftp",
+        remote_host="upload.example.test",
+    )
+    (local_root / "locale").mkdir(parents=True, exist_ok=True)
+    (local_root / "templates").mkdir(parents=True, exist_ok=True)
+    (local_root / "locale" / "es.po").write_text('msgid "hola"\n', encoding="utf-8")
+    (local_root / "templates" / "home.html").write_text("<h1>Hola</h1>\n", encoding="utf-8")
+
+
 @given('the registered project "{project_key}" has no remote connection')
 def step_project_without_remote_connection(context: object, project_key: str) -> None:
     typed_context = _context(context)
@@ -342,6 +435,36 @@ def step_project_empty_remote(context: object, project_key: str) -> None:
     )
 
 
+@given('the registered project "{project_key}" fails while uploading local files')
+def step_project_upload_failure(context: object, project_key: str) -> None:
+    typed_context = _context(context)
+    typed_context.sync_provider.upload_failing_hosts["upload-broken.example.test"] = (
+        "Upload failed for /srv/app/locale/es.po."
+    )
+    local_root = _create_project(
+        typed_context,
+        project_key=project_key,
+        local_directory_name="broken-upload-site",
+        connection_type="sftp",
+        remote_host="upload-broken.example.test",
+    )
+    (local_root / "locale").mkdir(parents=True, exist_ok=True)
+    (local_root / "locale" / "es.po").write_text('msgid "hola"\n', encoding="utf-8")
+
+
+@given('the registered project "{project_key}" has an empty local source')
+def step_project_empty_local_source(context: object, project_key: str) -> None:
+    typed_context = _context(context)
+    local_root = _create_project(
+        typed_context,
+        project_key=project_key,
+        local_directory_name="empty-local-site",
+        connection_type="sftp",
+        remote_host="empty-upload.example.test",
+    )
+    local_root.mkdir(parents=True, exist_ok=True)
+
+
 @then("the sync panel reports {downloaded_files:d} downloaded files")
 def step_assert_downloaded_files(context: object, downloaded_files: int) -> None:
     typed_context = _context(context)
@@ -363,11 +486,31 @@ def step_assert_sync_screen(context: object) -> None:
     assert "Files: 2" in typed_context.sync_screen._summary_label.text
 
 
+@then("the sync panel reports {uploaded_files:d} uploaded files")
+def step_assert_uploaded_files(context: object, uploaded_files: int) -> None:
+    typed_context = _context(context)
+    assert typed_context.shell.sync_state is not None
+    assert typed_context.shell.sync_state.files_synced == uploaded_files
+
+
+@then("the sync screen shows the uploaded file count")
+def step_assert_sync_screen_uploaded_files(context: object) -> None:
+    typed_context = _context(context)
+    typed_context.sync_screen.refresh()
+    assert "Files: 2" in typed_context.sync_screen._summary_label.text
+
+
 @when("the operator starts the sync workflow from the project detail screen")
 def step_start_sync_from_detail_screen(context: object) -> None:
     typed_context = _context(context)
     typed_context.sync_root.current = "project_detail"
     typed_context.detail_screen._start_sync()
+
+
+@when("the operator starts the local to remote sync workflow")
+def step_start_local_to_remote_sync(context: object) -> None:
+    typed_context = _context(context)
+    typed_context.shell.start_sync_to_remote()
 
 
 @then("the sync progress window is open")
@@ -510,7 +653,7 @@ def _create_project(
     local_directory_name: str,
     connection_type: str,
     remote_host: str,
-) -> None:
+) -> Path:
     local_root = Path(context.settings_temp_dir.name) / "workspace" / local_directory_name
     context.shell.open_project_editor_create()
     context.shell.save_new_project(
@@ -532,6 +675,7 @@ def _create_project(
     context.shell.open_projects()
     created_project = context.shell.projects_state.projects[-1]
     context.project_ids[project_key] = created_project.id
+    return local_root
 
 
 @when('the operator opens the synced detail for project "{project_id}"')

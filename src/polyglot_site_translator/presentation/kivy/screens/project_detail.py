@@ -26,6 +26,7 @@ class ProjectDetailScreen(BaseShellScreen):
         self.add_nav_button("Back to Projects", self._back_to_projects)
         self.add_nav_button("Edit Project", self._edit_project, primary=False)
         self.add_nav_button("Sync Remote", self._start_sync)
+        self.add_nav_button("Sync Local to Remote", self._start_sync_to_remote)
         self.add_nav_button("Run Audit", self._start_audit)
         self.add_nav_button("Process PO", self._start_po_processing)
         self._detail_label = WrappedLabel(font_size=15)
@@ -39,6 +40,12 @@ class ProjectDetailScreen(BaseShellScreen):
 
     def _start_sync(self, *_args: object) -> None:
         self._shell.start_sync_async()
+        if self._sync_progress_popup is None:
+            self._sync_progress_popup = SyncProgressPopup(shell=self._shell)
+        self._sync_progress_popup.open_for_sync()
+
+    def _start_sync_to_remote(self, *_args: object) -> None:
+        self._shell.start_sync_to_remote_async()
         if self._sync_progress_popup is None:
             self._sync_progress_popup = SyncProgressPopup(shell=self._shell)
         self._sync_progress_popup.open_for_sync()

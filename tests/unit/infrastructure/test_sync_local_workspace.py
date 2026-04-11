@@ -71,3 +71,51 @@ def test_local_sync_workspace_stops_counting_at_self_parent_roots() -> None:
 
     assert created_segments == 1
     assert root_path.mkdir_calls == [(True, True)]
+
+
+def test_local_sync_workspace_lists_local_files_recursively(tmp_path: Path) -> None:
+    workspace = LocalSyncWorkspace()
+    local_root = tmp_path / "workspace" / "site"
+    workspace.ensure_directory(local_root / "locale")
+    workspace.ensure_directory(local_root / "templates")
+    (local_root / "locale" / "es.po").write_text("hola", encoding="utf-8")
+    (local_root / "templates" / "home.html").write_text("<h1>Hola</h1>", encoding="utf-8")
+
+    local_files = list(workspace.iter_local_files(local_root))
+
+    assert [local_file.relative_path for local_file in local_files] == [
+        "locale/es.po",
+        "templates/home.html",
+    ]
+    assert [local_file.local_path for local_file in local_files] == [
+        local_root / "locale" / "es.po",
+        local_root / "templates" / "home.html",
+    ]
+
+
+def test_local_sync_workspace_reads_local_file_bytes(tmp_path: Path) -> None:
+    workspace = LocalSyncWorkspace()
+    target_file = tmp_path / "workspace" / "site" / "locale" / "es.po"
+    workspace.ensure_directory(target_file.parent)
+    target_file.write_bytes(b'msgid "hello"\n')
+
+    payload = workspace.read_file(target_file)
+
+    assert payload == b'msgid "hello"\n'
+
+
+def test_local_sync_workspace_returns_no_local_files_for_missing_roots(tmp_path: Path) -> None:
+    workspace = LocalSyncWorkspace()
+
+    local_files = list(workspace.iter_local_files(tmp_path / "missing"))
+
+    assert local_files == []
+
+
+def test_local_sync_workspace_rejects_non_directory_roots(tmp_path: Path) -> None:
+    workspace = LocalSyncWorkspace()
+    occupied_path = tmp_path / "not-a-directory"
+    occupied_path.write_text("occupied", encoding="utf-8")
+
+    with pytest.raises(OSError, match="Local sync root is not a directory"):
+        list(workspace.iter_local_files(occupied_path))

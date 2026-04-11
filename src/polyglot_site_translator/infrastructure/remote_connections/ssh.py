@@ -160,6 +160,81 @@ class _SshRemoteConnectionSession(BaseRemoteConnectionSession):
                 remote_path=remote_path,
             ) from error
 
+    def _ensure_remote_directory(
+        self,
+        remote_path: str,
+        progress_callback: SyncProgressCallback | None,
+    ) -> int:
+        if self._sftp_client is None:
+            msg = "SFTP client is not open."
+            raise RemoteConnectionOperationError(
+                error_code="remote_session_not_open",
+                message=msg,
+            )
+        normalized_path = posixpath.normpath(remote_path)
+        if normalized_path == "/":
+            return 0
+        created_segments = 0
+        current_path = ""
+        for segment in [part for part in normalized_path.split("/") if part]:
+            current_path = f"{current_path}/{segment}" if current_path else f"/{segment}"
+            try:
+                self._sftp_client.stat(current_path)
+            except OSError:
+                try:
+                    _emit_progress(
+                        progress_callback,
+                        SyncProgressEvent(
+                            stage=SyncProgressStage.PREPARING_REMOTE,
+                            message=f"Creating remote directory {current_path}.",
+                            command_text=f"{self._transport_label} MKDIR {current_path}",
+                        ),
+                    )
+                    self._sftp_client.mkdir(current_path)
+                    created_segments += 1
+                except OSError as error:
+                    raise _normalize_ssh_operation_error(
+                        error,
+                        default_code="remote_directory_failed",
+                        operation="create remote directory",
+                        remote_path=current_path,
+                    ) from error
+        return created_segments
+
+    def _upload_file(
+        self,
+        remote_path: str,
+        contents: bytes,
+        progress_callback: SyncProgressCallback | None,
+    ) -> None:
+        if self._sftp_client is None:
+            msg = "SFTP client is not open."
+            raise RemoteConnectionOperationError(
+                error_code="remote_session_not_open",
+                message=msg,
+            )
+        try:
+            _emit_progress(
+                progress_callback,
+                SyncProgressEvent(
+                    stage=SyncProgressStage.UPLOADING_FILE,
+                    message=f"Uploading local file into {remote_path}.",
+                    command_text=f"{self._transport_label} PUT {remote_path}",
+                ),
+            )
+            remote_file = self._sftp_client.file(remote_path, mode="wb")
+            try:
+                remote_file.write(contents)
+            finally:
+                remote_file.close()
+        except OSError as error:
+            raise _normalize_ssh_operation_error(
+                error,
+                default_code="upload_failed",
+                operation="upload local file",
+                remote_path=remote_path,
+            ) from error
+
     def _close(self, progress_callback: SyncProgressCallback | None) -> None:
         _emit_progress(
             progress_callback,

@@ -17,7 +17,7 @@ class SyncProgressPopup(Popup):  # type: ignore[misc]
 
     def __init__(self, *, shell: FrontendShell) -> None:
         super().__init__(
-            title="Remote Sync Progress",
+            title="Sync Progress",
             size_hint=(0.92, 0.85),
             auto_dismiss=False,
         )
@@ -72,7 +72,7 @@ class SyncProgressPopup(Popup):  # type: ignore[misc]
             self._trust_host_key_button.opacity = 0
             self._command_log_label.text = "Waiting for sync commands."
             return
-        self.title = f"Remote Sync Progress: {state.project_name}"
+        self.title = f"Sync Progress: {state.project_name}"
         self._status_label.text = f"Status: {state.status}"
         self._message_label.text = state.message
         progress_max = state.progress_total if state.progress_total > 0 else 1

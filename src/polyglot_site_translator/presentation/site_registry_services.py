@@ -30,7 +30,11 @@ from polyglot_site_translator.domain.site_registry.models import (
     RegisteredSite,
     SiteRegistrationInput,
 )
-from polyglot_site_translator.domain.sync.models import SyncProgressEvent, SyncResult
+from polyglot_site_translator.domain.sync.models import (
+    SyncDirection,
+    SyncProgressEvent,
+    SyncResult,
+)
 from polyglot_site_translator.infrastructure.database_location import (
     resolve_sqlite_database_location,
 )
@@ -83,6 +87,13 @@ class ProjectSyncWorkflowService(Protocol):
         progress_callback: Callable[[SyncProgressEvent], None] | None = None,
     ) -> SyncResult:
         """Synchronize the remote project into the local workspace."""
+
+    def sync_local_to_remote(
+        self,
+        site: RegisteredSite,
+        progress_callback: Callable[[SyncProgressEvent], None] | None = None,
+    ) -> SyncResult:
+        """Synchronize the local workspace into the remote project."""
 
 
 class SiteRegistryPresentationCatalogService(ProjectCatalogService):
@@ -263,6 +274,26 @@ class SiteRegistryPresentationWorkflowService(ProjectWorkflowService):
         ) as error:
             raise ControlledServiceError(str(error)) from error
         result = self._project_sync_service.sync_remote_to_local(
+            site,
+            progress_callback=progress_callback,
+        )
+        return _build_sync_status(result)
+
+    def start_sync_to_remote(
+        self,
+        project_id: str,
+        progress_callback: Callable[[SyncProgressEvent], None] | None = None,
+    ) -> SyncStatusViewModel:
+        """Run local-to-remote sync for the selected project."""
+        try:
+            site = self._service.get_site(project_id)
+        except (
+            SiteRegistryNotFoundError,
+            SiteRegistryPersistenceError,
+            SiteRegistryConfigurationError,
+        ) as error:
+            raise ControlledServiceError(str(error)) from error
+        result = self._project_sync_service.sync_local_to_remote(
             site,
             progress_callback=progress_callback,
         )
@@ -505,7 +536,15 @@ def _build_metadata_summary(
 
 def _build_sync_status(result: SyncResult) -> SyncStatusViewModel:
     if result.success:
-        if result.summary.files_downloaded == 0:
+        if result.direction is SyncDirection.LOCAL_TO_REMOTE:
+            if result.summary.files_uploaded == 0:
+                summary = "Local workspace is empty. No files were uploaded."
+            else:
+                summary = (
+                    f"Uploaded {result.summary.files_uploaded} files from {result.local_path} "
+                    "into the remote workspace."
+                )
+        elif result.summary.files_downloaded == 0:
             summary = "Remote workspace is empty. No files were downloaded."
         else:
             summary = (
@@ -513,7 +552,11 @@ def _build_sync_status(result: SyncResult) -> SyncStatusViewModel:
             )
         return SyncStatusViewModel(
             status="completed",
-            files_synced=result.summary.files_downloaded,
+            files_synced=(
+                result.summary.files_uploaded
+                if result.direction is SyncDirection.LOCAL_TO_REMOTE
+                else result.summary.files_downloaded
+            ),
             summary=summary,
             error_code=None,
         )
@@ -529,7 +572,11 @@ def _build_sync_status(result: SyncResult) -> SyncStatusViewModel:
         error_code = error.code
     return SyncStatusViewModel(
         status="failed",
-        files_synced=result.summary.files_downloaded,
+        files_synced=(
+            result.summary.files_uploaded
+            if result.direction is SyncDirection.LOCAL_TO_REMOTE
+            else result.summary.files_downloaded
+        ),
         summary=error_message,
         error_code=error_code,
     )

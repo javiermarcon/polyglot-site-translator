@@ -155,15 +155,16 @@ The frontend baseline now also includes:
 - an explicit SSH host-key trust popup during sync for unknown SFTP/SCP hosts, with strict verification on by default and TOFU auto-add only after user confirmation
 - encrypted-at-rest remote passwords through a local key file stored alongside app config
 - migration of legacy `ftp_*` columns into a related remote-connection table without decrypting stored ciphertext during migration
-- a first real remote-to-local sync service that reuses the discoverable remote provider registry
-- reusable remote provider sessions with explicit state for connect/list/download/close across a full sync run
+- a real bidirectional sync service that reuses the discoverable remote provider registry
+- reusable remote provider sessions with explicit state for connect/list/download/upload/close across a full sync run
 - remote connection tests and sync failures report operation/project/protocol/host/port/path-specific errors instead of raw generic transport messages
 - typed sync direction, remote file descriptors, summaries, results, and controlled sync errors
 - typed sync progress events used to drive a background execution popup in the frontend
-- local workspace preparation and file writes isolated in infrastructure for sync workflows
-- a dedicated sync progress window opened from Project Detail so remote transfers do not block the Kivy UI thread
+- local workspace preparation, local file discovery/reads, and file writes isolated in infrastructure for sync workflows
+- a dedicated sync progress window opened from Project Detail so download/upload transfers do not block the Kivy UI thread
 - a bounded sync command log that keeps only the latest configured operations in memory
 - incremental remote sync downloads so large FTP/SFTP trees can begin writing local files before remote discovery fully completes
+- incremental local-to-remote uploads with automatic remote directory preparation and one reusable remote session per sync run
 - a real adapter registry for framework detection with typed results
 - dynamic adapter discovery from the `adapters/` package at runtime
 - concrete WordPress, Django, and Flask detection adapters

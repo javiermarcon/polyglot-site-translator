@@ -61,6 +61,28 @@ class _BlockingWorkflowService:
     def trust_remote_host_key(self, project_id: str) -> RemoteConnectionTestResultViewModel:
         return build_seeded_services().workflows.trust_remote_host_key(project_id)
 
+    def start_sync_to_remote(
+        self,
+        project_id: str,
+        progress_callback: Callable[[SyncProgressEvent], None] | None = None,
+    ) -> SyncStatusViewModel:
+        if progress_callback is not None:
+            progress_callback(
+                SyncProgressEvent(
+                    stage=SyncProgressStage.LISTING_LOCAL,
+                    message="Listing local files in the blocking workflow test.",
+                    command_text="LOCAL LIST /workspace/marketing-site",
+                )
+            )
+        self.started.set()
+        self.release.wait(timeout=1)
+        return SyncStatusViewModel(
+            status="completed",
+            files_synced=1,
+            summary="Uploaded 1 files into /srv/app.",
+            error_code=None,
+        )
+
     def start_audit(self, project_id: str) -> AuditSummaryViewModel:
         return build_seeded_services().workflows.start_audit(project_id)
 
@@ -88,6 +110,22 @@ class _FailingBackgroundWorkflowService:
 
     def trust_remote_host_key(self, project_id: str) -> RemoteConnectionTestResultViewModel:
         return build_seeded_services().workflows.trust_remote_host_key(project_id)
+
+    def start_sync_to_remote(
+        self,
+        project_id: str,
+        progress_callback: Callable[[SyncProgressEvent], None] | None = None,
+    ) -> SyncStatusViewModel:
+        if progress_callback is not None:
+            progress_callback(
+                SyncProgressEvent(
+                    stage=SyncProgressStage.LISTING_LOCAL,
+                    message="Listing local files before upload.",
+                    command_text="LOCAL LIST /workspace/broken-site",
+                )
+            )
+        msg = "Temporary failure in name resolution"
+        raise AttributeError(msg)
 
     def start_audit(self, project_id: str) -> AuditSummaryViewModel:
         return build_seeded_services().workflows.start_audit(project_id)
@@ -155,6 +193,19 @@ def test_sync_action_uses_fake_service_and_updates_state() -> None:
     assert shell.sync_state is not None
     assert shell.sync_state.status == "completed"
     assert shell.sync_state.files_synced == 12
+    assert shell.latest_error is None
+
+
+def test_local_to_remote_sync_action_uses_fake_service_and_updates_state() -> None:
+    shell = create_frontend_shell(build_seeded_services())
+
+    shell.open_projects()
+    shell.select_project("wp-site")
+    shell.start_sync_to_remote()
+
+    assert shell.sync_state is not None
+    assert shell.sync_state.status == "completed"
+    assert shell.sync_state.files_synced == 7
     assert shell.latest_error is None
 
 

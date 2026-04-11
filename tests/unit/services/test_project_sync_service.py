@@ -1,4 +1,4 @@
-"""Unit tests for remote-to-local sync orchestration."""
+"""Unit tests for project sync orchestration."""
 
 from __future__ import annotations
 
@@ -41,6 +41,22 @@ class StubSyncSession:
     provider: StubSyncProvider
     state: RemoteConnectionSessionState = RemoteConnectionSessionState.OPEN
     close_calls: int = 0
+    _connect_emitted: bool = False
+
+    def _emit_connect_if_needed(
+        self,
+        progress_callback: Callable[[SyncProgressEvent], None] | None,
+    ) -> None:
+        if self._connect_emitted or progress_callback is None:
+            return
+        progress_callback(
+            SyncProgressEvent(
+                stage=SyncProgressStage.LISTING_REMOTE,
+                message="Connecting through the sync test stub session.",
+                command_text=f"SFTP CONNECT {self.config.host}:{self.config.port}",
+            )
+        )
+        self._connect_emitted = True
 
     def iter_remote_files(
         self,
@@ -48,13 +64,7 @@ class StubSyncSession:
     ) -> Iterable[RemoteSyncFile]:
         self.provider.session_events.append("iter")
         if progress_callback is not None:
-            progress_callback(
-                SyncProgressEvent(
-                    stage=SyncProgressStage.LISTING_REMOTE,
-                    message="Listing remote files through the sync test stub session.",
-                    command_text=f"SFTP CONNECT {self.config.host}:{self.config.port}",
-                )
-            )
+            self._emit_connect_if_needed(progress_callback)
             progress_callback(
                 SyncProgressEvent(
                     stage=SyncProgressStage.LISTING_REMOTE,
@@ -79,6 +89,7 @@ class StubSyncSession:
     ) -> bytes:
         self.provider.session_events.append(f"download:{remote_path}")
         if progress_callback is not None:
+            self._emit_connect_if_needed(progress_callback)
             progress_callback(
                 SyncProgressEvent(
                     stage=SyncProgressStage.DOWNLOADING_FILE,
@@ -99,6 +110,61 @@ class StubSyncSession:
             msg = f"Download failed for {remote_path}."
             raise OSError(msg)
         return self.provider.downloaded_bytes[remote_path]
+
+    def ensure_remote_directory(
+        self,
+        remote_path: str,
+        progress_callback: Callable[[SyncProgressEvent], None] | None = None,
+    ) -> int:
+        self.provider.session_events.append(f"mkdir:{remote_path}")
+        if progress_callback is not None:
+            self._emit_connect_if_needed(progress_callback)
+            progress_callback(
+                SyncProgressEvent(
+                    stage=SyncProgressStage.PREPARING_REMOTE,
+                    message=f"Preparing remote directory {remote_path}.",
+                    command_text=f"SFTP MKDIR {remote_path}",
+                )
+            )
+        if self.provider.fail_on_mkdir == remote_path:
+            msg = f"Failed to create remote directory {remote_path}."
+            raise OSError(msg)
+        if self.provider.ensure_remote_directory_impl is not None:
+            return self.provider.ensure_remote_directory_impl(
+                self.config,
+                remote_path,
+                progress_callback,
+            )
+        return 1 if remote_path in self.provider.remote_directories_created else 0
+
+    def upload_file(
+        self,
+        remote_path: str,
+        contents: bytes,
+        progress_callback: Callable[[SyncProgressEvent], None] | None = None,
+    ) -> None:
+        self.provider.session_events.append(f"upload:{remote_path}")
+        if progress_callback is not None:
+            self._emit_connect_if_needed(progress_callback)
+            progress_callback(
+                SyncProgressEvent(
+                    stage=SyncProgressStage.UPLOADING_FILE,
+                    message=f"Uploading {remote_path} through the sync test stub session.",
+                    command_text=f"SFTP PUT {remote_path}",
+                )
+            )
+        if self.provider.fail_on_upload == remote_path:
+            msg = f"Upload failed for {remote_path}."
+            raise OSError(msg)
+        if self.provider.upload_file_impl is not None:
+            self.provider.upload_file_impl(
+                self.config,
+                remote_path,
+                contents,
+                progress_callback,
+            )
+            return
+        self.provider.uploaded_bytes[remote_path] = contents
 
     def close(
         self,
@@ -134,6 +200,8 @@ class StubSyncProvider:
     fail_on_download: str | None = None
     missing_dependency_on_list: bool = False
     missing_dependency_on_download: str | None = None
+    fail_on_mkdir: str | None = None
+    fail_on_upload: str | None = None
     iter_remote_files_impl: (
         Callable[
             [RemoteConnectionConfig, Callable[[SyncProgressEvent], None] | None],
@@ -148,11 +216,27 @@ class StubSyncProvider:
         ]
         | None
     ) = None
+    ensure_remote_directory_impl: (
+        Callable[
+            [RemoteConnectionConfig, str, Callable[[SyncProgressEvent], None] | None],
+            int,
+        ]
+        | None
+    ) = None
+    upload_file_impl: (
+        Callable[
+            [RemoteConnectionConfig, str, bytes, Callable[[SyncProgressEvent], None] | None],
+            None,
+        ]
+        | None
+    ) = None
     open_session_error: RemoteConnectionOperationError | None = None
     close_error: OSError | None = None
     open_session_calls: int = 0
     session_events: list[str] = field(default_factory=list)
     opened_sessions: list[StubSyncSession] = field(default_factory=list)
+    uploaded_bytes: dict[str, bytes] = field(default_factory=dict)
+    remote_directories_created: set[str] = field(default_factory=set)
 
     def test_connection(
         self,
@@ -222,6 +306,31 @@ class StubSyncProvider:
             msg = f"Download failed for {remote_path}."
             raise OSError(msg)
         return self.downloaded_bytes[remote_path]
+
+    def ensure_remote_directory(
+        self,
+        config: RemoteConnectionConfig,
+        remote_path: str,
+        progress_callback: Callable[[SyncProgressEvent], None] | None = None,
+    ) -> int:
+        session = self.open_session(config)
+        try:
+            return session.ensure_remote_directory(remote_path, progress_callback)
+        finally:
+            session.close(progress_callback)
+
+    def upload_file(
+        self,
+        config: RemoteConnectionConfig,
+        remote_path: str,
+        contents: bytes,
+        progress_callback: Callable[[SyncProgressEvent], None] | None = None,
+    ) -> None:
+        session = self.open_session(config)
+        try:
+            session.upload_file(remote_path, contents, progress_callback)
+        finally:
+            session.close(progress_callback)
 
 
 _DEFAULT_REMOTE = object()
@@ -832,6 +941,253 @@ def test_project_sync_service_raises_if_provider_resolution_returns_none(
         match=(r"Remote sync provider resolution unexpectedly returned None\."),
     ):
         service.sync_remote_to_local(_build_site(local_root=tmp_path))
+
+
+def test_project_sync_service_uploads_local_files_into_the_remote_workspace(
+    tmp_path: Path,
+) -> None:
+    local_root = tmp_path / "workspace" / "site"
+    (local_root / "locale").mkdir(parents=True)
+    (local_root / "templates").mkdir(parents=True)
+    (local_root / "locale" / "es.po").write_bytes(b'msgid "hola"\n')
+    (local_root / "templates" / "home.html").write_bytes(b"<h1>Hola</h1>\n")
+    provider = StubSyncProvider()
+    service = ProjectSyncService(
+        registry=RemoteConnectionRegistry.default_registry(providers=[provider])
+    )
+
+    result = service.sync_local_to_remote(_build_site(local_root=local_root))
+
+    assert result.success is True
+    assert result.direction is SyncDirection.LOCAL_TO_REMOTE
+    assert result.summary.files_discovered == 2
+    assert result.summary.files_uploaded == 2
+    assert provider.uploaded_bytes == {
+        "/srv/app/locale/es.po": b'msgid "hola"\n',
+        "/srv/app/templates/home.html": b"<h1>Hola</h1>\n",
+    }
+
+
+def test_project_sync_service_reports_progress_commands_for_local_to_remote_execution(
+    tmp_path: Path,
+) -> None:
+    local_root = tmp_path / "workspace" / "site"
+    (local_root / "locale").mkdir(parents=True)
+    (local_root / "locale" / "es.po").write_bytes(b'msgid "hola"\n')
+    provider = StubSyncProvider()
+    service = ProjectSyncService(
+        registry=RemoteConnectionRegistry.default_registry(providers=[provider])
+    )
+    events: list[SyncProgressEvent] = []
+
+    result = service.sync_local_to_remote(
+        _build_site(local_root=local_root),
+        progress_callback=events.append,
+    )
+
+    assert result.success is True
+    assert [event.command_text for event in events if event.command_text is not None] == [
+        f"LOCAL LIST {local_root}",
+        "SFTP CONNECT example.test:22",
+        "SFTP MKDIR /srv/app/locale",
+        "SFTP PUT /srv/app/locale/es.po",
+        "SFTP CLOSE example.test:22",
+    ]
+
+
+def test_project_sync_service_reuses_a_single_remote_session_for_a_multi_file_local_upload(
+    tmp_path: Path,
+) -> None:
+    local_root = tmp_path / "workspace" / "site"
+    (local_root / "locale").mkdir(parents=True)
+    (local_root / "templates").mkdir(parents=True)
+    (local_root / "locale" / "es.po").write_bytes(b"a")
+    (local_root / "templates" / "home.html").write_bytes(b"b")
+    provider = StubSyncProvider()
+    service = ProjectSyncService(
+        registry=RemoteConnectionRegistry.default_registry(providers=[provider])
+    )
+
+    result = service.sync_local_to_remote(_build_site(local_root=local_root))
+
+    assert result.success is True
+    assert provider.open_session_calls == 1
+    assert provider.session_events == [
+        "mkdir:/srv/app/locale",
+        "upload:/srv/app/locale/es.po",
+        "mkdir:/srv/app/templates",
+        "upload:/srv/app/templates/home.html",
+        "close",
+    ]
+
+
+def test_project_sync_service_rejects_local_to_remote_sync_without_remote_connections(
+    tmp_path: Path,
+) -> None:
+    service = ProjectSyncService(
+        registry=RemoteConnectionRegistry.default_registry(providers=[StubSyncProvider()])
+    )
+
+    result = service.sync_local_to_remote(_build_site(local_root=tmp_path, remote_connection=None))
+
+    assert result.success is False
+    assert result.error is not None
+    assert result.error.code == "missing_remote_connection"
+
+
+def test_project_sync_service_returns_success_for_empty_local_sources(tmp_path: Path) -> None:
+    local_root = tmp_path / "workspace" / "site"
+    local_root.mkdir(parents=True)
+    service = ProjectSyncService(
+        registry=RemoteConnectionRegistry.default_registry(providers=[StubSyncProvider()])
+    )
+
+    result = service.sync_local_to_remote(_build_site(local_root=local_root))
+
+    assert result.success is True
+    assert result.summary.files_discovered == 0
+    assert result.summary.files_uploaded == 0
+
+
+def test_project_sync_service_returns_a_controlled_result_when_local_listing_fails(
+    tmp_path: Path,
+) -> None:
+    occupied_path = tmp_path / "not-a-directory"
+    occupied_path.write_text("occupied", encoding="utf-8")
+    service = ProjectSyncService(
+        registry=RemoteConnectionRegistry.default_registry(providers=[StubSyncProvider()])
+    )
+
+    result = service.sync_local_to_remote(_build_site(local_root=occupied_path))
+
+    assert result.success is False
+    assert result.error is not None
+    assert result.error.code == "local_workspace_failed"
+
+
+def test_project_sync_service_returns_a_controlled_result_when_local_upload_session_open_fails(
+    tmp_path: Path,
+) -> None:
+    local_root = tmp_path / "workspace" / "site"
+    (local_root / "locale").mkdir(parents=True)
+    (local_root / "locale" / "es.po").write_bytes(b'msgid "hola"\n')
+    service = ProjectSyncService(
+        registry=RemoteConnectionRegistry.default_registry(
+            providers=[
+                StubSyncProvider(
+                    open_session_error=RemoteConnectionOperationError(
+                        error_code="ssh_connection_failed",
+                        message="Connection refused.",
+                    )
+                )
+            ]
+        )
+    )
+
+    result = service.sync_local_to_remote(_build_site(local_root=local_root))
+
+    assert result.success is False
+    assert result.error is not None
+    assert result.error.code == "ssh_connection_failed"
+
+
+def test_project_sync_service_returns_a_controlled_result_when_a_remote_upload_fails(
+    tmp_path: Path,
+) -> None:
+    local_root = tmp_path / "workspace" / "site"
+    (local_root / "locale").mkdir(parents=True)
+    (local_root / "locale" / "es.po").write_bytes(b'msgid "hola"\n')
+    service = ProjectSyncService(
+        registry=RemoteConnectionRegistry.default_registry(
+            providers=[StubSyncProvider(fail_on_upload="/srv/app/locale/es.po")]
+        )
+    )
+
+    result = service.sync_local_to_remote(_build_site(local_root=local_root))
+
+    assert result.success is False
+    assert result.error is not None
+    assert result.error.code == "upload_failed"
+
+
+def test_project_sync_service_returns_a_controlled_result_when_structured_remote_upload_fails(
+    tmp_path: Path,
+) -> None:
+    local_root = tmp_path / "workspace" / "site"
+    (local_root / "locale").mkdir(parents=True)
+    (local_root / "locale" / "es.po").write_bytes(b'msgid "hola"\n')
+    provider = StubSyncProvider()
+
+    def fail_upload(
+        _config: RemoteConnectionConfig,
+        remote_path: str,
+        _contents: bytes,
+        _progress_callback: Callable[[SyncProgressEvent], None] | None,
+    ) -> None:
+        raise RemoteConnectionOperationError(
+            error_code="upload_failed",
+            message=f"Structured upload failure for {remote_path}.",
+        )
+
+    provider.upload_file_impl = fail_upload
+    service = ProjectSyncService(
+        registry=RemoteConnectionRegistry.default_registry(providers=[provider])
+    )
+
+    result = service.sync_local_to_remote(_build_site(local_root=local_root))
+
+    assert result.success is False
+    assert result.error is not None
+    assert result.error.code == "upload_failed"
+
+
+def test_project_sync_service_returns_a_controlled_result_when_remote_directory_creation_fails(
+    tmp_path: Path,
+) -> None:
+    local_root = tmp_path / "workspace" / "site"
+    (local_root / "locale").mkdir(parents=True)
+    (local_root / "locale" / "es.po").write_bytes(b'msgid "hola"\n')
+    service = ProjectSyncService(
+        registry=RemoteConnectionRegistry.default_registry(
+            providers=[StubSyncProvider(fail_on_mkdir="/srv/app/locale")]
+        )
+    )
+
+    result = service.sync_local_to_remote(_build_site(local_root=local_root))
+
+    assert result.success is False
+    assert result.error is not None
+    assert result.error.code == "remote_directory_failed"
+
+
+def test_project_sync_service_returns_a_controlled_result_when_remote_directory_(
+    tmp_path: Path,
+) -> None:
+    local_root = tmp_path / "workspace" / "site"
+    (local_root / "locale").mkdir(parents=True)
+    (local_root / "locale" / "es.po").write_bytes(b'msgid "hola"\n')
+    provider = StubSyncProvider()
+
+    def fail_mkdir(
+        _config: RemoteConnectionConfig,
+        remote_path: str,
+        _progress_callback: Callable[[SyncProgressEvent], None] | None,
+    ) -> int:
+        raise RemoteConnectionOperationError(
+            error_code="remote_directory_failed",
+            message=f"Structured mkdir failure for {remote_path}.",
+        )
+
+    provider.ensure_remote_directory_impl = fail_mkdir
+    service = ProjectSyncService(
+        registry=RemoteConnectionRegistry.default_registry(providers=[provider])
+    )
+
+    result = service.sync_local_to_remote(_build_site(local_root=local_root))
+
+    assert result.success is False
+    assert result.error is not None
+    assert result.error.code == "remote_directory_failed"
 
 
 def _build_site(

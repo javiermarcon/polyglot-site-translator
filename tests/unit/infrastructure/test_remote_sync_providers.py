@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 from dataclasses import dataclass
 from types import SimpleNamespace
 from typing import Any, cast
@@ -33,6 +33,8 @@ class _ListBackedSession:
     files: list[RemoteSyncFile]
     state: RemoteConnectionSessionState = RemoteConnectionSessionState.OPEN
     close_calls: int = 0
+    uploaded_files: dict[str, bytes] | None = None
+    created_directories: list[str] | None = None
 
     def iter_remote_files(self, progress_callback: Any = None) -> Iterator[RemoteSyncFile]:
         return iter(self.files)
@@ -40,6 +42,22 @@ class _ListBackedSession:
     def download_file(self, remote_path: str, progress_callback: Any = None) -> bytes:
         msg = f"download not used in this test for {remote_path}"
         raise AssertionError(msg)
+
+    def ensure_remote_directory(self, remote_path: str, progress_callback: Any = None) -> int:
+        if self.created_directories is None:
+            self.created_directories = []
+        self.created_directories.append(remote_path)
+        return 1
+
+    def upload_file(
+        self,
+        remote_path: str,
+        contents: bytes,
+        progress_callback: Any = None,
+    ) -> None:
+        if self.uploaded_files is None:
+            self.uploaded_files = {}
+        self.uploaded_files[remote_path] = contents
 
     def close(self, progress_callback: Any = None) -> None:
         self.close_calls += 1
@@ -76,6 +94,17 @@ class _ControlledBaseSession(BaseRemoteConnectionSession):
 
     def _download_file(self, remote_path: str, progress_callback: Any = None) -> bytes:
         return remote_path.encode()
+
+    def _ensure_remote_directory(self, remote_path: str, progress_callback: Any = None) -> int:
+        return 1
+
+    def _upload_file(
+        self,
+        remote_path: str,
+        contents: bytes,
+        progress_callback: Any = None,
+    ) -> None:
+        return None
 
     def _close(self, progress_callback: Any = None) -> None:
         self.close_calls += 1
@@ -118,6 +147,17 @@ class _FakeFtpClient:
     listing: dict[str, list[tuple[str, dict[str, str]]]]
     file_bytes: dict[str, bytes]
     fail_on_retrbinary: str | None = None
+    existing_directories: set[str] | None = None
+
+    def __post_init__(self) -> None:
+        if self.existing_directories is None:
+            self.existing_directories = set()
+            for remote_path in self.listing:
+                current_path = remote_path
+                while current_path and current_path != "/":
+                    self.existing_directories.add(current_path)
+                    current_path = current_path.rsplit("/", 1)[0] or "/"
+                self.existing_directories.add("/")
 
     def connect(self, *, host: str, port: int, timeout: int) -> None:
         self.actions.append(f"connect:{host}:{port}:{timeout}")
@@ -127,6 +167,9 @@ class _FakeFtpClient:
 
     def cwd(self, remote_path: str) -> None:
         self.actions.append(f"cwd:{remote_path}")
+        if self.existing_directories is None or remote_path not in self.existing_directories:
+            msg = f"missing directory {remote_path}"
+            raise OSError(msg)
 
     def mlsd(self, remote_path: str) -> list[tuple[str, dict[str, str]]]:
         self.actions.append(f"mlsd:{remote_path}")
@@ -139,6 +182,19 @@ class _FakeFtpClient:
             msg = f"download failed for {remote_path}"
             raise OSError(msg)
         callback(self.file_bytes[remote_path])
+
+    def mkd(self, remote_path: str) -> str:
+        self.actions.append(f"mkd:{remote_path}")
+        if self.existing_directories is None:
+            self.existing_directories = set()
+        self.existing_directories.add(remote_path)
+        return remote_path
+
+    def storbinary(self, command: str, payload: Any) -> str:
+        self.actions.append(f"storbinary:{command}")
+        remote_path = command.replace("STOR ", "", 1)
+        self.file_bytes[remote_path] = cast(bytes, payload.read())
+        return "226 Transfer complete"
 
     def quit(self) -> None:
         self.actions.append("quit")
@@ -583,6 +639,34 @@ def test_sftp_provider_reuses_one_session_for_listing_and_multiple_downloads(
     ]
 
 
+def test_sftp_provider_creates_remote_directories_and_uploads_bytes(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    sftp_client = _FakeSftpClient(
+        listing={"/srv/app": []},
+        file_bytes={},
+    )
+    ssh_client = _FakeSshClient(sftp_client)
+    monkeypatch.setattr(ssh, "_connect_ssh_client", lambda config: ssh_client)
+    provider = ssh.SFTPRemoteConnectionProvider()
+
+    directories_created = provider.ensure_remote_directory(
+        _build_ssh_config(),
+        "/srv/app/locale/es",
+    )
+    provider.upload_file(
+        _build_ssh_config(),
+        "/srv/app/locale/es/messages.po",
+        b'msgid "hola"\n',
+    )
+
+    assert directories_created == 2
+    assert sftp_client._file_bytes["/srv/app/locale/es/messages.po"] == b'msgid "hola"\n'
+    assert "mkdir:/srv/app/locale" in sftp_client.actions
+    assert "mkdir:/srv/app/locale/es" in sftp_client.actions
+    assert "file:/srv/app/locale/es/messages.po:wb" in sftp_client.actions
+
+
 def test_sftp_session_wraps_open_sftp_failures(monkeypatch: pytest.MonkeyPatch) -> None:
     class _OpenSftpFailingSshClient(_FakeSshClient):
         def open_sftp(self) -> _FakeSftpClient:
@@ -612,6 +696,20 @@ def test_sftp_session_rejects_download_without_open_client() -> None:
 
     with pytest.raises(RemoteConnectionOperationError, match="SFTP client is not open"):
         session._download_file("/srv/app/messages.po", None)
+
+
+def test_sftp_session_rejects_remote_directory_creation_without_open_client() -> None:
+    session = ssh.SFTPRemoteConnectionProvider().open_session(_build_ssh_config())
+
+    with pytest.raises(RemoteConnectionOperationError, match="SFTP client is not open"):
+        session._ensure_remote_directory("/srv/app/locale", None)
+
+
+def test_sftp_session_rejects_upload_without_open_client() -> None:
+    session = ssh.SFTPRemoteConnectionProvider().open_session(_build_ssh_config())
+
+    with pytest.raises(RemoteConnectionOperationError, match="SFTP client is not open"):
+        session._upload_file("/srv/app/locale/es.po", b"payload", None)
 
 
 def test_sftp_session_wraps_incremental_listing_errors(
@@ -690,6 +788,61 @@ def test_ftp_provider_downloads_remote_file_bytes(monkeypatch: pytest.MonkeyPatc
     ]
 
 
+def test_ftp_provider_creates_remote_directories_and_uploads_bytes(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    actions: list[str] = []
+    fake_client = _FakeFtpClient(
+        actions=actions,
+        listing={"/srv/app": []},
+        file_bytes={},
+    )
+    provider = ftp.FTPRemoteConnectionProvider()
+    monkeypatch.setattr(provider, "_build_client", lambda: fake_client)
+
+    directories_created = provider.ensure_remote_directory(
+        _build_ftp_config(),
+        "/srv/app/locale/es",
+    )
+    provider.upload_file(
+        _build_ftp_config(),
+        "/srv/app/locale/es/messages.po",
+        b'msgid "hola"\n',
+    )
+
+    assert directories_created == 2
+    assert fake_client.file_bytes["/srv/app/locale/es/messages.po"] == b'msgid "hola"\n'
+    assert "mkd:/srv/app/locale" in actions
+    assert "mkd:/srv/app/locale/es" in actions
+    assert "storbinary:STOR /srv/app/locale/es/messages.po" in actions
+
+
+def test_ftp_session_returns_zero_for_root_remote_directories(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    fake_client = _FakeFtpClient(actions=[], listing={"/": []}, file_bytes={})
+    provider = ftp.FTPRemoteConnectionProvider()
+    monkeypatch.setattr(provider, "_build_client", lambda: fake_client)
+    session = provider.open_session(_build_ftp_config())
+
+    directories_created = session.ensure_remote_directory("/")
+
+    assert directories_created == 0
+
+
+def test_sftp_session_returns_zero_for_root_remote_directories(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    sftp_client = _FakeSftpClient(listing={"/": []}, file_bytes={})
+    ssh_client = _FakeSshClient(sftp_client)
+    monkeypatch.setattr(ssh, "_connect_ssh_client", lambda config: ssh_client)
+    session = ssh.SFTPRemoteConnectionProvider().open_session(_build_ssh_config())
+
+    directories_created = session.ensure_remote_directory("/")
+
+    assert directories_created == 0
+
+
 def test_ftp_provider_wraps_download_failures_as_os_errors(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -739,13 +892,12 @@ def test_implicit_ftps_provider_downloads_remote_file(monkeypatch: pytest.Monkey
 def test_ftp_provider_wraps_listing_failures_as_os_errors(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    fake_client = _FakeFtpClient(actions=[], listing={}, file_bytes={})
+    class _ListingFailingFtpClient(_FakeFtpClient):
+        def mlsd(self, remote_path: str) -> list[tuple[str, dict[str, str]]]:
+            msg = f"listing failed for {remote_path}"
+            raise OSError(msg)
 
-    def _failing_mlsd(remote_path: str) -> list[tuple[str, dict[str, str]]]:
-        msg = f"listing failed for {remote_path}"
-        raise OSError(msg)
-
-    fake_client.mlsd = _failing_mlsd  # type: ignore[method-assign]
+    fake_client = _ListingFailingFtpClient(actions=[], listing={}, file_bytes={})
     provider = ftp.FTPRemoteConnectionProvider()
     monkeypatch.setattr(provider, "_build_client", lambda: fake_client)
 
@@ -833,15 +985,32 @@ class _FakeSftpEntry:
 
 
 class _FakeRemoteFile:
-    def __init__(self, payload: bytes) -> None:
+    def __init__(
+        self,
+        payload: bytes = b"",
+        *,
+        writable: bool = False,
+        on_close: Callable[[bytes], None] | None = None,
+    ) -> None:
         self._payload = payload
+        self._writable = writable
+        self._on_close = on_close
         self.closed = False
 
     def read(self) -> bytes:
         return self._payload
 
+    def write(self, payload: bytes) -> int:
+        if not self._writable:
+            msg = "remote file opened as read-only"
+            raise OSError(msg)
+        self._payload += payload
+        return len(payload)
+
     def close(self) -> None:
         self.closed = True
+        if self._on_close is not None:
+            self._on_close(self._payload)
 
 
 class _FakeSftpClient:
@@ -852,6 +1021,12 @@ class _FakeSftpClient:
     ) -> None:
         self._listing = listing
         self._file_bytes = file_bytes
+        self._directories = {"/"}
+        for remote_path in listing:
+            current_path = remote_path
+            while current_path and current_path != "/":
+                self._directories.add(current_path)
+                current_path = current_path.rsplit("/", 1)[0] or "/"
         self.actions: list[str] = []
 
     def listdir_attr(self, remote_path: str) -> list[_FakeSftpEntry]:
@@ -860,10 +1035,27 @@ class _FakeSftpClient:
 
     def file(self, remote_path: str, *, mode: str) -> _FakeRemoteFile:
         self.actions.append(f"file:{remote_path}:{mode}")
+        if mode == "wb":
+            return _FakeRemoteFile(
+                writable=True,
+                on_close=lambda payload: self._file_bytes.__setitem__(remote_path, payload),
+            )
         return _FakeRemoteFile(self._file_bytes[remote_path])
 
     def chdir(self, remote_path: str) -> None:
         self.actions.append(f"chdir:{remote_path}")
+
+    def stat(self, remote_path: str) -> _FakeSftpEntry:
+        self.actions.append(f"stat:{remote_path}")
+        if remote_path not in self._directories:
+            msg = f"missing directory {remote_path}"
+            raise OSError(msg)
+        return _FakeSftpEntry(remote_path.rsplit("/", 1)[-1], 0o040755, 0)
+
+    def mkdir(self, remote_path: str) -> None:
+        self.actions.append(f"mkdir:{remote_path}")
+        self._directories.add(remote_path)
+        self._listing.setdefault(remote_path, [])
 
     def close(self) -> None:
         self.actions.append("sftp_close")

@@ -37,6 +37,21 @@ class RemoteConnectionSession(Protocol):
     ) -> bytes:
         """Download a remote file through the existing session."""
 
+    def ensure_remote_directory(
+        self,
+        remote_path: str,
+        progress_callback: SyncProgressCallback | None = None,
+    ) -> int:
+        """Create a remote directory path and return how many segments were created."""
+
+    def upload_file(
+        self,
+        remote_path: str,
+        contents: bytes,
+        progress_callback: SyncProgressCallback | None = None,
+    ) -> None:
+        """Upload file contents through the existing session."""
+
     def close(
         self,
         progress_callback: SyncProgressCallback | None = None,
@@ -86,3 +101,20 @@ class RemoteConnectionProvider(Protocol):
         progress_callback: SyncProgressCallback | None = None,
     ) -> bytes:
         """Download a remote file and return its contents."""
+
+    def ensure_remote_directory(
+        self,
+        config: RemoteConnectionConfig,
+        remote_path: str,
+        progress_callback: SyncProgressCallback | None = None,
+    ) -> int:
+        """Create a remote directory path and return how many segments were created."""
+
+    def upload_file(
+        self,
+        config: RemoteConnectionConfig,
+        remote_path: str,
+        contents: bytes,
+        progress_callback: SyncProgressCallback | None = None,
+    ) -> None:
+        """Upload file contents to the remote workspace."""

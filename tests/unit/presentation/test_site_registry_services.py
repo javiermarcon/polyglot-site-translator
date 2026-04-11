@@ -154,6 +154,25 @@ class SuccessfulSFTPProvider:
         msg = f"download not used in this test for {remote_path}"
         raise AssertionError(msg)
 
+    def ensure_remote_directory(
+        self,
+        config: RemoteConnectionConfig,
+        remote_path: str,
+        progress_callback: Callable[[SyncProgressEvent], None] | None = None,
+    ) -> int:
+        msg = f"ensure_remote_directory not used in this test for {remote_path}"
+        raise AssertionError(msg)
+
+    def upload_file(
+        self,
+        config: RemoteConnectionConfig,
+        remote_path: str,
+        contents: bytes,
+        progress_callback: Callable[[SyncProgressEvent], None] | None = None,
+    ) -> None:
+        msg = f"upload not used in this test for {remote_path}"
+        raise AssertionError(msg)
+
 
 class SyncStub:
     """Project sync stub for workflow-constructor compatibility in audit tests."""
@@ -176,6 +195,30 @@ class SyncStub:
                 files_downloaded=0,
                 directories_created=0,
                 bytes_downloaded=0,
+            ),
+            error=None,
+        )
+
+    def sync_local_to_remote(
+        self,
+        site: RegisteredSite,
+        progress_callback: Callable[[SyncProgressEvent], None] | None = None,
+    ) -> SyncResult:
+        return SyncResult(
+            direction=SyncDirection.LOCAL_TO_REMOTE,
+            success=True,
+            project_id=site.id,
+            connection_type=(
+                site.remote_connection.connection_type if site.remote_connection else None
+            ),
+            local_path=site.local_path,
+            summary=SyncSummary(
+                files_discovered=0,
+                files_downloaded=0,
+                directories_created=0,
+                bytes_downloaded=0,
+                files_uploaded=0,
+                bytes_uploaded=0,
             ),
             error=None,
         )

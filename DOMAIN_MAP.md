@@ -43,10 +43,10 @@ Configure, validate, test, and later synchronize optional remote sources into lo
 - reusable remote session contracts and session state
 - typed sync direction and structured sync results
 - typed sync progress events and command-log reporting
-- remote file discovery descriptors
+- remote/local file discovery descriptors
 - connection validation
 - remote path handling
-- download/sync orchestration
+- download/upload sync orchestration
 - local target preparation
 
 ### Excludes

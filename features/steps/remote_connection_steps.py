@@ -83,6 +83,25 @@ class StubRemoteConnectionProvider:
         msg = f"download not used in this BDD provider for {remote_path}"
         raise AssertionError(msg)
 
+    def ensure_remote_directory(
+        self,
+        config: RemoteConnectionConfig,
+        remote_path: str,
+        progress_callback: Callable[[SyncProgressEvent], None] | None = None,
+    ) -> int:
+        msg = f"ensure_remote_directory not used in this BDD provider for {remote_path}"
+        raise AssertionError(msg)
+
+    def upload_file(
+        self,
+        config: RemoteConnectionConfig,
+        remote_path: str,
+        contents: bytes,
+        progress_callback: Callable[[SyncProgressEvent], None] | None = None,
+    ) -> None:
+        msg = f"upload not used in this BDD provider for {remote_path}"
+        raise AssertionError(msg)
+
 
 class BehaveRemoteConnectionContext(Protocol):
     """Typed subset of behave context used by the remote connection feature."""

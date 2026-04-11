@@ -60,7 +60,9 @@ Current frontend-facing service entrypoints:
 - `ProjectRegistryManagementService.update_project`
 - `ProjectRegistryManagementService.test_remote_connection`
 - `ProjectWorkflowService.start_sync`
+- `ProjectWorkflowService.start_sync_to_remote`
 - `FrontendShell.start_sync_async`
+- `FrontendShell.start_sync_to_remote_async`
 - `ProjectWorkflowService.start_audit`
 - `ProjectWorkflowService.start_po_processing`
 - `SettingsService.load_settings`
@@ -69,6 +71,7 @@ Current frontend-facing service entrypoints:
 - `polyglot_site_translator.infrastructure.settings.build_default_settings_service`
 - `polyglot_site_translator.infrastructure.settings.TomlSettingsService`
 - `polyglot_site_translator.services.project_sync.ProjectSyncService.sync_remote_to_local`
+- `polyglot_site_translator.services.project_sync.ProjectSyncService.sync_local_to_remote`
 - `polyglot_site_translator.services.remote_connections.RemoteConnectionService.list_supported_connection_types`
 - `polyglot_site_translator.services.remote_connections.RemoteConnectionService.test_connection`
 
@@ -127,6 +130,7 @@ Current settings orchestration entrypoints:
 - `FrontendShell.save_settings`
 - `FrontendShell.restore_default_settings`
 - `FrontendShell.start_sync_async` resolves the configured sync command-log limit before opening progress state for the popup
+- `FrontendShell.start_sync_to_remote_async` resolves the same limit before starting the upload popup state
 
 Current project-registry orchestration entrypoints:
 - `FrontendShell.open_project_editor_create`
@@ -135,8 +139,11 @@ Current project-registry orchestration entrypoints:
 - `FrontendShell.save_project_edits`
 - `FrontendShell.test_project_connection`
 - `FrontendShell.start_sync_async`
+- `FrontendShell.start_sync_to_remote_async`
 - `polyglot_site_translator.presentation.site_registry_services.SiteRegistryPresentationWorkflowService.start_sync`
+- `polyglot_site_translator.presentation.site_registry_services.SiteRegistryPresentationWorkflowService.start_sync_to_remote`
 - `polyglot_site_translator.services.project_sync.ProjectSyncService.sync_remote_to_local`
+- `polyglot_site_translator.services.project_sync.ProjectSyncService.sync_local_to_remote`
 - `polyglot_site_translator.domain.remote_connections.contracts.RemoteConnectionProvider.open_session`
 
 Current project-detail enrichment entrypoints:

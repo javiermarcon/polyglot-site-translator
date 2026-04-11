@@ -28,8 +28,9 @@ El repositorio está en una etapa temprana y hoy incluye principalmente:
 - subsistema real de conexiones remotas opcionales separado del proyecto
 - catálogo discoverable de tipos de conexión remota con opción explícita "No Remote Connection"
 - test de conexión estructurado para `ftp`, `ftps_explicit`, `ftps_implicit`, `sftp` y `scp`
-- primera base real de sync `remote -> local` usando la configuración remota persistida del proyecto
-- descarga real de archivos remotos al `local_path` con creación automática de directorios locales faltantes
+- sync real bidireccional sobre la conexión remota persistida del proyecto
+- descarga real `remote -> local` al `local_path` con creación automática de directorios locales faltantes
+- subida real `local -> remote` con creación automática de directorios remotos faltantes
 - resultado tipado y controlado de sync con conteo de archivos y código de error cuando falla
 - ejecución de sync en background desde Project Detail, con una ventana dedicada de progreso
 - barra de progreso y log visible de comandos remotos/locales durante el sync
@@ -45,7 +46,6 @@ El repositorio está en una etapa temprana y hoy incluye principalmente:
 
 Todavía no están implementados en forma real:
 
-- sync `local -> remote`
 - filtros de sync por adapter o por subconjuntos
 - controles de sync full/selectivo en UI
 - scanner de auditoría
@@ -80,11 +80,11 @@ La base actual implementa una base funcional de presentación, settings y `site_
 - `bootstrap.py`: wiring inicial del frontend shell
 - `domain/site_registry/`: modelos tipados, errores y contratos del dominio de site registry
 - `domain/remote_connections/`: modelos tipados, contratos y resultados estructurados de conexiones remotas
-- `domain/sync/`: dirección de sync, archivos remotos, resultados, summaries y errores explícitos
+- `domain/sync/`: dirección de sync, archivos remotos/locales, resultados, summaries y errores explícitos
 - `domain/framework_detection/`: contratos, resultados tipados y errores explícitos para detección de framework
 - `services/site_registry.py`: validación y CRUD del site registry
 - `services/remote_connections.py`: validación opcional, catálogo discoverable y test de conexión
-- `services/project_sync.py`: sync real `remote -> local` con resultados tipados, errores controlados y eventos de progreso
+- `services/project_sync.py`: sync real `remote -> local` y `local -> remote` con resultados tipados, errores controlados y eventos de progreso
 - `services/framework_detection.py`: orquestación de detección desde el registry de adapters
 - `adapters/base.py`: contrato base discoverable para nuevos adapters
 - `infrastructure/settings.py`: persistencia TOML de settings generales por usuario
@@ -92,7 +92,7 @@ La base actual implementa una base funcional de presentación, settings y `site_
 - `infrastructure/site_registry_sqlite.py`: repositorio SQLite real con schema y mapeo fila ↔ modelo
 - `infrastructure/remote_connections/`: registry discoverable y providers concretos de conexión remota
 - `infrastructure/remote_connections/base.py`: contrato base compartido para materialización acotada de listados remotos e iteración incremental completa
-- `infrastructure/sync_local.py`: preparación del workspace local y persistencia de archivos descargados durante sync
+- `infrastructure/sync_local.py`: preparación del workspace local, listado de archivos fuente y persistencia de archivos descargados durante sync
 - `infrastructure/site_secrets.py`: cifrado local de secretos persistidos del site registry
 - `adapters/framework_registry.py`: registry/resolver real de adapters con descubrimiento dinámico por paquete
 - `adapters/wordpress.py`, `adapters/django.py`, `adapters/flask.py`: detección framework-specific y evidencia estructurada
@@ -122,13 +122,13 @@ La base actual del frontend incluye:
 - Project Editor con combo dinámico de framework y combo dinámico de tipo de conexión remota
 - acción "Test Connection" en el editor, resuelta por servicios y con resultado estructurado en pantalla
 - Audit Screen con preview basado en la detección real del proyecto en vez de un conteo fijo del runtime
-- Sync Screen con wiring real de `remote -> local` y resumen estructurado del resultado
-- ventana de progreso de sync abierta desde Project Detail para no bloquear el hilo principal de Kivy
+- Sync Screen con wiring real de `remote -> local` y `local -> remote`, con resumen estructurado del resultado
+- ventana de progreso de sync abierta desde Project Detail para no bloquear el hilo principal de Kivy en ambos sentidos
 - Audit Screen para mostrar resultados fake de auditoría
 - PO Processing Screen para mostrar resultados fake de procesamiento
 - Settings generales con persistencia TOML y campos para configurar la ubicación/nombre de la base SQLite
 
-La navegación mantiene el contexto del proyecto seleccionado. El flujo principal de create/list/detail/update y el sync `remote -> local` ya usan servicios reales para `site_registry` y el subsistema remoto; audit y PO processing siguen usando servicios fake detrás de los mismos contratos de UI.
+La navegación mantiene el contexto del proyecto seleccionado. El flujo principal de create/list/detail/update y el sync bidireccional ya usan servicios reales para `site_registry` y el subsistema remoto; audit y PO processing siguen usando servicios fake detrás de los mismos contratos de UI.
 
 El entrypoint gráfico por defecto (`create_kivy_app()` / `python -m polyglot_site_translator`) arranca con settings TOML y `site_registry` SQLite reales. Los bundles fake seeded quedan reservados para tests y escenarios de desarrollo controlados.
 Los doubles/stubs de test para funcionalidades ya implementadas viven en soporte de tests y no forman parte del runtime productivo.
@@ -244,24 +244,26 @@ Si querés ejecutar la app local sin instalación editable, usá el launcher del
 Los settings generales se guardan en `settings.toml` dentro del directorio de configuración del usuario.
 Para desarrollo o pruebas locales, podés overridear la ubicación con `POLYGLOT_SITE_TRANSLATOR_CONFIG_DIR`.
 Dentro de esos settings también se persisten `database_directory`, `database_filename` y `sync_progress_log_limit`.
-Ese último valor define cuántas operaciones recientes conserva en memoria y muestra la ventana de progreso del sync remoto.
+Ese último valor define cuántas operaciones recientes conserva en memoria y muestra la ventana de progreso del sync.
 
 La contraseña remota no se guarda en texto plano en SQLite.
 Se persiste cifrada con una key local almacenada junto al config dir de la app.
 Si el runtime encuentra una base heredada con columnas `ftp_*`, migra esos datos a la tabla de conexiones remotas relacionadas sin convertir el ciphertext a texto plano durante la migración.
 Para SFTP/SCP, la verificación de host key queda activa por defecto. Si un host todavía no está en `known_hosts`, el sync falla de forma controlada con `unknown_ssh_host_key` y la ventana de progreso ofrece un popup explícito para confiar el host y reintentar. Esa acción solo está disponible mientras el progreso actual está fallido por host key desconocida; al confirmar y comenzar el reintento, se oculta para evitar aceptar el host otra vez durante la sincronización. Al confirmar, la app crea/carga `~/.ssh/known_hosts` y permite que Paramiko agregue la host key desconocida, equivalente al flujo TOFU de aceptar un host nuevo en `ssh`.
 
-El flujo de sync actual usa la conexión remota persistida del proyecto para listar el contenido remoto y descargar archivos al `local_path`.
+El flujo de sync actual usa la conexión remota persistida del proyecto para listar/descargar el contenido remoto y también para crear directorios/subir archivos desde el árbol local.
 Cuando se dispara desde Project Detail, el trabajo corre en background y se abre una ventana dedicada con barra de progreso y log de comandos del transporte y del workspace local.
 Ese log no crece sin límite: conserva solo las últimas `N` operaciones según `sync_progress_log_limit`, para evitar crecimiento de memoria cuando el remoto tiene árboles muy grandes.
 En el subsistema remoto, la iteración completa del árbol se hace por `iter_remote_files()`. La API `list_remote_files()` queda reservada para casos acotados y materializa como máximo un conjunto seguro de archivos por llamada, para no reintroducir cargas masivas en memoria desde otro protocolo o caller.
 La descarga es incremental: el sync empieza a grabar archivos locales a medida que los descubre en el árbol remoto, sin esperar a completar todo el recorrido.
-Para un sync completo, el servicio abre una única sesión remota reutilizable con estado explícito y la usa para listar, descargar todos los archivos y cerrar la conexión; no reconecta por cada archivo.
+La subida local también es incremental: el servicio lista el árbol local, prepara directorios remotos faltantes y sube los archivos uno a uno sin materializar ni reconectar por cada archivo.
+Para un sync completo, el servicio abre una única sesión remota reutilizable con estado explícito y la usa para listar, descargar o subir todos los archivos y cerrar la conexión; no reconecta por cada archivo.
 En SFTP/SCP, el recorrido remoto descarga solo archivos regulares y saltea symlinks, sockets, devices u otros tipos especiales con operaciones `SFTP SKIP` en el log, para evitar fallos genéricos del servidor al intentar leer rutas que no son archivos descargables.
 Si la conexión, el recorrido remoto o una descarga falla, esa misma ventana queda en estado `failed` y muestra un mensaje accionable con operación, proyecto, protocolo, host, puerto, ruta remota/local relevante y causa reportada por el transporte cuando está disponible. Los tests de conexión remota también devuelven mensajes con contexto de host, puerto, tipo de conexión, ruta remota y código estable de error, no solo el texto crudo de la librería.
-Si el workspace local no existe, se crea automáticamente.
+Si el workspace local no existe durante `remote -> local`, se crea automáticamente.
 Si el remoto está vacío, el sync devuelve un resultado válido con `0` archivos descargados.
-En esta etapa todavía no existe sync `local -> remote`, ni filtros por adapter, ni controles de sync selectivo/full desde la UI.
+Si el árbol local está vacío durante `local -> remote`, el sync devuelve un resultado válido con `0` archivos subidos.
+En esta etapa todavía no existen filtros por adapter ni controles de sync selectivo/full desde la UI.
 
 ## Testing y validación
 

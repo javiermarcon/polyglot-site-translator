@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections.abc import Callable
 from dataclasses import dataclass
 from enum import StrEnum
+from pathlib import Path
 
 
 class SyncDirection(StrEnum):
@@ -18,8 +19,11 @@ class SyncProgressStage(StrEnum):
     """Supported progress stages reported during sync execution."""
 
     PREPARING_LOCAL = "preparing_local"
+    PREPARING_REMOTE = "preparing_remote"
+    LISTING_LOCAL = "listing_local"
     LISTING_REMOTE = "listing_remote"
     DOWNLOADING_FILE = "downloading_file"
+    UPLOADING_FILE = "uploading_file"
     WRITING_LOCAL_FILE = "writing_local_file"
     COMPLETED = "completed"
     FAILED = "failed"
@@ -35,6 +39,15 @@ class RemoteSyncFile:
 
 
 @dataclass(frozen=True)
+class LocalSyncFile:
+    """A file discovered in the local workspace for synchronization."""
+
+    local_path: Path
+    relative_path: str
+    size_bytes: int
+
+
+@dataclass(frozen=True)
 class SyncProgressEvent:
     """Structured progress event emitted during a sync workflow."""
 
@@ -43,8 +56,10 @@ class SyncProgressEvent:
     command_text: str | None = None
     files_discovered: int | None = None
     files_downloaded: int | None = None
+    files_uploaded: int | None = None
     total_files: int | None = None
     bytes_downloaded: int | None = None
+    bytes_uploaded: int | None = None
 
 
 @dataclass(frozen=True)
@@ -55,6 +70,8 @@ class SyncSummary:
     files_downloaded: int
     directories_created: int
     bytes_downloaded: int
+    files_uploaded: int = 0
+    bytes_uploaded: int = 0
 
 
 @dataclass(frozen=True)

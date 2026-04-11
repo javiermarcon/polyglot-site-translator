@@ -16,6 +16,7 @@ from polyglot_site_translator.domain.sync.models import (
 
 def test_sync_direction_exposes_remote_to_local_value() -> None:
     assert SyncDirection.REMOTE_TO_LOCAL.value == "remote_to_local"
+    assert SyncDirection.LOCAL_TO_REMOTE.value == "local_to_remote"
 
 
 def test_sync_result_can_represent_a_successful_sync() -> None:
@@ -37,6 +38,29 @@ def test_sync_result_can_represent_a_successful_sync() -> None:
     assert result.success is True
     assert result.summary.files_downloaded == 2
     assert result.error is None
+
+
+def test_sync_result_can_represent_a_successful_local_to_remote_sync() -> None:
+    result = SyncResult(
+        direction=SyncDirection.LOCAL_TO_REMOTE,
+        success=True,
+        project_id="site-123",
+        connection_type="sftp",
+        local_path="/workspace/site",
+        summary=SyncSummary(
+            files_discovered=2,
+            files_downloaded=0,
+            directories_created=1,
+            bytes_downloaded=0,
+            files_uploaded=2,
+            bytes_uploaded=64,
+        ),
+        error=None,
+    )
+
+    assert result.success is True
+    assert result.summary.files_uploaded == 2
+    assert result.summary.bytes_uploaded == 64
 
 
 def test_sync_result_can_represent_a_controlled_failure() -> None:

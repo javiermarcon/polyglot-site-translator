@@ -210,10 +210,10 @@ Not every project needs remote access, and future targets must not assume FTP-on
 
 ---
 
-## AD-014: Remote-to-local sync reuses the existing remote provider registry
+## AD-014: Sync reuses the existing remote provider registry
 
 **Decision**
-Implement the first real sync stage as a remote-to-local workflow orchestrated by a dedicated sync service, while reusing the existing discoverable remote connection providers instead of creating a second registry or parallel provider system.
+Implement real sync as a dedicated service that reuses the existing discoverable remote connection providers instead of creating a second registry or parallel provider system.
 
 **Why**
 The repository already has typed optional remote connections and a discoverable provider model. Reusing that base keeps transport resolution centralized, avoids duplicate extension points, and prepares the system for later bidirectional sync without pushing network or filesystem behavior into Kivy.
@@ -221,10 +221,27 @@ The repository already has typed optional remote connections and a discoverable 
 **Implications**
 - Sync direction, summaries, results, remote file descriptors, and errors need explicit typed models.
 - Presentation triggers sync through services and renders structured results; widgets do not open sockets or touch the filesystem directly.
-- Remote providers now own both connection testing and transport-specific remote listing/download behavior.
+- Remote providers now own connection testing plus transport-specific listing/download/upload behavior.
 - Multi-file sync must use a reusable remote session opened from the provider instead of reconnecting for each file.
 - Local workspace preparation and file writes stay in infrastructure, separate from presentation and domain logic.
-- The first stage supports remote-to-local only; local-to-remote, filtering, and richer sync controls remain future work.
+- Later stages can add new sync directions and richer controls without replacing the provider registry.
+
+---
+
+## AD-017: Local-to-remote upload extends the existing sync service and session contracts
+
+**Decision**
+Implement `local -> remote` as an extension of the existing `ProjectSyncService`, `LocalSyncWorkspace`, and reusable remote-session contracts instead of creating a second upload-only workflow stack.
+
+**Why**
+The repository already has typed sync models, reusable provider sessions, bounded progress logs, and presentation wiring for background sync execution. Extending that base keeps both sync directions symmetrical, preserves OCP for transport providers, and avoids duplicating retry, connection lifecycle, or popup orchestration logic.
+
+**Implications**
+- `domain/sync` now models both remote and local file descriptors plus bidirectional counters.
+- `LocalSyncWorkspace` owns local file discovery and reads for upload workflows.
+- Remote sessions must expose explicit directory-creation and upload operations in addition to listing/download.
+- The project-detail screen reuses the same popup and shell orchestration for both sync directions.
+- Adapter-aware filtering and selective/full sync controls remain future work.
 
 ---
 

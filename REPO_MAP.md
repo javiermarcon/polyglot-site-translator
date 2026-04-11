@@ -94,7 +94,7 @@ Current frontend base:
   Typed remote-connection descriptors, configs, session state, test results, and provider/session contracts.
 
 - `polyglot_site_translator/domain/sync/`
-  Typed sync direction, remote file descriptors, summaries, results, and explicit sync errors.
+  Typed sync direction, remote/local file descriptors, summaries, results, and explicit sync errors.
 
 - `polyglot_site_translator/domain/framework_detection/`
   Typed framework-detection contracts, result models, and explicit ambiguity errors.
@@ -115,13 +115,13 @@ Current frontend base:
   Validation, discoverable catalog exposure, and connection-test orchestration for remote connection providers.
 
 - `polyglot_site_translator/services/project_sync.py`
-  Remote-to-local sync orchestration over the existing remote provider registry, including one reusable remote session per sync run, typed results, and controlled failures.
+  Bidirectional sync orchestration over the existing remote provider registry, including one reusable remote session per sync run, typed results, and controlled failures.
 
 - `polyglot_site_translator/infrastructure/remote_connections/`
   Discoverable FTP/FTPS/SFTP/SCP provider implementations, reusable transport sessions, and the runtime provider registry.
 
 - `polyglot_site_translator/infrastructure/sync_local.py`
-  Local workspace directory creation and downloaded-file persistence for sync workflows.
+  Local workspace directory creation, local file discovery/reads, and downloaded-file persistence for sync workflows.
 
 - `polyglot_site_translator/presentation/contracts.py`
   UI-facing service protocols, including frontend settings operations and project-registry create/edit flows.

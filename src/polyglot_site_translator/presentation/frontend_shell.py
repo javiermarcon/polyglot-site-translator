@@ -151,10 +151,43 @@ class FrontendShell:
             project_id=project_id,
             route_to_sync=True,
             progress_callback=None,
+            run_workflow=self.services.workflows.start_sync,
+        )
+
+    def start_sync_to_remote(self) -> None:
+        """Trigger local-to-remote sync through the workflow contract."""
+        project_id = self._require_project_id()
+        self._run_sync(
+            project_id=project_id,
+            route_to_sync=True,
+            progress_callback=None,
+            run_workflow=self.services.workflows.start_sync_to_remote,
         )
 
     def start_sync_async(self) -> None:
         """Trigger sync in a background thread for popup-based progress rendering."""
+        self._start_sync_async_with_message(
+            run_workflow=self.services.workflows.start_sync,
+            initial_message="Starting remote sync.",
+        )
+
+    def start_sync_to_remote_async(self) -> None:
+        """Trigger local-to-remote sync in a background thread for popup rendering."""
+        self._start_sync_async_with_message(
+            run_workflow=self.services.workflows.start_sync_to_remote,
+            initial_message="Starting local to remote sync.",
+        )
+
+    def _start_sync_async_with_message(
+        self,
+        *,
+        run_workflow: Callable[
+            [str, Callable[[SyncProgressEvent], None] | None],
+            SyncStatusViewModel,
+        ],
+        initial_message: str,
+    ) -> None:
+        """Initialize background sync state and start the worker thread."""
         project_id = self._require_project_id()
         project_name = project_id
         if self.project_detail_state is not None:
@@ -167,7 +200,7 @@ class FrontendShell:
                 project_id=project_id,
                 project_name=project_name,
                 status="running",
-                message="Starting remote sync.",
+                message=initial_message,
                 progress_current=0,
                 progress_total=0,
                 progress_is_indeterminate=True,
@@ -176,7 +209,7 @@ class FrontendShell:
             )
         worker = Thread(
             target=self._run_sync_in_background,
-            args=(project_id,),
+            args=(project_id, run_workflow),
             daemon=True,
             name=f"sync-{project_id}",
         )
@@ -515,12 +548,13 @@ class FrontendShell:
         project_id: str,
         route_to_sync: bool,
         progress_callback: Callable[[SyncProgressEvent], None] | None,
+        run_workflow: Callable[
+            [str, Callable[[SyncProgressEvent], None] | None],
+            SyncStatusViewModel,
+        ],
     ) -> None:
         try:
-            self.sync_state = self.services.workflows.start_sync(
-                project_id,
-                progress_callback=progress_callback,
-            )
+            self.sync_state = run_workflow(project_id, progress_callback)
             self.latest_error = None
         except ControlledServiceError as error:
             self.sync_state = SyncStatusViewModel(
@@ -533,12 +567,20 @@ class FrontendShell:
         if route_to_sync:
             self._set_route(RouteName.SYNC, project_id=project_id)
 
-    def _run_sync_in_background(self, project_id: str) -> None:
+    def _run_sync_in_background(
+        self,
+        project_id: str,
+        run_workflow: Callable[
+            [str, Callable[[SyncProgressEvent], None] | None],
+            SyncStatusViewModel,
+        ],
+    ) -> None:
         try:
             self._run_sync(
                 project_id=project_id,
                 route_to_sync=False,
                 progress_callback=self._record_sync_progress_event,
+                run_workflow=run_workflow,
             )
         except (AttributeError, LookupError, OSError, RuntimeError, ValueError) as error:
             self._surface_background_sync_failure(error)

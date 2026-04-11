@@ -86,3 +86,42 @@ Feature: Remote to local project synchronization
     Then the sync progress window is open
     And the sync progress window shows a single remote connect command
     And the sync progress window shows a single remote close command
+
+  Scenario: Synchronize local files into the configured remote source
+    Given the frontend shell is wired with a real sync workflow
+    And the registered project "marketing-site" has local files available for upload
+    When the operator opens the synced detail for project "marketing-site"
+    And the operator starts the local to remote sync workflow
+    Then the sync panel shows a completed status
+    And the sync panel reports 2 uploaded files
+
+  Scenario: Reject local to remote sync when the project has no remote connection
+    Given the frontend shell is wired with a real sync workflow
+    And the registered project "local-only-site" has no remote connection
+    When the operator opens the synced detail for project "local-only-site"
+    And the operator starts the local to remote sync workflow
+    Then the sync panel shows a failed status
+    And the sync panel reports the sync error code "missing_remote_connection"
+
+  Scenario: Surface a controlled local to remote error when the remote upload fails
+    Given the frontend shell is wired with a real sync workflow
+    And the registered project "broken-upload-site" fails while uploading local files
+    When the operator opens the synced detail for project "broken-upload-site"
+    And the operator starts the local to remote sync workflow
+    Then the sync panel shows a failed status
+    And the sync panel reports the sync error code "upload_failed"
+
+  Scenario: Complete local to remote sync successfully when the local tree is empty
+    Given the frontend shell is wired with a real sync workflow
+    And the registered project "empty-local-site" has an empty local source
+    When the operator opens the synced detail for project "empty-local-site"
+    And the operator starts the local to remote sync workflow
+    Then the sync panel shows a completed status
+    And the sync panel reports 0 uploaded files
+
+  Scenario: Show the local to remote sync result in the sync screen
+    Given the frontend shell is wired with a real sync workflow
+    And the registered project "marketing-site" has local files available for upload
+    When the operator opens the synced detail for project "marketing-site"
+    And the operator starts the local to remote sync workflow
+    Then the sync screen shows the uploaded file count

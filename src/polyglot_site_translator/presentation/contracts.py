@@ -41,6 +41,13 @@ class ProjectWorkflowService(Protocol):
     ) -> SyncStatusViewModel:
         """Start or preview a sync workflow for a project."""
 
+    def start_sync_to_remote(
+        self,
+        project_id: str,
+        progress_callback: Callable[[SyncProgressEvent], None] | None = None,
+    ) -> SyncStatusViewModel:
+        """Start a local-to-remote sync workflow for a project."""
+
     def trust_remote_host_key(self, project_id: str) -> RemoteConnectionTestResultViewModel:
         """Trust the configured SSH host key for a project after user confirmation."""
 

@@ -44,8 +44,9 @@ The codebase should be organized around these layers:
    - validate and orchestrate site registry CRUD through explicit service contracts
    - orchestrate framework detection through a registry-backed detection service
    - validate optional remote connection configs and test them through discoverable providers
-   - orchestrate remote-to-local sync through the existing discoverable remote provider registry
+   - orchestrate bidirectional sync through the existing discoverable remote provider registry
    - start downloading files incrementally as providers discover them, instead of waiting for a full remote-tree listing
+   - upload local files incrementally through the same reusable remote-session lifecycle
 
 3. **Domain logic**
    - shared PO processing
@@ -71,7 +72,7 @@ The codebase should be organized around these layers:
    - TOML-backed frontend settings persistence
    - discoverable remote connection providers
    - FTP/FTPS/SFTP/SCP access
-   - local workspace preparation and downloaded-file persistence for sync
+   - local workspace preparation, local file discovery, and downloaded-file persistence for sync
    - filesystem IO
    - optional translation providers
    - serialization/export
@@ -97,13 +98,13 @@ Examples:
 Current first real implementation:
 - `domain/site_registry/` defines typed models, contracts, and explicit errors
 - `domain/remote_connections/` defines typed descriptors, configs, provider/session contracts, session state, and test results
-- `domain/sync/` defines sync direction, remote file descriptors, summaries, results, and explicit sync errors
+- `domain/sync/` defines sync direction, remote/local file descriptors, summaries, results, and explicit sync errors
 - `services/site_registry.py` validates and orchestrates CRUD use cases
 - `services/remote_connections.py` validates optional remote configs, exposes the discoverable catalog, and dispatches connection tests
-- `services/project_sync.py` orchestrates remote-to-local listing, download, local-directory preparation, and structured sync results
+- `services/project_sync.py` orchestrates remote-to-local listing/download and local-to-remote upload, plus structured sync results
 - `infrastructure/site_registry_sqlite.py` owns schema creation, row mapping, and SQLite access
 - `infrastructure/remote_connections/` owns discoverable remote connection providers and transport-specific connectivity checks
-- `infrastructure/sync_local.py` owns local workspace directory creation and file writes for synchronized content
+- `infrastructure/sync_local.py` owns local workspace directory creation, local file discovery, reads, and file writes for synchronized content
 - `presentation/site_registry_services.py` adapts the real service into UI-facing catalog/editor workflows
 
 Current framework detection implementation:
@@ -118,16 +119,17 @@ Current framework detection implementation:
 
 Stores, validates, tests, and later synchronizes optional remote sources into a local workspace suitable for scanning/auditing.
 
-Current first sync stage:
-- real remote-to-local download only
+Current implemented sync stage:
+- real remote-to-local download
+- real local-to-remote upload
 - reuses persisted `RemoteConnectionConfig`
 - reuses the existing discoverable remote provider registry
-- opens one reusable remote session per sync run, so listing and all downloads share the same connection lifecycle
+- opens one reusable remote session per sync run, so listing/download or mkdir/upload share the same connection lifecycle
 - returns typed sync results with structured success/failure details
 - prepares the local workspace automatically when directories are missing
+- prepares missing remote directories automatically before upload
 
 Not yet implemented in this stage:
-- local-to-remote sync
 - adapter-aware sync filtering
 - selective vs full sync controls in the UI
 
@@ -247,9 +249,9 @@ The project editor now also owns:
 - a "Test Connection" action that delegates to application services and renders structured results without opening network sessions from widgets
 
 The sync screen now also owns:
-- rendering the structured result of a real remote-to-local sync workflow
+- rendering the structured result of real remote-to-local and local-to-remote sync workflows
 - showing the synchronized file count and controlled error code when sync fails
-- opening a dedicated progress window from Project Detail while the sync runs in background
+- opening a dedicated progress window from Project Detail while either sync direction runs in background
 - rendering the command log emitted by remote providers and local workspace operations
 - truncating that command log to the latest configured `N` operations so large remote listings do not grow presentation state without bound
 - showing an explicit SSH host-key trust confirmation popup when SFTP/SCP fails because the host is absent from `known_hosts`; strict verification remains the default, and trust-on-first-use host-key addition only runs after that confirmation
@@ -261,7 +263,7 @@ The remote-provider contract now distinguishes clearly between:
 - `iter_remote_files()` for full incremental traversal
 - `list_remote_files()` for bounded materialization only
 
-Sync services must use `open_session()` for multi-file remote workflows. Provider-level `iter_remote_files()`, `list_remote_files()`, and `download_file()` are compatibility/convenience paths for bounded or one-off calls, not the orchestration model for a full sync run. That keeps sync workflows stream-oriented, prevents accidental full-tree materialization from protocol-specific helper paths, and avoids reconnecting once per downloaded file.
+Sync services must use `open_session()` for multi-file remote workflows. Provider-level `iter_remote_files()`, `list_remote_files()`, `download_file()`, `ensure_remote_directory()`, and `upload_file()` are compatibility/convenience paths for bounded or one-off calls, not the orchestration model for a full sync run. That keeps sync workflows stream-oriented, prevents accidental full-tree materialization from protocol-specific helper paths, and avoids reconnecting once per file.
 
 SSH-backed providers must only yield regular files for download. Symlinks, sockets, device nodes, and other special remote entries are skipped with explicit progress log entries so sync does not fail later with opaque server responses for non-downloadable paths.
 

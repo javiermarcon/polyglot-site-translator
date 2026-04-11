@@ -127,6 +127,18 @@ class StubProjectWorkflowService:
             error_code=None,
         )
 
+    def start_sync_to_remote(
+        self,
+        project_id: str,
+        progress_callback: Callable[[SyncProgressEvent], None] | None = None,
+    ) -> SyncStatusViewModel:
+        return SyncStatusViewModel(
+            status="completed",
+            files_synced=7,
+            summary="Uploaded 7 files from the local workspace preview.",
+            error_code=None,
+        )
+
     def trust_remote_host_key(self, project_id: str) -> RemoteConnectionTestResultViewModel:
         return RemoteConnectionTestResultViewModel(
             success=True,
