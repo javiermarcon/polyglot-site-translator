@@ -223,21 +223,24 @@ def step_project_empty_remote(context: object, project_key: str) -> None:
 def step_assert_downloaded_files(context: object, downloaded_files: int) -> None:
     typed_context = _context(context)
     assert typed_context.shell.sync_state is not None
-    assert typed_context.shell.sync_state.files_synced == downloaded_files
+    if typed_context.shell.sync_state.files_synced != downloaded_files:
+        raise AssertionError
 
 
 @then('the sync panel reports the sync error code "{error_code}"')
 def step_assert_sync_error_code(context: object, error_code: str) -> None:
     typed_context = _context(context)
     assert typed_context.shell.sync_state is not None
-    assert typed_context.shell.sync_state.error_code == error_code
+    if typed_context.shell.sync_state.error_code != error_code:
+        raise AssertionError
 
 
 @then("the sync screen shows the downloaded file count")
 def step_assert_sync_screen(context: object) -> None:
     typed_context = _context(context)
     typed_context.sync_screen.refresh()
-    assert "Files: 2" in typed_context.sync_screen._summary_label.text
+    if "Files: 2" not in typed_context.sync_screen._summary_label.text:
+        raise AssertionError
 
 
 @when("the operator starts the sync workflow from the project detail screen")
@@ -259,7 +262,8 @@ def step_assert_sync_progress_window_commands(context: object) -> None:
     popup = typed_context.detail_screen._sync_progress_popup
     assert popup is not None
     popup.refresh()
-    assert "SFTP LIST /srv/app" in popup._command_log_label.text
+    if "SFTP LIST /srv/app" not in popup._command_log_label.text:
+        raise AssertionError
 
 
 def _create_project(

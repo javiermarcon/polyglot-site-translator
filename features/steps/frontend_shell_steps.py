@@ -237,21 +237,25 @@ def step_select_settings_section(context: object, section_key: str) -> None:
 @then("the dashboard is the active route")
 def step_assert_dashboard_route(context: object) -> None:
     typed_context = _context_with_shell(context)
-    assert typed_context.shell.router.current.name is RouteName.DASHBOARD
+    if typed_context.shell.router.current.name is not RouteName.DASHBOARD:
+        raise AssertionError
 
 
 @then("the dashboard shows the main workflow sections")
 def step_assert_dashboard_sections(context: object) -> None:
     typed_context = _context_with_shell(context)
     section_keys = [section.key for section in typed_context.shell.dashboard_state.sections]
-    assert section_keys == ["projects", "sync", "audit", "po-processing", "settings"]
+    if section_keys != ["projects", "sync", "audit", "po-processing", "settings"]:
+        raise AssertionError
 
 
 @then('the project detail route is active for "{project_id}"')
 def step_assert_project_detail_route(context: object, project_id: str) -> None:
     typed_context = _context_with_shell(context)
-    assert typed_context.shell.router.current.name is RouteName.PROJECT_DETAIL
-    assert typed_context.shell.router.current.project_id == project_id
+    if typed_context.shell.router.current.name is not RouteName.PROJECT_DETAIL:
+        raise AssertionError
+    if typed_context.shell.router.current.project_id != project_id:
+        raise AssertionError
 
 
 @then("the project detail shows available workflow actions")
@@ -259,83 +263,94 @@ def step_assert_project_actions(context: object) -> None:
     typed_context = _context_with_shell(context)
     assert typed_context.shell.project_detail_state is not None
     action_keys = [action.key for action in typed_context.shell.project_detail_state.actions]
-    assert action_keys == ["sync", "audit", "po-processing"]
+    if action_keys != ["sync", "audit", "po-processing"]:
+        raise AssertionError
 
 
 @then("the sync panel shows a completed status")
 def step_assert_sync_completed(context: object) -> None:
     typed_context = _context_with_shell(context)
     assert typed_context.shell.sync_state is not None
-    assert typed_context.shell.sync_state.status == "completed"
+    if typed_context.shell.sync_state.status != "completed":
+        raise AssertionError
 
 
 @then("the sync panel reports the synchronized file count")
 def step_assert_sync_file_count(context: object) -> None:
     typed_context = _context_with_shell(context)
     assert typed_context.shell.sync_state is not None
-    assert typed_context.shell.sync_state.files_synced == SYNCED_FILES
+    if typed_context.shell.sync_state.files_synced != SYNCED_FILES:
+        raise AssertionError
 
 
 @then("the audit panel shows a completed status")
 def step_assert_audit_completed(context: object) -> None:
     typed_context = _context_with_shell(context)
     assert typed_context.shell.audit_state is not None
-    assert typed_context.shell.audit_state.status == "completed"
+    if typed_context.shell.audit_state.status != "completed":
+        raise AssertionError
 
 
 @then("the audit panel reports the finding summary")
 def step_assert_audit_summary(context: object) -> None:
     typed_context = _context_with_shell(context)
     assert typed_context.shell.audit_state is not None
-    assert (
-        typed_context.shell.audit_state.findings_summary
-        == "No supported framework was detected for this project."
-    )
+    if (
+        typed_context.shell.audit_state.findings_summary != "No supported framework was detected for this project."
+    ):
+        raise AssertionError
 
 
 @then("the po processing panel shows a completed status")
 def step_assert_po_completed(context: object) -> None:
     typed_context = _context_with_shell(context)
     assert typed_context.shell.po_processing_state is not None
-    assert typed_context.shell.po_processing_state.status == "completed"
+    if typed_context.shell.po_processing_state.status != "completed":
+        raise AssertionError
 
 
 @then("the po processing panel reports the processed family count")
 def step_assert_po_family_count(context: object) -> None:
     typed_context = _context_with_shell(context)
     assert typed_context.shell.po_processing_state is not None
-    assert typed_context.shell.po_processing_state.processed_families == PROCESSED_FAMILIES
+    if typed_context.shell.po_processing_state.processed_families != PROCESSED_FAMILIES:
+        raise AssertionError
 
 
 @then("the projects list is empty")
 def step_assert_empty_projects(context: object) -> None:
     typed_context = _context_with_shell(context)
-    assert typed_context.shell.projects_state.projects == []
+    if typed_context.shell.projects_state.projects != []:
+        raise AssertionError
 
 
 @then("the projects screen shows an empty state message")
 def step_assert_empty_state_message(context: object) -> None:
     typed_context = _context_with_shell(context)
-    assert typed_context.shell.projects_state.empty_message == "No projects registered yet."
+    if typed_context.shell.projects_state.empty_message != "No projects registered yet.":
+        raise AssertionError
 
 
 @then("the sync panel shows a failed status")
 def step_assert_sync_failed(context: object) -> None:
     typed_context = _context_with_shell(context)
     assert typed_context.shell.sync_state is not None
-    assert typed_context.shell.sync_state.status == "failed"
+    if typed_context.shell.sync_state.status != "failed":
+        raise AssertionError
 
 
 @then("the frontend shell shows the controlled error message")
 def step_assert_error_message(context: object) -> None:
     typed_context = _context_with_shell(context)
-    assert typed_context.shell.latest_error == "Sync preview is unavailable for this project."
+    if typed_context.shell.latest_error != "Sync preview is unavailable for this project.":
+        raise AssertionError
 
 
 @then("the settings route is active")
 def step_assert_settings_route(context: object) -> None:
     typed_context = _context_with_shell(context)
-    assert typed_context.shell.router.current.name is RouteName.SETTINGS
+    if typed_context.shell.router.current.name is not RouteName.SETTINGS:
+        raise AssertionError
 
 
 @then("the settings screen shows the App / UI / Kivy section")
@@ -343,109 +358,132 @@ def step_assert_settings_section(context: object) -> None:
     typed_context = _context_with_shell(context)
     assert typed_context.shell.settings_state is not None
     section_keys = [section.key for section in typed_context.shell.settings_state.sections]
-    assert "app-ui-kivy" in section_keys
+    if "app-ui-kivy" not in section_keys:
+        raise AssertionError
 
 
 @then("the application menu shows the main navigation groups")
 def step_assert_application_menu_groups(context: object) -> None:
     typed_context = _context_with_shell(context)
     section_keys = [section.key for section in typed_context.shell.navigation_menu.sections]
-    assert section_keys == ["workspace", "operations", "system"]
+    if section_keys != ["workspace", "operations", "system"]:
+        raise AssertionError
 
 
 @then("the settings draft uses the default window size")
 def step_assert_default_window_size(context: object) -> None:
     typed_context = _context_with_shell(context)
     assert typed_context.shell.settings_state is not None
-    assert typed_context.shell.settings_state.app_settings.window_width == DEFAULT_WINDOW_WIDTH
-    assert typed_context.shell.settings_state.app_settings.window_height == DEFAULT_WINDOW_HEIGHT
+    if typed_context.shell.settings_state.app_settings.window_width != DEFAULT_WINDOW_WIDTH:
+        raise AssertionError
+    if typed_context.shell.settings_state.app_settings.window_height != DEFAULT_WINDOW_HEIGHT:
+        raise AssertionError
 
 
 @then("the settings draft keeps remember last screen disabled")
 def step_assert_default_remember_last_screen(context: object) -> None:
     typed_context = _context_with_shell(context)
     assert typed_context.shell.settings_state is not None
-    assert typed_context.shell.settings_state.app_settings.remember_last_screen is False
+    if typed_context.shell.settings_state.app_settings.remember_last_screen is not False:
+        raise AssertionError
 
 
 @then("the settings screen shows a single theme selector with explanations")
 def step_assert_theme_selector(context: object) -> None:
     typed_context = _context_with_shell(context)
     assert typed_context.shell.settings_state is not None
-    assert typed_context.shell.settings_state.theme_mode_field.control_type == "choice"
+    if typed_context.shell.settings_state.theme_mode_field.control_type != "choice":
+        raise AssertionError
     assert len(typed_context.shell.settings_state.theme_mode_field.options) == THEME_OPTION_COUNT
-    assert typed_context.shell.settings_state.theme_mode_field.help_text != ""
+    if typed_context.shell.settings_state.theme_mode_field.help_text == "":
+        raise AssertionError
 
 
 @then("the settings screen shows the changes as saved")
 def step_assert_settings_saved(context: object) -> None:
     typed_context = _context_with_shell(context)
     assert typed_context.shell.settings_state is not None
-    assert typed_context.shell.settings_state.status == "saved"
+    if typed_context.shell.settings_state.status != "saved":
+        raise AssertionError
 
 
 @then("the settings save exposes a saved confirmation message")
 def step_assert_settings_saved_message(context: object) -> None:
     typed_context = _context_with_shell(context)
     assert typed_context.shell.settings_state is not None
-    assert typed_context.shell.settings_state.status_message == "Settings saved."
+    if typed_context.shell.settings_state.status_message != "Settings saved.":
+        raise AssertionError
 
 
 @then("the saved settings keep remember last screen enabled")
 def step_assert_saved_remember_last_screen(context: object) -> None:
     typed_context = _context_with_shell(context)
     assert typed_context.shell.settings_state is not None
-    assert typed_context.shell.settings_state.app_settings.remember_last_screen is True
+    if typed_context.shell.settings_state.app_settings.remember_last_screen is not True:
+        raise AssertionError
 
 
 @then("the saved settings keep the selected window size")
 def step_assert_saved_window_size(context: object) -> None:
     typed_context = _context_with_shell(context)
     assert typed_context.shell.settings_state is not None
-    assert typed_context.shell.settings_state.app_settings.window_width == CUSTOM_WINDOW_WIDTH
-    assert typed_context.shell.settings_state.app_settings.window_height == CUSTOM_WINDOW_HEIGHT
+    if typed_context.shell.settings_state.app_settings.window_width != CUSTOM_WINDOW_WIDTH:
+        raise AssertionError
+    if typed_context.shell.settings_state.app_settings.window_height != CUSTOM_WINDOW_HEIGHT:
+        raise AssertionError
 
 
 @then("the saved settings keep the compact window size")
 def step_assert_saved_compact_window_size(context: object) -> None:
     typed_context = _context_with_shell(context)
     assert typed_context.shell.settings_state is not None
-    assert typed_context.shell.settings_state.app_settings.window_width == COMPACT_WINDOW_WIDTH
-    assert typed_context.shell.settings_state.app_settings.window_height == COMPACT_WINDOW_HEIGHT
+    if typed_context.shell.settings_state.app_settings.window_width != COMPACT_WINDOW_WIDTH:
+        raise AssertionError
+    if typed_context.shell.settings_state.app_settings.window_height != COMPACT_WINDOW_HEIGHT:
+        raise AssertionError
 
 
 @then("the settings draft shows the persisted custom values")
 def step_assert_persisted_settings(context: object) -> None:
     typed_context = _context_with_shell(context)
     assert typed_context.shell.settings_state is not None
-    assert typed_context.shell.settings_state.app_settings.theme_mode == "dark"
-    assert typed_context.shell.settings_state.app_settings.developer_mode is True
-    assert typed_context.shell.settings_state.app_settings.remember_last_screen is True
-    assert typed_context.shell.settings_state.app_settings.window_width == CUSTOM_WINDOW_WIDTH
-    assert typed_context.shell.settings_state.app_settings.window_height == CUSTOM_WINDOW_HEIGHT
+    if typed_context.shell.settings_state.app_settings.theme_mode != "dark":
+        raise AssertionError
+    if typed_context.shell.settings_state.app_settings.developer_mode is not True:
+        raise AssertionError
+    if typed_context.shell.settings_state.app_settings.remember_last_screen is not True:
+        raise AssertionError
+    if typed_context.shell.settings_state.app_settings.window_width != CUSTOM_WINDOW_WIDTH:
+        raise AssertionError
+    if typed_context.shell.settings_state.app_settings.window_height != CUSTOM_WINDOW_HEIGHT:
+        raise AssertionError
 
 
 @then("the settings screen shows a failed status")
 def step_assert_settings_failed(context: object) -> None:
     typed_context = _context_with_shell(context)
     assert typed_context.shell.settings_state is not None
-    assert typed_context.shell.settings_state.status == "failed"
+    if typed_context.shell.settings_state.status != "failed":
+        raise AssertionError
 
 
 @then("the frontend shell shows the controlled settings error message")
 def step_assert_settings_error_message(context: object) -> None:
     typed_context = _context_with_shell(context)
-    assert typed_context.shell.latest_error in {
+    if typed_context.shell.latest_error not in {
         "App settings are temporarily unavailable.",
         "App settings could not be saved.",
-    }
+    }:
+        raise AssertionError
 
 
 @then("the settings screen shows the selected planned section")
 def step_assert_planned_section(context: object) -> None:
     typed_context = _context_with_shell(context)
     assert typed_context.shell.settings_state is not None
-    assert typed_context.shell.settings_state.selected_section_key == "translation"
-    assert typed_context.shell.settings_state.status_message == (
+    if typed_context.shell.settings_state.selected_section_key != "translation":
+        raise AssertionError
+    if typed_context.shell.settings_state.status_message != (
         "Translation Settings will be available later."
-    )
+    ):
+        raise AssertionError

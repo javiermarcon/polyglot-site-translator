@@ -169,9 +169,10 @@ def step_assert_no_remote_option(context: object) -> None:
     typed_context = _context(context)
     typed_context.shell.open_project_editor_create()
     assert typed_context.shell.project_editor_state is not None
-    assert typed_context.shell.project_editor_state.connection_type_options[0].label == (
+    if typed_context.shell.project_editor_state.connection_type_options[0].label != (
         "No Remote Connection"
-    )
+    ):
+        raise AssertionError
 
 
 @when("the operator submits a new project without remote connection")
@@ -199,9 +200,10 @@ def step_submit_without_remote(context: object) -> None:
 def step_assert_no_remote_summary(context: object) -> None:
     typed_context = _context(context)
     assert typed_context.shell.project_detail_state is not None
-    assert (
-        "Remote connection: None" in typed_context.shell.project_detail_state.configuration_summary
-    )
+    if (
+        "Remote connection: None" not in typed_context.shell.project_detail_state.configuration_summary
+    ):
+        raise AssertionError
 
 
 @when('the operator fills a valid "{connection_type}" remote connection draft')
@@ -235,7 +237,8 @@ def step_assert_successful_remote_test(context: object) -> None:
     typed_context = _context(context)
     assert typed_context.shell.project_editor_state is not None
     assert typed_context.shell.project_editor_state.connection_test_result is not None
-    assert typed_context.shell.project_editor_state.connection_test_result.success is True
+    if typed_context.shell.project_editor_state.connection_test_result.success is not True:
+        raise AssertionError
 
 
 @then("the project editor shows a failed remote connection test result")
@@ -243,4 +246,5 @@ def step_assert_failed_remote_test(context: object) -> None:
     typed_context = _context(context)
     assert typed_context.shell.project_editor_state is not None
     assert typed_context.shell.project_editor_state.connection_test_result is not None
-    assert typed_context.shell.project_editor_state.connection_test_result.success is False
+    if typed_context.shell.project_editor_state.connection_test_result.success is not False:
+        raise AssertionError

@@ -144,28 +144,32 @@ def step_open_create_project_for_framework_selection(context: object) -> None:
 def step_assert_detected_framework(context: object, framework_name: str) -> None:
     typed_context = _context_with_shell(context)
     assert typed_context.shell.project_detail_state is not None
-    assert typed_context.shell.project_detail_state.project.framework == framework_name
+    if typed_context.shell.project_detail_state.project.framework != framework_name:
+        raise AssertionError
 
 
 @then("the project detail shows framework detection evidence")
 def step_assert_detection_evidence(context: object) -> None:
     typed_context = _context_with_shell(context)
     assert typed_context.shell.project_detail_state is not None
-    assert "Framework detection:" in typed_context.shell.project_detail_state.metadata_summary
+    if "Framework detection:" not in typed_context.shell.project_detail_state.metadata_summary:
+        raise AssertionError
 
 
 @then("the project detail shows that no framework was detected")
 def step_assert_no_framework_detected(context: object) -> None:
     typed_context = _context_with_shell(context)
     assert typed_context.shell.project_detail_state is not None
-    assert "No framework detected" in typed_context.shell.project_detail_state.metadata_summary
+    if "No framework detected" not in typed_context.shell.project_detail_state.metadata_summary:
+        raise AssertionError
 
 
 @then("the stored project framework keeps the operator-provided value")
 def step_assert_provided_framework_kept(context: object) -> None:
     typed_context = _context_with_shell(context)
     assert typed_context.shell.project_detail_state is not None
-    assert typed_context.shell.project_detail_state.project.framework == "Customapp"
+    if typed_context.shell.project_detail_state.project.framework != "Customapp":
+        raise AssertionError
 
 
 @then("the project detail shows framework detection warnings")
@@ -173,27 +177,31 @@ def step_assert_detection_warnings(context: object) -> None:
     typed_context = _context_with_shell(context)
     assert typed_context.shell.project_detail_state is not None
     metadata_summary = typed_context.shell.project_detail_state.metadata_summary.lower()
-    assert "partial wordpress evidence" in metadata_summary
+    if "partial wordpress evidence" not in metadata_summary:
+        raise AssertionError
 
 
 @then("the audit preview shows zero framework findings")
 def step_assert_zero_framework_findings(context: object) -> None:
     typed_context = _context_with_shell(context)
     assert typed_context.shell.audit_state is not None
-    assert typed_context.shell.audit_state.findings_count == 0
+    if typed_context.shell.audit_state.findings_count != 0:
+        raise AssertionError
 
 
 @then("the audit preview explains that no supported framework was detected")
 def step_assert_no_framework_detected_in_audit(context: object) -> None:
     typed_context = _context_with_shell(context)
     assert typed_context.shell.audit_state is not None
-    assert "No supported framework was detected" in typed_context.shell.audit_state.findings_summary
+    if "No supported framework was detected" not in typed_context.shell.audit_state.findings_summary:
+        raise AssertionError
 
 
 @then("the framework combo shows the auto-discovered supported options")
 def step_assert_framework_combo_options(context: object) -> None:
     typed_context = _context_with_shell(context)
     assert typed_context.shell.project_editor_state is not None
-    assert [
+    if [
         option.label for option in typed_context.shell.project_editor_state.framework_options
-    ] == ["Unknown", "Django", "Flask", "WordPress"]
+    ] != ["Unknown", "Django", "Flask", "WordPress"]:
+        raise AssertionError
