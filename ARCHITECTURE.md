@@ -99,8 +99,10 @@ Current first real implementation:
 - `domain/site_registry/` defines typed models, contracts, and explicit errors
 - `domain/remote_connections/` defines typed descriptors, configs, provider/session contracts, session state, and test results
 - `domain/sync/` defines sync direction, remote/local file descriptors, summaries, results, and explicit sync errors
+- `domain/sync/scope.py` defines typed adapter-owned sync filters and resolved sync scopes
 - `services/site_registry.py` validates and orchestrates CRUD use cases
 - `services/remote_connections.py` validates optional remote configs, exposes the discoverable catalog, and dispatches connection tests
+- `services/framework_sync_scope.py` resolves adapter-defined sync scopes from the persisted framework type
 - `services/project_sync.py` orchestrates remote-to-local listing/download and local-to-remote upload, plus structured sync results
 - `infrastructure/site_registry_sqlite.py` owns schema creation, row mapping, and SQLite access
 - `infrastructure/remote_connections/` owns discoverable remote connection providers and transport-specific connectivity checks
@@ -122,6 +124,7 @@ Stores, validates, tests, and later synchronizes optional remote sources into a 
 Current implemented sync stage:
 - real remote-to-local download
 - real local-to-remote upload
+- adapter-defined sync filtering reusable by both sync directions
 - reuses persisted `RemoteConnectionConfig`
 - reuses the existing discoverable remote provider registry
 - opens one reusable remote session per sync run, so listing/download or mkdir/upload share the same connection lifecycle
@@ -130,7 +133,6 @@ Current implemented sync stage:
 - prepares missing remote directories automatically before upload
 
 Not yet implemented in this stage:
-- adapter-aware sync filtering
 - selective vs full sync controls in the UI
 
 Current concrete connection types:

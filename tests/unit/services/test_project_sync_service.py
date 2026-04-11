@@ -25,6 +25,12 @@ from polyglot_site_translator.domain.sync.models import (
     SyncResult,
     SyncSummary,
 )
+from polyglot_site_translator.domain.sync.scope import (
+    ResolvedSyncScope,
+    SyncFilterSpec,
+    SyncFilterType,
+    SyncScopeStatus,
+)
 from polyglot_site_translator.infrastructure.remote_connections.base import (
     RemoteConnectionOperationError,
 )
@@ -521,6 +527,93 @@ def test_project_sync_service_returns_success_for_empty_remote_sources(tmp_path:
     assert result.success is True
     assert result.summary.files_discovered == 0
     assert result.summary.files_downloaded == 0
+
+
+def test_project_sync_service_filters_remote_to_local_sync_with_a_resolved_scope(
+    tmp_path: Path,
+) -> None:
+    local_root = tmp_path / "workspace" / "site"
+    provider = StubSyncProvider(
+        remote_files=[
+            RemoteSyncFile(
+                remote_path="/srv/app/locale/es.po",
+                relative_path="locale/es.po",
+                size_bytes=10,
+            ),
+            RemoteSyncFile(
+                remote_path="/srv/app/templates/home.html",
+                relative_path="templates/home.html",
+                size_bytes=20,
+            ),
+        ],
+        downloaded_bytes={
+            "/srv/app/locale/es.po": b'msgid "hello"\n',
+            "/srv/app/templates/home.html": b"<h1>Hello</h1>\n",
+        },
+    )
+    service = ProjectSyncService(
+        registry=RemoteConnectionRegistry.default_registry(providers=[provider])
+    )
+
+    result = service.sync_remote_to_local(
+        _build_site(local_root=local_root),
+        resolved_scope=ResolvedSyncScope(
+            framework_type="django",
+            adapter_name="django_adapter",
+            status=SyncScopeStatus.FILTERED,
+            filters=(
+                SyncFilterSpec(
+                    relative_path="locale",
+                    filter_type=SyncFilterType.DIRECTORY,
+                    description="Django locale catalogs.",
+                ),
+            ),
+            message="Django sync filters were resolved.",
+        ),
+    )
+
+    assert result.success is True
+    assert result.summary.files_discovered == 1
+    assert result.summary.files_downloaded == 1
+    assert (local_root / "locale" / "es.po").exists() is True
+    assert (local_root / "templates" / "home.html").exists() is False
+
+
+def test_project_sync_service_filters_local_to_remote_sync_with_a_resolved_scope(
+    tmp_path: Path,
+) -> None:
+    local_root = tmp_path / "workspace" / "site"
+    (local_root / "locale").mkdir(parents=True)
+    (local_root / "templates").mkdir(parents=True)
+    (local_root / "locale" / "es.po").write_text('msgid "hello"\n', encoding="utf-8")
+    (local_root / "templates" / "home.html").write_text("<h1>Hello</h1>\n", encoding="utf-8")
+    provider = StubSyncProvider()
+    service = ProjectSyncService(
+        registry=RemoteConnectionRegistry.default_registry(providers=[provider])
+    )
+
+    result = service.sync_local_to_remote(
+        _build_site(local_root=local_root),
+        resolved_scope=ResolvedSyncScope(
+            framework_type="django",
+            adapter_name="django_adapter",
+            status=SyncScopeStatus.FILTERED,
+            filters=(
+                SyncFilterSpec(
+                    relative_path="locale",
+                    filter_type=SyncFilterType.DIRECTORY,
+                    description="Django locale catalogs.",
+                ),
+            ),
+            message="Django sync filters were resolved.",
+        ),
+    )
+
+    assert result.success is True
+    assert result.summary.files_discovered == 1
+    assert result.summary.files_uploaded == 1
+    assert "/srv/app/locale/es.po" in provider.uploaded_bytes
+    assert "/srv/app/templates/home.html" not in provider.uploaded_bytes
 
 
 def test_project_sync_service_returns_a_controlled_result_when_incremental_listing_fails(

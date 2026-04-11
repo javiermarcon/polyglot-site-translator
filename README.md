@@ -31,6 +31,7 @@ El repositorio está en una etapa temprana y hoy incluye principalmente:
 - sync real bidireccional sobre la conexión remota persistida del proyecto
 - descarga real `remote -> local` al `local_path` con creación automática de directorios locales faltantes
 - subida real `local -> remote` con creación automática de directorios remotos faltantes
+- filtros de sync definidos por adapter/framework y reutilizables por ambos sentidos
 - resultado tipado y controlado de sync con conteo de archivos y código de error cuando falla
 - ejecución de sync en background desde Project Detail, con una ventana dedicada de progreso
 - barra de progreso y log visible de comandos remotos/locales durante el sync
@@ -46,7 +47,6 @@ El repositorio está en una etapa temprana y hoy incluye principalmente:
 
 Todavía no están implementados en forma real:
 
-- filtros de sync por adapter o por subconjuntos
 - controles de sync full/selectivo en UI
 - scanner de auditoría
 - procesamiento real de `.po/.mo`
@@ -81,11 +81,13 @@ La base actual implementa una base funcional de presentación, settings y `site_
 - `domain/site_registry/`: modelos tipados, errores y contratos del dominio de site registry
 - `domain/remote_connections/`: modelos tipados, contratos y resultados estructurados de conexiones remotas
 - `domain/sync/`: dirección de sync, archivos remotos/locales, resultados, summaries y errores explícitos
+- `domain/sync/scope.py`: filtros tipados de sync por adapter y scopes resueltos reutilizables por ambos sentidos
 - `domain/framework_detection/`: contratos, resultados tipados y errores explícitos para detección de framework
 - `services/site_registry.py`: validación y CRUD del site registry
 - `services/remote_connections.py`: validación opcional, catálogo discoverable y test de conexión
 - `services/project_sync.py`: sync real `remote -> local` y `local -> remote` con resultados tipados, errores controlados y eventos de progreso
 - `services/framework_detection.py`: orquestación de detección desde el registry de adapters
+- `services/framework_sync_scope.py`: resolución explícita de filtros de sync por framework/adapter
 - `adapters/base.py`: contrato base discoverable para nuevos adapters
 - `infrastructure/settings.py`: persistencia TOML de settings generales por usuario
 - `infrastructure/database_location.py`: resolución del path final de SQLite desde settings
@@ -258,12 +260,15 @@ En el subsistema remoto, la iteración completa del árbol se hace por `iter_rem
 La descarga es incremental: el sync empieza a grabar archivos locales a medida que los descubre en el árbol remoto, sin esperar a completar todo el recorrido.
 La subida local también es incremental: el servicio lista el árbol local, prepara directorios remotos faltantes y sube los archivos uno a uno sin materializar ni reconectar por cada archivo.
 Para un sync completo, el servicio abre una única sesión remota reutilizable con estado explícito y la usa para listar, descargar o subir todos los archivos y cerrar la conexión; no reconecta por cada archivo.
+Los adapters de framework ahora también pueden declarar filtros de sync reutilizables. WordPress expone `wp-content/languages`, `wp-content/themes` y `wp-content/plugins`; Django expone `locale`; Flask expone `translations` y `babel.cfg`.
+La resolución de esos filtros no vive en la UI ni en `ProjectSyncService`: la hace `FrameworkSyncScopeService`, que devuelve un scope explícito con estados como `filtered`, `no_filters`, `framework_unresolved` o `adapter_unavailable`.
+`ProjectSyncService` ya puede recibir ese scope resuelto y aplicarlo tanto a `remote -> local` como a `local -> remote`, aunque en esta etapa todavía no existe el control final en la UI para alternar entre sync full y filtrado.
 En SFTP/SCP, el recorrido remoto descarga solo archivos regulares y saltea symlinks, sockets, devices u otros tipos especiales con operaciones `SFTP SKIP` en el log, para evitar fallos genéricos del servidor al intentar leer rutas que no son archivos descargables.
 Si la conexión, el recorrido remoto o una descarga falla, esa misma ventana queda en estado `failed` y muestra un mensaje accionable con operación, proyecto, protocolo, host, puerto, ruta remota/local relevante y causa reportada por el transporte cuando está disponible. Los tests de conexión remota también devuelven mensajes con contexto de host, puerto, tipo de conexión, ruta remota y código estable de error, no solo el texto crudo de la librería.
 Si el workspace local no existe durante `remote -> local`, se crea automáticamente.
 Si el remoto está vacío, el sync devuelve un resultado válido con `0` archivos descargados.
 Si el árbol local está vacío durante `local -> remote`, el sync devuelve un resultado válido con `0` archivos subidos.
-En esta etapa todavía no existen filtros por adapter ni controles de sync selectivo/full desde la UI.
+En esta etapa todavía no existen controles de sync selectivo/full desde la UI.
 
 ## Testing y validación
 
@@ -274,7 +279,7 @@ Comandos recomendados:
 .venv/bin/python -m ruff format --check .
 .venv/bin/python -m mypy src tests features/steps
 .venv/bin/python -m pytest
-.venv/bin/python -m behave features/presentation/frontend_shell.feature features/presentation/settings.feature features/presentation/site_registry.feature features/presentation/framework_detection.feature features/presentation/remote_connections.feature features/presentation/sync.feature
+.venv/bin/python -m behave features/presentation/frontend_shell.feature features/presentation/settings.feature features/presentation/site_registry.feature features/presentation/framework_detection.feature features/presentation/remote_connections.feature features/presentation/sync.feature features/presentation/sync_filters.feature
 ```
 
 El repositorio sigue un flujo obligatorio BDD + TDD:

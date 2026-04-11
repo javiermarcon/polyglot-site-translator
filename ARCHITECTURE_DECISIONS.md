@@ -241,7 +241,23 @@ The repository already has typed sync models, reusable provider sessions, bounde
 - `LocalSyncWorkspace` owns local file discovery and reads for upload workflows.
 - Remote sessions must expose explicit directory-creation and upload operations in addition to listing/download.
 - The project-detail screen reuses the same popup and shell orchestration for both sync directions.
-- Adapter-aware filtering and selective/full sync controls remain future work.
+- Selective/full sync controls in the UI remain future work.
+
+---
+
+## AD-018: Framework adapters own reusable sync filters
+
+**Decision**
+Define sync filters on framework adapters and resolve them through a dedicated service instead of hardcoding framework paths inside `ProjectSyncService` or Kivy screens.
+
+**Why**
+WordPress, Django, and Flask care about different localization-relevant paths. Keeping those paths in adapter-owned contracts preserves OCP, lets future adapters add filters without modifying shared sync orchestration, and makes the same resolved scope reusable for both `remote -> local` and `local -> remote`.
+
+**Implications**
+- `BaseFrameworkAdapter` and the framework-adapter contract now expose `get_sync_filters(project_path)`.
+- `FrameworkSyncScopeService` returns an explicit `ResolvedSyncScope` with statuses such as `filtered`, `no_filters`, `framework_unresolved`, and `adapter_unavailable`.
+- `ProjectSyncService` accepts an optional resolved scope and applies it symmetrically to download and upload workflows.
+- UI controls for choosing filtered vs full sync still remain a later stage.
 
 ---
 

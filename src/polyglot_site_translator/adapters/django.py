@@ -13,6 +13,10 @@ from polyglot_site_translator.adapters.common import (
 from polyglot_site_translator.domain.framework_detection.models import (
     FrameworkDetectionResult,
 )
+from polyglot_site_translator.domain.sync.scope import (
+    SyncFilterSpec,
+    SyncFilterType,
+)
 
 
 @dataclass(frozen=True)
@@ -22,6 +26,16 @@ class DjangoFrameworkAdapter(BaseFrameworkAdapter):
     framework_type: str = "django"
     adapter_name: str = "django_adapter"
     display_name: str = "Django"
+
+    def get_sync_filters(self, project_path: Path) -> tuple[SyncFilterSpec, ...]:
+        """Return the default Django sync scope."""
+        return (
+            SyncFilterSpec(
+                relative_path="locale",
+                filter_type=SyncFilterType.DIRECTORY,
+                description="Django locale catalogs.",
+            ),
+        )
 
     def detect(self, project_path: Path) -> FrameworkDetectionResult:
         """Inspect a local path for Django markers."""

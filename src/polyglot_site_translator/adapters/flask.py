@@ -10,6 +10,10 @@ from polyglot_site_translator.adapters.common import read_text_if_present
 from polyglot_site_translator.domain.framework_detection.models import (
     FrameworkDetectionResult,
 )
+from polyglot_site_translator.domain.sync.scope import (
+    SyncFilterSpec,
+    SyncFilterType,
+)
 
 FLASK_MATCH_THRESHOLD = 55
 
@@ -25,6 +29,21 @@ class FlaskFrameworkAdapter(BaseFrameworkAdapter):
     framework_type: str = "flask"
     adapter_name: str = "flask_adapter"
     display_name: str = "Flask"
+
+    def get_sync_filters(self, project_path: Path) -> tuple[SyncFilterSpec, ...]:
+        """Return the default Flask sync scope."""
+        return (
+            SyncFilterSpec(
+                relative_path="translations",
+                filter_type=SyncFilterType.DIRECTORY,
+                description="Flask-Babel translation catalogs.",
+            ),
+            SyncFilterSpec(
+                relative_path="babel.cfg",
+                filter_type=SyncFilterType.FILE,
+                description="Flask-Babel extraction configuration.",
+            ),
+        )
 
     def detect(self, project_path: Path) -> FrameworkDetectionResult:
         """Inspect a local path for Flask markers."""

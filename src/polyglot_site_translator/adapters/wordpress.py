@@ -9,6 +9,10 @@ from polyglot_site_translator.adapters.base import BaseFrameworkAdapter
 from polyglot_site_translator.domain.framework_detection.models import (
     FrameworkDetectionResult,
 )
+from polyglot_site_translator.domain.sync.scope import (
+    SyncFilterSpec,
+    SyncFilterType,
+)
 
 
 @dataclass(frozen=True)
@@ -18,6 +22,26 @@ class WordPressFrameworkAdapter(BaseFrameworkAdapter):
     framework_type: str = "wordpress"
     adapter_name: str = "wordpress_adapter"
     display_name: str = "WordPress"
+
+    def get_sync_filters(self, project_path: Path) -> tuple[SyncFilterSpec, ...]:
+        """Return the default WordPress sync scope."""
+        return (
+            SyncFilterSpec(
+                relative_path="wp-content/languages",
+                filter_type=SyncFilterType.DIRECTORY,
+                description="WordPress translation catalogs.",
+            ),
+            SyncFilterSpec(
+                relative_path="wp-content/themes",
+                filter_type=SyncFilterType.DIRECTORY,
+                description="WordPress theme sources and language assets.",
+            ),
+            SyncFilterSpec(
+                relative_path="wp-content/plugins",
+                filter_type=SyncFilterType.DIRECTORY,
+                description="WordPress plugin sources and language assets.",
+            ),
+        )
 
     def detect(self, project_path: Path) -> FrameworkDetectionResult:
         """Inspect a local path for WordPress markers."""

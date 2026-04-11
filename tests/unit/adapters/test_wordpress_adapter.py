@@ -5,6 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from polyglot_site_translator.adapters.wordpress import WordPressFrameworkAdapter
+from polyglot_site_translator.domain.sync.scope import SyncFilterType
 
 
 def test_wordpress_adapter_detects_a_typical_wordpress_layout(tmp_path: Path) -> None:
@@ -48,3 +49,14 @@ def test_wordpress_adapter_includes_wp_admin_when_present(tmp_path: Path) -> Non
 
     assert result.matched is True
     assert str(tmp_path / "wp-admin") in result.relevant_paths
+
+
+def test_wordpress_adapter_exposes_sync_filters() -> None:
+    filters = WordPressFrameworkAdapter().get_sync_filters(Path("/workspace/site"))
+
+    assert [sync_filter.relative_path for sync_filter in filters] == [
+        "wp-content/languages",
+        "wp-content/themes",
+        "wp-content/plugins",
+    ]
+    assert all(sync_filter.filter_type is SyncFilterType.DIRECTORY for sync_filter in filters)

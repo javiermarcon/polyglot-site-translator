@@ -42,11 +42,13 @@ Configure, validate, test, and later synchronize optional remote sources into lo
 - structured connection-test results
 - reusable remote session contracts and session state
 - typed sync direction and structured sync results
+- typed adapter-defined sync filter specs and explicit resolved sync scopes
 - typed sync progress events and command-log reporting
 - remote/local file discovery descriptors
 - connection validation
 - remote path handling
 - download/upload sync orchestration
+- framework-specific sync scope resolution
 - local target preparation
 
 ### Excludes

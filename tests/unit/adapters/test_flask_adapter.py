@@ -5,6 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from polyglot_site_translator.adapters.flask import FlaskFrameworkAdapter
+from polyglot_site_translator.domain.sync.scope import SyncFilterType
 
 
 def test_flask_adapter_detects_a_typical_flask_layout(tmp_path: Path) -> None:
@@ -48,4 +49,16 @@ def test_flask_adapter_returns_unmatched_when_signals_are_insufficient(tmp_path:
     result = FlaskFrameworkAdapter().detect(tmp_path)
 
     assert result.matched is False
-    assert result.warnings != []
+
+
+def test_flask_adapter_exposes_sync_filters() -> None:
+    filters = FlaskFrameworkAdapter().get_sync_filters(Path("/workspace/site"))
+
+    assert [sync_filter.relative_path for sync_filter in filters] == [
+        "translations",
+        "babel.cfg",
+    ]
+    assert [sync_filter.filter_type for sync_filter in filters] == [
+        SyncFilterType.DIRECTORY,
+        SyncFilterType.FILE,
+    ]

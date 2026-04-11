@@ -165,6 +165,8 @@ The frontend baseline now also includes:
 - a bounded sync command log that keeps only the latest configured operations in memory
 - incremental remote sync downloads so large FTP/SFTP trees can begin writing local files before remote discovery fully completes
 - incremental local-to-remote uploads with automatic remote directory preparation and one reusable remote session per sync run
+- adapter-owned sync filter specs plus an explicit scope-resolution service reused by both sync directions
+- current adapters expose default sync filters for WordPress, Django, and Flask without hardcoding those paths in generic sync services or Kivy widgets
 - a real adapter registry for framework detection with typed results
 - dynamic adapter discovery from the `adapters/` package at runtime
 - concrete WordPress, Django, and Flask detection adapters

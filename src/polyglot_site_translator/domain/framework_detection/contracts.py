@@ -8,6 +8,7 @@ from typing import Protocol
 from polyglot_site_translator.domain.framework_detection.models import (
     FrameworkDetectionResult,
 )
+from polyglot_site_translator.domain.sync.scope import SyncFilterSpec
 
 
 class FrameworkAdapter(Protocol):
@@ -27,3 +28,6 @@ class FrameworkAdapter(Protocol):
 
     def detect(self, project_path: Path) -> FrameworkDetectionResult:
         """Inspect a path and return a structured detection result."""
+
+    def get_sync_filters(self, project_path: Path) -> tuple[SyncFilterSpec, ...]:
+        """Return adapter-defined sync filters for the given project path."""

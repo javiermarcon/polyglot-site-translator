@@ -96,6 +96,9 @@ Current frontend base:
 - `polyglot_site_translator/domain/sync/`
   Typed sync direction, remote/local file descriptors, summaries, results, and explicit sync errors.
 
+- `polyglot_site_translator/domain/sync/scope.py`
+  Typed adapter-owned sync filter specs, filter matching rules, and explicit resolved-scope outcomes.
+
 - `polyglot_site_translator/domain/framework_detection/`
   Typed framework-detection contracts, result models, and explicit ambiguity errors.
 
@@ -108,6 +111,9 @@ Current frontend base:
 - `polyglot_site_translator/services/framework_detection.py`
   Registry-backed framework detection orchestration with path validation and framework catalog exposure.
 
+- `polyglot_site_translator/services/framework_sync_scope.py`
+  Explicit resolution of adapter-defined sync filters from the persisted framework type, without hardcoding framework paths in generic sync services or Kivy UI modules.
+
 - `polyglot_site_translator/services/site_registry.py`
   Site registry CRUD orchestration and validation independent from Kivy or SQLite details, with optional remote-connection integration and optional framework detection integration.
 
@@ -115,7 +121,7 @@ Current frontend base:
   Validation, discoverable catalog exposure, and connection-test orchestration for remote connection providers.
 
 - `polyglot_site_translator/services/project_sync.py`
-  Bidirectional sync orchestration over the existing remote provider registry, including one reusable remote session per sync run, typed results, and controlled failures.
+  Bidirectional sync orchestration over the existing remote provider registry, including one reusable remote session per sync run, optional adapter-resolved sync scopes, typed results, and controlled failures.
 
 - `polyglot_site_translator/infrastructure/remote_connections/`
   Discoverable FTP/FTPS/SFTP/SCP provider implementations, reusable transport sessions, and the runtime provider registry.
@@ -218,6 +224,7 @@ Current frontend coverage:
 - `tests/unit/adapters/test_flask_adapter.py`
 - `tests/unit/services/test_framework_detection_service.py`
 - `tests/unit/services/test_project_sync_service.py`
+- `tests/unit/services/test_framework_sync_scope_service.py`
 - `tests/unit/presentation/test_site_registry_services.py`
 - `tests/unit/presentation/test_sync_workflow_services.py`
 - `tests/integration/presentation/test_project_editor_screen_runtime.py`
@@ -231,6 +238,7 @@ Current frontend coverage:
 - `features/presentation/framework_detection.feature`
 - `features/presentation/remote_connections.feature`
 - `features/presentation/sync.feature`
+- `features/presentation/sync_filters.feature`
 
 If UI tests are added, they should remain isolated and clearly labeled.
 

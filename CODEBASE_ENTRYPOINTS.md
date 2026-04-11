@@ -70,6 +70,8 @@ Current frontend-facing service entrypoints:
 - `SettingsService.reset_settings`
 - `polyglot_site_translator.infrastructure.settings.build_default_settings_service`
 - `polyglot_site_translator.infrastructure.settings.TomlSettingsService`
+- `polyglot_site_translator.services.framework_sync_scope.FrameworkSyncScopeService.resolve_for_site`
+- `polyglot_site_translator.services.framework_sync_scope.FrameworkSyncScopeService.resolve_for_framework`
 - `polyglot_site_translator.services.project_sync.ProjectSyncService.sync_remote_to_local`
 - `polyglot_site_translator.services.project_sync.ProjectSyncService.sync_local_to_remote`
 - `polyglot_site_translator.services.remote_connections.RemoteConnectionService.list_supported_connection_types`
@@ -91,6 +93,7 @@ Framework adapters are responsible for target-specific discovery or extraction, 
 
 Current adapter entrypoints:
 - `polyglot_site_translator.adapters.base.BaseFrameworkAdapter`
+- `polyglot_site_translator.adapters.base.BaseFrameworkAdapter.get_sync_filters`
 - `polyglot_site_translator.adapters.framework_registry.FrameworkAdapterRegistry`
 - `polyglot_site_translator.adapters.framework_registry.FrameworkAdapterRegistry.discover_installed`
 - `polyglot_site_translator.adapters.framework_registry.FrameworkAdapterRegistry.list_framework_descriptors`

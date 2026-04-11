@@ -24,6 +24,7 @@ from polyglot_site_translator.domain.sync.models import (
     SyncResult,
     SyncSummary,
 )
+from polyglot_site_translator.domain.sync.scope import ResolvedSyncScope
 from polyglot_site_translator.infrastructure.remote_connections.base import (
     RemoteConnectionOperationError,
 )
@@ -76,6 +77,7 @@ class ProjectSyncService:
         self,
         site: RegisteredSite,
         progress_callback: SyncProgressCallback | None = None,
+        resolved_scope: ResolvedSyncScope | None = None,
     ) -> SyncResult:
         """Synchronize the site's configured remote workspace into the local path."""
         summary = SyncSummary(
@@ -128,12 +130,14 @@ class ProjectSyncService:
                 summary=prepared_summary,
             ),
             progress_callback=progress_callback,
+            resolved_scope=resolved_scope,
         )
 
     def sync_local_to_remote(
         self,
         site: RegisteredSite,
         progress_callback: SyncProgressCallback | None = None,
+        resolved_scope: ResolvedSyncScope | None = None,
     ) -> SyncResult:
         """Synchronize the site's local workspace into the configured remote path."""
         summary = SyncSummary(
@@ -161,6 +165,7 @@ class ProjectSyncService:
             local_files = self._list_local_files(
                 local_root=local_root,
                 progress_callback=progress_callback,
+                resolved_scope=resolved_scope,
             )
         except OSError as error:
             result = self._failure_result(
@@ -205,6 +210,7 @@ class ProjectSyncService:
             ),
             local_files=local_files,
             progress_callback=progress_callback,
+            resolved_scope=resolved_scope,
         )
 
     def _prepare_local_workspace(
@@ -295,6 +301,7 @@ class ProjectSyncService:
         context: _UploadContext,
         local_files: list[LocalSyncFile],
         progress_callback: SyncProgressCallback | None,
+        resolved_scope: ResolvedSyncScope | None,
     ) -> SyncResult:
         files_discovered = 0
         files_uploaded = 0
@@ -316,6 +323,8 @@ class ProjectSyncService:
             return result
         try:
             for local_file in local_files:
+                if not _scope_includes(resolved_scope, local_file.relative_path):
+                    continue
                 files_discovered += 1
                 self._emit_progress(
                     progress_callback,
@@ -476,6 +485,7 @@ class ProjectSyncService:
         *,
         local_root: Path,
         progress_callback: SyncProgressCallback | None,
+        resolved_scope: ResolvedSyncScope | None,
     ) -> list[LocalSyncFile]:
         self._emit_progress(
             progress_callback,
@@ -485,13 +495,18 @@ class ProjectSyncService:
                 command_text=f"LOCAL LIST {local_root}",
             ),
         )
-        return list(self._local_workspace.iter_local_files(local_root))
+        return [
+            local_file
+            for local_file in self._local_workspace.iter_local_files(local_root)
+            if _scope_includes(resolved_scope, local_file.relative_path)
+        ]
 
     def _sync_remote_files_incrementally(  # noqa: PLR0911, PLR0912, PLR0915
         self,
         *,
         context: _DownloadContext,
         progress_callback: SyncProgressCallback | None,
+        resolved_scope: ResolvedSyncScope | None,
     ) -> SyncResult:
         files_discovered = 0
         files_downloaded = 0
@@ -641,6 +656,8 @@ class ProjectSyncService:
                     )
                     self._emit_failure(progress_callback, result)
                     return result
+                if not _scope_includes(resolved_scope, remote_file.relative_path):
+                    continue
                 files_discovered += 1
                 self._emit_progress(
                     progress_callback,
@@ -936,6 +953,15 @@ def _join_remote_sync_path(remote_root: str, relative_path: str) -> str:
     if normalized_root == "/":
         return f"/{relative_path.lstrip('/')}"
     return posixpath.join(normalized_root, relative_path)
+
+
+def _scope_includes(
+    resolved_scope: ResolvedSyncScope | None,
+    relative_path: str,
+) -> bool:
+    if resolved_scope is None:
+        return True
+    return resolved_scope.includes(relative_path)
 
 
 def _format_error_cause(error: BaseException) -> str:

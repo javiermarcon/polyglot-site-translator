@@ -5,6 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from polyglot_site_translator.adapters.django import DjangoFrameworkAdapter
+from polyglot_site_translator.domain.sync.scope import SyncFilterType
 
 
 def test_django_adapter_detects_a_typical_project_layout(tmp_path: Path) -> None:
@@ -66,3 +67,10 @@ def test_django_adapter_returns_unmatched_for_non_django_projects(tmp_path: Path
 
     assert result.matched is False
     assert result.framework_type == "unknown"
+
+
+def test_django_adapter_exposes_sync_filters() -> None:
+    filters = DjangoFrameworkAdapter().get_sync_filters(Path("/workspace/site"))
+
+    assert [sync_filter.relative_path for sync_filter in filters] == ["locale"]
+    assert filters[0].filter_type is SyncFilterType.DIRECTORY

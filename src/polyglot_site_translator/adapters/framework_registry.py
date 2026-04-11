@@ -62,6 +62,13 @@ class FrameworkAdapterRegistry:
         """Return registered adapters preserving registration order."""
         return list(self.adapters)
 
+    def find_adapter(self, framework_type: str) -> FrameworkAdapter | None:
+        """Return the adapter registered for a framework type, if any."""
+        for adapter in self.adapters:
+            if adapter.framework_type == framework_type:
+                return adapter
+        return None
+
     def list_framework_descriptors(self) -> list[FrameworkDescriptor]:
         """Return display metadata for the unknown option and all discovered adapters."""
         descriptors = [
