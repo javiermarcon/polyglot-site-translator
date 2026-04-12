@@ -52,11 +52,12 @@ def test_wordpress_adapter_includes_wp_admin_when_present(tmp_path: Path) -> Non
 
 
 def test_wordpress_adapter_exposes_sync_filters() -> None:
-    filters = WordPressFrameworkAdapter().get_sync_filters(Path("/workspace/site"))
+    scope = WordPressFrameworkAdapter().get_sync_scope(Path("/workspace/site"))
 
-    assert [sync_filter.relative_path for sync_filter in filters] == [
+    assert [sync_filter.relative_path for sync_filter in scope.filters] == [
         "wp-content/languages",
         "wp-content/themes",
         "wp-content/plugins",
     ]
-    assert all(sync_filter.filter_type is SyncFilterType.DIRECTORY for sync_filter in filters)
+    assert all(sync_filter.filter_type is SyncFilterType.DIRECTORY for sync_filter in scope.filters)
+    assert scope.excludes == ()

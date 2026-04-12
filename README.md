@@ -32,6 +32,7 @@ El repositorio está en una etapa temprana y hoy incluye principalmente:
 - descarga real `remote -> local` al `local_path` con creación automática de directorios locales faltantes
 - subida real `local -> remote` con creación automática de directorios remotos faltantes
 - filtros de sync definidos por adapter/framework y reutilizables por ambos sentidos
+- inclusiones y exclusiones de sync específicas por framework, por ejemplo `.venv/` y `__pycache__/` para stacks Python
 - preferencia persistida por proyecto para elegir entre `filtered sync` y `full sync`
 - resultado tipado y controlado de sync con conteo de archivos y código de error cuando falla
 - ejecución de sync en background desde Project Detail, con una ventana dedicada de progreso
@@ -82,13 +83,13 @@ La base actual implementa una base funcional de presentación, settings y `site_
 - `domain/site_registry/`: modelos tipados, errores y contratos del dominio de site registry
 - `domain/remote_connections/`: modelos tipados, contratos y resultados estructurados de conexiones remotas
 - `domain/sync/`: dirección de sync, archivos remotos/locales, resultados, summaries y errores explícitos
-- `domain/sync/scope.py`: filtros tipados de sync por adapter y scopes resueltos reutilizables por ambos sentidos
+- `domain/sync/scope.py`: filtros tipados de sync por adapter, incluyendo inclusiones/exclusiones y scopes resueltos reutilizables por ambos sentidos
 - `domain/framework_detection/`: contratos, resultados tipados y errores explícitos para detección de framework
 - `services/site_registry.py`: validación y CRUD del site registry
 - `services/remote_connections.py`: validación opcional, catálogo discoverable y test de conexión
 - `services/project_sync.py`: sync real `remote -> local` y `local -> remote` con resultados tipados, errores controlados y eventos de progreso
 - `services/framework_detection.py`: orquestación de detección desde el registry de adapters
-- `services/framework_sync_scope.py`: resolución explícita de filtros de sync por framework/adapter
+- `services/framework_sync_scope.py`: resolución explícita de filtros y exclusiones de sync por framework/adapter
 - `adapters/base.py`: contrato base discoverable para nuevos adapters
 - `infrastructure/settings.py`: persistencia TOML de settings generales por usuario
 - `infrastructure/database_location.py`: resolución del path final de SQLite desde settings
@@ -132,7 +133,7 @@ La base actual del frontend incluye:
 - Settings generales con persistencia TOML y campos para configurar la ubicación/nombre de la base SQLite
 
 La navegación mantiene el contexto del proyecto seleccionado. El flujo principal de create/list/detail/update y el sync bidireccional ya usan servicios reales para `site_registry` y el subsistema remoto; audit y PO processing siguen usando servicios fake detrás de los mismos contratos de UI.
-Cuando la preferencia `Use Adapter Sync Filters` está activa en la configuración remota persistida del proyecto, ambos sentidos de sync usan el scope resuelto por `FrameworkSyncScopeService`; cuando está desactivada, el servicio ejecuta full sync. Si el proyecto pide sync filtrado pero no existe un scope utilizable, el sync falla de forma explícita en vez de caer en un fallback silencioso.
+Cuando la preferencia `Use Adapter Sync Filters` está activa en la configuración remota persistida del proyecto, ambos sentidos de sync usan el scope resuelto por `FrameworkSyncScopeService`; cuando está desactivada, el servicio ejecuta full sync. Ese scope puede incluir paths relevantes y excluir artefactos específicos del framework, por ejemplo caches o entornos virtuales en proyectos Python. Si el proyecto pide sync filtrado pero no existe un scope utilizable, el sync falla de forma explícita en vez de caer en un fallback silencioso.
 
 El entrypoint gráfico por defecto (`create_kivy_app()` / `python -m polyglot_site_translator`) arranca con settings TOML y `site_registry` SQLite reales. Los bundles fake seeded quedan reservados para tests y escenarios de desarrollo controlados.
 Los doubles/stubs de test para funcionalidades ya implementadas viven en soporte de tests y no forman parte del runtime productivo.

@@ -11,6 +11,7 @@ from polyglot_site_translator.domain.framework_detection.models import (
     FrameworkDetectionResult,
 )
 from polyglot_site_translator.domain.sync.scope import (
+    AdapterSyncScope,
     SyncFilterSpec,
     SyncFilterType,
 )
@@ -30,18 +31,47 @@ class FlaskFrameworkAdapter(BaseFrameworkAdapter):
     adapter_name: str = "flask_adapter"
     display_name: str = "Flask"
 
-    def get_sync_filters(self, project_path: Path) -> tuple[SyncFilterSpec, ...]:
+    def get_sync_scope(self, project_path: Path) -> AdapterSyncScope:
         """Return the default Flask sync scope."""
-        return (
-            SyncFilterSpec(
-                relative_path="translations",
-                filter_type=SyncFilterType.DIRECTORY,
-                description="Flask-Babel translation catalogs.",
+        return AdapterSyncScope(
+            filters=(
+                SyncFilterSpec(
+                    relative_path="translations",
+                    filter_type=SyncFilterType.DIRECTORY,
+                    description="Flask-Babel translation catalogs.",
+                ),
+                SyncFilterSpec(
+                    relative_path="babel.cfg",
+                    filter_type=SyncFilterType.FILE,
+                    description="Flask-Babel extraction configuration.",
+                ),
             ),
-            SyncFilterSpec(
-                relative_path="babel.cfg",
-                filter_type=SyncFilterType.FILE,
-                description="Flask-Babel extraction configuration.",
+            excludes=(
+                SyncFilterSpec(
+                    relative_path=".venv",
+                    filter_type=SyncFilterType.DIRECTORY,
+                    description="Project virtual environment.",
+                ),
+                SyncFilterSpec(
+                    relative_path="venv",
+                    filter_type=SyncFilterType.DIRECTORY,
+                    description="Project virtual environment.",
+                ),
+                SyncFilterSpec(
+                    relative_path="__pycache__",
+                    filter_type=SyncFilterType.DIRECTORY,
+                    description="Python bytecode cache.",
+                ),
+                SyncFilterSpec(
+                    relative_path=".mypy_cache",
+                    filter_type=SyncFilterType.DIRECTORY,
+                    description="mypy cache.",
+                ),
+                SyncFilterSpec(
+                    relative_path=".pytest_cache",
+                    filter_type=SyncFilterType.DIRECTORY,
+                    description="pytest cache.",
+                ),
             ),
         )
 

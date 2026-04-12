@@ -43,3 +43,49 @@ def test_resolved_sync_scope_requires_no_filters_when_unresolved() -> None:
 
     assert scope.is_filtered is False
     assert scope.includes("any/path.txt") is True
+
+
+def test_resolved_sync_scope_applies_exclusions_after_inclusions() -> None:
+    scope = ResolvedSyncScope(
+        framework_type="django",
+        adapter_name="django_adapter",
+        status=SyncScopeStatus.FILTERED,
+        filters=(
+            SyncFilterSpec(
+                relative_path="locale",
+                filter_type=SyncFilterType.DIRECTORY,
+                description="Django locale catalogs.",
+            ),
+        ),
+        excludes=(
+            SyncFilterSpec(
+                relative_path="locale/__pycache__",
+                filter_type=SyncFilterType.DIRECTORY,
+                description="Python bytecode cache.",
+            ),
+        ),
+        message="Resolved Django sync scope.",
+    )
+
+    assert scope.includes("locale/es/LC_MESSAGES/django.po") is True
+    assert scope.includes("locale/__pycache__/messages.cpython-312.pyc") is False
+
+
+def test_resolved_sync_scope_uses_only_exclusions_when_not_filtered() -> None:
+    scope = ResolvedSyncScope(
+        framework_type="django",
+        adapter_name="django_adapter",
+        status=SyncScopeStatus.NO_FILTERS,
+        filters=(),
+        excludes=(
+            SyncFilterSpec(
+                relative_path=".venv",
+                filter_type=SyncFilterType.DIRECTORY,
+                description="Virtual environment.",
+            ),
+        ),
+        message="Resolved only exclusions.",
+    )
+
+    assert scope.includes("locale/es/LC_MESSAGES/django.po") is True
+    assert scope.includes(".venv/lib/python3.12/site.py") is False

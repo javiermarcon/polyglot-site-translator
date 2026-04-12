@@ -6,11 +6,34 @@ from pathlib import Path
 
 import pytest
 
+from polyglot_site_translator.adapters.base import BaseFrameworkAdapter
 from polyglot_site_translator.adapters.common import (
     find_first_level_directory,
     find_first_level_file,
     read_text_if_present,
 )
+from polyglot_site_translator.domain.framework_detection.models import (
+    FrameworkDetectionResult,
+)
+from polyglot_site_translator.domain.sync.scope import SyncFilterSpec, SyncFilterType
+
+
+class _AdapterWithDefaultSyncScope(BaseFrameworkAdapter):
+    framework_type = "example"
+    adapter_name = "example_adapter"
+    display_name = "Example"
+
+    def detect(self, project_path: Path) -> FrameworkDetectionResult:
+        return FrameworkDetectionResult.unmatched(project_path=str(project_path))
+
+    def get_sync_filters(self, project_path: Path) -> tuple[SyncFilterSpec, ...]:
+        return (
+            SyncFilterSpec(
+                relative_path="locale",
+                filter_type=SyncFilterType.DIRECTORY,
+                description="Example catalogs.",
+            ),
+        )
 
 
 def test_find_first_level_file_prefers_root_and_nested_matches(tmp_path: Path) -> None:
@@ -64,3 +87,10 @@ def test_read_text_if_present_handles_missing_binary_and_read_errors(
     monkeypatch.setattr(Path, "read_text", raise_os_error)
 
     assert read_text_if_present(text_file) == ""
+
+
+def test_base_framework_adapter_default_scope_delegates_to_sync_filters() -> None:
+    scope = _AdapterWithDefaultSyncScope().get_sync_scope(Path("/workspace/project"))
+
+    assert [sync_filter.relative_path for sync_filter in scope.filters] == ["locale"]
+    assert scope.excludes == ()

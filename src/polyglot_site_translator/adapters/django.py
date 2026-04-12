@@ -14,6 +14,7 @@ from polyglot_site_translator.domain.framework_detection.models import (
     FrameworkDetectionResult,
 )
 from polyglot_site_translator.domain.sync.scope import (
+    AdapterSyncScope,
     SyncFilterSpec,
     SyncFilterType,
 )
@@ -27,13 +28,42 @@ class DjangoFrameworkAdapter(BaseFrameworkAdapter):
     adapter_name: str = "django_adapter"
     display_name: str = "Django"
 
-    def get_sync_filters(self, project_path: Path) -> tuple[SyncFilterSpec, ...]:
+    def get_sync_scope(self, project_path: Path) -> AdapterSyncScope:
         """Return the default Django sync scope."""
-        return (
-            SyncFilterSpec(
-                relative_path="locale",
-                filter_type=SyncFilterType.DIRECTORY,
-                description="Django locale catalogs.",
+        return AdapterSyncScope(
+            filters=(
+                SyncFilterSpec(
+                    relative_path="locale",
+                    filter_type=SyncFilterType.DIRECTORY,
+                    description="Django locale catalogs.",
+                ),
+            ),
+            excludes=(
+                SyncFilterSpec(
+                    relative_path=".venv",
+                    filter_type=SyncFilterType.DIRECTORY,
+                    description="Project virtual environment.",
+                ),
+                SyncFilterSpec(
+                    relative_path="venv",
+                    filter_type=SyncFilterType.DIRECTORY,
+                    description="Project virtual environment.",
+                ),
+                SyncFilterSpec(
+                    relative_path="__pycache__",
+                    filter_type=SyncFilterType.DIRECTORY,
+                    description="Python bytecode cache.",
+                ),
+                SyncFilterSpec(
+                    relative_path=".mypy_cache",
+                    filter_type=SyncFilterType.DIRECTORY,
+                    description="mypy cache.",
+                ),
+                SyncFilterSpec(
+                    relative_path=".pytest_cache",
+                    filter_type=SyncFilterType.DIRECTORY,
+                    description="pytest cache.",
+                ),
             ),
         )
 

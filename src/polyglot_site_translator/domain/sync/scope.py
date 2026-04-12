@@ -23,6 +23,19 @@ class SyncScopeStatus(StrEnum):
 
 
 @dataclass(frozen=True)
+class AdapterSyncScope:
+    """Adapter-owned include/exclude rules for synchronization."""
+
+    filters: tuple[SyncFilterSpec, ...] = ()
+    excludes: tuple[SyncFilterSpec, ...] = ()
+
+    @property
+    def is_empty(self) -> bool:
+        """Return whether the adapter provides no sync rules."""
+        return self.filters == () and self.excludes == ()
+
+
+@dataclass(frozen=True)
 class SyncFilterSpec:
     """A single adapter-defined sync filter."""
 
@@ -50,6 +63,7 @@ class ResolvedSyncScope:
     status: SyncScopeStatus
     filters: tuple[SyncFilterSpec, ...]
     message: str
+    excludes: tuple[SyncFilterSpec, ...] = ()
 
     @property
     def is_filtered(self) -> bool:
@@ -58,6 +72,8 @@ class ResolvedSyncScope:
 
     def includes(self, relative_path: str) -> bool:
         """Return whether a relative path belongs to the resolved scope."""
+        if any(sync_filter.matches(relative_path) for sync_filter in self.excludes):
+            return False
         if not self.is_filtered:
             return True
         return any(sync_filter.matches(relative_path) for sync_filter in self.filters)

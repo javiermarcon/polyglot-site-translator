@@ -12,6 +12,7 @@ from polyglot_site_translator.domain.framework_detection.models import (
 )
 from polyglot_site_translator.domain.site_registry.models import RegisteredSite, SiteProject
 from polyglot_site_translator.domain.sync.scope import (
+    AdapterSyncScope,
     SyncFilterSpec,
     SyncScopeStatus,
 )
@@ -29,6 +30,9 @@ class _NoFilterAdapter:
     def detect(self, project_path: Path) -> FrameworkDetectionResult:
         return FrameworkDetectionResult.unmatched(project_path=str(project_path))
 
+    def get_sync_scope(self, project_path: Path) -> AdapterSyncScope:
+        return AdapterSyncScope()
+
     def get_sync_filters(self, project_path: Path) -> tuple[SyncFilterSpec, ...]:
         return ()
 
@@ -44,6 +48,7 @@ def test_framework_sync_scope_service_resolves_wordpress_filters(tmp_path: Path)
         "wp-content/themes",
         "wp-content/plugins",
     ]
+    assert resolved_scope.excludes == ()
 
 
 def test_framework_sync_scope_service_returns_adapter_unavailable_when_missing(
@@ -98,6 +103,19 @@ def test_framework_sync_scope_service_resolves_from_an_explicit_project_path(
     assert resolved_scope.status is SyncScopeStatus.FILTERED
     assert resolved_scope.includes("translations/es/LC_MESSAGES/messages.po") is True
     assert resolved_scope.includes("templates/base.html") is False
+
+
+def test_framework_sync_scope_service_resolves_django_exclusions(tmp_path: Path) -> None:
+    service = FrameworkSyncScopeService(registry=FrameworkAdapterRegistry.discover_installed())
+
+    resolved_scope = service.resolve_for_site(_build_site(tmp_path, framework_type="django"))
+
+    assert resolved_scope.status is SyncScopeStatus.FILTERED
+    assert ".venv" in [sync_filter.relative_path for sync_filter in resolved_scope.excludes]
+    assert "__pycache__" in [sync_filter.relative_path for sync_filter in resolved_scope.excludes]
+    assert resolved_scope.includes("locale/es/LC_MESSAGES/django.po") is True
+    assert resolved_scope.includes(".venv/lib/python3.12/site.py") is False
+    assert resolved_scope.includes("__pycache__/settings.cpython-312.pyc") is False
 
 
 def _build_site(tmp_path: Path, *, framework_type: str) -> RegisteredSite:

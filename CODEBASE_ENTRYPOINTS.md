@@ -94,6 +94,7 @@ Framework adapters are responsible for target-specific discovery or extraction, 
 Current adapter entrypoints:
 - `polyglot_site_translator.adapters.base.BaseFrameworkAdapter`
 - `polyglot_site_translator.adapters.base.BaseFrameworkAdapter.get_sync_filters`
+- `polyglot_site_translator.adapters.base.BaseFrameworkAdapter.get_sync_scope`
 - `polyglot_site_translator.adapters.framework_registry.FrameworkAdapterRegistry`
 - `polyglot_site_translator.adapters.framework_registry.FrameworkAdapterRegistry.discover_installed`
 - `polyglot_site_translator.adapters.framework_registry.FrameworkAdapterRegistry.list_framework_descriptors`

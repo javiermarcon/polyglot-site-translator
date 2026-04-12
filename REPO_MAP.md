@@ -97,7 +97,7 @@ Current frontend base:
   Typed sync direction, remote/local file descriptors, summaries, results, and explicit sync errors.
 
 - `polyglot_site_translator/domain/sync/scope.py`
-  Typed adapter-owned sync filter specs, filter matching rules, and explicit resolved-scope outcomes.
+  Typed adapter-owned sync include/exclude specs, filter matching rules, and explicit resolved-scope outcomes.
 
 - `polyglot_site_translator/domain/framework_detection/`
   Typed framework-detection contracts, result models, and explicit ambiguity errors.
@@ -112,7 +112,7 @@ Current frontend base:
   Registry-backed framework detection orchestration with path validation and framework catalog exposure.
 
 - `polyglot_site_translator/services/framework_sync_scope.py`
-  Explicit resolution of adapter-defined sync filters from the persisted framework type, without hardcoding framework paths in generic sync services or Kivy UI modules.
+  Explicit resolution of adapter-defined sync include/exclude rules from the persisted framework type, without hardcoding framework paths in generic sync services or Kivy UI modules.
 
 - `polyglot_site_translator/services/site_registry.py`
   Site registry CRUD orchestration and validation independent from Kivy or SQLite details, with optional remote-connection integration and optional framework detection integration.

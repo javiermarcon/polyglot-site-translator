@@ -41,6 +41,7 @@ class FrameworkSyncScopeService:
                 adapter_name=None,
                 status=SyncScopeStatus.FRAMEWORK_UNRESOLVED,
                 filters=(),
+                excludes=(),
                 message="The project does not expose a supported framework type.",
             )
         adapter = self._registry.find_adapter(normalized_framework_type)
@@ -50,29 +51,37 @@ class FrameworkSyncScopeService:
                 adapter_name=None,
                 status=SyncScopeStatus.ADAPTER_UNAVAILABLE,
                 filters=(),
+                excludes=(),
                 message=(
                     "No installed framework adapter can provide sync filters for "
                     f"'{normalized_framework_type}'."
                 ),
             )
-        filters = adapter.get_sync_filters(Path(project_path))
-        if filters == ():
+        sync_scope = adapter.get_sync_scope(Path(project_path))
+        if sync_scope.is_empty:
             return ResolvedSyncScope(
                 framework_type=normalized_framework_type,
                 adapter_name=adapter.adapter_name,
                 status=SyncScopeStatus.NO_FILTERS,
                 filters=(),
+                excludes=(),
                 message=(
-                    f"The adapter '{adapter.adapter_name}' does not define sync filters "
-                    "for this framework."
+                    f"The adapter '{adapter.adapter_name}' does not define sync include or "
+                    "exclude rules for this framework."
                 ),
             )
         return ResolvedSyncScope(
             framework_type=normalized_framework_type,
             adapter_name=adapter.adapter_name,
-            status=SyncScopeStatus.FILTERED,
-            filters=filters,
+            status=(
+                SyncScopeStatus.FILTERED if sync_scope.filters != () else SyncScopeStatus.NO_FILTERS
+            ),
+            filters=sync_scope.filters,
+            excludes=sync_scope.excludes,
             message=(
-                f"Resolved {len(filters)} sync filters from adapter '{adapter.adapter_name}'."
+                "Resolved "
+                f"{len(sync_scope.filters)} include filters and "
+                f"{len(sync_scope.excludes)} exclusions from adapter "
+                f"'{adapter.adapter_name}'."
             ),
         )

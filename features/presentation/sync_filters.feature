@@ -16,6 +16,8 @@ Feature: Framework adapter sync filters
     When the operator resolves the framework sync scope
     Then the resolved sync scope status is "filtered"
     And the resolved sync scope includes the filter "locale"
+    And the resolved sync scope excludes the filter ".venv"
+    And the resolved sync scope excludes the filter "__pycache__"
 
   Scenario: Resolve Flask sync filters from the registered framework
     Given a registered "flask" project for sync filter resolution
@@ -23,6 +25,8 @@ Feature: Framework adapter sync filters
     Then the resolved sync scope status is "filtered"
     And the resolved sync scope includes the filter "translations"
     And the resolved sync scope includes the filter "babel.cfg"
+    And the resolved sync scope excludes the filter ".venv"
+    And the resolved sync scope excludes the filter "__pycache__"
 
   Scenario: Return an explicit unresolved scope when no adapter is available
     Given a registered "customapp" project for sync filter resolution
@@ -35,3 +39,9 @@ Feature: Framework adapter sync filters
     When the operator resolves the framework sync scope
     Then the resolved sync scope status is "framework_unresolved"
     And the resolved sync scope reports no sync filters
+
+  Scenario: Do not leak Python-specific exclusions into WordPress
+    Given a registered "wordpress" project for sync filter resolution
+    When the operator resolves the framework sync scope
+    Then the resolved sync scope status is "filtered"
+    And the resolved sync scope does not exclude the filter ".venv"

@@ -52,13 +52,20 @@ def test_flask_adapter_returns_unmatched_when_signals_are_insufficient(tmp_path:
 
 
 def test_flask_adapter_exposes_sync_filters() -> None:
-    filters = FlaskFrameworkAdapter().get_sync_filters(Path("/workspace/site"))
+    scope = FlaskFrameworkAdapter().get_sync_scope(Path("/workspace/site"))
 
-    assert [sync_filter.relative_path for sync_filter in filters] == [
+    assert [sync_filter.relative_path for sync_filter in scope.filters] == [
         "translations",
         "babel.cfg",
     ]
-    assert [sync_filter.filter_type for sync_filter in filters] == [
+    assert [sync_filter.filter_type for sync_filter in scope.filters] == [
         SyncFilterType.DIRECTORY,
         SyncFilterType.FILE,
+    ]
+    assert [sync_filter.relative_path for sync_filter in scope.excludes] == [
+        ".venv",
+        "venv",
+        "__pycache__",
+        ".mypy_cache",
+        ".pytest_cache",
     ]

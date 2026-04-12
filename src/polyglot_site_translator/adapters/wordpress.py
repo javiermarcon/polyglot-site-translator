@@ -10,6 +10,7 @@ from polyglot_site_translator.domain.framework_detection.models import (
     FrameworkDetectionResult,
 )
 from polyglot_site_translator.domain.sync.scope import (
+    AdapterSyncScope,
     SyncFilterSpec,
     SyncFilterType,
 )
@@ -23,23 +24,25 @@ class WordPressFrameworkAdapter(BaseFrameworkAdapter):
     adapter_name: str = "wordpress_adapter"
     display_name: str = "WordPress"
 
-    def get_sync_filters(self, project_path: Path) -> tuple[SyncFilterSpec, ...]:
+    def get_sync_scope(self, project_path: Path) -> AdapterSyncScope:
         """Return the default WordPress sync scope."""
-        return (
-            SyncFilterSpec(
-                relative_path="wp-content/languages",
-                filter_type=SyncFilterType.DIRECTORY,
-                description="WordPress translation catalogs.",
-            ),
-            SyncFilterSpec(
-                relative_path="wp-content/themes",
-                filter_type=SyncFilterType.DIRECTORY,
-                description="WordPress theme sources and language assets.",
-            ),
-            SyncFilterSpec(
-                relative_path="wp-content/plugins",
-                filter_type=SyncFilterType.DIRECTORY,
-                description="WordPress plugin sources and language assets.",
+        return AdapterSyncScope(
+            filters=(
+                SyncFilterSpec(
+                    relative_path="wp-content/languages",
+                    filter_type=SyncFilterType.DIRECTORY,
+                    description="WordPress translation catalogs.",
+                ),
+                SyncFilterSpec(
+                    relative_path="wp-content/themes",
+                    filter_type=SyncFilterType.DIRECTORY,
+                    description="WordPress theme sources and language assets.",
+                ),
+                SyncFilterSpec(
+                    relative_path="wp-content/plugins",
+                    filter_type=SyncFilterType.DIRECTORY,
+                    description="WordPress plugin sources and language assets.",
+                ),
             ),
         )
 

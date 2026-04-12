@@ -100,7 +100,7 @@ Current first real implementation:
 - `domain/remote_connections/` defines typed descriptors, configs, provider/session contracts, session state, and test results
 - `domain/remote_connections/` also persists per-project remote flags such as the filtered-vs-full sync preference
 - `domain/sync/` defines sync direction, remote/local file descriptors, summaries, results, and explicit sync errors
-- `domain/sync/scope.py` defines typed adapter-owned sync filters and resolved sync scopes
+- `domain/sync/scope.py` defines typed adapter-owned sync include/exclude rules and resolved sync scopes
 - `services/site_registry.py` validates and orchestrates CRUD use cases
 - `services/remote_connections.py` validates optional remote configs, exposes the discoverable catalog, and dispatches connection tests
 - `services/framework_sync_scope.py` resolves adapter-defined sync scopes from the persisted framework type
@@ -125,7 +125,7 @@ Stores, validates, tests, and later synchronizes optional remote sources into a 
 Current implemented sync stage:
 - real remote-to-local download
 - real local-to-remote upload
-- adapter-defined sync filtering reusable by both sync directions
+- adapter-defined sync include/exclude rules reusable by both sync directions
 - persisted per-project selection between adapter-filtered sync and full sync
 - reuses persisted `RemoteConnectionConfig`
 - reuses the existing discoverable remote provider registry
@@ -137,6 +137,7 @@ Current implemented sync stage:
 Current UI behavior for sync mode:
 - the project editor persists a per-project remote setting that selects adapter-filtered sync or full sync
 - `ProjectSyncService` reads that persisted preference and resolves the effective sync scope outside the Kivy layer
+- the resolved scope can include localization-relevant paths and exclude framework-specific artifacts such as virtualenvs or bytecode caches
 
 Not yet implemented in this stage:
 - more granular selective-sync controls beyond the current filtered-vs-full project setting

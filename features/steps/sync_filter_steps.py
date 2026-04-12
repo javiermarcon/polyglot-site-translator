@@ -89,6 +89,28 @@ def step_then_scope_contains_filter(context: object, relative_path: str) -> None
     assert relative_path in [sync_filter.relative_path for sync_filter in filters]
 
 
+@then('the resolved sync scope excludes the filter "{relative_path}"')
+def step_then_scope_contains_exclusion(context: object, relative_path: str) -> None:
+    state = _state(context)
+    resolved_scope = state.resolved_scope
+    if resolved_scope is None:
+        msg = "The sync scope must be resolved before asserting its exclusions."
+        raise AssertionError(msg)
+    assert relative_path in [sync_filter.relative_path for sync_filter in resolved_scope.excludes]
+
+
+@then('the resolved sync scope does not exclude the filter "{relative_path}"')
+def step_then_scope_lacks_exclusion(context: object, relative_path: str) -> None:
+    state = _state(context)
+    resolved_scope = state.resolved_scope
+    if resolved_scope is None:
+        msg = "The sync scope must be resolved before asserting its exclusions."
+        raise AssertionError(msg)
+    assert relative_path not in [
+        sync_filter.relative_path for sync_filter in resolved_scope.excludes
+    ]
+
+
 @then("the resolved sync scope reports no sync filters")
 def step_then_scope_has_no_filters(context: object) -> None:
     state = _state(context)

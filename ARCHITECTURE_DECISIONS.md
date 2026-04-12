@@ -245,16 +245,16 @@ The repository already has typed sync models, reusable provider sessions, bounde
 
 ---
 
-## AD-018: Framework adapters own reusable sync filters
+## AD-018: Framework adapters own reusable sync include/exclude rules
 
 **Decision**
-Define sync filters on framework adapters and resolve them through a dedicated service instead of hardcoding framework paths inside `ProjectSyncService` or Kivy screens.
+Define sync include/exclude rules on framework adapters and resolve them through a dedicated service instead of hardcoding framework paths inside `ProjectSyncService` or Kivy screens.
 
 **Why**
-WordPress, Django, and Flask care about different localization-relevant paths. Keeping those paths in adapter-owned contracts preserves OCP, lets future adapters add filters without modifying shared sync orchestration, and makes the same resolved scope reusable for both `remote -> local` and `local -> remote`.
+WordPress, Django, and Flask care about different localization-relevant paths and different framework-specific artifacts that should be excluded from sync. Keeping those rules in adapter-owned contracts preserves OCP, lets future adapters add includes/excludes without modifying shared sync orchestration, and makes the same resolved scope reusable for both `remote -> local` and `local -> remote`.
 
 **Implications**
-- `BaseFrameworkAdapter` and the framework-adapter contract now expose `get_sync_filters(project_path)`.
+- `BaseFrameworkAdapter` and the framework-adapter contract now expose a scope with include and exclude rules.
 - `FrameworkSyncScopeService` returns an explicit `ResolvedSyncScope` with statuses such as `filtered`, `no_filters`, `framework_unresolved`, and `adapter_unavailable`.
 - `ProjectSyncService` can resolve the effective scope from the persisted remote-config preference and applies it symmetrically to download and upload workflows.
 - The project editor persists a per-project `Use Adapter Sync Filters` choice, while scope resolution itself still stays outside the Kivy layer.

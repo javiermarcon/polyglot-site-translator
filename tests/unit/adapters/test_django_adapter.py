@@ -70,7 +70,14 @@ def test_django_adapter_returns_unmatched_for_non_django_projects(tmp_path: Path
 
 
 def test_django_adapter_exposes_sync_filters() -> None:
-    filters = DjangoFrameworkAdapter().get_sync_filters(Path("/workspace/site"))
+    scope = DjangoFrameworkAdapter().get_sync_scope(Path("/workspace/site"))
 
-    assert [sync_filter.relative_path for sync_filter in filters] == ["locale"]
-    assert filters[0].filter_type is SyncFilterType.DIRECTORY
+    assert [sync_filter.relative_path for sync_filter in scope.filters] == ["locale"]
+    assert scope.filters[0].filter_type is SyncFilterType.DIRECTORY
+    assert [sync_filter.relative_path for sync_filter in scope.excludes] == [
+        ".venv",
+        "venv",
+        "__pycache__",
+        ".mypy_cache",
+        ".pytest_cache",
+    ]

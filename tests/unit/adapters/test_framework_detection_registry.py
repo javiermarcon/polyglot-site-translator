@@ -15,7 +15,7 @@ from polyglot_site_translator.domain.framework_detection.models import (
     FrameworkDescriptor,
     FrameworkDetectionResult,
 )
-from polyglot_site_translator.domain.sync.scope import SyncFilterSpec
+from polyglot_site_translator.domain.sync.scope import AdapterSyncScope, SyncFilterSpec
 
 
 @dataclass(frozen=True)
@@ -32,6 +32,9 @@ class FakeAdapter:
 
     def get_sync_filters(self, project_path: Path) -> tuple[SyncFilterSpec, ...]:
         return ()
+
+    def get_sync_scope(self, project_path: Path) -> AdapterSyncScope:
+        return AdapterSyncScope()
 
 
 def test_framework_detection_result_unmatched_factory_preserves_warnings() -> None:

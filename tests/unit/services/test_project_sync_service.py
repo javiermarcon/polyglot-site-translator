@@ -691,6 +691,79 @@ def test_project_sync_service_uses_the_persisted_filtered_sync_preference(
     assert scope_service.calls == ["site-123"]
 
 
+def test_project_sync_service_applies_django_exclusions_during_download(
+    tmp_path: Path,
+) -> None:
+    local_root = tmp_path / "workspace" / "site"
+    provider = StubSyncProvider(
+        remote_files=[
+            RemoteSyncFile(
+                remote_path="/srv/app/locale/es.po",
+                relative_path="locale/es.po",
+                size_bytes=10,
+            ),
+            RemoteSyncFile(
+                remote_path="/srv/app/__pycache__/settings.cpython-312.pyc",
+                relative_path="__pycache__/settings.cpython-312.pyc",
+                size_bytes=20,
+            ),
+        ],
+        downloaded_bytes={
+            "/srv/app/locale/es.po": b'msgid "hello"\n',
+            "/srv/app/__pycache__/settings.cpython-312.pyc": b"compiled",
+        },
+    )
+    scope_service = StubFrameworkSyncScopeService(
+        resolved_scope=ResolvedSyncScope(
+            framework_type="django",
+            adapter_name="django_adapter",
+            status=SyncScopeStatus.FILTERED,
+            filters=(
+                SyncFilterSpec(
+                    relative_path="locale",
+                    filter_type=SyncFilterType.DIRECTORY,
+                    description="Django locale catalogs.",
+                ),
+            ),
+            excludes=(
+                SyncFilterSpec(
+                    relative_path="__pycache__",
+                    filter_type=SyncFilterType.DIRECTORY,
+                    description="Python bytecode cache.",
+                ),
+            ),
+            message="Resolved Django sync scope.",
+        )
+    )
+    service = ProjectSyncService(
+        registry=RemoteConnectionRegistry.default_registry(providers=[provider]),
+        framework_sync_scope_service=scope_service,
+    )
+
+    result = service.sync_remote_to_local(
+        _build_site(
+            local_root=local_root,
+            framework_type="django",
+            remote_connection=RemoteConnectionConfig(
+                id="remote-site-123",
+                site_project_id="site-123",
+                connection_type="sftp",
+                host="example.test",
+                port=22,
+                username="deploy",
+                password="secret",
+                remote_path="/srv/app",
+                flags=RemoteConnectionFlags(use_adapter_sync_filters=True),
+            ),
+        )
+    )
+
+    assert result.success is True
+    assert result.summary.files_downloaded == 1
+    assert (local_root / "locale" / "es.po").exists() is True
+    assert (local_root / "__pycache__" / "settings.cpython-312.pyc").exists() is False
+
+
 def test_project_sync_service_uses_full_sync_when_the_project_preference_disables_filters(
     tmp_path: Path,
 ) -> None:
@@ -793,6 +866,66 @@ def test_project_sync_service_uses_the_persisted_filtered_sync_preference_for_up
     assert "/srv/app/wp-content/themes/theme/style.css" in provider.uploaded_bytes
     assert "/srv/app/readme.html" not in provider.uploaded_bytes
     assert scope_service.calls == ["site-123"]
+
+
+def test_project_sync_service_applies_django_exclusions_during_upload(
+    tmp_path: Path,
+) -> None:
+    local_root = tmp_path / "workspace" / "site"
+    (local_root / "locale").mkdir(parents=True)
+    (local_root / "__pycache__").mkdir(parents=True)
+    (local_root / "locale" / "es.po").write_text('msgid "hello"\n', encoding="utf-8")
+    (local_root / "__pycache__" / "settings.cpython-312.pyc").write_bytes(b"compiled")
+    scope_service = StubFrameworkSyncScopeService(
+        resolved_scope=ResolvedSyncScope(
+            framework_type="django",
+            adapter_name="django_adapter",
+            status=SyncScopeStatus.FILTERED,
+            filters=(
+                SyncFilterSpec(
+                    relative_path="locale",
+                    filter_type=SyncFilterType.DIRECTORY,
+                    description="Django locale catalogs.",
+                ),
+            ),
+            excludes=(
+                SyncFilterSpec(
+                    relative_path="__pycache__",
+                    filter_type=SyncFilterType.DIRECTORY,
+                    description="Python bytecode cache.",
+                ),
+            ),
+            message="Resolved Django sync scope.",
+        )
+    )
+    provider = StubSyncProvider()
+    service = ProjectSyncService(
+        registry=RemoteConnectionRegistry.default_registry(providers=[provider]),
+        framework_sync_scope_service=scope_service,
+    )
+
+    result = service.sync_local_to_remote(
+        _build_site(
+            local_root=local_root,
+            framework_type="django",
+            remote_connection=RemoteConnectionConfig(
+                id="remote-site-123",
+                site_project_id="site-123",
+                connection_type="sftp",
+                host="example.test",
+                port=22,
+                username="deploy",
+                password="secret",
+                remote_path="/srv/app",
+                flags=RemoteConnectionFlags(use_adapter_sync_filters=True),
+            ),
+        )
+    )
+
+    assert result.success is True
+    assert result.summary.files_uploaded == 1
+    assert "/srv/app/locale/es.po" in provider.uploaded_bytes
+    assert "/srv/app/__pycache__/settings.cpython-312.pyc" not in provider.uploaded_bytes
 
 
 def test_project_sync_service_returns_a_controlled_error_when_filtered_sync_scope_is_unavailable(
@@ -1504,6 +1637,7 @@ def test_project_sync_service_returns_a_controlled_result_when_remote_directory_
 def _build_site(
     *,
     local_root: Path,
+    framework_type: str = "wordpress",
     remote_connection: RemoteConnectionConfig | None | object = _DEFAULT_REMOTE,
 ) -> RegisteredSite:
     resolved_remote_connection: RemoteConnectionConfig | None
@@ -1524,7 +1658,7 @@ def _build_site(
         project=SiteProject(
             id="site-123",
             name="Marketing Site",
-            framework_type="wordpress",
+            framework_type=framework_type,
             local_path=str(local_root),
             default_locale="en_US",
             is_active=True,

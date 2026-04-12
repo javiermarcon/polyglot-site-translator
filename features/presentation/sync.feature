@@ -141,3 +141,19 @@ Feature: Remote to local project synchronization
     And the operator starts the sync workflow
     Then the sync panel shows a completed status
     And the sync panel reports 2 downloaded files
+
+  Scenario: Apply adapter exclusions during filtered remote to local sync
+    Given the frontend shell is wired with a real sync workflow
+    And the registered project "django-filtered-site" has django remote files with excluded paths
+    When the operator opens the synced detail for project "django-filtered-site"
+    And the operator starts the sync workflow
+    Then the sync panel shows a completed status
+    And the sync panel reports 1 downloaded files
+
+  Scenario: Apply adapter exclusions during filtered local to remote sync
+    Given the frontend shell is wired with a real sync workflow
+    And the registered project "django-upload-site" has django local files with excluded paths
+    When the operator opens the synced detail for project "django-upload-site"
+    And the operator starts the local to remote sync workflow
+    Then the sync panel shows a completed status
+    And the sync panel reports 1 uploaded files

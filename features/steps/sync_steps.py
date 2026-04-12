@@ -301,6 +301,7 @@ class ProjectSetupSpec:
     local_directory_name: str
     connection_type: str
     remote_host: str
+    framework_type: str = "wordpress"
     use_adapter_sync_filters: bool = False
 
 
@@ -400,6 +401,66 @@ def step_project_has_local_files_for_upload(context: object, project_key: str) -
     (local_root / "templates").mkdir(parents=True, exist_ok=True)
     (local_root / "locale" / "es.po").write_text('msgid "hola"\n', encoding="utf-8")
     (local_root / "templates" / "home.html").write_text("<h1>Hola</h1>\n", encoding="utf-8")
+
+
+@given('the registered project "{project_key}" has django remote files with excluded paths')
+def step_project_has_django_remote_files_with_exclusions(
+    context: object,
+    project_key: str,
+) -> None:
+    typed_context = _context(context)
+    typed_context.sync_provider.remote_files_by_host["django-filtered.example.test"] = [
+        RemoteSyncFile(
+            remote_path="/srv/app/locale/es.po",
+            relative_path="locale/es.po",
+            size_bytes=16,
+        ),
+        RemoteSyncFile(
+            remote_path="/srv/app/__pycache__/settings.cpython-312.pyc",
+            relative_path="__pycache__/settings.cpython-312.pyc",
+            size_bytes=14,
+        ),
+    ]
+    typed_context.sync_provider.file_contents_by_path.update(
+        {
+            "/srv/app/locale/es.po": b'msgid "hello"\n',
+            "/srv/app/__pycache__/settings.cpython-312.pyc": b"compiled",
+        }
+    )
+    _create_project(
+        typed_context,
+        ProjectSetupSpec(
+            project_key=project_key,
+            local_directory_name="django-filtered-sync-site",
+            connection_type="sftp",
+            remote_host="django-filtered.example.test",
+            framework_type="django",
+            use_adapter_sync_filters=True,
+        ),
+    )
+
+
+@given('the registered project "{project_key}" has django local files with excluded paths')
+def step_project_has_django_local_files_with_exclusions(
+    context: object,
+    project_key: str,
+) -> None:
+    typed_context = _context(context)
+    local_root = _create_project(
+        typed_context,
+        ProjectSetupSpec(
+            project_key=project_key,
+            local_directory_name="django-upload-site",
+            connection_type="sftp",
+            remote_host="django-upload.example.test",
+            framework_type="django",
+            use_adapter_sync_filters=True,
+        ),
+    )
+    (local_root / "locale").mkdir(parents=True, exist_ok=True)
+    (local_root / "__pycache__").mkdir(parents=True, exist_ok=True)
+    (local_root / "locale" / "es.po").write_text('msgid "hola"\n', encoding="utf-8")
+    (local_root / "__pycache__" / "settings.cpython-312.pyc").write_bytes(b"compiled")
 
 
 @given(
@@ -762,7 +823,7 @@ def _create_project(
         SiteEditorViewModel(
             site_id=None,
             name=spec.project_key.replace("-", " ").title(),
-            framework_type="wordpress",
+            framework_type=spec.framework_type,
             local_path=str(local_root),
             default_locale="en_US",
             connection_type=spec.connection_type,
