@@ -532,6 +532,25 @@ class FrontendShell:
             self.latest_error = str(error)
         self._set_route(RouteName.PROJECT_EDITOR, project_id=editor.site_id)
 
+    def preview_project_editor(self, editor: SiteEditorViewModel) -> None:
+        """Rebuild the current project-editor draft without persisting changes."""
+        state = self._require_project_editor_state()
+        try:
+            self.project_editor_state = self.services.registry.preview_project_editor(
+                editor,
+                mode=state.mode,
+            )
+            self.latest_error = None
+        except ControlledServiceError as error:
+            self.project_editor_state = replace(
+                state,
+                editor=editor,
+                status="failed",
+                status_message=str(error),
+            )
+            self.latest_error = str(error)
+        self._set_route(RouteName.PROJECT_EDITOR, project_id=editor.site_id)
+
     def _require_project_id(self) -> str:
         route = self.router.current
         project_id = route.project_id

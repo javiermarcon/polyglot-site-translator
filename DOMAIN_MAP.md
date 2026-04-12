@@ -18,6 +18,7 @@ Manage the local record of sites or projects known to the application.
 - framework type
 - optional remote connection linkage
 - persisted per-project sync-mode preference for adapter-filtered vs full remote sync
+- persisted project-specific sync rule overrides layered on top of adapter defaults
 - encrypted remote password persistence
 - preferred locales
 - site-specific processing options
@@ -44,7 +45,9 @@ Configure, validate, test, and later synchronize optional remote sources into lo
 - reusable remote session contracts and session state
 - typed sync direction and structured sync results
 - typed adapter-defined sync include/exclude specs and explicit resolved sync scopes
+- typed resolved rule catalogs used by the project editor
 - persisted filtered-vs-full sync preference applied by sync services in both directions
+- persisted per-project include/exclude overrides and per-rule enablement
 - typed sync progress events and command-log reporting
 - remote/local file discovery descriptors
 - connection validation

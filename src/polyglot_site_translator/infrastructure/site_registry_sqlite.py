@@ -19,6 +19,11 @@ from polyglot_site_translator.domain.site_registry.models import (
     RegisteredSite,
     SiteProject,
 )
+from polyglot_site_translator.domain.sync.scope import (
+    ProjectSyncRuleOverride,
+    SyncFilterType,
+    SyncRuleBehavior,
+)
 from polyglot_site_translator.infrastructure.database_location import (
     SQLiteDatabaseLocation,
     resolve_sqlite_database_location,
@@ -76,6 +81,7 @@ class SqliteSiteRegistryRepository:
                         connection_statement,
                         _connection_params(site.remote_connection, self._secret_cipher),
                     )
+                    _replace_sync_rule_overrides(connection, site.remote_connection)
         except sqlite3.IntegrityError as error:
             raise _map_integrity_error(site.name) from error
         except sqlite3.Error as error:
@@ -111,10 +117,18 @@ class SqliteSiteRegistryRepository:
         try:
             with self._connect() as connection:
                 rows = connection.execute(statement).fetchall()
+                overrides_by_site = _fetch_sync_rule_overrides(connection)
         except sqlite3.Error as error:
             msg = f"SQLite site registry read failed at {self._location.database_path}."
             raise SiteRegistryPersistenceError(msg) from error
-        return [_map_row_to_site(row, self._secret_cipher) for row in rows]
+        return [
+            _map_row_to_site(
+                row,
+                self._secret_cipher,
+                overrides_by_site.get(str(row["id"]), ()),
+            )
+            for row in rows
+        ]
 
     def get_site(self, site_id: str) -> RegisteredSite:
         """Return a single site registry record."""
@@ -144,13 +158,18 @@ class SqliteSiteRegistryRepository:
         try:
             with self._connect() as connection:
                 row = connection.execute(statement, (site_id,)).fetchone()
+                overrides_by_site = _fetch_sync_rule_overrides(connection, site_ids=(site_id,))
         except sqlite3.Error as error:
             msg = f"SQLite site registry read failed at {self._location.database_path}."
             raise SiteRegistryPersistenceError(msg) from error
         if row is None:
             msg = f"Unknown site id: {site_id}"
             raise SiteRegistryNotFoundError(msg)
-        return _map_row_to_site(row, self._secret_cipher)
+        return _map_row_to_site(
+            row,
+            self._secret_cipher,
+            overrides_by_site.get(site_id, ()),
+        )
 
     def update_site(self, site: RegisteredSite) -> RegisteredSite:
         """Persist changes for an existing site registry record."""
@@ -166,6 +185,9 @@ class SqliteSiteRegistryRepository:
         """
         delete_connection_statement = (
             "DELETE FROM site_remote_connections WHERE site_project_id = ?"
+        )
+        delete_rule_override_statement = (
+            "DELETE FROM site_remote_sync_rule_overrides WHERE site_project_id = ?"
         )
         insert_connection_statement = """
             INSERT INTO site_remote_connections (
@@ -189,11 +211,13 @@ class SqliteSiteRegistryRepository:
                     msg = f"Unknown site id: {site.id}"
                     raise SiteRegistryNotFoundError(msg)
                 connection.execute(delete_connection_statement, (site.id,))
+                connection.execute(delete_rule_override_statement, (site.id,))
                 if site.remote_connection is not None:
                     connection.execute(
                         insert_connection_statement,
                         _connection_params(site.remote_connection, self._secret_cipher),
                     )
+                    _replace_sync_rule_overrides(connection, site.remote_connection)
         except sqlite3.IntegrityError as error:
             raise _map_integrity_error(site.name) from error
         except sqlite3.Error as error:
@@ -235,6 +259,7 @@ class SqliteSiteRegistryRepository:
                 connection.execute("PRAGMA foreign_keys = ON")
                 _ensure_project_table(connection)
                 _ensure_remote_table(connection)
+                _ensure_sync_rule_override_table(connection)
                 _migrate_legacy_ftp_schema(connection)
         except sqlite3.Error as error:
             msg = f"SQLite schema initialization failed at {self._location.database_path}."
@@ -294,6 +319,25 @@ def _ensure_remote_table(connection: sqlite3.Connection) -> None:
             ADD COLUMN use_adapter_sync_filters INTEGER NOT NULL DEFAULT 0
             """
         )
+
+
+def _ensure_sync_rule_override_table(connection: sqlite3.Connection) -> None:
+    connection.execute(
+        """
+        CREATE TABLE IF NOT EXISTS site_remote_sync_rule_overrides (
+            rule_key TEXT NOT NULL,
+            site_project_id TEXT NOT NULL,
+            target_rule_key TEXT,
+            relative_path TEXT NOT NULL,
+            filter_type TEXT NOT NULL,
+            rule_behavior TEXT NOT NULL,
+            is_enabled INTEGER NOT NULL CHECK (is_enabled IN (0, 1)),
+            description TEXT NOT NULL DEFAULT '',
+            PRIMARY KEY (rule_key, site_project_id),
+            FOREIGN KEY (site_project_id) REFERENCES site_registry(id) ON DELETE CASCADE
+        )
+        """
+    )
 
 
 def _migrate_legacy_ftp_schema(connection: sqlite3.Connection) -> None:
@@ -445,9 +489,90 @@ def _connection_params(
     )
 
 
+def _replace_sync_rule_overrides(
+    connection: sqlite3.Connection,
+    remote_connection: RemoteConnectionConfig,
+) -> None:
+    if remote_connection.flags.sync_rule_overrides == ():
+        return
+    connection.executemany(
+        """
+        INSERT INTO site_remote_sync_rule_overrides (
+            rule_key,
+            site_project_id,
+            target_rule_key,
+            relative_path,
+            filter_type,
+            rule_behavior,
+            is_enabled,
+            description
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        [
+            (
+                override.rule_key,
+                remote_connection.site_project_id,
+                override.target_rule_key,
+                override.relative_path,
+                override.filter_type.value,
+                override.behavior.value,
+                int(override.is_enabled),
+                override.description,
+            )
+            for override in remote_connection.flags.sync_rule_overrides
+        ],
+    )
+
+
+def _fetch_sync_rule_overrides(
+    connection: sqlite3.Connection,
+    *,
+    site_ids: tuple[str, ...] | None = None,
+) -> dict[str, tuple[ProjectSyncRuleOverride, ...]]:
+    statement = """
+        SELECT
+            rule_key,
+            site_project_id,
+            target_rule_key,
+            relative_path,
+            filter_type,
+            rule_behavior,
+            is_enabled,
+            description
+        FROM site_remote_sync_rule_overrides
+    """
+    params: tuple[object, ...] = ()
+    if site_ids:
+        placeholders = ", ".join("?" for _ in site_ids)
+        statement += f" WHERE site_project_id IN ({placeholders})"
+        params = tuple(site_ids)
+    rows = connection.execute(statement, params).fetchall()
+    overrides_by_site: dict[str, list[ProjectSyncRuleOverride]] = {}
+    for row in rows:
+        site_project_id = str(row["site_project_id"])
+        overrides_by_site.setdefault(site_project_id, []).append(
+            ProjectSyncRuleOverride(
+                rule_key=str(row["rule_key"]),
+                target_rule_key=(
+                    str(row["target_rule_key"]) if row["target_rule_key"] is not None else None
+                ),
+                relative_path=str(row["relative_path"]),
+                filter_type=SyncFilterType(str(row["filter_type"])),
+                behavior=SyncRuleBehavior(str(row["rule_behavior"])),
+                is_enabled=bool(row["is_enabled"]),
+                description=str(row["description"]),
+            )
+        )
+    return {
+        site_project_id: tuple(overrides)
+        for site_project_id, overrides in overrides_by_site.items()
+    }
+
+
 def _map_row_to_site(
     row: sqlite3.Row,
     secret_cipher: LocalKeySiteSecretCipher,
+    sync_rule_overrides: tuple[ProjectSyncRuleOverride, ...],
 ) -> RegisteredSite:
     project = SiteProject(
         id=str(row["id"]),
@@ -472,6 +597,7 @@ def _map_row_to_site(
                 passive_mode=bool(row["passive_mode"]),
                 verify_host=bool(row["verify_host"]),
                 use_adapter_sync_filters=bool(row["use_adapter_sync_filters"]),
+                sync_rule_overrides=sync_rule_overrides,
             ),
         )
     return RegisteredSite(project=project, remote_connection=remote_connection)

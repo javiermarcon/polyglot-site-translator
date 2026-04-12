@@ -45,6 +45,13 @@ Feature: SQLite-backed site registry management
     Then the project detail shows the persisted sync mode "filtered"
     And reopening the persisted site editor shows adapter sync filters enabled
 
+  Scenario: Persist project sync-rule overrides from the editor
+    Given the frontend shell is wired with SQLite-backed site registry services
+    When the operator opens the create project workflow
+    And the operator submits a new Django site registry entry with custom sync rule overrides
+    Then reopening the persisted site editor shows the custom sync rule "locale_custom"
+    And reopening the persisted site editor shows the adapter rule "__pycache__" disabled
+
   Scenario: Surface an invalid SQLite configuration through the projects flow
     Given the frontend shell is wired with SQLite-backed services and invalid database settings
     When the operator opens the projects list

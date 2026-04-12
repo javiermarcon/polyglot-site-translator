@@ -35,6 +35,16 @@ from polyglot_site_translator.domain.sync.models import (
     SyncProgressEvent,
     SyncResult,
 )
+from polyglot_site_translator.domain.sync.scope import (
+    ProjectSyncRuleOverride,
+    ResolvedSyncRule,
+    ResolvedSyncScope,
+    SyncFilterType,
+    SyncRuleBehavior,
+    SyncRuleSource,
+    SyncScopeStatus,
+    build_sync_rule_key,
+)
 from polyglot_site_translator.infrastructure.database_location import (
     resolve_sqlite_database_location,
 )
@@ -53,12 +63,16 @@ from polyglot_site_translator.presentation.view_models import (
     ProjectSummaryViewModel,
     RemoteConnectionTestResultViewModel,
     SiteEditorViewModel,
+    SyncRuleEditorItemViewModel,
     SyncStatusViewModel,
     build_connection_type_options,
     build_default_site_editor,
     build_framework_type_options_from_descriptors,
     build_project_editor_state,
+    build_sync_rule_behavior_options,
+    build_sync_rule_filter_type_options,
 )
+from polyglot_site_translator.services.framework_sync_scope import FrameworkSyncScopeService
 from polyglot_site_translator.services.site_registry import SiteRegistryService
 
 
@@ -136,9 +150,11 @@ class SiteRegistryPresentationManagementService(ProjectRegistryManagementService
         *,
         service: SiteRegistryService,
         settings_service: TomlSettingsService,
+        framework_sync_scope_service: FrameworkSyncScopeService | None = None,
     ) -> None:
         self._service = service
         self._settings_service = settings_service
+        self._framework_sync_scope_service = framework_sync_scope_service
 
     def build_create_project_editor(self) -> ProjectEditorStateViewModel:
         """Return the initial create-project editor state."""
@@ -148,6 +164,7 @@ class SiteRegistryPresentationManagementService(ProjectRegistryManagementService
         )
         return _build_editor_state(
             service=self._service,
+            framework_sync_scope_service=self._framework_sync_scope_service,
             mode="create",
             editor=editor,
             status="editing",
@@ -167,6 +184,7 @@ class SiteRegistryPresentationManagementService(ProjectRegistryManagementService
             raise ControlledServiceError(str(error)) from error
         return _build_editor_state(
             service=self._service,
+            framework_sync_scope_service=self._framework_sync_scope_service,
             mode="edit",
             editor=_build_site_editor(site),
             status="editing",
@@ -233,6 +251,26 @@ class SiteRegistryPresentationManagementService(ProjectRegistryManagementService
             message=result.message,
             error_code=result.error_code,
         )
+
+    def preview_project_editor(
+        self,
+        editor: SiteEditorViewModel,
+        *,
+        mode: str,
+    ) -> ProjectEditorStateViewModel:
+        """Rebuild the editor state for the current draft without persisting changes."""
+        try:
+            return _build_editor_state(
+                service=self._service,
+                framework_sync_scope_service=self._framework_sync_scope_service,
+                mode=mode,
+                editor=editor,
+                status="editing",
+                status_message="Project editor draft updated.",
+                connection_test_result=None,
+            )
+        except ValueError as error:
+            raise ControlledServiceError(str(error)) from error
 
     def _default_workspace_root(self) -> Path:
         try:
@@ -381,23 +419,35 @@ class SiteRegistryPresentationWorkflowService(ProjectWorkflowService):
 def _build_editor_state(  # noqa: PLR0913
     *,
     service: SiteRegistryService,
+    framework_sync_scope_service: FrameworkSyncScopeService | None,
     mode: str,
     editor: SiteEditorViewModel,
     status: str,
     status_message: str | None,
     connection_test_result: RemoteConnectionTestResultViewModel | None,
 ) -> ProjectEditorStateViewModel:
+    resolved_scope = _resolve_editor_sync_scope(
+        framework_sync_scope_service=framework_sync_scope_service,
+        editor=editor,
+    )
+    editor_with_scope = _apply_resolved_scope_to_editor(editor, resolved_scope)
     return build_project_editor_state(
         mode=mode,
-        editor=editor,
+        editor=editor_with_scope,
         framework_options=build_framework_type_options_from_descriptors(
             service.list_supported_frameworks()
         ),
         connection_type_options=build_connection_type_options(
             descriptors=service.list_supported_connection_types()
         ),
-        connection_test_enabled=service.can_test_remote_connection(_build_service_payload(editor)),
+        sync_rule_filter_type_options=build_sync_rule_filter_type_options(),
+        sync_rule_behavior_options=build_sync_rule_behavior_options(),
+        connection_test_enabled=service.can_test_remote_connection(
+            _build_service_payload(editor_with_scope)
+        ),
         connection_test_result=connection_test_result,
+        sync_scope_status=resolved_scope.status.value,
+        sync_scope_message=resolved_scope.message,
         status=status,
         status_message=status_message,
     )
@@ -423,6 +473,7 @@ def _build_service_payload(editor: SiteEditorViewModel) -> SiteRegistrationInput
             flags=RemoteConnectionFlags(
                 verify_host=editor.remote_verify_host,
                 use_adapter_sync_filters=editor.use_adapter_sync_filters,
+                sync_rule_overrides=_build_project_rule_overrides(editor.sync_rule_items),
             ),
         )
     return SiteRegistrationInput(
@@ -475,6 +526,7 @@ def _build_site_editor(site: RegisteredSite) -> SiteEditorViewModel:
             is_active=site.is_active,
             remote_verify_host=True,
             use_adapter_sync_filters=False,
+            sync_rule_items=(),
         )
     return SiteEditorViewModel(
         site_id=site.id,
@@ -491,6 +543,7 @@ def _build_site_editor(site: RegisteredSite) -> SiteEditorViewModel:
         is_active=site.is_active,
         remote_verify_host=remote_connection.flags.verify_host,
         use_adapter_sync_filters=remote_connection.flags.use_adapter_sync_filters,
+        sync_rule_items=_build_override_editor_items(remote_connection.flags.sync_rule_overrides),
     )
 
 
@@ -585,4 +638,146 @@ def _build_sync_status(result: SyncResult) -> SyncStatusViewModel:
         ),
         summary=error_message,
         error_code=error_code,
+    )
+
+
+def _resolve_editor_sync_scope(
+    *,
+    framework_sync_scope_service: FrameworkSyncScopeService | None,
+    editor: SiteEditorViewModel,
+) -> ResolvedSyncScope:
+    framework_type = editor.framework_type.strip().lower()
+    if framework_sync_scope_service is None:
+        return ResolvedSyncScope(
+            framework_type=framework_type or "unknown",
+            adapter_name=None,
+            status=SyncScopeStatus.ADAPTER_UNAVAILABLE,
+            filters=(),
+            excludes=(),
+            message="Framework sync scope service is not available in this frontend runtime.",
+            catalog_rules=_build_resolved_rules_from_editor_items(editor.sync_rule_items),
+        )
+    return framework_sync_scope_service.resolve_for_framework(
+        framework_type=framework_type,
+        project_path=editor.local_path,
+        project_rule_overrides=_build_project_rule_overrides(editor.sync_rule_items),
+    )
+
+
+def _apply_resolved_scope_to_editor(
+    editor: SiteEditorViewModel,
+    resolved_scope: ResolvedSyncScope,
+) -> SiteEditorViewModel:
+    if resolved_scope.catalog_rules == ():
+        return replace(editor, sync_rule_items=())
+    return replace(
+        editor,
+        sync_rule_items=_build_editor_sync_rule_items(resolved_scope),
+    )
+
+
+def _build_editor_sync_rule_items(
+    resolved_scope: ResolvedSyncScope,
+) -> tuple[SyncRuleEditorItemViewModel, ...]:
+    sorted_rules = sorted(
+        resolved_scope.catalog_rules,
+        key=lambda rule: (
+            0 if rule.source is SyncRuleSource.ADAPTER else 1,
+            0 if rule.behavior is SyncRuleBehavior.INCLUDE else 1,
+            rule.relative_path,
+        ),
+    )
+    return tuple(
+        SyncRuleEditorItemViewModel(
+            rule_key=rule.rule_key,
+            target_rule_key=(rule.rule_key if rule.source is SyncRuleSource.ADAPTER else None),
+            relative_path=rule.relative_path,
+            filter_type=rule.filter_type.value,
+            behavior=rule.behavior.value,
+            description=rule.description,
+            source=rule.source.value,
+            is_enabled=rule.is_enabled,
+            is_removable=rule.source is SyncRuleSource.PROJECT,
+        )
+        for rule in sorted_rules
+    )
+
+
+def _build_override_editor_items(
+    overrides: tuple[ProjectSyncRuleOverride, ...],
+) -> tuple[SyncRuleEditorItemViewModel, ...]:
+    return tuple(
+        SyncRuleEditorItemViewModel(
+            rule_key=override.rule_key,
+            target_rule_key=override.target_rule_key,
+            relative_path=override.relative_path,
+            filter_type=override.filter_type.value,
+            behavior=override.behavior.value,
+            description=override.description,
+            source=(
+                SyncRuleSource.PROJECT.value if override.is_custom else SyncRuleSource.ADAPTER.value
+            ),
+            is_enabled=override.is_enabled,
+            is_removable=override.is_custom,
+        )
+        for override in overrides
+    )
+
+
+def _build_project_rule_overrides(
+    items: tuple[SyncRuleEditorItemViewModel, ...],
+) -> tuple[ProjectSyncRuleOverride, ...]:
+    overrides: list[ProjectSyncRuleOverride] = []
+    seen_rule_keys: set[str] = set()
+    for item in items:
+        relative_path = item.relative_path.strip().strip("/")
+        if relative_path == "":
+            msg = "Sync rule paths must not be blank."
+            raise ValueError(msg)
+        filter_type = SyncFilterType(item.filter_type)
+        behavior = SyncRuleBehavior(item.behavior)
+        source = SyncRuleSource(item.source)
+        rule_key = item.rule_key
+        target_rule_key = item.target_rule_key
+        if source is SyncRuleSource.PROJECT:
+            rule_key = build_sync_rule_key(
+                relative_path=relative_path,
+                filter_type=filter_type,
+                behavior=behavior,
+            )
+            target_rule_key = None
+        elif target_rule_key is None:
+            target_rule_key = rule_key
+        if rule_key in seen_rule_keys:
+            msg = f"Duplicate sync rule detected for '{relative_path}'."
+            raise ValueError(msg)
+        seen_rule_keys.add(rule_key)
+        overrides.append(
+            ProjectSyncRuleOverride(
+                rule_key=rule_key,
+                target_rule_key=target_rule_key,
+                relative_path=relative_path,
+                filter_type=filter_type,
+                behavior=behavior,
+                is_enabled=item.is_enabled,
+                description=item.description,
+            )
+        )
+    return tuple(overrides)
+
+
+def _build_resolved_rules_from_editor_items(
+    items: tuple[SyncRuleEditorItemViewModel, ...],
+) -> tuple[ResolvedSyncRule, ...]:
+    return tuple(
+        ResolvedSyncRule(
+            rule_key=item.rule_key,
+            relative_path=item.relative_path,
+            filter_type=SyncFilterType(item.filter_type),
+            behavior=SyncRuleBehavior(item.behavior),
+            description=item.description,
+            source=SyncRuleSource(item.source),
+            is_enabled=item.is_enabled,
+        )
+        for item in items
     )

@@ -169,6 +169,7 @@ The frontend baseline now also includes:
 - current adapters expose framework-specific includes and exclusions for WordPress, Django, and Flask without hardcoding those rules in generic sync services or Kivy widgets
 - the remote project configuration now persists whether sync should use adapter filters or full sync
 - the project editor only captures that preference; `ProjectSyncService` and `FrameworkSyncScopeService` resolve the effective behavior outside the Kivy layer
+- the project editor now also renders the resolved sync-rule catalog and captures project-level include/exclude overrides, but rule composition and persistence still stay in services/infrastructure
 - a real adapter registry for framework detection with typed results
 - dynamic adapter discovery from the `adapters/` package at runtime
 - concrete WordPress, Django, and Flask detection adapters

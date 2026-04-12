@@ -17,6 +17,12 @@ from polyglot_site_translator.domain.site_registry.errors import (
     SiteRegistryPersistenceError,
 )
 from polyglot_site_translator.domain.site_registry.models import RegisteredSite, SiteProject
+from polyglot_site_translator.domain.sync.scope import (
+    ProjectSyncRuleOverride,
+    SyncFilterType,
+    SyncRuleBehavior,
+    build_sync_rule_key,
+)
 from polyglot_site_translator.infrastructure.database_location import SQLiteDatabaseLocation
 from polyglot_site_translator.infrastructure.settings import TomlSettingsService
 from polyglot_site_translator.infrastructure.site_registry_sqlite import (
@@ -48,6 +54,53 @@ def test_sqlite_repository_roundtrips_the_filtered_sync_preference(tmp_path: Pat
 
     assert loaded_site.remote_connection is not None
     assert loaded_site.remote_connection.flags.use_adapter_sync_filters is True
+
+
+def test_sqlite_repository_roundtrips_project_sync_rule_overrides(tmp_path: Path) -> None:
+    repository = _build_repository(tmp_path)
+    site = _build_site(
+        sync_rule_overrides=(
+            ProjectSyncRuleOverride(
+                rule_key=build_sync_rule_key(
+                    relative_path="locale_custom",
+                    filter_type=SyncFilterType.DIRECTORY,
+                    behavior=SyncRuleBehavior.INCLUDE,
+                ),
+                target_rule_key=None,
+                relative_path="locale_custom",
+                filter_type=SyncFilterType.DIRECTORY,
+                behavior=SyncRuleBehavior.INCLUDE,
+                is_enabled=True,
+                description="Project locale override",
+            ),
+            ProjectSyncRuleOverride(
+                rule_key=build_sync_rule_key(
+                    relative_path="__pycache__",
+                    filter_type=SyncFilterType.DIRECTORY,
+                    behavior=SyncRuleBehavior.EXCLUDE,
+                ),
+                target_rule_key=build_sync_rule_key(
+                    relative_path="__pycache__",
+                    filter_type=SyncFilterType.DIRECTORY,
+                    behavior=SyncRuleBehavior.EXCLUDE,
+                ),
+                relative_path="__pycache__",
+                filter_type=SyncFilterType.DIRECTORY,
+                behavior=SyncRuleBehavior.EXCLUDE,
+                is_enabled=False,
+                description="Disable adapter cache exclusion",
+            ),
+        ),
+    )
+
+    repository.create_site(site)
+    loaded_site = repository.get_site(site.id)
+
+    assert site.remote_connection is not None
+    assert loaded_site.remote_connection is not None
+    assert loaded_site.remote_connection.flags.sync_rule_overrides == (
+        site.remote_connection.flags.sync_rule_overrides
+    )
 
 
 def test_sqlite_repository_updates_a_site(tmp_path: Path) -> None:
@@ -346,7 +399,11 @@ def _build_repository(tmp_path: Path) -> SqliteSiteRegistryRepository:
     )
 
 
-def _build_site(*, use_adapter_sync_filters: bool = False) -> RegisteredSite:
+def _build_site(
+    *,
+    use_adapter_sync_filters: bool = False,
+    sync_rule_overrides: tuple[ProjectSyncRuleOverride, ...] = (),
+) -> RegisteredSite:
     return RegisteredSite(
         project=SiteProject(
             id="site-1",
@@ -367,6 +424,7 @@ def _build_site(*, use_adapter_sync_filters: bool = False) -> RegisteredSite:
             remote_path="/public_html",
             flags=RemoteConnectionFlags(
                 use_adapter_sync_filters=use_adapter_sync_filters,
+                sync_rule_overrides=sync_rule_overrides,
             ),
         ),
     )

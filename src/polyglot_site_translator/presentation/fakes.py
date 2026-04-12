@@ -49,6 +49,7 @@ def build_default_frontend_services(
         registry=RemoteConnectionRegistry.discover_installed(),
         framework_sync_scope_service=FrameworkSyncScopeService(registry=framework_registry),
     )
+    framework_sync_scope_service = FrameworkSyncScopeService(registry=framework_registry)
     return FrontendServices(
         catalog=SiteRegistryPresentationCatalogService(site_registry_service),
         workflows=SiteRegistryPresentationWorkflowService(
@@ -59,5 +60,6 @@ def build_default_frontend_services(
         registry=SiteRegistryPresentationManagementService(
             service=site_registry_service,
             settings_service=settings_service,
+            framework_sync_scope_service=framework_sync_scope_service,
         ),
     )

@@ -2,17 +2,23 @@
 
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Any, cast
 
 from kivy.uix.spinner import Spinner
 import pytest
 
 from polyglot_site_translator.app import create_kivy_app
+from polyglot_site_translator.infrastructure.settings import build_default_settings_service
+from polyglot_site_translator.presentation.fakes import build_default_frontend_services
 from polyglot_site_translator.presentation.kivy.screens.project_editor import (
     _find_option_label,
     _find_option_value,
 )
-from polyglot_site_translator.presentation.view_models import SiteEditorViewModel
+from polyglot_site_translator.presentation.view_models import (
+    SiteEditorViewModel,
+    SyncRuleEditorItemViewModel,
+)
 from tests.support.frontend_doubles import build_seeded_services
 
 
@@ -204,8 +210,12 @@ def test_project_editor_screen_uses_save_new_project_when_site_id_is_missing_in_
         ),
         framework_options=shell.project_editor_state.framework_options,
         connection_type_options=shell.project_editor_state.connection_type_options,
+        sync_rule_filter_type_options=shell.project_editor_state.sync_rule_filter_type_options,
+        sync_rule_behavior_options=shell.project_editor_state.sync_rule_behavior_options,
         connection_test_enabled=shell.project_editor_state.connection_test_enabled,
         connection_test_result=shell.project_editor_state.connection_test_result,
+        sync_scope_status=shell.project_editor_state.sync_scope_status,
+        sync_scope_message=shell.project_editor_state.sync_scope_message,
         status="editing",
         status_message="Update the persisted site registry record.",
     )
@@ -215,3 +225,110 @@ def test_project_editor_screen_uses_save_new_project_when_site_id_is_missing_in_
     editor_screen._save_editor()
 
     assert calls and calls[0][0] == "create"
+
+
+def test_project_editor_screen_refreshes_scope_and_allows_custom_project_rules(
+    tmp_path: Path,
+) -> None:
+    settings_service = build_default_settings_service(config_dir=tmp_path / "config")
+    app = cast(
+        Any,
+        create_kivy_app(
+            services=build_default_frontend_services(settings_service=settings_service)
+        ),
+    )
+    root = app.build()
+    editor_screen = root.get_screen("project_editor")
+    shell = editor_screen._shell
+
+    shell.open_project_editor_create()
+    root.current = "project_editor"
+    editor_screen.refresh()
+    editor_screen._framework_spinner.text = "Django"
+    editor_screen._local_path_input.text = "/workspace/django-site"
+
+    editor_screen._refresh_sync_scope()
+
+    assert shell.project_editor_state is not None
+    assert "locale" in [
+        item.relative_path for item in shell.project_editor_state.editor.sync_rule_items
+    ]
+    editor_screen._sync_rule_path_input.text = "locale_custom"
+    editor_screen._sync_rule_description_input.text = "Project locale override"
+    editor_screen._sync_rule_filter_type_spinner.text = "Directory"
+    editor_screen._sync_rule_behavior_spinner.text = "Include"
+
+    editor_screen._add_sync_rule(shell.project_editor_state)
+
+    assert shell.project_editor_state is not None
+    assert "locale_custom" in [
+        item.relative_path for item in shell.project_editor_state.editor.sync_rule_items
+    ]
+
+
+def test_project_editor_screen_can_disable_and_remove_project_sync_rules(
+    tmp_path: Path,
+) -> None:
+    settings_service = build_default_settings_service(config_dir=tmp_path / "config")
+    app = cast(
+        Any,
+        create_kivy_app(
+            services=build_default_frontend_services(settings_service=settings_service)
+        ),
+    )
+    root = app.build()
+    editor_screen = root.get_screen("project_editor")
+    shell = editor_screen._shell
+
+    shell.open_project_editor_create()
+    root.current = "project_editor"
+    editor_screen.refresh()
+    shell.project_editor_state = shell.project_editor_state.__class__(
+        mode=shell.project_editor_state.mode,
+        title=shell.project_editor_state.title,
+        submit_label=shell.project_editor_state.submit_label,
+        editor=SiteEditorViewModel(
+            **{
+                **shell.project_editor_state.editor.__dict__,
+                "sync_rule_items": (
+                    SyncRuleEditorItemViewModel(
+                        rule_key="include:directory:locale_custom",
+                        target_rule_key=None,
+                        relative_path="locale_custom",
+                        filter_type="directory",
+                        behavior="include",
+                        description="Project locale override",
+                        source="project",
+                        is_enabled=True,
+                        is_removable=True,
+                    ),
+                ),
+            }
+        ),
+        framework_options=shell.project_editor_state.framework_options,
+        connection_type_options=shell.project_editor_state.connection_type_options,
+        sync_rule_filter_type_options=shell.project_editor_state.sync_rule_filter_type_options,
+        sync_rule_behavior_options=shell.project_editor_state.sync_rule_behavior_options,
+        connection_test_enabled=shell.project_editor_state.connection_test_enabled,
+        connection_test_result=shell.project_editor_state.connection_test_result,
+        sync_scope_status=shell.project_editor_state.sync_scope_status,
+        sync_scope_message=shell.project_editor_state.sync_scope_message,
+        status=shell.project_editor_state.status,
+        status_message=shell.project_editor_state.status_message,
+    )
+    editor_screen.refresh()
+
+    editor_screen._toggle_sync_rule(
+        shell.project_editor_state,
+        "include:directory:locale_custom",
+        False,
+    )
+    assert shell.project_editor_state is not None
+    assert shell.project_editor_state.editor.sync_rule_items[0].is_enabled is False
+
+    editor_screen._remove_sync_rule(
+        shell.project_editor_state,
+        "include:directory:locale_custom",
+    )
+    assert shell.project_editor_state is not None
+    assert shell.project_editor_state.editor.sync_rule_items == ()

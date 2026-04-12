@@ -13,6 +13,20 @@ class SyncFilterType(StrEnum):
     FILE = "file"
 
 
+class SyncRuleBehavior(StrEnum):
+    """Supported rule behaviors for sync scope entries."""
+
+    INCLUDE = "include"
+    EXCLUDE = "exclude"
+
+
+class SyncRuleSource(StrEnum):
+    """Origin of a resolved sync rule."""
+
+    ADAPTER = "adapter"
+    PROJECT = "project"
+
+
 class SyncScopeStatus(StrEnum):
     """Explicit outcomes for framework sync scope resolution."""
 
@@ -36,6 +50,24 @@ class AdapterSyncScope:
 
 
 @dataclass(frozen=True)
+class ProjectSyncRuleOverride:
+    """Persisted project-specific override or custom sync rule."""
+
+    rule_key: str
+    relative_path: str
+    filter_type: SyncFilterType
+    behavior: SyncRuleBehavior
+    is_enabled: bool
+    description: str = ""
+    target_rule_key: str | None = None
+
+    @property
+    def is_custom(self) -> bool:
+        """Return whether the override introduces a custom project rule."""
+        return self.target_rule_key is None
+
+
+@dataclass(frozen=True)
 class SyncFilterSpec:
     """A single adapter-defined sync filter."""
 
@@ -55,6 +87,27 @@ class SyncFilterSpec:
 
 
 @dataclass(frozen=True)
+class ResolvedSyncRule:
+    """A resolved rule surfaced to services and UI catalogs."""
+
+    rule_key: str
+    relative_path: str
+    filter_type: SyncFilterType
+    behavior: SyncRuleBehavior
+    description: str
+    source: SyncRuleSource
+    is_enabled: bool
+
+    def as_filter_spec(self) -> SyncFilterSpec:
+        """Return the matching filter spec for this rule."""
+        return SyncFilterSpec(
+            relative_path=self.relative_path,
+            filter_type=self.filter_type,
+            description=self.description,
+        )
+
+
+@dataclass(frozen=True)
 class ResolvedSyncScope:
     """Resolved adapter scope reused by both sync directions."""
 
@@ -64,11 +117,14 @@ class ResolvedSyncScope:
     filters: tuple[SyncFilterSpec, ...]
     message: str
     excludes: tuple[SyncFilterSpec, ...] = ()
+    catalog_rules: tuple[ResolvedSyncRule, ...] = ()
 
     @property
     def is_filtered(self) -> bool:
         """Return whether the scope actively restricts synchronized paths."""
-        return self.status is SyncScopeStatus.FILTERED and self.filters != ()
+        return self.status is SyncScopeStatus.FILTERED and (
+            self.filters != () or self.excludes != ()
+        )
 
     def includes(self, relative_path: str) -> bool:
         """Return whether a relative path belongs to the resolved scope."""
@@ -81,3 +137,14 @@ class ResolvedSyncScope:
 
 def _normalize_relative_path(value: str) -> str:
     return value.strip().strip("/")
+
+
+def build_sync_rule_key(
+    *,
+    relative_path: str,
+    filter_type: SyncFilterType,
+    behavior: SyncRuleBehavior,
+) -> str:
+    """Build the stable rule key used by adapter rules and project overrides."""
+    normalized_path = _normalize_relative_path(relative_path)
+    return f"{behavior.value}:{filter_type.value}:{normalized_path}"

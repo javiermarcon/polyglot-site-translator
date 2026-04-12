@@ -261,3 +261,65 @@ def test_project_editor_persists_filtered_sync_preference_when_editing_site(
 
     assert shell.project_editor_state is not None
     assert shell.project_editor_state.editor.use_adapter_sync_filters is True
+
+
+def test_project_editor_persists_project_sync_rule_overrides(
+    tmp_path: Path,
+) -> None:
+    settings_service = build_default_settings_service(config_dir=tmp_path / "config")
+    app = cast(
+        Any,
+        create_kivy_app(
+            services=build_default_frontend_services(settings_service=settings_service)
+        ),
+    )
+    root = app.build()
+    editor_screen = root.get_screen("project_editor")
+    shell = editor_screen._shell
+
+    shell.open_project_editor_create()
+    root.current = "project_editor"
+    editor_screen.refresh()
+    editor_screen._name_input.text = "Django Site"
+    editor_screen._framework_spinner.text = "Django"
+    editor_screen._local_path_input.text = "/workspace/django-site"
+    editor_screen._default_locale_input.text = "en_US"
+    editor_screen._connection_type_spinner.text = "FTP"
+    editor_screen._remote_host_input.text = "ftp.example.com"
+    editor_screen._remote_port_input.text = "21"
+    editor_screen._remote_username_input.text = "deploy"
+    editor_screen._remote_password_input.text = "super-secret"
+    editor_screen._remote_path_input.text = "/public_html"
+    editor_screen._use_adapter_sync_filters_switch.active = True
+    editor_screen._refresh_sync_scope()
+    assert shell.project_editor_state is not None
+    cache_rule = next(
+        item
+        for item in shell.project_editor_state.editor.sync_rule_items
+        if item.relative_path == "__pycache__"
+    )
+    editor_screen._toggle_sync_rule(shell.project_editor_state, cache_rule.rule_key, False)
+    assert shell.project_editor_state is not None
+    editor_screen._sync_rule_path_input.text = "locale_custom"
+    editor_screen._sync_rule_description_input.text = "Project locale override"
+    editor_screen._sync_rule_filter_type_spinner.text = "Directory"
+    editor_screen._sync_rule_behavior_spinner.text = "Include"
+    editor_screen._add_sync_rule(shell.project_editor_state)
+    editor_screen._save_editor()
+
+    assert shell.project_detail_state is not None
+    project_id = shell.project_detail_state.project.id
+    shell.open_project_editor_edit(project_id)
+    root.current = "project_editor"
+    editor_screen.refresh()
+
+    assert shell.project_editor_state is not None
+    assert "locale_custom" in [
+        item.relative_path for item in shell.project_editor_state.editor.sync_rule_items
+    ]
+    reloaded_cache_rule = next(
+        item
+        for item in shell.project_editor_state.editor.sync_rule_items
+        if item.relative_path == "__pycache__"
+    )
+    assert reloaded_cache_rule.is_enabled is False

@@ -96,6 +96,14 @@ class ProjectRegistryManagementService(Protocol):
     ) -> RemoteConnectionTestResultViewModel:
         """Test the current remote connection draft and return the result."""
 
+    def preview_project_editor(
+        self,
+        editor: SiteEditorViewModel,
+        *,
+        mode: str,
+    ) -> ProjectEditorStateViewModel:
+        """Rebuild the project editor state for a modified draft without persisting it."""
+
 
 @dataclass(frozen=True)
 class FrontendServices:

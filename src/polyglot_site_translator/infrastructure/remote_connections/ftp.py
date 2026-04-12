@@ -144,7 +144,8 @@ class ImplicitFtpTls(FTP_TLS):
     ) -> str:
         self.host = host
         self.port = port
-        self.timeout = timeout
+        if timeout is not None:
+            self.timeout = int(timeout)
         self.source_address = source_address
         self.sock = socket.create_connection((host, port), timeout, source_address)
         self.af = self.sock.family

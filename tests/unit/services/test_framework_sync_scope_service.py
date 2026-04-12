@@ -13,8 +13,12 @@ from polyglot_site_translator.domain.framework_detection.models import (
 from polyglot_site_translator.domain.site_registry.models import RegisteredSite, SiteProject
 from polyglot_site_translator.domain.sync.scope import (
     AdapterSyncScope,
+    ProjectSyncRuleOverride,
     SyncFilterSpec,
+    SyncFilterType,
+    SyncRuleBehavior,
     SyncScopeStatus,
+    build_sync_rule_key,
 )
 from polyglot_site_translator.services.framework_sync_scope import (
     FrameworkSyncScopeService,
@@ -116,6 +120,35 @@ def test_framework_sync_scope_service_resolves_django_exclusions(tmp_path: Path)
     assert resolved_scope.includes("locale/es/LC_MESSAGES/django.po") is True
     assert resolved_scope.includes(".venv/lib/python3.12/site.py") is False
     assert resolved_scope.includes("__pycache__/settings.cpython-312.pyc") is False
+
+
+def test_framework_sync_scope_service_uses_project_rules_when_no_adapter_exists(
+    tmp_path: Path,
+) -> None:
+    service = FrameworkSyncScopeService(registry=FrameworkAdapterRegistry.discover_installed())
+
+    resolved_scope = service.resolve_for_framework(
+        framework_type="customapp",
+        project_path=tmp_path / "customapp",
+        project_rule_overrides=(
+            ProjectSyncRuleOverride(
+                rule_key=build_sync_rule_key(
+                    relative_path="locale_custom",
+                    filter_type=SyncFilterType.DIRECTORY,
+                    behavior=SyncRuleBehavior.INCLUDE,
+                ),
+                target_rule_key=None,
+                relative_path="locale_custom",
+                filter_type=SyncFilterType.DIRECTORY,
+                behavior=SyncRuleBehavior.INCLUDE,
+                is_enabled=True,
+                description="Project locale override",
+            ),
+        ),
+    )
+
+    assert resolved_scope.status is SyncScopeStatus.FILTERED
+    assert resolved_scope.includes("locale_custom/es/messages.po") is True
 
 
 def _build_site(tmp_path: Path, *, framework_type: str) -> RegisteredSite:

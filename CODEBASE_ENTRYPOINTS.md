@@ -56,6 +56,7 @@ Current frontend-facing service entrypoints:
 - `ProjectCatalogService.get_project_detail`
 - `ProjectRegistryManagementService.build_create_project_editor`
 - `ProjectRegistryManagementService.build_edit_project_editor`
+- `ProjectRegistryManagementService.preview_project_editor`
 - `ProjectRegistryManagementService.create_project`
 - `ProjectRegistryManagementService.update_project`
 - `ProjectRegistryManagementService.test_remote_connection`

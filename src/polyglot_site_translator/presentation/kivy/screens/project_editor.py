@@ -21,6 +21,7 @@ from polyglot_site_translator.presentation.view_models import (
     ProjectEditorStateViewModel,
     SettingsOptionViewModel,
     SiteEditorViewModel,
+    SyncRuleEditorItemViewModel,
 )
 
 
@@ -49,6 +50,10 @@ class ProjectEditorScreen(BaseShellScreen):
         self._remote_path_input: TextInput | None = None
         self._is_active_switch: Switch | None = None
         self._use_adapter_sync_filters_switch: Switch | None = None
+        self._sync_rule_path_input: TextInput | None = None
+        self._sync_rule_description_input: TextInput | None = None
+        self._sync_rule_filter_type_spinner: Spinner | None = None
+        self._sync_rule_behavior_spinner: Spinner | None = None
         self._test_connection_button: AppButton | None = None
         self.refresh()
 
@@ -127,6 +132,7 @@ class ProjectEditorScreen(BaseShellScreen):
         panel.add_widget(
             self._build_adapter_sync_filters_toggle(state.editor.use_adapter_sync_filters)
         )
+        panel.add_widget(self._build_sync_scope_panel(state))
         if state.connection_test_result is not None:
             panel.add_widget(
                 _build_information_card(
@@ -195,6 +201,128 @@ class ProjectEditorScreen(BaseShellScreen):
         card.add_widget(row)
         return card
 
+    def _build_sync_scope_panel(self, state: ProjectEditorStateViewModel) -> SurfaceBoxLayout:
+        card = SurfaceBoxLayout(
+            orientation="vertical",
+            spacing=10,
+            padding=14,
+            size_hint_y=None,
+            background_role="card_subtle_background",
+        )
+        card.bind(minimum_height=card.setter("height"))
+        card.add_widget(WrappedLabel(text="Resolved Sync Scope", font_size=16, bold=True))
+        card.add_widget(
+            WrappedLabel(
+                text=f"Status: {state.sync_scope_status}",
+                font_size=14,
+                color_role="text_muted",
+            )
+        )
+        card.add_widget(
+            WrappedLabel(
+                text=state.sync_scope_message,
+                font_size=14,
+                color_role="text_muted",
+            )
+        )
+        refresh_button = AppButton(text="Refresh Sync Scope", primary=False)
+        refresh_button.bind(on_release=self._refresh_sync_scope)
+        card.add_widget(refresh_button)
+        if state.editor.sync_rule_items == ():
+            card.add_widget(
+                WrappedLabel(
+                    text="No adapter or project sync rules are currently available.",
+                    font_size=14,
+                    color_role="text_muted",
+                )
+            )
+        else:
+            for item in state.editor.sync_rule_items:
+                card.add_widget(self._build_sync_rule_item(state, item))
+        card.add_widget(self._build_custom_sync_rule_form(state))
+        return card
+
+    def _build_sync_rule_item(
+        self,
+        state: ProjectEditorStateViewModel,
+        item: SyncRuleEditorItemViewModel,
+    ) -> SurfaceBoxLayout:
+        card = SurfaceBoxLayout(
+            orientation="vertical",
+            spacing=8,
+            padding=12,
+            size_hint_y=None,
+            background_role="card_background",
+        )
+        card.bind(minimum_height=card.setter("height"))
+        card.add_widget(WrappedLabel(text=item.relative_path, font_size=15, bold=True))
+        card.add_widget(
+            WrappedLabel(
+                text=(f"{item.behavior.title()} {item.filter_type} rule from {item.source}."),
+                font_size=13,
+                color_role="text_muted",
+            )
+        )
+        if item.description != "":
+            card.add_widget(
+                WrappedLabel(
+                    text=item.description,
+                    font_size=13,
+                    color_role="text_muted",
+                )
+            )
+        row = BoxLayout(orientation="horizontal", spacing=12, size_hint_y=None, height=40)
+        row.add_widget(WrappedLabel(text="Enabled"))
+        item_switch = Switch(active=item.is_enabled, size_hint=(None, None), size=(72, 36))
+        item_switch.bind(
+            active=lambda _instance, value, rule_key=item.rule_key: self._toggle_sync_rule(
+                state, rule_key, value
+            )
+        )
+        row.add_widget(item_switch)
+        if item.is_removable:
+            remove_button = AppButton(text="Remove", primary=False)
+            remove_button.bind(
+                on_release=lambda *_args, rule_key=item.rule_key: self._remove_sync_rule(
+                    state, rule_key
+                )
+            )
+            row.add_widget(remove_button)
+        card.add_widget(row)
+        return card
+
+    def _build_custom_sync_rule_form(
+        self,
+        state: ProjectEditorStateViewModel,
+    ) -> SurfaceBoxLayout:
+        card = SurfaceBoxLayout(
+            orientation="vertical",
+            spacing=8,
+            padding=12,
+            size_hint_y=None,
+            background_role="card_background",
+        )
+        card.bind(minimum_height=card.setter("height"))
+        card.add_widget(WrappedLabel(text="Project Sync Rule Overrides", font_size=15, bold=True))
+        self._sync_rule_path_input = self._build_text_input("")
+        card.add_widget(_build_field("Relative Path", self._sync_rule_path_input))
+        self._sync_rule_description_input = self._build_text_input("")
+        card.add_widget(_build_field("Description", self._sync_rule_description_input))
+        self._sync_rule_filter_type_spinner = self._build_spinner(
+            values=[option.label for option in state.sync_rule_filter_type_options],
+            current_label=state.sync_rule_filter_type_options[0].label,
+        )
+        card.add_widget(_build_field("Filter Type", self._sync_rule_filter_type_spinner))
+        self._sync_rule_behavior_spinner = self._build_spinner(
+            values=[option.label for option in state.sync_rule_behavior_options],
+            current_label=state.sync_rule_behavior_options[0].label,
+        )
+        card.add_widget(_build_field("Behavior", self._sync_rule_behavior_spinner))
+        add_button = AppButton(text="Add Project Rule", primary=False)
+        add_button.bind(on_release=lambda *_args: self._add_sync_rule(state))
+        card.add_widget(add_button)
+        return card
+
     def _build_adapter_sync_filters_toggle(self, is_enabled: bool) -> SurfaceBoxLayout:
         card = SurfaceBoxLayout(
             orientation="vertical",
@@ -225,32 +353,7 @@ class ProjectEditorScreen(BaseShellScreen):
 
     def _save_editor(self, *_args: object) -> None:
         state = self._require_state()
-        editor = SiteEditorViewModel(
-            site_id=state.editor.site_id,
-            name=self._require_text(self._name_input),
-            framework_type=self._require_framework_value(
-                state.framework_options,
-                self._framework_spinner,
-            ),
-            local_path=self._require_text(self._local_path_input),
-            default_locale=self._require_text(self._default_locale_input),
-            connection_type=self._require_framework_value(
-                state.connection_type_options,
-                self._connection_type_spinner,
-            ),
-            remote_host=self._optional_text(self._remote_host_input),
-            remote_port=self._optional_text(self._remote_port_input),
-            remote_username=self._optional_text(self._remote_username_input),
-            remote_password=self._optional_text(self._remote_password_input),
-            remote_path=self._optional_text(self._remote_path_input),
-            is_active=self._is_active_switch.active if self._is_active_switch is not None else True,
-            remote_verify_host=True,
-            use_adapter_sync_filters=(
-                self._use_adapter_sync_filters_switch.active
-                if self._use_adapter_sync_filters_switch is not None
-                else False
-            ),
-        )
+        editor = self._collect_editor_from_form(state)
         self._draft_editor = editor
         if state.mode == "edit" and editor.site_id is not None:
             self._shell.save_project_edits(editor.site_id, editor)
@@ -263,34 +366,74 @@ class ProjectEditorScreen(BaseShellScreen):
 
     def _test_connection(self, *_args: object) -> None:
         state = self._require_state()
-        editor = SiteEditorViewModel(
-            site_id=state.editor.site_id,
-            name=self._require_text(self._name_input),
-            framework_type=self._require_framework_value(
-                state.framework_options,
-                self._framework_spinner,
-            ),
-            local_path=self._require_text(self._local_path_input),
-            default_locale=self._require_text(self._default_locale_input),
-            connection_type=self._require_framework_value(
-                state.connection_type_options,
-                self._connection_type_spinner,
-            ),
-            remote_host=self._optional_text(self._remote_host_input),
-            remote_port=self._optional_text(self._remote_port_input),
-            remote_username=self._optional_text(self._remote_username_input),
-            remote_password=self._optional_text(self._remote_password_input),
-            remote_path=self._optional_text(self._remote_path_input),
-            is_active=self._is_active_switch.active if self._is_active_switch is not None else True,
-            remote_verify_host=True,
-            use_adapter_sync_filters=(
-                self._use_adapter_sync_filters_switch.active
-                if self._use_adapter_sync_filters_switch is not None
-                else False
-            ),
-        )
+        editor = self._collect_editor_from_form(state)
         self._draft_editor = editor
         self._shell.test_project_connection(editor)
+        self.refresh()
+
+    def _refresh_sync_scope(self, *_args: object) -> None:
+        state = self._require_state()
+        editor = self._collect_editor_from_form(state)
+        self._draft_editor = editor
+        self._shell.preview_project_editor(editor)
+        self.refresh()
+
+    def _toggle_sync_rule(
+        self,
+        state: ProjectEditorStateViewModel,
+        rule_key: str,
+        is_enabled: bool,
+    ) -> None:
+        current_items = self._current_sync_rule_items(state)
+        next_items = tuple(
+            item if item.rule_key != rule_key else _with_rule_enabled(item, is_enabled)
+            for item in current_items
+        )
+        editor = self._collect_editor_from_form(state, sync_rule_items=next_items)
+        self._draft_editor = editor
+        self._shell.preview_project_editor(editor)
+        self.refresh()
+
+    def _remove_sync_rule(
+        self,
+        state: ProjectEditorStateViewModel,
+        rule_key: str,
+    ) -> None:
+        next_items = tuple(
+            item for item in self._current_sync_rule_items(state) if item.rule_key != rule_key
+        )
+        editor = self._collect_editor_from_form(state, sync_rule_items=next_items)
+        self._draft_editor = editor
+        self._shell.preview_project_editor(editor)
+        self.refresh()
+
+    def _add_sync_rule(self, state: ProjectEditorStateViewModel) -> None:
+        relative_path = self._optional_text(self._sync_rule_path_input)
+        filter_type = self._require_framework_value(
+            state.sync_rule_filter_type_options,
+            self._sync_rule_filter_type_spinner,
+        )
+        behavior = self._require_framework_value(
+            state.sync_rule_behavior_options,
+            self._sync_rule_behavior_spinner,
+        )
+        next_items = (
+            *self._current_sync_rule_items(state),
+            SyncRuleEditorItemViewModel(
+                rule_key="",
+                target_rule_key=None,
+                relative_path=relative_path,
+                filter_type=filter_type,
+                behavior=behavior,
+                description=self._optional_text(self._sync_rule_description_input),
+                source="project",
+                is_enabled=True,
+                is_removable=True,
+            ),
+        )
+        editor = self._collect_editor_from_form(state, sync_rule_items=tuple(next_items))
+        self._draft_editor = editor
+        self._shell.preview_project_editor(editor)
         self.refresh()
 
     def _back_to_projects(self, *_args: object) -> None:
@@ -315,6 +458,50 @@ class ProjectEditorScreen(BaseShellScreen):
             msg = "Project editor input field is not available."
             raise ValueError(msg)
         return str(field.text).strip()
+
+    def _current_sync_rule_items(
+        self,
+        state: ProjectEditorStateViewModel,
+    ) -> tuple[SyncRuleEditorItemViewModel, ...]:
+        if self._draft_editor is None:
+            return state.editor.sync_rule_items
+        return self._draft_editor.sync_rule_items
+
+    def _collect_editor_from_form(
+        self,
+        state: ProjectEditorStateViewModel,
+        *,
+        sync_rule_items: tuple[SyncRuleEditorItemViewModel, ...] | None = None,
+    ) -> SiteEditorViewModel:
+        return SiteEditorViewModel(
+            site_id=state.editor.site_id,
+            name=self._require_text(self._name_input),
+            framework_type=self._require_framework_value(
+                state.framework_options,
+                self._framework_spinner,
+            ),
+            local_path=self._require_text(self._local_path_input),
+            default_locale=self._require_text(self._default_locale_input),
+            connection_type=self._require_framework_value(
+                state.connection_type_options,
+                self._connection_type_spinner,
+            ),
+            remote_host=self._optional_text(self._remote_host_input),
+            remote_port=self._optional_text(self._remote_port_input),
+            remote_username=self._optional_text(self._remote_username_input),
+            remote_password=self._optional_text(self._remote_password_input),
+            remote_path=self._optional_text(self._remote_path_input),
+            is_active=self._is_active_switch.active if self._is_active_switch is not None else True,
+            remote_verify_host=True,
+            use_adapter_sync_filters=(
+                self._use_adapter_sync_filters_switch.active
+                if self._use_adapter_sync_filters_switch is not None
+                else False
+            ),
+            sync_rule_items=(
+                self._current_sync_rule_items(state) if sync_rule_items is None else sync_rule_items
+            ),
+        )
 
     def _bind_connection_test_state_updates(self, state: ProjectEditorStateViewModel) -> None:
         bindable_fields = [
@@ -404,3 +591,20 @@ def _build_information_card(*, title: str, body: str) -> SurfaceBoxLayout:
     card.add_widget(WrappedLabel(text=title, font_size=18, bold=True))
     card.add_widget(WrappedLabel(text=body, font_size=14, color_role="text_muted"))
     return card
+
+
+def _with_rule_enabled(
+    item: SyncRuleEditorItemViewModel,
+    is_enabled: bool,
+) -> SyncRuleEditorItemViewModel:
+    return SyncRuleEditorItemViewModel(
+        rule_key=item.rule_key,
+        target_rule_key=item.target_rule_key,
+        relative_path=item.relative_path,
+        filter_type=item.filter_type,
+        behavior=item.behavior,
+        description=item.description,
+        source=item.source,
+        is_enabled=is_enabled,
+        is_removable=item.is_removable,
+    )

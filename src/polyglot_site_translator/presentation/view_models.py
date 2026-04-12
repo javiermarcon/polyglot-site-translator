@@ -183,6 +183,7 @@ class SiteEditorViewModel:
     is_active: bool
     remote_verify_host: bool = True
     use_adapter_sync_filters: bool = False
+    sync_rule_items: tuple[SyncRuleEditorItemViewModel, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -204,10 +205,29 @@ class ProjectEditorStateViewModel:
     editor: SiteEditorViewModel
     framework_options: list[SettingsOptionViewModel]
     connection_type_options: list[SettingsOptionViewModel]
+    sync_rule_filter_type_options: list[SettingsOptionViewModel]
+    sync_rule_behavior_options: list[SettingsOptionViewModel]
     connection_test_enabled: bool
     connection_test_result: RemoteConnectionTestResultViewModel | None
+    sync_scope_status: str
+    sync_scope_message: str
     status: str
     status_message: str | None
+
+
+@dataclass(frozen=True)
+class SyncRuleEditorItemViewModel:
+    """A single sync rule rendered and edited in the project editor."""
+
+    rule_key: str
+    target_rule_key: str | None
+    relative_path: str
+    filter_type: str
+    behavior: str
+    description: str
+    source: str
+    is_enabled: bool
+    is_removable: bool
 
 
 @dataclass(frozen=True)
@@ -397,6 +417,7 @@ def build_default_site_editor() -> SiteEditorViewModel:
         is_active=True,
         remote_verify_host=True,
         use_adapter_sync_filters=False,
+        sync_rule_items=(),
     )
 
 
@@ -406,8 +427,12 @@ def build_project_editor_state(  # noqa: PLR0913
     editor: SiteEditorViewModel,
     framework_options: list[SettingsOptionViewModel],
     connection_type_options: list[SettingsOptionViewModel],
+    sync_rule_filter_type_options: list[SettingsOptionViewModel],
+    sync_rule_behavior_options: list[SettingsOptionViewModel],
     connection_test_enabled: bool,
     connection_test_result: RemoteConnectionTestResultViewModel | None,
+    sync_scope_status: str,
+    sync_scope_message: str,
     status: str,
     status_message: str | None,
 ) -> ProjectEditorStateViewModel:
@@ -420,8 +445,12 @@ def build_project_editor_state(  # noqa: PLR0913
             editor=editor,
             framework_options=framework_options,
             connection_type_options=connection_type_options,
+            sync_rule_filter_type_options=sync_rule_filter_type_options,
+            sync_rule_behavior_options=sync_rule_behavior_options,
             connection_test_enabled=connection_test_enabled,
             connection_test_result=connection_test_result,
+            sync_scope_status=sync_scope_status,
+            sync_scope_message=sync_scope_message,
             status=status,
             status_message=status_message,
         )
@@ -432,8 +461,12 @@ def build_project_editor_state(  # noqa: PLR0913
         editor=editor,
         framework_options=framework_options,
         connection_type_options=connection_type_options,
+        sync_rule_filter_type_options=sync_rule_filter_type_options,
+        sync_rule_behavior_options=sync_rule_behavior_options,
         connection_test_enabled=connection_test_enabled,
         connection_test_result=connection_test_result,
+        sync_scope_status=sync_scope_status,
+        sync_scope_message=sync_scope_message,
         status=status,
         status_message=status_message,
     )
@@ -463,6 +496,22 @@ def build_connection_type_options(
             label=descriptor.display_name,
         )
         for descriptor in descriptors
+    ]
+
+
+def build_sync_rule_filter_type_options() -> list[SettingsOptionViewModel]:
+    """Return selectable filter types for sync-rule editing."""
+    return [
+        SettingsOptionViewModel(value="directory", label="Directory"),
+        SettingsOptionViewModel(value="file", label="File"),
+    ]
+
+
+def build_sync_rule_behavior_options() -> list[SettingsOptionViewModel]:
+    """Return selectable include/exclude behaviors for sync-rule editing."""
+    return [
+        SettingsOptionViewModel(value="include", label="Include"),
+        SettingsOptionViewModel(value="exclude", label="Exclude"),
     ]
 
 

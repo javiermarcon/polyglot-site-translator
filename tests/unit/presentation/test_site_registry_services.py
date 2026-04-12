@@ -39,6 +39,11 @@ from polyglot_site_translator.domain.sync.models import (
     SyncResult,
     SyncSummary,
 )
+from polyglot_site_translator.domain.sync.scope import (
+    SyncFilterType,
+    SyncRuleBehavior,
+    build_sync_rule_key,
+)
 from polyglot_site_translator.infrastructure.remote_connections.registry import (
     RemoteConnectionRegistry,
 )
@@ -49,14 +54,17 @@ from polyglot_site_translator.presentation.site_registry_services import (
     SiteRegistryPresentationManagementService,
     SiteRegistryPresentationWorkflowService,
     _build_project_detail,
+    _build_sync_status,
 )
 from polyglot_site_translator.presentation.view_models import (
     SettingsStateViewModel,
     SiteEditorViewModel,
+    SyncRuleEditorItemViewModel,
     build_default_app_settings,
     build_settings_state,
 )
 from polyglot_site_translator.services.framework_detection import FrameworkDetectionService
+from polyglot_site_translator.services.framework_sync_scope import FrameworkSyncScopeService
 from polyglot_site_translator.services.remote_connections import RemoteConnectionService
 from polyglot_site_translator.services.site_registry import SiteRegistryService
 
@@ -281,6 +289,7 @@ def test_management_service_builds_create_and_edit_editor_states(tmp_path: Path)
     management = SiteRegistryPresentationManagementService(
         service=domain_service,
         settings_service=settings_service,
+        framework_sync_scope_service=_build_framework_sync_scope_service(),
     )
 
     create_state = management.build_create_project_editor()
@@ -298,8 +307,39 @@ def test_management_service_builds_create_and_edit_editor_states(tmp_path: Path)
         "none",
         "sftp",
     ]
+    assert create_state.sync_scope_status == "framework_unresolved"
     assert edit_state.mode == "edit"
     assert edit_state.editor.site_id == created.id
+
+
+def test_management_service_builds_edit_state_for_projects_without_remote_connection(
+    tmp_path: Path,
+) -> None:
+    settings_service = TomlSettingsService(tmp_path / "settings.toml")
+    settings_service.reset_settings()
+    repository = InMemorySiteRegistryRepository()
+    domain_service = _build_domain_service(repository)
+    created = domain_service.create_site(
+        SiteRegistrationInput(
+            name="Local Only",
+            framework_type="django",
+            local_path="/workspace/local-only",
+            default_locale="en_US",
+            remote_connection=None,
+            is_active=True,
+        )
+    )
+    management = SiteRegistryPresentationManagementService(
+        service=domain_service,
+        settings_service=settings_service,
+        framework_sync_scope_service=_build_framework_sync_scope_service(),
+    )
+
+    edit_state = management.build_edit_project_editor(created.id)
+
+    assert edit_state.editor.connection_type == "none"
+    assert edit_state.editor.remote_host == ""
+    assert "locale" in [item.relative_path for item in edit_state.editor.sync_rule_items]
 
 
 def test_management_service_wraps_build_edit_errors(tmp_path: Path) -> None:
@@ -385,6 +425,7 @@ def test_management_service_updates_projects_successfully(tmp_path: Path) -> Non
     management = SiteRegistryPresentationManagementService(
         service=domain_service,
         settings_service=settings_service,
+        framework_sync_scope_service=_build_framework_sync_scope_service(),
     )
 
     detail = management.update_project(
@@ -432,6 +473,7 @@ def test_management_service_preserves_remote_host_verification_choice(
     management = SiteRegistryPresentationManagementService(
         service=domain_service,
         settings_service=settings_service,
+        framework_sync_scope_service=_build_framework_sync_scope_service(),
     )
 
     created_project = management.create_project(replace(_build_editor(), remote_verify_host=False))
@@ -439,6 +481,241 @@ def test_management_service_preserves_remote_host_verification_choice(
     persisted_site = domain_service.get_site(created_project.project.id)
     assert persisted_site.remote_connection is not None
     assert persisted_site.remote_connection.flags.verify_host is False
+
+
+def test_management_service_previews_resolved_scope_and_project_rules(
+    tmp_path: Path,
+) -> None:
+    settings_service = TomlSettingsService(tmp_path / "settings.toml")
+    settings_service.reset_settings()
+    management = SiteRegistryPresentationManagementService(
+        service=_build_domain_service(InMemorySiteRegistryRepository()),
+        settings_service=settings_service,
+        framework_sync_scope_service=_build_framework_sync_scope_service(),
+    )
+
+    preview = management.preview_project_editor(
+        replace(
+            _build_editor(),
+            framework_type="django",
+            use_adapter_sync_filters=True,
+            sync_rule_items=(
+                SyncRuleEditorItemViewModel(
+                    rule_key="",
+                    target_rule_key=None,
+                    relative_path="locale_custom",
+                    filter_type="directory",
+                    behavior="include",
+                    description="Project locale override",
+                    source="project",
+                    is_enabled=True,
+                    is_removable=True,
+                ),
+            ),
+        ),
+        mode="create",
+    )
+
+    assert preview.sync_scope_status == "filtered"
+    assert "locale" in [item.relative_path for item in preview.editor.sync_rule_items]
+    assert ".venv" in [item.relative_path for item in preview.editor.sync_rule_items]
+    assert "locale_custom" in [item.relative_path for item in preview.editor.sync_rule_items]
+
+
+def test_management_service_persists_project_sync_rule_overrides(
+    tmp_path: Path,
+) -> None:
+    settings_service = TomlSettingsService(tmp_path / "settings.toml")
+    settings_service.reset_settings()
+    repository = InMemorySiteRegistryRepository()
+    domain_service = _build_domain_service(repository)
+    management = SiteRegistryPresentationManagementService(
+        service=domain_service,
+        settings_service=settings_service,
+        framework_sync_scope_service=_build_framework_sync_scope_service(),
+    )
+    preview = management.preview_project_editor(
+        replace(
+            _build_editor(),
+            framework_type="django",
+            use_adapter_sync_filters=True,
+        ),
+        mode="create",
+    )
+    disabled_cache_rule_items = (
+        *(
+            item
+            if item.relative_path != "__pycache__"
+            else SyncRuleEditorItemViewModel(
+                rule_key=item.rule_key,
+                target_rule_key=item.target_rule_key,
+                relative_path=item.relative_path,
+                filter_type=item.filter_type,
+                behavior=item.behavior,
+                description=item.description,
+                source=item.source,
+                is_enabled=False,
+                is_removable=item.is_removable,
+            )
+            for item in preview.editor.sync_rule_items
+        ),
+        SyncRuleEditorItemViewModel(
+            rule_key="",
+            target_rule_key=None,
+            relative_path="locale_custom",
+            filter_type="directory",
+            behavior="include",
+            description="Project locale override",
+            source="project",
+            is_enabled=True,
+            is_removable=True,
+        ),
+    )
+
+    created_project = management.create_project(
+        replace(
+            _build_editor(),
+            framework_type="django",
+            use_adapter_sync_filters=True,
+            sync_rule_items=disabled_cache_rule_items,
+        )
+    )
+    persisted_site = domain_service.get_site(created_project.project.id)
+
+    assert persisted_site.remote_connection is not None
+    assert persisted_site.remote_connection.flags.sync_rule_overrides != ()
+    assert any(
+        override.rule_key
+        == build_sync_rule_key(
+            relative_path="locale_custom",
+            filter_type=SyncFilterType.DIRECTORY,
+            behavior=SyncRuleBehavior.INCLUDE,
+        )
+        for override in persisted_site.remote_connection.flags.sync_rule_overrides
+    )
+    assert any(
+        override.target_rule_key
+        == build_sync_rule_key(
+            relative_path="__pycache__",
+            filter_type=SyncFilterType.DIRECTORY,
+            behavior=SyncRuleBehavior.EXCLUDE,
+        )
+        and override.is_enabled is False
+        for override in persisted_site.remote_connection.flags.sync_rule_overrides
+    )
+
+    reloaded_editor = management.build_edit_project_editor(created_project.project.id)
+    matching_custom_rules = [
+        item
+        for item in reloaded_editor.editor.sync_rule_items
+        if item.relative_path == "locale_custom"
+    ]
+    matching_cache_rules = [
+        item
+        for item in reloaded_editor.editor.sync_rule_items
+        if item.relative_path == "__pycache__"
+    ]
+    assert matching_custom_rules and matching_custom_rules[0].source == "project"
+    assert matching_cache_rules and matching_cache_rules[0].is_enabled is False
+
+
+def test_management_service_wraps_invalid_sync_rule_preview_payloads(
+    tmp_path: Path,
+) -> None:
+    settings_service = TomlSettingsService(tmp_path / "settings.toml")
+    settings_service.reset_settings()
+    management = SiteRegistryPresentationManagementService(
+        service=_build_domain_service(InMemorySiteRegistryRepository()),
+        settings_service=settings_service,
+        framework_sync_scope_service=_build_framework_sync_scope_service(),
+    )
+
+    with pytest.raises(ControlledServiceError, match=r"Sync rule paths must not be blank\."):
+        management.preview_project_editor(
+            replace(
+                _build_editor(),
+                sync_rule_items=(
+                    SyncRuleEditorItemViewModel(
+                        rule_key="",
+                        target_rule_key=None,
+                        relative_path="",
+                        filter_type="directory",
+                        behavior="include",
+                        description="invalid",
+                        source="project",
+                        is_enabled=True,
+                        is_removable=True,
+                    ),
+                ),
+            ),
+            mode="create",
+        )
+
+
+def test_management_service_wraps_duplicate_sync_rule_payloads(
+    tmp_path: Path,
+) -> None:
+    settings_service = TomlSettingsService(tmp_path / "settings.toml")
+    settings_service.reset_settings()
+    management = SiteRegistryPresentationManagementService(
+        service=_build_domain_service(InMemorySiteRegistryRepository()),
+        settings_service=settings_service,
+        framework_sync_scope_service=_build_framework_sync_scope_service(),
+    )
+    duplicate_rule = SyncRuleEditorItemViewModel(
+        rule_key="",
+        target_rule_key=None,
+        relative_path="locale_custom",
+        filter_type="directory",
+        behavior="include",
+        description="duplicate",
+        source="project",
+        is_enabled=True,
+        is_removable=True,
+    )
+
+    with pytest.raises(
+        ControlledServiceError,
+        match=r"Duplicate sync rule detected for 'locale_custom'\.",
+    ):
+        management.preview_project_editor(
+            replace(
+                _build_editor(),
+                sync_rule_items=(duplicate_rule, duplicate_rule),
+            ),
+            mode="create",
+        )
+
+
+def test_management_service_preview_without_scope_service_keeps_existing_rule_catalog(
+    tmp_path: Path,
+) -> None:
+    settings_service = TomlSettingsService(tmp_path / "settings.toml")
+    settings_service.reset_settings()
+    management = SiteRegistryPresentationManagementService(
+        service=_build_domain_service(InMemorySiteRegistryRepository()),
+        settings_service=settings_service,
+    )
+    adapter_rule = SyncRuleEditorItemViewModel(
+        rule_key="exclude:directory:__pycache__",
+        target_rule_key=None,
+        relative_path="__pycache__",
+        filter_type="directory",
+        behavior="exclude",
+        description="Adapter cache rule",
+        source="adapter",
+        is_enabled=True,
+        is_removable=False,
+    )
+
+    preview = management.preview_project_editor(
+        replace(_build_editor(), sync_rule_items=(adapter_rule,)),
+        mode="create",
+    )
+
+    assert preview.sync_scope_status == "adapter_unavailable"
+    assert preview.editor.sync_rule_items[0].rule_key == "exclude:directory:__pycache__"
+    assert preview.editor.sync_rule_items[0].target_rule_key == "exclude:directory:__pycache__"
 
 
 def test_framework_aware_workflow_service_builds_audit_preview_from_detection() -> None:
@@ -549,6 +826,56 @@ def test_framework_aware_workflow_service_wraps_lookup_errors() -> None:
         workflow.start_audit("missing-site")
 
 
+def test_workflow_service_wraps_local_to_remote_lookup_errors() -> None:
+    workflow = SiteRegistryPresentationWorkflowService(
+        service=SiteRegistryService(repository=InMemorySiteRegistryRepository()),
+        project_sync_service=SyncStub(),
+    )
+
+    with pytest.raises(ControlledServiceError, match=r"Unknown site id: missing-site"):
+        workflow.start_sync_to_remote("missing-site")
+
+
+def test_build_sync_status_covers_empty_upload_and_download_summaries() -> None:
+    upload_status = _build_sync_status(
+        SyncResult(
+            direction=SyncDirection.LOCAL_TO_REMOTE,
+            success=True,
+            project_id="site-1",
+            connection_type="sftp",
+            local_path="/workspace/site-1",
+            summary=SyncSummary(
+                files_discovered=0,
+                files_downloaded=0,
+                directories_created=0,
+                bytes_downloaded=0,
+                files_uploaded=0,
+                bytes_uploaded=0,
+            ),
+            error=None,
+        )
+    )
+    download_status = _build_sync_status(
+        SyncResult(
+            direction=SyncDirection.REMOTE_TO_LOCAL,
+            success=True,
+            project_id="site-1",
+            connection_type="sftp",
+            local_path="/workspace/site-1",
+            summary=SyncSummary(
+                files_discovered=1,
+                files_downloaded=1,
+                directories_created=0,
+                bytes_downloaded=10,
+            ),
+            error=None,
+        )
+    )
+
+    assert upload_status.summary == "Local workspace is empty. No files were uploaded."
+    assert download_status.summary == "Downloaded 1 files into /workspace/site-1."
+
+
 def test_build_project_detail_without_detection_keeps_base_metadata_only() -> None:
     detail = _build_project_detail(
         RegisteredSite(
@@ -625,6 +952,10 @@ def _build_domain_service(repository: InMemorySiteRegistryRepository) -> SiteReg
         ),
         remote_connection_service=_build_remote_connection_service(),
     )
+
+
+def _build_framework_sync_scope_service() -> FrameworkSyncScopeService:
+    return FrameworkSyncScopeService(registry=FrameworkAdapterRegistry.discover_installed())
 
 
 def _build_remote_connection_service() -> RemoteConnectionService:

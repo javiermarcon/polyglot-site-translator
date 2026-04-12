@@ -100,7 +100,7 @@ Current first real implementation:
 - `domain/remote_connections/` defines typed descriptors, configs, provider/session contracts, session state, and test results
 - `domain/remote_connections/` also persists per-project remote flags such as the filtered-vs-full sync preference
 - `domain/sync/` defines sync direction, remote/local file descriptors, summaries, results, and explicit sync errors
-- `domain/sync/scope.py` defines typed adapter-owned sync include/exclude rules and resolved sync scopes
+- `domain/sync/scope.py` defines typed adapter-owned sync include/exclude rules, resolved rule catalogs, and persisted project-level overrides
 - `services/site_registry.py` validates and orchestrates CRUD use cases
 - `services/remote_connections.py` validates optional remote configs, exposes the discoverable catalog, and dispatches connection tests
 - `services/framework_sync_scope.py` resolves adapter-defined sync scopes from the persisted framework type
@@ -138,6 +138,7 @@ Current UI behavior for sync mode:
 - the project editor persists a per-project remote setting that selects adapter-filtered sync or full sync
 - `ProjectSyncService` reads that persisted preference and resolves the effective sync scope outside the Kivy layer
 - the resolved scope can include localization-relevant paths and exclude framework-specific artifacts such as virtualenvs or bytecode caches
+- the project editor renders the resolved rule catalog, allows enabling/disabling individual rules, and persists additional project-specific include/exclude overrides without moving scope logic into Kivy
 
 Not yet implemented in this stage:
 - more granular selective-sync controls beyond the current filtered-vs-full project setting
@@ -256,6 +257,8 @@ The project editor now also owns:
 - a discoverable remote connection-type combo with an explicit "No Remote Connection" option
 - an optional remote connection draft separate from the persisted site/project identity
 - a "Test Connection" action that delegates to application services and renders structured results without opening network sessions from widgets
+- a visible sync-scope catalog driven by typed presentation state
+- project-level sync rule rows with enable/disable toggles and add/remove actions, while rule resolution and persistence stay behind services
 
 The sync screen now also owns:
 - rendering the structured result of real remote-to-local and local-to-remote sync workflows

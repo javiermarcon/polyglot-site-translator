@@ -14,7 +14,10 @@ from polyglot_site_translator.bootstrap import create_frontend_shell
 from polyglot_site_translator.infrastructure.settings import build_default_settings_service
 from polyglot_site_translator.presentation.fakes import build_default_frontend_services
 from polyglot_site_translator.presentation.frontend_shell import FrontendShell
-from polyglot_site_translator.presentation.view_models import SiteEditorViewModel
+from polyglot_site_translator.presentation.view_models import (
+    SiteEditorViewModel,
+    SyncRuleEditorItemViewModel,
+)
 from tests.support.frontend_doubles import FailingSiteRegistryCatalogService
 
 StepFunction = TypeVar("StepFunction", bound=Callable[..., object])
@@ -168,6 +171,67 @@ def step_submit_new_site_with_adapter_sync_filters(context: object) -> None:
     typed_context.created_site_id = typed_context.shell.project_detail_state.project.id
 
 
+@when("the operator submits a new Django site registry entry with custom sync rule overrides")
+def step_submit_django_site_with_custom_sync_rule_overrides(context: object) -> None:
+    typed_context = _context_with_shell(context)
+    draft = SiteEditorViewModel(
+        site_id=None,
+        name="Django Filtered Site",
+        framework_type="django",
+        local_path="/workspace/django-filtered-site",
+        default_locale="en_US",
+        connection_type="ftp",
+        remote_host="ftp.example.com",
+        remote_port="21",
+        remote_username="deploy",
+        remote_password="super-secret",
+        remote_path="/public_html",
+        is_active=True,
+        use_adapter_sync_filters=True,
+    )
+    typed_context.shell.preview_project_editor(draft)
+    assert typed_context.shell.project_editor_state is not None
+    adjusted_items = (
+        *(
+            item
+            if item.relative_path != "__pycache__"
+            else SyncRuleEditorItemViewModel(
+                rule_key=item.rule_key,
+                target_rule_key=item.target_rule_key,
+                relative_path=item.relative_path,
+                filter_type=item.filter_type,
+                behavior=item.behavior,
+                description=item.description,
+                source=item.source,
+                is_enabled=False,
+                is_removable=item.is_removable,
+            )
+            for item in typed_context.shell.project_editor_state.editor.sync_rule_items
+        ),
+        SyncRuleEditorItemViewModel(
+            rule_key="",
+            target_rule_key=None,
+            relative_path="locale_custom",
+            filter_type="directory",
+            behavior="include",
+            description="Project locale override",
+            source="project",
+            is_enabled=True,
+            is_removable=True,
+        ),
+    )
+    typed_context.shell.save_new_project(
+        SiteEditorViewModel(
+            **{
+                **draft.__dict__,
+                "sync_rule_items": adjusted_items,
+            }
+        )
+    )
+    assert typed_context.shell.project_detail_state is not None
+    typed_context.created_site_id = typed_context.shell.project_detail_state.project.id
+
+
 @when("the operator restarts the SQLite-backed frontend shell")
 def step_restart_sqlite_shell(context: object) -> None:
     typed_context = _context_with_shell(context)
@@ -275,6 +339,30 @@ def step_assert_persisted_adapter_sync_filters(context: object) -> None:
     typed_context.shell.open_project_editor_edit(typed_context.created_site_id)
     assert typed_context.shell.project_editor_state is not None
     assert typed_context.shell.project_editor_state.editor.use_adapter_sync_filters is True
+
+
+@then('reopening the persisted site editor shows the custom sync rule "{relative_path}"')
+def step_assert_persisted_custom_sync_rule(context: object, relative_path: str) -> None:
+    typed_context = _context_with_shell(context)
+    typed_context.shell.open_project_editor_edit(typed_context.created_site_id)
+    assert typed_context.shell.project_editor_state is not None
+    assert relative_path in [
+        item.relative_path
+        for item in typed_context.shell.project_editor_state.editor.sync_rule_items
+    ]
+
+
+@then('reopening the persisted site editor shows the adapter rule "{relative_path}" disabled')
+def step_assert_persisted_disabled_adapter_rule(context: object, relative_path: str) -> None:
+    typed_context = _context_with_shell(context)
+    typed_context.shell.open_project_editor_edit(typed_context.created_site_id)
+    assert typed_context.shell.project_editor_state is not None
+    matching_rules = [
+        item
+        for item in typed_context.shell.project_editor_state.editor.sync_rule_items
+        if item.relative_path == relative_path
+    ]
+    assert matching_rules and matching_rules[0].is_enabled is False
 
 
 @then("the settings draft shows the configured database directory")

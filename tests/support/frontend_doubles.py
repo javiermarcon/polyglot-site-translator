@@ -37,6 +37,8 @@ from polyglot_site_translator.presentation.view_models import (
     build_framework_type_options_from_descriptors,
     build_project_editor_state,
     build_settings_state,
+    build_sync_rule_behavior_options,
+    build_sync_rule_filter_type_options,
 )
 from polyglot_site_translator.services.remote_connections import RemoteConnectionService
 
@@ -213,8 +215,12 @@ class InMemoryProjectRegistryManagementService:
                 FrameworkAdapterRegistry.discover_installed().list_framework_descriptors()
             ),
             connection_type_options=_default_connection_type_options(),
+            sync_rule_filter_type_options=build_sync_rule_filter_type_options(),
+            sync_rule_behavior_options=build_sync_rule_behavior_options(),
             connection_test_enabled=False,
             connection_test_result=None,
+            sync_scope_status="framework_unresolved",
+            sync_scope_message="No framework scope has been resolved in the frontend test double.",
             status="editing",
             status_message="Provide the project metadata to register a new site.",
         )
@@ -241,8 +247,12 @@ class InMemoryProjectRegistryManagementService:
                 FrameworkAdapterRegistry.discover_installed().list_framework_descriptors()
             ),
             connection_type_options=_default_connection_type_options(),
+            sync_rule_filter_type_options=build_sync_rule_filter_type_options(),
+            sync_rule_behavior_options=build_sync_rule_behavior_options(),
             connection_test_enabled=False,
             connection_test_result=None,
+            sync_scope_status="framework_unresolved",
+            sync_scope_message="No framework scope has been resolved in the frontend test double.",
             status="editing",
             status_message="Update the persisted site registry record.",
         )
@@ -292,6 +302,29 @@ class InMemoryProjectRegistryManagementService:
             success=success,
             message=message,
             error_code=None if success else "invalid_remote_config",
+        )
+
+    def preview_project_editor(
+        self,
+        editor: SiteEditorViewModel,
+        *,
+        mode: str,
+    ) -> ProjectEditorStateViewModel:
+        return build_project_editor_state(
+            mode=mode,
+            editor=editor,
+            framework_options=build_framework_type_options_from_descriptors(
+                FrameworkAdapterRegistry.discover_installed().list_framework_descriptors()
+            ),
+            connection_type_options=_default_connection_type_options(),
+            sync_rule_filter_type_options=build_sync_rule_filter_type_options(),
+            sync_rule_behavior_options=build_sync_rule_behavior_options(),
+            connection_test_enabled=False,
+            connection_test_result=None,
+            sync_scope_status="filtered" if editor.use_adapter_sync_filters else "no_filters",
+            sync_scope_message="Project editor preview rebuilt by the frontend test double.",
+            status="editing",
+            status_message="Project editor draft updated.",
         )
 
 

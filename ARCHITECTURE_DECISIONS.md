@@ -261,6 +261,23 @@ WordPress, Django, and Flask care about different localization-relevant paths an
 
 ---
 
+## AD-019: Project-specific sync rule overrides are persisted and edited through presentation state
+
+**Decision**
+Persist project-specific sync rule overrides separately from adapter defaults, and expose them to the UI through typed editor state instead of letting Kivy compute or store scope logic on its own.
+
+**Why**
+Adapters need framework-level defaults, but real projects also need local overrides such as custom localization folders or disabled exclusions. Those overrides must survive SQLite round-trips and must not move business logic into widgets.
+
+**Implications**
+- `RemoteConnectionFlags` now persists project-level sync rule overrides alongside the filtered-vs-full preference.
+- SQLite stores those overrides in a dedicated related table instead of flattening them into widget state or generic settings.
+- `FrameworkSyncScopeService` composes adapter rules with persisted project overrides and returns a visible catalog of resolved rules.
+- The project editor shows that catalog, toggles rule enablement, and adds/removes project rules by rebuilding typed drafts through presentation services.
+- `ProjectSyncService` keeps consuming only the resolved scope; it does not know about Kivy widgets or how the editor is rendered.
+
+---
+
 ## AD-015: Long-running sync runs in background and reports typed progress events
 
 **Decision**

@@ -85,7 +85,7 @@ Current frontend base:
   Resolution and validation of the configured SQLite directory/filename into a final database path.
 
 - `polyglot_site_translator/infrastructure/site_registry_sqlite.py`
-  Real SQLite repository for the site registry, including schema setup, legacy FTP migration, related remote-connection persistence, persisted filtered-vs-full sync preference, and configured runtime wiring from settings.
+  Real SQLite repository for the site registry, including schema setup, legacy FTP migration, related remote-connection persistence, persisted filtered-vs-full sync preference, persisted project sync-rule overrides, and configured runtime wiring from settings.
 
 - `polyglot_site_translator/infrastructure/site_secrets.py`
   Local reversible encryption helper used to store remote passwords encrypted at rest.
@@ -97,7 +97,7 @@ Current frontend base:
   Typed sync direction, remote/local file descriptors, summaries, results, and explicit sync errors.
 
 - `polyglot_site_translator/domain/sync/scope.py`
-  Typed adapter-owned sync include/exclude specs, filter matching rules, and explicit resolved-scope outcomes.
+  Typed adapter-owned sync include/exclude specs, project-level override models, resolved rule catalogs, filter matching rules, and explicit resolved-scope outcomes.
 
 - `polyglot_site_translator/domain/framework_detection/`
   Typed framework-detection contracts, result models, and explicit ambiguity errors.
@@ -112,7 +112,7 @@ Current frontend base:
   Registry-backed framework detection orchestration with path validation and framework catalog exposure.
 
 - `polyglot_site_translator/services/framework_sync_scope.py`
-  Explicit resolution of adapter-defined sync include/exclude rules from the persisted framework type, without hardcoding framework paths in generic sync services or Kivy UI modules.
+  Explicit resolution of adapter-defined sync include/exclude rules plus persisted project overrides from the current framework type, without hardcoding framework paths in generic sync services or Kivy UI modules.
 
 - `polyglot_site_translator/services/site_registry.py`
   Site registry CRUD orchestration and validation independent from Kivy or SQLite details, with optional remote-connection integration and optional framework detection integration.
@@ -133,10 +133,10 @@ Current frontend base:
   UI-facing service protocols, including frontend settings operations and project-registry create/edit flows.
 
 - `polyglot_site_translator/presentation/view_models.py`
-  Typed dataclasses for dashboard, project list/detail, sync, audit, PO processing, and settings.
+  Typed dataclasses for dashboard, project list/detail, sync, audit, PO processing, settings, and project-editor sync rule catalogs.
 
 - `polyglot_site_translator/presentation/frontend_shell.py`
-  Navigation menu state, settings editing, project editor orchestration, sync background execution state, and route-safe CRUD wiring independent from Kivy rendering.
+  Navigation menu state, settings editing, project editor orchestration, project-editor preview refreshes, sync background execution state, and route-safe CRUD wiring independent from Kivy rendering.
 
 - `polyglot_site_translator/presentation/fakes.py`
   Default runtime wiring for the real TOML + SQLite-backed frontend services. This module must not keep fake bundles for workflows that already have production implementations.
@@ -157,7 +157,7 @@ Current frontend base:
   Extensible settings screen with the initial App / UI / Kivy section, including editable SQLite directory/filename fields and the configurable sync progress log limit.
 
 - `polyglot_site_translator/presentation/kivy/screens/project_editor.py`
-  Thin create/edit screen for site registry records driven entirely by typed presentation state, including the discoverable remote connection selector, the persisted "Use Adapter Sync Filters" switch, and the "Test Connection" action.
+  Thin create/edit screen for site registry records driven entirely by typed presentation state, including the discoverable remote connection selector, the persisted "Use Adapter Sync Filters" switch, the visible sync-scope catalog, per-rule toggles, project-level rule editing, and the "Test Connection" action.
 
 - `polyglot_site_translator/presentation/kivy/widgets/sync_progress_popup.py`
   Dedicated Kivy popup that renders background sync progress and a bounded command-log output without moving remote work into widgets.

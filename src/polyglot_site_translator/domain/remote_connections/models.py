@@ -5,6 +5,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from enum import StrEnum
 
+from polyglot_site_translator.domain.sync.scope import ProjectSyncRuleOverride
+
 NO_REMOTE_CONNECTION_VALUE = "none"
 
 
@@ -33,6 +35,7 @@ class RemoteConnectionFlags:
     passive_mode: bool = True
     verify_host: bool = True
     use_adapter_sync_filters: bool = False
+    sync_rule_overrides: tuple[ProjectSyncRuleOverride, ...] = ()
 
 
 @dataclass(frozen=True)

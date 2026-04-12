@@ -79,6 +79,15 @@ class FailingRegistryService:
         msg = f"Remote connection test unavailable for {editor.name}."
         raise ControlledServiceError(msg)
 
+    def preview_project_editor(
+        self,
+        editor: SiteEditorViewModel,
+        *,
+        mode: str,
+    ) -> ProjectEditorStateViewModel:
+        msg = f"Project editor preview unavailable for {mode}:{editor.name}."
+        raise ControlledServiceError(msg)
+
 
 def test_open_application_menu_marks_navigation_state_as_open() -> None:
     shell = create_frontend_shell(build_seeded_services())
@@ -308,3 +317,38 @@ def test_shell_handles_project_editor_failures_and_missing_editor_state() -> Non
     assert shell.project_editor_state is not None
     assert shell.project_editor_state.status == "failed"
     assert shell.router.current.project_id == "wp-site"
+
+
+def test_shell_previews_project_editor_drafts_and_surfaces_failures() -> None:
+    services = build_seeded_services()
+    shell = create_frontend_shell(services)
+    shell.open_project_editor_create()
+    assert shell.project_editor_state is not None
+
+    preview_editor = replace(
+        shell.project_editor_state.editor,
+        framework_type="django",
+        use_adapter_sync_filters=True,
+    )
+    shell.preview_project_editor(preview_editor)
+
+    assert shell.project_editor_state is not None
+    assert shell.project_editor_state.editor.framework_type == "django"
+    assert shell.project_editor_state.status == "editing"
+
+    failing_shell = create_frontend_shell(
+        FrontendServices(
+            catalog=services.catalog,
+            workflows=services.workflows,
+            settings=services.settings,
+            registry=FailingRegistryService(),
+        )
+    )
+    failing_shell.project_editor_state = services.registry.build_create_project_editor()
+    failing_shell.preview_project_editor(preview_editor)
+
+    assert failing_shell.project_editor_state is not None
+    assert failing_shell.project_editor_state.status == "failed"
+    assert "Project editor preview unavailable" in str(
+        failing_shell.project_editor_state.status_message
+    )

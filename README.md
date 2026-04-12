@@ -34,6 +34,8 @@ El repositorio está en una etapa temprana y hoy incluye principalmente:
 - filtros de sync definidos por adapter/framework y reutilizables por ambos sentidos
 - inclusiones y exclusiones de sync específicas por framework, por ejemplo `.venv/` y `__pycache__/` para stacks Python
 - preferencia persistida por proyecto para elegir entre `filtered sync` y `full sync`
+- catálogo visible en Project Editor del scope resuelto por framework para sync filtrado
+- overrides persistidos por proyecto para agregar includes/excludes extra y habilitar/deshabilitar reglas individuales del catálogo
 - resultado tipado y controlado de sync con conteo de archivos y código de error cuando falla
 - ejecución de sync en background desde Project Detail, con una ventana dedicada de progreso
 - barra de progreso y log visible de comandos remotos/locales durante el sync
@@ -49,7 +51,7 @@ El repositorio está en una etapa temprana y hoy incluye principalmente:
 
 Todavía no están implementados en forma real:
 
-- controles más granulares de sync selectivo por subsets/rules en UI
+- presets o perfiles más avanzados de sync selectivo por entorno/dirección
 - scanner de auditoría
 - procesamiento real de `.po/.mo`
 - reporting final
@@ -83,7 +85,7 @@ La base actual implementa una base funcional de presentación, settings y `site_
 - `domain/site_registry/`: modelos tipados, errores y contratos del dominio de site registry
 - `domain/remote_connections/`: modelos tipados, contratos y resultados estructurados de conexiones remotas
 - `domain/sync/`: dirección de sync, archivos remotos/locales, resultados, summaries y errores explícitos
-- `domain/sync/scope.py`: filtros tipados de sync por adapter, incluyendo inclusiones/exclusiones y scopes resueltos reutilizables por ambos sentidos
+- `domain/sync/scope.py`: filtros tipados de sync por adapter, catálogo de reglas resueltas, overrides persistidos por proyecto, y scopes reutilizables por ambos sentidos
 - `domain/framework_detection/`: contratos, resultados tipados y errores explícitos para detección de framework
 - `services/site_registry.py`: validación y CRUD del site registry
 - `services/remote_connections.py`: validación opcional, catálogo discoverable y test de conexión
@@ -93,7 +95,7 @@ La base actual implementa una base funcional de presentación, settings y `site_
 - `adapters/base.py`: contrato base discoverable para nuevos adapters
 - `infrastructure/settings.py`: persistencia TOML de settings generales por usuario
 - `infrastructure/database_location.py`: resolución del path final de SQLite desde settings
-- `infrastructure/site_registry_sqlite.py`: repositorio SQLite real con schema y mapeo fila ↔ modelo
+- `infrastructure/site_registry_sqlite.py`: repositorio SQLite real con schema y mapeo fila ↔ modelo, incluyendo overrides persistidos de reglas de sync por proyecto
 - `infrastructure/remote_connections/`: registry discoverable y providers concretos de conexión remota
 - `infrastructure/remote_connections/base.py`: contrato base compartido para materialización acotada de listados remotos e iteración incremental completa
 - `infrastructure/sync_local.py`: preparación del workspace local, listado de archivos fuente y persistencia de archivos descargados durante sync
@@ -123,7 +125,7 @@ La base actual del frontend incluye:
 - Home / Dashboard como punto de entrada
 - Projects / Sites List para listar proyectos persistidos en SQLite
 - Project / Site Detail con lectura real del registry persistido y metadata de detección de framework
-- Project Editor con combo dinámico de framework, combo dinámico de tipo de conexión remota y switch persistido para elegir `Use Adapter Sync Filters`
+- Project Editor con combo dinámico de framework, combo dinámico de tipo de conexión remota, switch persistido para elegir `Use Adapter Sync Filters`, catálogo visible del scope resuelto y editor de reglas adicionales por proyecto
 - acción "Test Connection" en el editor, resuelta por servicios y con resultado estructurado en pantalla
 - Audit Screen con preview basado en la detección real del proyecto en vez de un conteo fijo del runtime
 - Sync Screen con wiring real de `remote -> local` y `local -> remote`, con resumen estructurado del resultado
@@ -133,7 +135,7 @@ La base actual del frontend incluye:
 - Settings generales con persistencia TOML y campos para configurar la ubicación/nombre de la base SQLite
 
 La navegación mantiene el contexto del proyecto seleccionado. El flujo principal de create/list/detail/update y el sync bidireccional ya usan servicios reales para `site_registry` y el subsistema remoto; audit y PO processing siguen usando servicios fake detrás de los mismos contratos de UI.
-Cuando la preferencia `Use Adapter Sync Filters` está activa en la configuración remota persistida del proyecto, ambos sentidos de sync usan el scope resuelto por `FrameworkSyncScopeService`; cuando está desactivada, el servicio ejecuta full sync. Ese scope puede incluir paths relevantes y excluir artefactos específicos del framework, por ejemplo caches o entornos virtuales en proyectos Python. Si el proyecto pide sync filtrado pero no existe un scope utilizable, el sync falla de forma explícita en vez de caer en un fallback silencioso.
+Cuando la preferencia `Use Adapter Sync Filters` está activa en la configuración remota persistida del proyecto, ambos sentidos de sync usan el scope resuelto por `FrameworkSyncScopeService`; cuando está desactivada, el servicio ejecuta full sync. Ese scope puede incluir paths relevantes y excluir artefactos específicos del framework, por ejemplo caches o entornos virtuales en proyectos Python. El editor muestra ese catálogo resuelto, permite activar/desactivar reglas individuales y agregar includes/excludes adicionales persistidos por proyecto. Si el proyecto pide sync filtrado pero no existe un scope utilizable, el sync falla de forma explícita en vez de caer en un fallback silencioso.
 
 El entrypoint gráfico por defecto (`create_kivy_app()` / `python -m polyglot_site_translator`) arranca con settings TOML y `site_registry` SQLite reales. Los bundles fake seeded quedan reservados para tests y escenarios de desarrollo controlados.
 Los doubles/stubs de test para funcionalidades ya implementadas viven en soporte de tests y no forman parte del runtime productivo.
