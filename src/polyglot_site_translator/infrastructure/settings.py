@@ -10,6 +10,13 @@ import sys
 import tomllib
 from typing import Any
 
+from polyglot_site_translator.domain.sync.scope import (
+    AdapterSyncScopeSettings,
+    ConfiguredSyncRule,
+    FrameworkSyncRuleSet,
+    SyncFilterType,
+    SyncRuleBehavior,
+)
 from polyglot_site_translator.infrastructure.database_location import (
     DEFAULT_DATABASE_FILENAME,
     normalize_database_filename,
@@ -179,6 +186,10 @@ class TomlSettingsService:
                 "sync_progress_log_limit",
                 default_settings.sync_progress_log_limit,
             ),
+            sync_scope_settings=_read_sync_scope_settings(
+                raw_document,
+                default_settings.sync_scope_settings,
+            ),
         )
         return _validate_app_settings(app_settings)
 
@@ -256,11 +267,12 @@ def _validate_app_settings(app_settings: AppSettingsViewModel) -> AppSettingsVie
         app_settings,
         database_directory=database_directory,
         database_filename=database_filename,
+        sync_scope_settings=_validate_sync_scope_settings(app_settings.sync_scope_settings),
     )
 
 
 def _serialize_settings_document(app_settings: AppSettingsViewModel) -> str:
-    return (
+    document = (
         "# Polyglot Site Translator frontend settings\n"
         "[meta]\n"
         f"schema_version = {SETTINGS_SCHEMA_VERSION}\n\n"
@@ -276,6 +288,8 @@ def _serialize_settings_document(app_settings: AppSettingsViewModel) -> str:
         f"database_filename = {_format_toml_string(app_settings.database_filename)}\n"
         f"sync_progress_log_limit = {app_settings.sync_progress_log_limit}\n"
     )
+    document += _serialize_sync_scope_settings(app_settings.sync_scope_settings)
+    return document
 
 
 def _format_toml_string(value: str) -> str:
@@ -286,3 +300,191 @@ def _format_toml_bool(value: bool) -> str:
     if value:
         return "true"
     return "false"
+
+
+def _read_sync_scope_settings(
+    raw_document: dict[str, Any],
+    default_settings: AdapterSyncScopeSettings,
+) -> AdapterSyncScopeSettings:
+    raw_sync_scope = raw_document.get("sync_scope")
+    if raw_sync_scope is None:
+        return default_settings
+    if not isinstance(raw_sync_scope, dict):
+        msg = "The [sync_scope] settings section must be a TOML table."
+        raise ControlledServiceError(msg)
+    return AdapterSyncScopeSettings(
+        global_rules=_read_configured_rules(
+            raw_sync_scope.get("global_rules"),
+            key="sync_scope.global_rules",
+        ),
+        framework_rule_sets=_read_framework_rule_sets(
+            raw_sync_scope.get("framework_rules"),
+        ),
+        use_gitignore_rules=_read_bool(
+            raw_sync_scope,
+            "use_gitignore_rules",
+            default_settings.use_gitignore_rules,
+        ),
+    )
+
+
+def _read_configured_rules(
+    raw_rules: Any,
+    *,
+    key: str,
+) -> tuple[ConfiguredSyncRule, ...]:
+    if raw_rules is None:
+        return ()
+    if not isinstance(raw_rules, list):
+        msg = f"The {key} setting must be an array of TOML tables."
+        raise ControlledServiceError(msg)
+    configured_rules: list[ConfiguredSyncRule] = []
+    for index, raw_rule in enumerate(raw_rules):
+        if not isinstance(raw_rule, dict):
+            msg = f"The {key}[{index}] setting must be a TOML table."
+            raise ControlledServiceError(msg)
+        configured_rules.append(
+            ConfiguredSyncRule(
+                relative_path=_read_string(raw_rule, "relative_path", ""),
+                filter_type=_read_sync_filter_type(raw_rule, key=f"{key}[{index}]"),
+                behavior=_read_sync_rule_behavior(raw_rule, key=f"{key}[{index}]"),
+                description=_read_string(raw_rule, "description", ""),
+                is_enabled=_read_bool(raw_rule, "is_enabled", True),
+            )
+        )
+    return tuple(configured_rules)
+
+
+def _read_framework_rule_sets(raw_framework_rules: Any) -> tuple[FrameworkSyncRuleSet, ...]:
+    if raw_framework_rules is None:
+        return ()
+    if not isinstance(raw_framework_rules, list):
+        msg = "The sync_scope.framework_rules setting must be an array of TOML tables."
+        raise ControlledServiceError(msg)
+    framework_rules: dict[str, list[ConfiguredSyncRule]] = {}
+    for index, raw_rule in enumerate(raw_framework_rules):
+        if not isinstance(raw_rule, dict):
+            msg = f"The sync_scope.framework_rules[{index}] setting must be a TOML table."
+            raise ControlledServiceError(msg)
+        framework_type = _read_string(raw_rule, "framework_type", "").strip().lower()
+        if framework_type == "":
+            msg = "Framework sync rules require a non-empty framework_type."
+            raise ControlledServiceError(msg)
+        framework_rules.setdefault(framework_type, []).append(
+            ConfiguredSyncRule(
+                relative_path=_read_string(raw_rule, "relative_path", ""),
+                filter_type=_read_sync_filter_type(
+                    raw_rule,
+                    key=f"sync_scope.framework_rules[{index}]",
+                ),
+                behavior=_read_sync_rule_behavior(
+                    raw_rule,
+                    key=f"sync_scope.framework_rules[{index}]",
+                ),
+                description=_read_string(raw_rule, "description", ""),
+                is_enabled=_read_bool(raw_rule, "is_enabled", True),
+            )
+        )
+    return tuple(
+        FrameworkSyncRuleSet(framework_type=framework_type, rules=tuple(rules))
+        for framework_type, rules in sorted(framework_rules.items())
+    )
+
+
+def _read_sync_filter_type(raw_settings: dict[str, Any], *, key: str) -> SyncFilterType:
+    raw_value = _read_string(raw_settings, "filter_type", "")
+    try:
+        return SyncFilterType(raw_value)
+    except ValueError as error:
+        msg = f"Unsupported sync filter type in {key}: {raw_value}"
+        raise ControlledServiceError(msg) from error
+
+
+def _read_sync_rule_behavior(raw_settings: dict[str, Any], *, key: str) -> SyncRuleBehavior:
+    raw_value = _read_string(raw_settings, "behavior", "")
+    try:
+        return SyncRuleBehavior(raw_value)
+    except ValueError as error:
+        msg = f"Unsupported sync rule behavior in {key}: {raw_value}"
+        raise ControlledServiceError(msg) from error
+
+
+def _validate_sync_scope_settings(
+    sync_scope_settings: AdapterSyncScopeSettings,
+) -> AdapterSyncScopeSettings:
+    validated_global_rules = tuple(
+        _validate_configured_rule(rule, context="global sync rule")
+        for rule in sync_scope_settings.global_rules
+    )
+    validated_framework_rule_sets: list[FrameworkSyncRuleSet] = []
+    for rule_set in sync_scope_settings.framework_rule_sets:
+        normalized_framework_type = rule_set.normalized_framework_type()
+        if normalized_framework_type == "":
+            msg = "Framework sync rules require a non-empty framework type."
+            raise ControlledServiceError(msg)
+        validated_framework_rule_sets.append(
+            FrameworkSyncRuleSet(
+                framework_type=normalized_framework_type,
+                rules=tuple(
+                    _validate_configured_rule(
+                        rule,
+                        context=f"framework sync rule for '{normalized_framework_type}'",
+                    )
+                    for rule in rule_set.rules
+                ),
+            )
+        )
+    return AdapterSyncScopeSettings(
+        global_rules=validated_global_rules,
+        framework_rule_sets=tuple(validated_framework_rule_sets),
+        use_gitignore_rules=sync_scope_settings.use_gitignore_rules,
+    )
+
+
+def _validate_configured_rule(
+    rule: ConfiguredSyncRule,
+    *,
+    context: str,
+) -> ConfiguredSyncRule:
+    normalized_relative_path = rule.relative_path.strip().strip("/")
+    if normalized_relative_path == "":
+        msg = f"{context.capitalize()} requires a non-empty relative path."
+        raise ControlledServiceError(msg)
+    normalized_description = rule.description.strip()
+    if normalized_description == "":
+        normalized_description = normalized_relative_path
+    return ConfiguredSyncRule(
+        relative_path=normalized_relative_path,
+        filter_type=rule.filter_type,
+        behavior=rule.behavior,
+        description=normalized_description,
+        is_enabled=rule.is_enabled,
+    )
+
+
+def _serialize_sync_scope_settings(sync_scope_settings: AdapterSyncScopeSettings) -> str:
+    document = "\n[sync_scope]\n"
+    document += (
+        f"use_gitignore_rules = {_format_toml_bool(sync_scope_settings.use_gitignore_rules)}\n"
+    )
+    for rule in sync_scope_settings.global_rules:
+        document += "\n[[sync_scope.global_rules]]\n"
+        document += _serialize_configured_rule(rule)
+    for rule_set in sync_scope_settings.framework_rule_sets:
+        for rule in rule_set.rules:
+            document += "\n[[sync_scope.framework_rules]]\n"
+            document += (
+                f"framework_type = {_format_toml_string(rule_set.normalized_framework_type())}\n"
+            )
+            document += _serialize_configured_rule(rule)
+    return document
+
+
+def _serialize_configured_rule(rule: ConfiguredSyncRule) -> str:
+    return (
+        f"relative_path = {_format_toml_string(rule.relative_path)}\n"
+        f"filter_type = {_format_toml_string(rule.filter_type.value)}\n"
+        f"behavior = {_format_toml_string(rule.behavior.value)}\n"
+        f"description = {_format_toml_string(rule.description)}\n"
+        f"is_enabled = {_format_toml_bool(rule.is_enabled)}\n"
+    )

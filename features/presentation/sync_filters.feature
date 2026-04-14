@@ -45,3 +45,25 @@ Feature: Framework adapter sync filters
     When the operator resolves the framework sync scope
     Then the resolved sync scope status is "filtered"
     And the resolved sync scope does not exclude the filter ".venv"
+
+  Scenario: Apply global sync rules to every framework scope
+    Given a registered "wordpress" project for sync filter resolution
+    And global sync settings exclude ".git"
+    When the operator resolves the framework sync scope
+    Then the resolved sync scope status is "filtered"
+    And the resolved sync scope excludes the filter ".git"
+
+  Scenario: Apply configured framework sync rules to matching projects
+    Given a registered "django" project for sync filter resolution
+    And framework sync settings exclude ".ruff_cache" for "django"
+    When the operator resolves the framework sync scope
+    Then the resolved sync scope status is "filtered"
+    And the resolved sync scope excludes the filter ".ruff_cache"
+
+  Scenario: Apply gitignore-derived exclusions when enabled
+    Given a registered "django" project for sync filter resolution
+    And the project gitignore excludes "__snapshots__/"
+    And gitignore-based sync exclusions are enabled
+    When the operator resolves the framework sync scope
+    Then the resolved sync scope status is "filtered"
+    And the resolved sync scope excludes the filter "__snapshots__"

@@ -13,6 +13,7 @@ This document maps the main functional domains of the repository and their bound
 Manage the local record of sites or projects known to the application.
 
 ### Includes
+
 - site/project name
 - local workspace path
 - framework type
@@ -25,6 +26,7 @@ Manage the local record of sites or projects known to the application.
 - active/inactive status
 
 ### Excludes
+
 - UI rendering details
 - raw screen state
 - report formatting
@@ -39,6 +41,7 @@ Manage the local record of sites or projects known to the application.
 Configure, validate, test, and later synchronize optional remote sources into local workspaces.
 
 ### Includes
+
 - discoverable connection-type catalogs
 - optional remote connection configs
 - structured connection-test results
@@ -54,9 +57,13 @@ Configure, validate, test, and later synchronize optional remote sources into lo
 - remote path handling
 - download/upload sync orchestration
 - framework-specific sync scope resolution
+- shared global sync-rule settings
+- shared framework-level sync-rule settings
+- opt-in `.gitignore`-derived sync exclusions
 - local target preparation
 
 ### Excludes
+
 - UI widget logic
 - report generation
 - direct persistence concerns not related to remote operations
@@ -70,6 +77,7 @@ Configure, validate, test, and later synchronize optional remote sources into lo
 Handle reusable localization and translation logic.
 
 ### Includes
+
 - `.po` discovery
 - locale extraction
 - family grouping
@@ -79,6 +87,7 @@ Handle reusable localization and translation logic.
 - optional `.mo` compilation
 
 ### Excludes
+
 - framework-specific configuration discovery
 - UI concerns
 - report rendering
@@ -92,6 +101,7 @@ Handle reusable localization and translation logic.
 Encapsulate framework-specific conventions and extraction rules.
 
 ### Includes
+
 - project type detection
 - typed evidence, warnings, and relevant paths for matches or non-matches
 - source-root conventions
@@ -100,11 +110,13 @@ Encapsulate framework-specific conventions and extraction rules.
 - framework-aware enrichment of findings
 
 ### Examples
+
 - WordPress adapter parsing `wp-config.php`
 - Django adapter resolving `settings.py` or related settings modules
 - Flask adapter inspecting config modules or factory conventions
 
 ### Current concrete implementation
+
 - ordered adapter registry with explicit ambiguity handling and package auto-discovery
 - typed `FrameworkDetectionResult` values
 - typed framework descriptors for selectors/catalogs
@@ -113,6 +125,7 @@ Encapsulate framework-specific conventions and extraction rules.
 - Flask detection via `app.py`, `wsgi.py`, factory markers, `babel.cfg`, and `translations/`
 
 ### Excludes
+
 - shared PO logic
 - report rendering
 - UI behavior
@@ -126,6 +139,7 @@ Encapsulate framework-specific conventions and extraction rules.
 Inspect source trees for localization-related issues beyond PO files.
 
 ### Includes
+
 - PHP/Python/JS/template scanning
 - hardcoded string detection
 - gettext misuse detection
@@ -133,6 +147,7 @@ Inspect source trees for localization-related issues beyond PO files.
 - target-specific candidate discovery where relevant
 
 ### Excludes
+
 - rendering reports
 - remote connection logic
 - UI behavior
@@ -146,6 +161,7 @@ Inspect source trees for localization-related issues beyond PO files.
 Export normalized findings and summaries.
 
 ### Includes
+
 - Markdown
 - JSON
 - CSV
@@ -153,6 +169,7 @@ Export normalized findings and summaries.
 - grouped summaries
 
 ### Excludes
+
 - scanning
 - persistence
 - UI orchestration
@@ -166,6 +183,7 @@ Export normalized findings and summaries.
 Provide the graphical user experience through Kivy.
 
 ### Includes
+
 - screens
 - widgets
 - navigation router
@@ -177,6 +195,7 @@ Provide the graphical user experience through Kivy.
 - display of progress, summaries, errors, and outputs
 
 ### Excludes
+
 - domain rules
 - raw SQL
 - remote sessions
@@ -193,13 +212,16 @@ Provide the graphical user experience through Kivy.
 Store and retrieve application-owned data locally.
 
 ### Includes
+
 - SQLite schema access
 - repositories
 - mapping between rows and models
 - final database-path resolution from typed frontend settings
+- `settings.toml` persistence for general app state and SQLite persistence for shared global/framework sync rules plus the `.gitignore` toggle
 - local secret-key handling for encrypted persisted credentials
 
 ### Excludes
+
 - UI-driven direct SQL
 - scanner logic
 - remote operations

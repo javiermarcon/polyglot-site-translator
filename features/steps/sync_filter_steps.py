@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TypeVar, cast
 
@@ -11,7 +11,14 @@ import behave as behave_module  # type: ignore[import-untyped]
 
 from polyglot_site_translator.adapters.framework_registry import FrameworkAdapterRegistry
 from polyglot_site_translator.domain.site_registry.models import RegisteredSite, SiteProject
-from polyglot_site_translator.domain.sync.scope import ResolvedSyncScope
+from polyglot_site_translator.domain.sync.scope import (
+    AdapterSyncScopeSettings,
+    ConfiguredSyncRule,
+    FrameworkSyncRuleSet,
+    ResolvedSyncScope,
+    SyncFilterType,
+    SyncRuleBehavior,
+)
 from polyglot_site_translator.services.framework_sync_scope import (
     FrameworkSyncScopeService,
 )
@@ -29,6 +36,7 @@ class SyncFilterScenarioState:
 
     site: RegisteredSite | None = None
     resolved_scope: ResolvedSyncScope | None = None
+    sync_scope_settings: AdapterSyncScopeSettings = field(default_factory=AdapterSyncScopeSettings)
 
 
 def _state(context: object) -> SyncFilterScenarioState:
@@ -56,6 +64,7 @@ def step_given_registered_project(context: object, framework_type: str) -> None:
         ),
         remote_connection=None,
     )
+    state.sync_scope_settings = AdapterSyncScopeSettings()
 
 
 @when("the operator resolves the framework sync scope")
@@ -64,8 +73,76 @@ def step_when_resolve_scope(context: object) -> None:
     if state.site is None:
         msg = "A registered site must be configured before resolving scope."
         raise AssertionError(msg)
-    service = FrameworkSyncScopeService(registry=FrameworkAdapterRegistry.discover_installed())
+    service = FrameworkSyncScopeService(
+        registry=FrameworkAdapterRegistry.discover_installed(),
+        sync_scope_settings_provider=lambda: state.sync_scope_settings,
+    )
     state.resolved_scope = service.resolve_for_site(state.site)
+
+
+@given('global sync settings exclude "{relative_path}"')
+def step_given_global_sync_setting(context: object, relative_path: str) -> None:
+    state = _state(context)
+    state.sync_scope_settings = AdapterSyncScopeSettings(
+        global_rules=(
+            ConfiguredSyncRule(
+                relative_path=relative_path,
+                filter_type=SyncFilterType.DIRECTORY,
+                behavior=SyncRuleBehavior.EXCLUDE,
+                description=relative_path,
+                is_enabled=True,
+            ),
+        ),
+        framework_rule_sets=state.sync_scope_settings.framework_rule_sets,
+        use_gitignore_rules=state.sync_scope_settings.use_gitignore_rules,
+    )
+
+
+@given('framework sync settings exclude "{relative_path}" for "{framework_type}"')
+def step_given_framework_sync_setting(
+    context: object,
+    relative_path: str,
+    framework_type: str,
+) -> None:
+    state = _state(context)
+    state.sync_scope_settings = AdapterSyncScopeSettings(
+        global_rules=state.sync_scope_settings.global_rules,
+        framework_rule_sets=(
+            FrameworkSyncRuleSet(
+                framework_type=framework_type,
+                rules=(
+                    ConfiguredSyncRule(
+                        relative_path=relative_path,
+                        filter_type=SyncFilterType.DIRECTORY,
+                        behavior=SyncRuleBehavior.EXCLUDE,
+                        description=relative_path,
+                        is_enabled=True,
+                    ),
+                ),
+            ),
+        ),
+        use_gitignore_rules=state.sync_scope_settings.use_gitignore_rules,
+    )
+
+
+@given('the project gitignore excludes "{pattern}"')
+def step_given_project_gitignore(context: object, pattern: str) -> None:
+    state = _state(context)
+    if state.site is None:
+        msg = "A registered site must exist before writing a gitignore."
+        raise AssertionError(msg)
+    gitignore_path = Path(state.site.local_path) / ".gitignore"
+    gitignore_path.write_text(f"{pattern}\n", encoding="utf-8")
+
+
+@given("gitignore-based sync exclusions are enabled")
+def step_given_gitignore_enabled(context: object) -> None:
+    state = _state(context)
+    state.sync_scope_settings = AdapterSyncScopeSettings(
+        global_rules=state.sync_scope_settings.global_rules,
+        framework_rule_sets=state.sync_scope_settings.framework_rule_sets,
+        use_gitignore_rules=True,
+    )
 
 
 @then('the resolved sync scope status is "{status}"')

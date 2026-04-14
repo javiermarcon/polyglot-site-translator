@@ -23,6 +23,7 @@ El repositorio está en una etapa temprana y hoy incluye principalmente:
 - contratos de servicios para la UI
 - persistencia real en TOML para settings generales de la app
 - persistencia real en SQLite para `site_registry`
+- persistencia real en SQLite para reglas compartidas de sync (`global`/`framework` + `use_gitignore_rules`)
 - configuración general de la app para definir `database_directory` y `database_filename`
 - cifrado local reversible para persistir passwords remotos encriptados en SQLite
 - subsistema real de conexiones remotas opcionales separado del proyecto
@@ -34,6 +35,9 @@ El repositorio está en una etapa temprana y hoy incluye principalmente:
 - filtros de sync definidos por adapter/framework y reutilizables por ambos sentidos
 - inclusiones y exclusiones de sync específicas por framework, por ejemplo `.venv/` y `__pycache__/` para stacks Python
 - preferencia persistida por proyecto para elegir entre `filtered sync` y `full sync`
+- ABM general de reglas globales de sync compartidas por todos los proyectos, persistidas en SQLite
+- ABM general de reglas de sync por tipo de proyecto/framework, persistidas en SQLite
+- opción persistida para derivar exclusiones desde `.gitignore`
 - catálogo visible en Project Editor del scope resuelto por framework para sync filtrado
 - overrides persistidos por proyecto para agregar includes/excludes extra y habilitar/deshabilitar reglas individuales del catálogo
 - resultado tipado y controlado de sync con conteo de archivos y código de error cuando falla
@@ -85,7 +89,7 @@ La base actual implementa una base funcional de presentación, settings y `site_
 - `domain/site_registry/`: modelos tipados, errores y contratos del dominio de site registry
 - `domain/remote_connections/`: modelos tipados, contratos y resultados estructurados de conexiones remotas
 - `domain/sync/`: dirección de sync, archivos remotos/locales, resultados, summaries y errores explícitos
-- `domain/sync/scope.py`: filtros tipados de sync por adapter, catálogo de reglas resueltas, overrides persistidos por proyecto, y scopes reutilizables por ambos sentidos
+- `domain/sync/scope.py`: filtros tipados de sync por adapter, reglas globales, reglas por framework, catálogo de reglas resueltas, overrides persistidos por proyecto, y scopes reutilizables por ambos sentidos
 - `domain/framework_detection/`: contratos, resultados tipados y errores explícitos para detección de framework
 - `services/site_registry.py`: validación y CRUD del site registry
 - `services/remote_connections.py`: validación opcional, catálogo discoverable y test de conexión
@@ -94,6 +98,7 @@ La base actual implementa una base funcional de presentación, settings y `site_
 - `services/framework_sync_scope.py`: resolución explícita de filtros y exclusiones de sync por framework/adapter
 - `adapters/base.py`: contrato base discoverable para nuevos adapters
 - `infrastructure/settings.py`: persistencia TOML de settings generales por usuario
+- `infrastructure/sync_gitignore.py`: traducción explícita de patrones soportados de `.gitignore` a exclusiones de sync
 - `infrastructure/database_location.py`: resolución del path final de SQLite desde settings
 - `infrastructure/site_registry_sqlite.py`: repositorio SQLite real con schema y mapeo fila ↔ modelo, incluyendo overrides persistidos de reglas de sync por proyecto
 - `infrastructure/remote_connections/`: registry discoverable y providers concretos de conexión remota
@@ -132,10 +137,10 @@ La base actual del frontend incluye:
 - ventana de progreso de sync abierta desde Project Detail para no bloquear el hilo principal de Kivy en ambos sentidos
 - Audit Screen para mostrar resultados fake de auditoría
 - PO Processing Screen para mostrar resultados fake de procesamiento
-- Settings generales con persistencia TOML y campos para configurar la ubicación/nombre de la base SQLite
+- Settings generales con persistencia TOML, campos para configurar la ubicación/nombre de la base SQLite, ABM de reglas globales de sync, ABM de reglas por framework y toggle para exclusiones derivadas de `.gitignore`
 
 La navegación mantiene el contexto del proyecto seleccionado. El flujo principal de create/list/detail/update y el sync bidireccional ya usan servicios reales para `site_registry` y el subsistema remoto; audit y PO processing siguen usando servicios fake detrás de los mismos contratos de UI.
-Cuando la preferencia `Use Adapter Sync Filters` está activa en la configuración remota persistida del proyecto, ambos sentidos de sync usan el scope resuelto por `FrameworkSyncScopeService`; cuando está desactivada, el servicio ejecuta full sync. Ese scope puede incluir paths relevantes y excluir artefactos específicos del framework, por ejemplo caches o entornos virtuales en proyectos Python. El editor muestra ese catálogo resuelto, permite activar/desactivar reglas individuales y agregar includes/excludes adicionales persistidos por proyecto. Si el proyecto pide sync filtrado pero no existe un scope utilizable, el sync falla de forma explícita en vez de caer en un fallback silencioso.
+Cuando la preferencia `Use Adapter Sync Filters` está activa en la configuración remota persistida del proyecto, ambos sentidos de sync usan el scope resuelto por `FrameworkSyncScopeService`; cuando está desactivada, el servicio ejecuta full sync. Ese scope ahora compone reglas globales persistidas en settings, reglas persistidas por framework, reglas base del adapter, overrides persistidos por proyecto y exclusiones derivadas de `.gitignore` cuando la opción está habilitada. El Project Editor sigue mostrando el catálogo resuelto por proyecto y permite activar/desactivar reglas individuales y agregar includes/excludes adicionales persistidos por proyecto. La pantalla general de Settings ahora expone el ABM de reglas globales y por framework más el toggle `Use .gitignore Exclusions`. Si el proyecto pide sync filtrado pero no existe un scope utilizable, el sync falla de forma explícita en vez de caer en un fallback silencioso.
 
 El entrypoint gráfico por defecto (`create_kivy_app()` / `python -m polyglot_site_translator`) arranca con settings TOML y `site_registry` SQLite reales. Los bundles fake seeded quedan reservados para tests y escenarios de desarrollo controlados.
 Los doubles/stubs de test para funcionalidades ya implementadas viven en soporte de tests y no forman parte del runtime productivo.
@@ -251,6 +256,7 @@ Si querés ejecutar la app local sin instalación editable, usá el launcher del
 Los settings generales se guardan en `settings.toml` dentro del directorio de configuración del usuario.
 Para desarrollo o pruebas locales, podés overridear la ubicación con `POLYGLOT_SITE_TRANSLATOR_CONFIG_DIR`.
 Dentro de esos settings también se persisten `database_directory`, `database_filename` y `sync_progress_log_limit`.
+Las reglas globales de sync, las reglas por framework y el toggle `use_gitignore_rules` ahora pueden vivir en SQLite para el runtime de sync mientras la configuración general sigue registrada en TOML.
 Ese último valor define cuántas operaciones recientes conserva en memoria y muestra la ventana de progreso del sync.
 
 La contraseña remota no se guarda en texto plano en SQLite.
@@ -266,7 +272,7 @@ La descarga es incremental: el sync empieza a grabar archivos locales a medida q
 La subida local también es incremental: el servicio lista el árbol local, prepara directorios remotos faltantes y sube los archivos uno a uno sin materializar ni reconectar por cada archivo.
 Para un sync completo, el servicio abre una única sesión remota reutilizable con estado explícito y la usa para listar, descargar o subir todos los archivos y cerrar la conexión; no reconecta por cada archivo.
 Los adapters de framework ahora también pueden declarar filtros de sync reutilizables. WordPress expone `wp-content/languages`, `wp-content/themes` y `wp-content/plugins`; Django expone `locale`; Flask expone `translations` y `babel.cfg`.
-La resolución de esos filtros no vive en la UI ni en `ProjectSyncService`: la hace `FrameworkSyncScopeService`, que devuelve un scope explícito con estados como `filtered`, `no_filters`, `framework_unresolved` o `adapter_unavailable`.
+La resolución de esos filtros no vive en la UI ni en `ProjectSyncService`: la hace `FrameworkSyncScopeService`, que devuelve un scope explícito con estados como `filtered`, `no_filters`, `framework_unresolved` o `adapter_unavailable`. Ese servicio ahora también compone reglas globales, reglas por framework persistidas en settings, overrides por proyecto y exclusiones derivadas de `.gitignore` cuando están habilitadas.
 `ProjectSyncService` ya puede recibir ese scope resuelto y aplicarlo tanto a `remote -> local` como a `local -> remote`, aunque en esta etapa todavía no existe el control final en la UI para alternar entre sync full y filtrado.
 En SFTP/SCP, el recorrido remoto descarga solo archivos regulares y saltea symlinks, sockets, devices u otros tipos especiales con operaciones `SFTP SKIP` en el log, para evitar fallos genéricos del servidor al intentar leer rutas que no son archivos descargables.
 Si la conexión, el recorrido remoto o una descarga falla, esa misma ventana queda en estado `failed` y muestra un mensaje accionable con operación, proyecto, protocolo, host, puerto, ruta remota/local relevante y causa reportada por el transporte cuando está disponible. Los tests de conexión remota también devuelven mensajes con contexto de host, puerto, tipo de conexión, ruta remota y código estable de error, no solo el texto crudo de la librería.

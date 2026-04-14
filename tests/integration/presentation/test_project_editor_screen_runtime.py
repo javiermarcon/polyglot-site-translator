@@ -331,4 +331,10 @@ def test_project_editor_screen_can_disable_and_remove_project_sync_rules(
         "include:directory:locale_custom",
     )
     assert shell.project_editor_state is not None
-    assert shell.project_editor_state.editor.sync_rule_items == ()
+    assert all(
+        sync_rule.source != "project"
+        for sync_rule in shell.project_editor_state.editor.sync_rule_items
+    )
+    assert ".git" in [
+        sync_rule.relative_path for sync_rule in shell.project_editor_state.editor.sync_rule_items
+    ]

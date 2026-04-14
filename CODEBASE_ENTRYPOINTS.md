@@ -14,12 +14,14 @@ Update it whenever execution paths or module wiring changes.
 The repository should have one clear Kivy application entrypoint under `src/`.
 
 Its responsibilities should be limited to:
+
 - bootstrapping the app
 - wiring screens
 - initializing high-level services/configuration
 - starting the event loop
 
 It must not contain:
+
 - raw SQL
 - FTP logic
 - scanning heuristics
@@ -28,12 +30,14 @@ It must not contain:
 - report formatting internals
 
 Current entrypoints:
+
 - `polyglot_site_translator.app:create_kivy_app`
 - `polyglot_site_translator.__main__:main`
 - `run_app.py`
 - `polyglot_site_translator.presentation.kivy.app.PolyglotSiteTranslatorApp.apply_runtime_settings`
 
 Default runtime wiring:
+
 - `polyglot_site_translator.app:create_kivy_app` must boot the graphical app with the real TOML settings service and SQLite-backed site registry services unless a test/development bundle is injected explicitly.
 
 ---
@@ -41,6 +45,7 @@ Default runtime wiring:
 ## Service-level entrypoints
 
 The application should expose use-case-oriented services such as:
+
 - site/project registration and CRUD
 - remote connection catalog and test orchestration
 - remote synchronization
@@ -52,6 +57,7 @@ The application should expose use-case-oriented services such as:
 These services are the correct integration layer for the UI.
 
 Current frontend-facing service entrypoints:
+
 - `ProjectCatalogService.list_projects`
 - `ProjectCatalogService.get_project_detail`
 - `ProjectRegistryManagementService.build_create_project_editor`
@@ -73,6 +79,7 @@ Current frontend-facing service entrypoints:
 - `polyglot_site_translator.infrastructure.settings.TomlSettingsService`
 - `polyglot_site_translator.services.framework_sync_scope.FrameworkSyncScopeService.resolve_for_site`
 - `polyglot_site_translator.services.framework_sync_scope.FrameworkSyncScopeService.resolve_for_framework`
+- `polyglot_site_translator.services.framework_sync_scope.SyncScopeResolutionService`
 - `polyglot_site_translator.services.project_sync.ProjectSyncService.sync_remote_to_local`
 - `polyglot_site_translator.services.project_sync.ProjectSyncService.sync_local_to_remote`
 - `polyglot_site_translator.services.remote_connections.RemoteConnectionService.list_supported_connection_types`
@@ -85,6 +92,7 @@ Current frontend-facing service entrypoints:
 The codebase should expose a clear registration or discovery mechanism for framework adapters/plugins.
 
 Examples:
+
 - adapter registry
 - framework resolver
 - plugin loader
@@ -93,6 +101,7 @@ Examples:
 Framework adapters are responsible for target-specific discovery or extraction, not the shared orchestration flow.
 
 Current adapter entrypoints:
+
 - `polyglot_site_translator.adapters.base.BaseFrameworkAdapter`
 - `polyglot_site_translator.adapters.base.BaseFrameworkAdapter.get_sync_filters`
 - `polyglot_site_translator.adapters.base.BaseFrameworkAdapter.get_sync_scope`
@@ -112,6 +121,7 @@ Current adapter entrypoints:
 Domain logic should be reachable through well-defined service or module interfaces, not through scattered helpers.
 
 Examples of domain entrypoints:
+
 - PO processing orchestrator
 - source scan orchestrator
 - finding classifier
@@ -119,12 +129,15 @@ Examples of domain entrypoints:
 - framework adapter contract definitions
 
 Current presentation orchestration entrypoint:
+
 - `polyglot_site_translator.bootstrap:create_frontend_shell`
 
 Current navigation entrypoint:
+
 - `polyglot_site_translator.presentation.frontend_shell.FrontendShell`
 
 Current settings orchestration entrypoints:
+
 - `FrontendShell.open_settings`
 - `FrontendShell.open_application_menu`
 - `FrontendShell.open_route_from_menu`
@@ -134,10 +147,12 @@ Current settings orchestration entrypoints:
 - `FrontendShell.update_settings_draft`
 - `FrontendShell.save_settings`
 - `FrontendShell.restore_default_settings`
+- `polyglot_site_translator.presentation.kivy.screens.settings.SettingsScreen`
 - `FrontendShell.start_sync_async` resolves the configured sync command-log limit before opening progress state for the popup
 - `FrontendShell.start_sync_to_remote_async` resolves the same limit before starting the upload popup state
 
 Current project-registry orchestration entrypoints:
+
 - `FrontendShell.open_project_editor_create`
 - `FrontendShell.open_project_editor_edit`
 - `FrontendShell.save_new_project`
@@ -154,15 +169,18 @@ Current project-registry orchestration entrypoints:
 - `polyglot_site_translator.domain.remote_connections.contracts.RemoteConnectionProvider.open_session`
 
 Current project-detail enrichment entrypoints:
+
 - `polyglot_site_translator.services.site_registry.SiteRegistryService.detect_framework`
 - `polyglot_site_translator.presentation.site_registry_services.SiteRegistryPresentationCatalogService.get_project_detail`
 - `polyglot_site_translator.presentation.site_registry_services.SiteRegistryPresentationManagementService.create_project`
 - `polyglot_site_translator.presentation.site_registry_services.SiteRegistryPresentationManagementService.update_project`
 
 Current Kivy settings layout entrypoint:
+
 - `polyglot_site_translator.presentation.kivy.settings_layout.build_settings_layout_spec`
 
 Current Kivy sync-progress entrypoint:
+
 - `polyglot_site_translator.presentation.kivy.widgets.sync_progress_popup.SyncProgressPopup`
 
 ---
@@ -172,18 +190,28 @@ Current Kivy sync-progress entrypoint:
 SQLite access should be centralized behind repositories or persistence services.
 
 Possible examples:
+
 - site repository
 - settings repository
 - scan history repository if added later
 
 Current frontend settings persistence entrypoints:
+
 - `polyglot_site_translator.infrastructure.settings.resolve_user_config_dir`
 - `polyglot_site_translator.infrastructure.settings.build_default_settings_service`
 - `polyglot_site_translator.infrastructure.settings.TomlSettingsService.load_settings`
 - `polyglot_site_translator.infrastructure.settings.TomlSettingsService.save_settings`
 - `polyglot_site_translator.infrastructure.settings.TomlSettingsService.reset_settings`
+- `polyglot_site_translator.infrastructure.sync_gitignore.load_gitignore_sync_rules`
+
+Current shared sync-scope persistence entrypoints:
+
+- `polyglot_site_translator.infrastructure.database_location.resolve_sqlite_database_location`
+- `polyglot_site_translator.infrastructure.sync_scope_sqlite.SqliteSyncScopeRepository`
+- `polyglot_site_translator.infrastructure.sync_scope_sqlite.ConfiguredSqliteSyncScopeRepository`
 
 Current site-registry persistence entrypoints:
+
 - `polyglot_site_translator.infrastructure.database_location.resolve_sqlite_database_location`
 - `polyglot_site_translator.infrastructure.site_registry_sqlite.SqliteSiteRegistryRepository`
 - `polyglot_site_translator.infrastructure.site_registry_sqlite.ConfiguredSqliteSiteRegistryRepository`
@@ -198,6 +226,7 @@ Current site-registry persistence entrypoints:
 ## Infrastructure entrypoints
 
 Infrastructure adapters should expose narrow interfaces for:
+
 - FTP operations
 - translation provider integration
 - filesystem operations that need abstraction
@@ -208,6 +237,7 @@ Infrastructure adapters should expose narrow interfaces for:
 ## Reporting entrypoints
 
 Report generation should have explicit entrypoints per format or strategy, for example:
+
 - Markdown report writer
 - CSV report writer
 - JSON report writer
@@ -218,6 +248,7 @@ Report generation should have explicit entrypoints per format or strategy, for e
 ## Test entrypoints
 
 Important test-covered entrypoints should include:
+
 - service orchestration
 - adapter registration/dispatch
 - scanner APIs
@@ -226,6 +257,7 @@ Important test-covered entrypoints should include:
 - CLI commands if present
 
 Current frontend test-covered entrypoints:
+
 - `FrontendShell.open_dashboard`
 - `FrontendShell.open_projects`
 - `FrontendShell.select_project`

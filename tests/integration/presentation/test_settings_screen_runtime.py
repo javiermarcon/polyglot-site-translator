@@ -158,6 +158,209 @@ def test_settings_screen_handles_section_selection_defaults_and_dashboard_naviga
     assert root.current == "dashboard"
 
 
+def test_settings_screen_shows_framework_sync_scope_controls() -> None:
+    app = cast(Any, create_kivy_app())
+    root = app.build()
+    settings_screen = root.get_screen("settings")
+
+    settings_screen._shell.open_settings()
+    root.current = "settings"
+    settings_screen._select_settings_section("frameworks")
+
+    label_texts = _collect_label_texts(settings_screen)
+
+    assert "Global Sync Rules" in label_texts
+    assert "Use .gitignore Exclusions" in label_texts
+    assert "Add Framework Sync Rule" in label_texts
+
+
+def test_settings_screen_can_add_and_persist_sync_scope_rules() -> None:
+    app = cast(Any, create_kivy_app())
+    root = app.build()
+    settings_screen = root.get_screen("settings")
+
+    settings_screen._shell.open_settings()
+    root.current = "settings"
+    settings_screen._select_settings_section("frameworks")
+    settings_screen._require_text_input(settings_screen._global_rule_path_input).text = ".cache"
+    settings_screen._require_text_input(
+        settings_screen._global_rule_description_input
+    ).text = "Ignore caches"
+    settings_screen._add_global_rule()
+    settings_screen._require_spinner(settings_screen._framework_rule_type_spinner).text = "Django"
+    settings_screen._require_text_input(settings_screen._framework_rule_path_input).text = ".venv"
+    settings_screen._require_text_input(
+        settings_screen._framework_rule_description_input
+    ).text = "Ignore virtualenv"
+    settings_screen._add_framework_rule()
+
+    save_button = _find_button_by_text(settings_screen, "Save Changes")
+    save_button.dispatch("on_release")
+
+    assert settings_screen._shell.settings_state is not None
+    sync_scope_settings = settings_screen._shell.settings_state.app_settings.sync_scope_settings
+    assert ".cache" in [rule.relative_path for rule in sync_scope_settings.global_rules]
+    assert "django" in [
+        rule_set.framework_type for rule_set in sync_scope_settings.framework_rule_sets
+    ]
+
+
+def test_settings_screen_reports_validation_errors_for_blank_sync_rule_paths() -> None:
+    app = cast(Any, create_kivy_app())
+    root = app.build()
+    settings_screen = root.get_screen("settings")
+
+    settings_screen._shell.open_settings()
+    root.current = "settings"
+    settings_screen._select_settings_section("frameworks")
+
+    assert settings_screen._draft_settings is not None
+    initial_global_rules = settings_screen._draft_settings.sync_scope_settings.global_rules
+    initial_framework_rule_sets = (
+        settings_screen._draft_settings.sync_scope_settings.framework_rule_sets
+    )
+
+    settings_screen._require_text_input(settings_screen._global_rule_path_input).text = " "
+    settings_screen._require_text_input(
+        settings_screen._global_rule_description_input
+    ).text = "Ignore nothing"
+    settings_screen._add_global_rule()
+
+    assert (
+        settings_screen._shell.latest_error
+        == "Sync rules require a non-empty relative path or pattern."
+    )
+    assert settings_screen._draft_settings is not None
+    assert settings_screen._draft_settings.sync_scope_settings.global_rules == initial_global_rules
+
+    settings_screen._shell.latest_error = None
+    settings_screen.update_error_label()
+    settings_screen._require_spinner(settings_screen._framework_rule_type_spinner).text = "Django"
+    settings_screen._require_text_input(settings_screen._framework_rule_path_input).text = " "
+    settings_screen._require_text_input(
+        settings_screen._framework_rule_description_input
+    ).text = "Ignore nothing"
+    settings_screen._add_framework_rule()
+
+    assert (
+        settings_screen._shell.latest_error
+        == "Sync rules require a non-empty relative path or pattern."
+    )
+    assert settings_screen._draft_settings is not None
+    assert (
+        settings_screen._draft_settings.sync_scope_settings.framework_rule_sets
+        == initial_framework_rule_sets
+    )
+
+
+def test_settings_screen_reports_validation_errors_for_invalid_numeric_inputs() -> None:
+    app = cast(Any, create_kivy_app())
+    root = app.build()
+    settings_screen = root.get_screen("settings")
+
+    settings_screen._shell.open_settings()
+    root.current = "settings"
+    settings_screen._select_settings_section("app-ui-kivy")
+
+    assert settings_screen._draft_settings is not None
+    original_draft = settings_screen._draft_settings
+
+    settings_screen._require_text_input(settings_screen._width_input).text = "abc"
+    settings_screen._require_text_input(settings_screen._height_input).text = "700"
+    settings_screen._apply_settings()
+
+    assert settings_screen._shell.latest_error == "Numeric settings must be whole numbers."
+    assert settings_screen._draft_settings == original_draft
+
+    settings_screen._shell.latest_error = None
+    settings_screen.update_error_label()
+    settings_screen._require_text_input(settings_screen._sync_progress_log_limit_input).text = "ten"
+    settings_screen._apply_settings()
+
+    assert settings_screen._shell.latest_error == "Numeric settings must be whole numbers."
+    assert settings_screen._draft_settings == original_draft
+
+
+def test_settings_screen_reports_lookup_errors_for_invalid_theme_and_language_labels() -> None:
+    app = cast(Any, create_kivy_app())
+    root = app.build()
+    settings_screen = root.get_screen("settings")
+
+    settings_screen._shell.open_settings()
+    root.current = "settings"
+    settings_screen._select_settings_section("app-ui-kivy")
+
+    assert settings_screen._draft_settings is not None
+    original_draft = settings_screen._draft_settings
+
+    settings_screen._on_theme_mode_selected(None, "Broken")
+    assert settings_screen._shell.latest_error == "Unknown option label: Broken"
+    assert settings_screen._draft_settings == original_draft
+
+    settings_screen._shell.latest_error = None
+    settings_screen.update_error_label()
+    settings_screen._on_ui_language_selected(None, "Nonsense")
+    assert settings_screen._shell.latest_error == "Unknown option label: Nonsense"
+    assert settings_screen._draft_settings == original_draft
+
+
+def test_settings_screen_reports_lookup_error_for_invalid_framework_rule_type() -> None:
+    app = cast(Any, create_kivy_app())
+    root = app.build()
+    settings_screen = root.get_screen("settings")
+
+    settings_screen._shell.open_settings()
+    root.current = "settings"
+    settings_screen._select_settings_section("frameworks")
+
+    assert settings_screen._draft_settings is not None
+    initial_framework_rule_sets = (
+        settings_screen._draft_settings.sync_scope_settings.framework_rule_sets
+    )
+
+    settings_screen._require_spinner(
+        settings_screen._framework_rule_type_spinner
+    ).text = "UnknownFramework"
+    settings_screen._require_text_input(settings_screen._framework_rule_path_input).text = ".venv"
+    settings_screen._require_text_input(
+        settings_screen._framework_rule_description_input
+    ).text = "Ignore virtualenv"
+    settings_screen._add_framework_rule()
+
+    assert settings_screen._shell.latest_error == "Unknown option label: UnknownFramework"
+    assert (
+        settings_screen._draft_settings.sync_scope_settings.framework_rule_sets
+        == initial_framework_rule_sets
+    )
+
+
+def test_settings_screen_can_toggle_and_save_gitignore_exclusions() -> None:
+    app = cast(Any, create_kivy_app())
+    root = app.build()
+    settings_screen = root.get_screen("settings")
+
+    settings_screen._shell.open_settings()
+    root.current = "settings"
+    settings_screen._select_settings_section("frameworks")
+
+    label = WrappedLabel(text="")
+    settings_screen._toggle_use_gitignore_rules(
+        _widget=object(),
+        value=True,
+        state_label=label,
+    )
+    assert label.text == "Enabled"
+
+    save_button = _find_button_by_text(settings_screen, "Save Changes")
+    save_button.dispatch("on_release")
+
+    assert settings_screen._shell.settings_state is not None
+    assert (
+        settings_screen._shell.settings_state.app_settings.sync_scope_settings.use_gitignore_rules
+        is True
+    )
+
+
 def test_settings_screen_raises_for_missing_state_or_draft_and_option_lookup_failures() -> None:
     app = cast(Any, create_kivy_app())
     root = app.build()

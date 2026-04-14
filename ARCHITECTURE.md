@@ -86,6 +86,7 @@ The codebase should be organized around these layers:
 Stores user-managed site or project definitions and related metadata in SQLite.
 
 Examples:
+
 - site/project name
 - local working directory
 - framework type
@@ -96,21 +97,24 @@ Examples:
 - encrypted remote password at rest
 
 Current first real implementation:
+
 - `domain/site_registry/` defines typed models, contracts, and explicit errors
 - `domain/remote_connections/` defines typed descriptors, configs, provider/session contracts, session state, and test results
 - `domain/remote_connections/` also persists per-project remote flags such as the filtered-vs-full sync preference
 - `domain/sync/` defines sync direction, remote/local file descriptors, summaries, results, and explicit sync errors
-- `domain/sync/scope.py` defines typed adapter-owned sync include/exclude rules, resolved rule catalogs, and persisted project-level overrides
+- `domain/sync/scope.py` defines typed adapter-owned sync include/exclude rules, global/framework settings-level sync rules, resolved rule catalogs, and persisted project-level overrides
 - `services/site_registry.py` validates and orchestrates CRUD use cases
 - `services/remote_connections.py` validates optional remote configs, exposes the discoverable catalog, and dispatches connection tests
-- `services/framework_sync_scope.py` resolves adapter-defined sync scopes from the persisted framework type
+- `services/framework_sync_scope.py` resolves adapter-defined sync scopes from the persisted framework type, shared settings-level rules, optional `.gitignore` exclusions, and project-specific overrides
 - `services/project_sync.py` orchestrates remote-to-local listing/download and local-to-remote upload, plus structured sync results
+- `infrastructure/sync_scope_sqlite.py` owns schema creation, row mapping, and SQLite persistence for shared global/framework sync rules and the optional `.gitignore` setting
 - `infrastructure/site_registry_sqlite.py` owns schema creation, row mapping, and SQLite access
 - `infrastructure/remote_connections/` owns discoverable remote connection providers and transport-specific connectivity checks
 - `infrastructure/sync_local.py` owns local workspace directory creation, local file discovery, reads, and file writes for synchronized content
 - `presentation/site_registry_services.py` adapts the real service into UI-facing catalog/editor workflows
 
 Current framework detection implementation:
+
 - `domain/framework_detection/` defines typed adapter contracts, detection results, and ambiguity errors
 - `adapters/base.py` defines the discoverable adapter base class
 - `adapters/framework_registry.py` auto-discovers ordered adapters from the package and handles explicit ambiguity
@@ -123,6 +127,7 @@ Current framework detection implementation:
 Stores, validates, tests, and later synchronizes optional remote sources into a local workspace suitable for scanning/auditing.
 
 Current implemented sync stage:
+
 - real remote-to-local download
 - real local-to-remote upload
 - adapter-defined sync include/exclude rules reusable by both sync directions
@@ -135,15 +140,19 @@ Current implemented sync stage:
 - prepares missing remote directories automatically before upload
 
 Current UI behavior for sync mode:
+
 - the project editor persists a per-project remote setting that selects adapter-filtered sync or full sync
 - `ProjectSyncService` reads that persisted preference and resolves the effective sync scope outside the Kivy layer
 - the resolved scope can include localization-relevant paths and exclude framework-specific artifacts such as virtualenvs or bytecode caches
 - the project editor renders the resolved rule catalog, allows enabling/disabling individual rules, and persists additional project-specific include/exclude overrides without moving scope logic into Kivy
+- shared global sync rules, framework sync rules and the optional `use_gitignore_rules` toggle are persisted in SQLite for runtime sync scope resolution while the UI remains a typed editor of that persisted state
 
 Not yet implemented in this stage:
+
 - more granular selective-sync controls beyond the current filtered-vs-full project setting
 
 Current concrete connection types:
+
 - FTP
 - explicit FTPS
 - implicit FTPS
@@ -151,12 +160,14 @@ Current concrete connection types:
 - SCP
 
 Extension rule:
+
 - new remote connection providers should be added as discoverable modules/classes in `infrastructure/remote_connections/`
 - the runtime registry should discover them automatically instead of requiring manual registration lists
 
 ### 3. Shared PO processing
 
 Responsible for:
+
 - discovering `.po`
 - extracting locales
 - grouping families
@@ -170,6 +181,7 @@ This logic must remain reusable across framework adapters.
 ### 4. Framework adapters / plugins
 
 Responsible for target-specific behavior such as:
+
 - how to identify project type
 - how to emit structured evidence and warnings for detection
 - where to scan
@@ -179,22 +191,26 @@ Responsible for target-specific behavior such as:
 - how to enrich findings with target-specific meaning
 
 Examples:
+
 - WordPress may parse `wp-config.php`
 - Django may inspect `settings.py`, settings modules, or environment-backed settings
 - Flask may rely on config modules, app factories, or environment conventions
 
 Current concrete detection heuristics:
+
 - WordPress: `wp-config.php`, `wp-content/`, `wp-includes/`, optional `wp-admin/`
 - Django: `manage.py` plus `settings.py`, `wsgi.py`, or `asgi.py`, with optional `locale/`
 - Flask: `app.py`, `wsgi.py`, factory markers, `babel.cfg`, and `translations/`
 
 Extension rule:
+
 - new adapters should be added as discoverable modules/classes in `adapters/`
 - the runtime registry should discover them automatically instead of requiring manual registration lists
 
 ### 5. Source auditing
 
 Responsible for scanning source files such as:
+
 - `.php`
 - `.py`
 - `.js`
@@ -206,6 +222,7 @@ Responsible for scanning source files such as:
 - other supported formats
 
 for:
+
 - hardcoded strings
 - gettext misuse
 - localization candidates
@@ -216,6 +233,7 @@ for:
 ### 6. Reporting
 
 Responsible for rendering normalized findings and summaries into:
+
 - Markdown
 - JSON
 - CSV
@@ -228,6 +246,7 @@ Responsible for rendering normalized findings and summaries into:
 ### Presentation must not own domain logic
 
 Kivy screens/widgets should never directly implement:
+
 - remote transport workflows
 - SQLite queries
 - parsing heuristics
@@ -237,6 +256,7 @@ Kivy screens/widgets should never directly implement:
 - framework-specific extraction rules
 
 The presentation layer may contain:
+
 - typed screen state and workflow summaries
 - typed settings sections and draft frontend settings
 - Kivy-only runtime behavior such as applying theme palette tokens and window size
@@ -247,13 +267,19 @@ The presentation layer may contain:
 Frontend settings persistence remains behind the `SettingsService` contract and is now implemented at runtime through a TOML-backed infrastructure service. Kivy screens still edit typed drafts and delegate save/load/reset operations through the presentation shell.
 
 The general settings flow now also owns:
+
 - `database_directory`
 - `database_filename`
 - `sync_progress_log_limit`
+- global sync rules shared by every project
+- framework sync rules reused by projects of the same framework type
+- the opt-in `.gitignore` exclusion toggle
 
 The final SQLite path is resolved in infrastructure from typed settings. Widgets never compose the database path manually.
+The final filtered sync scope is also resolved outside widgets by composing settings-level rules, adapter rules, `.gitignore` exclusions, and project overrides.
 
 The project editor now also owns:
+
 - a discoverable remote connection-type combo with an explicit "No Remote Connection" option
 - an optional remote connection draft separate from the persisted site/project identity
 - a "Test Connection" action that delegates to application services and renders structured results without opening network sessions from widgets
@@ -261,6 +287,7 @@ The project editor now also owns:
 - project-level sync rule rows with enable/disable toggles and add/remove actions, while rule resolution and persistence stay behind services
 
 The sync screen now also owns:
+
 - rendering the structured result of real remote-to-local and local-to-remote sync workflows
 - showing the synchronized file count and controlled error code when sync fails
 - opening a dedicated progress window from Project Detail while either sync direction runs in background
@@ -271,6 +298,7 @@ The sync screen now also owns:
 - surfacing remote connection and sync failures with operation, project, protocol, host, port, path, stable error-code, and transport-cause context instead of raw library messages such as generic SFTP `Failure`
 
 The remote-provider contract now distinguishes clearly between:
+
 - `open_session()` for a reusable connection lifecycle with state, listing, download, close, and controlled connect retry behavior
 - `iter_remote_files()` for full incremental traversal
 - `list_remote_files()` for bounded materialization only
@@ -338,6 +366,7 @@ Report modules must render findings produced by scanners/services, not scan file
 ## Future-oriented architectural expectations
 
 The repository should be able to evolve toward:
+
 - multiple translation providers
 - multiple storage backends if needed
 - background job execution
@@ -373,6 +402,7 @@ Key responsibilities:
 - `presentation/kivy/screens/project_editor.py` exposes a thin create/edit screen for site registry records.
 
 Current site registry runtime flow:
+
 1. `app.py` builds the default frontend services with TOML settings and a configured SQLite repository.
 2. `ConfiguredSqliteSiteRegistryRepository` resolves the database location from persisted general settings.
 3. `SqliteSiteRegistryRepository` ensures the schema and persists typed `RegisteredSite` records.

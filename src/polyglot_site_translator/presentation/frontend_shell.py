@@ -403,7 +403,7 @@ class FrontendShell:
             selected_section_key=section_key,
         )
         if next_state.selected_section_is_available:
-            status_message = "App / UI / Kivy settings are ready to edit."
+            status_message = f"{next_state.selected_section_title} are ready to edit."
         else:
             status_message = f"{next_state.selected_section_title} will be available later."
         self.settings_state = replace(next_state, status_message=status_message)

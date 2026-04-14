@@ -3,10 +3,15 @@
 from __future__ import annotations
 
 from polyglot_site_translator.domain.sync.scope import (
+    AdapterSyncScopeSettings,
+    ConfiguredSyncRule,
+    FrameworkSyncRuleSet,
     ResolvedSyncScope,
     SyncFilterSpec,
     SyncFilterType,
+    SyncRuleBehavior,
     SyncScopeStatus,
+    build_default_sync_scope_settings,
 )
 
 
@@ -89,3 +94,53 @@ def test_resolved_sync_scope_uses_only_exclusions_when_not_filtered() -> None:
 
     assert scope.includes("locale/es/LC_MESSAGES/django.po") is True
     assert scope.includes(".venv/lib/python3.12/site.py") is False
+
+
+def test_sync_filter_spec_matches_glob_patterns() -> None:
+    filter_spec = SyncFilterSpec(
+        relative_path="*.pyc",
+        filter_type=SyncFilterType.GLOB,
+        description="Python bytecode files.",
+    )
+
+    assert filter_spec.matches("locale/__pycache__/settings.cpython-312.pyc") is True
+    assert filter_spec.matches("locale/es/LC_MESSAGES/django.po") is False
+
+
+def test_default_sync_scope_settings_include_global_git_exclusion() -> None:
+    settings = build_default_sync_scope_settings()
+
+    assert settings.use_gitignore_rules is False
+    assert settings.global_rules == (
+        ConfiguredSyncRule(
+            relative_path=".git",
+            filter_type=SyncFilterType.DIRECTORY,
+            behavior=SyncRuleBehavior.EXCLUDE,
+            description="Ignore Git metadata directories.",
+            is_enabled=True,
+        ),
+    )
+
+
+def test_adapter_sync_scope_settings_returns_rules_for_requested_framework() -> None:
+    settings = AdapterSyncScopeSettings(
+        global_rules=(),
+        framework_rule_sets=(
+            FrameworkSyncRuleSet(
+                framework_type="django",
+                rules=(
+                    ConfiguredSyncRule(
+                        relative_path=".venv",
+                        filter_type=SyncFilterType.DIRECTORY,
+                        behavior=SyncRuleBehavior.EXCLUDE,
+                        description="Ignore virtualenv.",
+                        is_enabled=True,
+                    ),
+                ),
+            ),
+        ),
+        use_gitignore_rules=False,
+    )
+
+    assert settings.rules_for_framework("django")[0].relative_path == ".venv"
+    assert settings.rules_for_framework("flask") == ()

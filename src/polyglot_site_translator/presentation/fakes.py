@@ -10,6 +10,9 @@ from polyglot_site_translator.infrastructure.settings import TomlSettingsService
 from polyglot_site_translator.infrastructure.site_registry_sqlite import (
     ConfiguredSqliteSiteRegistryRepository,
 )
+from polyglot_site_translator.infrastructure.sync_scope_sqlite import (
+    ConfiguredSqliteSyncScopeRepository,
+)
 from polyglot_site_translator.presentation.contracts import FrontendServices
 from polyglot_site_translator.presentation.site_registry_services import (
     SiteRegistryPresentationCatalogService,
@@ -40,6 +43,7 @@ def build_default_frontend_services(
     resolved_remote_connection_service = remote_connection_service or RemoteConnectionService(
         registry=RemoteConnectionRegistry.discover_installed()
     )
+    sync_scope_repository = ConfiguredSqliteSyncScopeRepository(settings_service)
     site_registry_service = SiteRegistryService(
         repository=repository,
         framework_detection_service=framework_detection_service,
@@ -47,9 +51,15 @@ def build_default_frontend_services(
     )
     resolved_project_sync_service = project_sync_service or ProjectSyncService(
         registry=RemoteConnectionRegistry.discover_installed(),
-        framework_sync_scope_service=FrameworkSyncScopeService(registry=framework_registry),
+        framework_sync_scope_service=FrameworkSyncScopeService(
+            registry=framework_registry,
+            sync_scope_settings_provider=sync_scope_repository.load_sync_scope_settings,
+        ),
     )
-    framework_sync_scope_service = FrameworkSyncScopeService(registry=framework_registry)
+    framework_sync_scope_service = FrameworkSyncScopeService(
+        registry=framework_registry,
+        sync_scope_settings_provider=sync_scope_repository.load_sync_scope_settings,
+    )
     return FrontendServices(
         catalog=SiteRegistryPresentationCatalogService(site_registry_service),
         workflows=SiteRegistryPresentationWorkflowService(

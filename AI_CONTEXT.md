@@ -137,6 +137,8 @@ The frontend baseline now also includes:
 - a dedicated settings contract for frontend configuration
 - typed App / UI / Kivy settings state
 - TOML-backed frontend settings persistence for runtime configuration
+- persisted global sync rules and framework sync rules in general settings
+- explicit `.gitignore` integration for filtered sync resolution
 - fake in-memory settings persistence for isolated tests and local doubles
 - a grouped application menu that separates workspace, operations, and system navigation
 - a Kivy runtime theme module for light/dark palette application
@@ -167,6 +169,7 @@ The frontend baseline now also includes:
 - incremental local-to-remote uploads with automatic remote directory preparation and one reusable remote session per sync run
 - adapter-owned sync include/exclude specs plus an explicit scope-resolution service reused by both sync directions
 - current adapters expose framework-specific includes and exclusions for WordPress, Django, and Flask without hardcoding those rules in generic sync services or Kivy widgets
+- `FrameworkSyncScopeService` now composes global settings rules, framework settings rules, adapter defaults, project overrides, and optional `.gitignore` exclusions
 - the remote project configuration now persists whether sync should use adapter filters or full sync
 - the project editor only captures that preference; `ProjectSyncService` and `FrameworkSyncScopeService` resolve the effective behavior outside the Kivy layer
 - the project editor now also renders the resolved sync-rule catalog and captures project-level include/exclude overrides, but rule composition and persistence still stay in services/infrastructure

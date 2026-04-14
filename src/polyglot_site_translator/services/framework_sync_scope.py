@@ -2,12 +2,15 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from pathlib import Path
 
 from polyglot_site_translator.adapters.framework_registry import FrameworkAdapterRegistry
 from polyglot_site_translator.domain.site_registry.models import RegisteredSite
 from polyglot_site_translator.domain.sync.scope import (
     AdapterSyncScope,
+    AdapterSyncScopeSettings,
+    ConfiguredSyncRule,
     ProjectSyncRuleOverride,
     ResolvedSyncRule,
     ResolvedSyncScope,
@@ -15,7 +18,13 @@ from polyglot_site_translator.domain.sync.scope import (
     SyncRuleBehavior,
     SyncRuleSource,
     SyncScopeStatus,
+    build_framework_sync_rule_key,
+    build_gitignore_sync_rule_key,
+    build_global_sync_rule_key,
     build_sync_rule_key,
+)
+from polyglot_site_translator.infrastructure.sync_gitignore import (
+    load_gitignore_sync_rules,
 )
 
 UNKNOWN_FRAMEWORK_TYPE = "unknown"
@@ -24,8 +33,18 @@ UNKNOWN_FRAMEWORK_TYPE = "unknown"
 class FrameworkSyncScopeService:
     """Resolve framework-defined sync filters for registered sites."""
 
-    def __init__(self, *, registry: FrameworkAdapterRegistry) -> None:
+    def __init__(
+        self,
+        *,
+        registry: FrameworkAdapterRegistry,
+        sync_scope_settings_provider: Callable[[], AdapterSyncScopeSettings] | None = None,
+        gitignore_rule_loader: Callable[[Path], tuple[ConfiguredSyncRule, ...]] | None = None,
+    ) -> None:
         self._registry = registry
+        self._sync_scope_settings_provider = (
+            sync_scope_settings_provider or AdapterSyncScopeSettings
+        )
+        self._gitignore_rule_loader = gitignore_rule_loader or load_gitignore_sync_rules
 
     def resolve_for_site(self, site: RegisteredSite) -> ResolvedSyncScope:
         """Resolve the sync scope for a persisted site."""
@@ -48,24 +67,33 @@ class FrameworkSyncScopeService:
     ) -> ResolvedSyncScope:
         """Resolve the sync scope for a framework type and project path."""
         normalized_framework_type = framework_type.strip().lower()
-        project_only_rules = _resolve_scope_rules(
+        sync_scope_settings = self._sync_scope_settings_provider()
+        resolved_shared_rules = _resolve_scope_rules(
+            framework_type=normalized_framework_type,
             adapter_scope=AdapterSyncScope(),
+            global_rules=sync_scope_settings.global_rules,
+            framework_rules=sync_scope_settings.rules_for_framework(normalized_framework_type),
+            gitignore_rules=_load_gitignore_rules(
+                sync_scope_settings=sync_scope_settings,
+                project_path=Path(project_path),
+                gitignore_rule_loader=self._gitignore_rule_loader,
+            ),
             project_rule_overrides=project_rule_overrides,
         )
         if normalized_framework_type in {"", UNKNOWN_FRAMEWORK_TYPE}:
-            if project_only_rules != ():
+            if resolved_shared_rules != ():
                 return _build_scope_from_rules(
                     framework_type=normalized_framework_type or UNKNOWN_FRAMEWORK_TYPE,
                     adapter_name=None,
-                    resolved_rules=project_only_rules,
+                    resolved_rules=resolved_shared_rules,
                     no_rules_status=SyncScopeStatus.FRAMEWORK_UNRESOLVED,
                     no_rules_message=(
                         "The project does not expose a supported framework type and "
-                        "no project-specific sync rules are active."
+                        "no active global, project or gitignore sync rules are available."
                     ),
                     active_rules_message=(
-                        "Framework type is unresolved; using active project-specific "
-                        "sync rules only."
+                        "Framework type is unresolved; using active global, project or "
+                        "gitignore sync rules only."
                     ),
                 )
             return ResolvedSyncScope(
@@ -79,20 +107,20 @@ class FrameworkSyncScopeService:
             )
         adapter = self._registry.find_adapter(normalized_framework_type)
         if adapter is None:
-            if project_only_rules != ():
+            if resolved_shared_rules != ():
                 return _build_scope_from_rules(
                     framework_type=normalized_framework_type,
                     adapter_name=None,
-                    resolved_rules=project_only_rules,
+                    resolved_rules=resolved_shared_rules,
                     no_rules_status=SyncScopeStatus.ADAPTER_UNAVAILABLE,
                     no_rules_message=(
                         "No installed framework adapter can provide sync filters for "
-                        f"'{normalized_framework_type}' and no project-specific sync "
-                        "rules are active."
+                        f"'{normalized_framework_type}' and no active global, framework, "
+                        "project or gitignore sync rules are available."
                     ),
                     active_rules_message=(
                         "No installed framework adapter is available; using active "
-                        "project-specific sync rules only."
+                        "global, framework, project or gitignore sync rules only."
                     ),
                 )
             return ResolvedSyncScope(
@@ -108,7 +136,15 @@ class FrameworkSyncScopeService:
                 catalog_rules=(),
             )
         resolved_rules = _resolve_scope_rules(
+            framework_type=normalized_framework_type,
             adapter_scope=adapter.get_sync_scope(Path(project_path)),
+            global_rules=sync_scope_settings.global_rules,
+            framework_rules=sync_scope_settings.rules_for_framework(normalized_framework_type),
+            gitignore_rules=_load_gitignore_rules(
+                sync_scope_settings=sync_scope_settings,
+                project_path=Path(project_path),
+                gitignore_rule_loader=self._gitignore_rule_loader,
+            ),
             project_rule_overrides=project_rule_overrides,
         )
         return _build_scope_from_rules(
@@ -172,9 +208,13 @@ def _build_scope_from_rules(  # noqa: PLR0913
     )
 
 
-def _resolve_scope_rules(
+def _resolve_scope_rules(  # noqa: PLR0913
     *,
+    framework_type: str,
     adapter_scope: AdapterSyncScope,
+    global_rules: tuple[ConfiguredSyncRule, ...],
+    framework_rules: tuple[ConfiguredSyncRule, ...],
+    gitignore_rules: tuple[ConfiguredSyncRule, ...],
     project_rule_overrides: tuple[ProjectSyncRuleOverride, ...],
 ) -> tuple[ResolvedSyncRule, ...]:
     adapter_rules = [
@@ -188,11 +228,21 @@ def _resolve_scope_rules(
             behavior=SyncRuleBehavior.EXCLUDE,
             source=SyncRuleSource.ADAPTER,
         ),
+        *_build_resolved_rules_from_configured(
+            configured_rules=global_rules,
+            source=SyncRuleSource.GLOBAL,
+        ),
+        *_build_resolved_rules_from_configured(
+            configured_rules=framework_rules,
+            source=SyncRuleSource.FRAMEWORK,
+            framework_type=framework_type,
+        ),
     ]
     overrides_by_target = {
         override.target_rule_key: override
         for override in project_rule_overrides
         if override.target_rule_key is not None
+        and not _is_gitignore_override_key(override.target_rule_key)
     }
     resolved_rules: list[ResolvedSyncRule] = []
     for rule in adapter_rules:
@@ -224,6 +274,12 @@ def _resolve_scope_rules(
                 is_enabled=override.is_enabled,
             )
         )
+    resolved_rules.extend(
+        _build_resolved_rules_from_configured(
+            configured_rules=gitignore_rules,
+            source=SyncRuleSource.GITIGNORE,
+        )
+    )
     return tuple(resolved_rules)
 
 
@@ -249,3 +305,84 @@ def _build_resolved_rules(
         )
         for filter_spec in filter_specs
     ]
+
+
+def _build_resolved_rules_from_configured(
+    *,
+    configured_rules: tuple[ConfiguredSyncRule, ...],
+    source: SyncRuleSource,
+    framework_type: str | None = None,
+) -> list[ResolvedSyncRule]:
+    resolved_rules: list[ResolvedSyncRule] = []
+    for configured_rule in configured_rules:
+        rule_key = _build_configured_rule_key(
+            configured_rule=configured_rule,
+            source=source,
+            framework_type=framework_type,
+        )
+        resolved_rules.append(
+            ResolvedSyncRule(
+                rule_key=rule_key,
+                relative_path=configured_rule.relative_path,
+                filter_type=configured_rule.filter_type,
+                behavior=configured_rule.behavior,
+                description=configured_rule.description,
+                source=source,
+                is_enabled=configured_rule.is_enabled,
+            )
+        )
+    return resolved_rules
+
+
+def _build_configured_rule_key(
+    configured_rule: ConfiguredSyncRule,
+    *,
+    source: SyncRuleSource,
+    framework_type: str | None = None,
+) -> str:
+    if source is SyncRuleSource.GLOBAL:
+        return build_global_sync_rule_key(
+            relative_path=configured_rule.relative_path,
+            filter_type=configured_rule.filter_type,
+            behavior=configured_rule.behavior,
+        )
+    if source is SyncRuleSource.GITIGNORE:
+        return build_gitignore_sync_rule_key(pattern=configured_rule.relative_path)
+    if source is SyncRuleSource.FRAMEWORK:
+        if framework_type is None:
+            msg = "Framework-configured rules require a framework type."
+            raise ValueError(msg)
+        return build_framework_sync_rule_key(
+            framework_type=framework_type,
+            relative_path=configured_rule.relative_path,
+            filter_type=configured_rule.filter_type,
+            behavior=configured_rule.behavior,
+        )
+    msg = f"Unsupported configured sync rule source: {source.value}"
+    raise ValueError(msg)
+
+
+def _load_gitignore_rules(
+    *,
+    sync_scope_settings: AdapterSyncScopeSettings,
+    project_path: Path,
+    gitignore_rule_loader: Callable[[Path], tuple[ConfiguredSyncRule, ...]],
+) -> tuple[ConfiguredSyncRule, ...]:
+    if not sync_scope_settings.use_gitignore_rules:
+        return ()
+    return gitignore_rule_loader(project_path)
+
+
+def _is_gitignore_override_key(rule_key: str) -> bool:
+    return rule_key.startswith(f"{SyncRuleSource.GITIGNORE.value}:")
+
+
+class SyncScopeResolutionService(FrameworkSyncScopeService):
+    """Alias for the sync scope composition service.
+
+    This service combines adapter-defined sync filters with persisted shared
+    global rules, persisted framework rules, project-specific overrides, and
+    optional .gitignore-derived exclusions.
+    """
+
+    pass

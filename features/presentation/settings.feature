@@ -64,6 +64,28 @@ Feature: Frontend settings management
     When the operator selects the settings section "translation"
     Then the settings screen shows the selected planned section
 
+  Scenario: Configure global sync rules and persist them
+    Given the frontend shell is wired with TOML-backed settings persistence
+    And the operator has opened the settings screen
+    When the operator selects the settings section "frameworks"
+    And the operator enables gitignore-based sync exclusions
+    And the operator adds the global sync rule ".git" as "exclude" "directory"
+    And the operator applies the settings changes
+    Then the settings screen shows the changes as saved
+    And the saved settings enable gitignore-based sync exclusions
+    And the saved settings contain the global sync rule ".git"
+
+  Scenario: Configure framework sync rules and reopen them from TOML
+    Given the frontend shell is wired with TOML-backed settings persistence
+    And the operator has opened the settings screen
+    When the operator selects the settings section "frameworks"
+    And the operator adds the framework sync rule ".venv" for "django" as "exclude" "directory"
+    And the operator applies the settings changes
+    And the operator restarts the frontend shell
+    And the operator opens the settings screen
+    And the operator selects the settings section "frameworks"
+    Then the saved settings contain the framework sync rule ".venv" for "django"
+
   Scenario: Handle a controlled load error
     Given the frontend shell is wired with a failing settings-load test double
     When the operator opens the settings screen

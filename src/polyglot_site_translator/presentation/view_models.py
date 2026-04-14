@@ -3,12 +3,16 @@
 from __future__ import annotations
 
 from collections.abc import Iterable
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from polyglot_site_translator.domain.framework_detection.models import FrameworkDescriptor
 from polyglot_site_translator.domain.remote_connections.models import (
     NO_REMOTE_CONNECTION_VALUE,
     RemoteConnectionTypeDescriptor,
+)
+from polyglot_site_translator.domain.sync.scope import (
+    AdapterSyncScopeSettings,
+    build_default_sync_scope_settings,
 )
 
 
@@ -92,6 +96,9 @@ class AppSettingsViewModel:
     database_directory: str = ""
     database_filename: str = "site_registry.sqlite3"
     sync_progress_log_limit: int = 200
+    sync_scope_settings: AdapterSyncScopeSettings = field(
+        default_factory=build_default_sync_scope_settings
+    )
 
 
 @dataclass(frozen=True)
@@ -299,8 +306,8 @@ def build_settings_sections() -> list[SettingsSectionViewModel]:
         SettingsSectionViewModel(
             key="frameworks",
             title="Framework / Adapter Settings",
-            description="Reserved for future framework-specific configuration.",
-            is_available=False,
+            description="Shared sync filters, framework rules and gitignore integration.",
+            is_available=True,
         ),
         SettingsSectionViewModel(
             key="ftp-reporting",
@@ -397,6 +404,7 @@ def build_default_app_settings(
         database_directory=database_directory,
         database_filename=database_filename,
         sync_progress_log_limit=200,
+        sync_scope_settings=build_default_sync_scope_settings(),
     )
 
 

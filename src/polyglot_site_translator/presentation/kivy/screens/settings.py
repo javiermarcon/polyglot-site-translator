@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import replace
+from functools import partial
 
 from kivy.core.window import Window
 from kivy.uix.boxlayout import BoxLayout
@@ -13,6 +14,14 @@ from kivy.uix.spinner import Spinner
 from kivy.uix.switch import Switch
 from kivy.uix.textinput import TextInput
 
+from polyglot_site_translator.adapters.framework_registry import FrameworkAdapterRegistry
+from polyglot_site_translator.domain.sync.scope import (
+    AdapterSyncScopeSettings,
+    ConfiguredSyncRule,
+    FrameworkSyncRuleSet,
+    SyncFilterType,
+    SyncRuleBehavior,
+)
 from polyglot_site_translator.presentation.frontend_shell import FrontendShell
 from polyglot_site_translator.presentation.kivy.screens.base import BaseShellScreen
 from polyglot_site_translator.presentation.kivy.settings_layout import (
@@ -28,6 +37,7 @@ from polyglot_site_translator.presentation.view_models import (
     AppSettingsViewModel,
     SettingsOptionViewModel,
     SettingsStateViewModel,
+    build_framework_type_options_from_descriptors,
 )
 
 
@@ -54,6 +64,18 @@ class SettingsScreen(BaseShellScreen):
         self._database_directory_input: TextInput | None = None
         self._database_filename_input: TextInput | None = None
         self._sync_progress_log_limit_input: TextInput | None = None
+        self._global_rule_path_input: TextInput | None = None
+        self._global_rule_description_input: TextInput | None = None
+        self._framework_rule_type_spinner: Spinner | None = None
+        self._framework_rule_path_input: TextInput | None = None
+        self._framework_rule_description_input: TextInput | None = None
+        self._global_rule_filter_type_spinner: Spinner | None = None
+        self._global_rule_behavior_spinner: Spinner | None = None
+        self._framework_rule_filter_type_spinner: Spinner | None = None
+        self._framework_rule_behavior_spinner: Spinner | None = None
+        self._framework_type_options: list[SettingsOptionViewModel] = (
+            self._build_framework_type_options()
+        )
         self._draft_settings: AppSettingsViewModel | None = None
         self._layout_spec = build_settings_layout_spec(Window.width)
         self.refresh()
@@ -71,7 +93,8 @@ class SettingsScreen(BaseShellScreen):
             self.update_error_label()
             return
 
-        self._draft_settings = state.app_settings
+        if self._draft_settings is None:
+            self._draft_settings = state.app_settings
         self._layout_spec = build_settings_layout_spec(Window.width)
         self._content.add_widget(
             _build_information_card(
@@ -156,7 +179,7 @@ class SettingsScreen(BaseShellScreen):
             )
         )
         if state.selected_section_is_available:
-            panel.add_widget(self._build_form_panel())
+            panel.add_widget(self._build_section_form())
         else:
             panel.add_widget(
                 _build_information_card(
@@ -169,7 +192,13 @@ class SettingsScreen(BaseShellScreen):
             )
         return panel
 
-    def _build_form_panel(self) -> GridLayout:
+    def _build_section_form(self) -> GridLayout:
+        state = self._require_state()
+        if state.selected_section_key == "frameworks":
+            return self._build_framework_sync_rules_panel()
+        return self._build_app_settings_form_panel()
+
+    def _build_app_settings_form_panel(self) -> GridLayout:
         state = self._require_state()
         draft = self._require_draft()
         form = GridLayout(cols=1, spacing=12, size_hint_y=None)
@@ -235,6 +264,64 @@ class SettingsScreen(BaseShellScreen):
         form.add_widget(
             self._build_sync_progress_field(limit_value=str(draft.sync_progress_log_limit))
         )
+        actions = BoxLayout(
+            orientation=self._layout_spec.action_orientation,
+            spacing=12,
+            size_hint_y=None,
+        )
+        actions.bind(minimum_height=actions.setter("height"))
+        save_button = AppButton(text="Save Changes", primary=True)
+        save_button.bind(on_release=self._apply_settings)
+        defaults_button = AppButton(text="Restore Defaults", primary=False)
+        defaults_button.bind(on_release=self._restore_defaults)
+        dashboard_button = AppButton(text="Back to Dashboard", primary=False)
+        dashboard_button.bind(on_release=self._back_to_dashboard)
+        actions.add_widget(save_button)
+        actions.add_widget(defaults_button)
+        actions.add_widget(dashboard_button)
+        form.add_widget(actions)
+        return form
+
+    def _build_framework_sync_rules_panel(self) -> GridLayout:
+        draft = self._require_draft()
+        sync_scope_settings = draft.sync_scope_settings
+        form = GridLayout(cols=1, spacing=12, size_hint_y=None)
+        form.bind(minimum_height=form.setter("height"))
+        form.add_widget(
+            self._build_toggle_field(
+                label="Use .gitignore Exclusions",
+                help_text=(
+                    "When enabled, supported .gitignore patterns are translated into "
+                    "additional sync exclusions during filtered sync resolution."
+                ),
+                active=sync_scope_settings.use_gitignore_rules,
+                on_toggle=self._toggle_use_gitignore_rules,
+            )
+        )
+        form.add_widget(
+            self._build_configured_rules_catalog(
+                title="Global Sync Rules",
+                help_text=(
+                    "These rules apply to every project before framework-specific "
+                    "and project-specific overrides are resolved."
+                ),
+                rules=sync_scope_settings.global_rules,
+                scope_type="global",
+                framework_type=None,
+            )
+        )
+        for rule_set in sync_scope_settings.framework_rule_sets:
+            form.add_widget(
+                self._build_configured_rules_catalog(
+                    title=f"Framework Rules: {rule_set.framework_type}",
+                    help_text=("These rules apply to projects that declare this framework type."),
+                    rules=rule_set.rules,
+                    scope_type="framework",
+                    framework_type=rule_set.framework_type,
+                )
+            )
+        form.add_widget(self._build_add_global_rule_form())
+        form.add_widget(self._build_add_framework_rule_form())
         actions = BoxLayout(
             orientation=self._layout_spec.action_orientation,
             spacing=12,
@@ -412,31 +499,237 @@ class SettingsScreen(BaseShellScreen):
         card.add_widget(column)
         return card
 
+    def _build_configured_rules_catalog(
+        self,
+        *,
+        title: str,
+        help_text: str,
+        rules: tuple[ConfiguredSyncRule, ...],
+        scope_type: str,
+        framework_type: str | None,
+    ) -> SurfaceBoxLayout:
+        card = _build_field_card(title=title, help_text=help_text)
+        if rules == ():
+            card.add_widget(
+                WrappedLabel(
+                    text="No configured rules.",
+                    font_size=14,
+                    color_role="text_muted",
+                )
+            )
+            return card
+        for rule in rules:
+            row = BoxLayout(
+                orientation=self._layout_spec.field_row_orientation,
+                spacing=12,
+                size_hint_y=None,
+            )
+            row.bind(minimum_height=row.setter("height"))
+            row.add_widget(
+                WrappedLabel(
+                    text=(
+                        f"[{rule.behavior.value}] {rule.relative_path} ({rule.filter_type.value})"
+                    ),
+                    font_size=14,
+                )
+            )
+            toggle_button = AppButton(
+                text="Disable" if rule.is_enabled else "Enable",
+                primary=False,
+                height=40,
+            )
+            toggle_button.bind(
+                on_release=partial(
+                    self._handle_toggle_configured_rule,
+                    relative_path=rule.relative_path,
+                    filter_type=rule.filter_type,
+                    behavior=rule.behavior,
+                    is_enabled=rule.is_enabled,
+                    scope_type=scope_type,
+                    framework_type=framework_type,
+                )
+            )
+            row.add_widget(toggle_button)
+            remove_button = AppButton(text="Remove", primary=False, height=40)
+            remove_button.bind(
+                on_release=partial(
+                    self._handle_remove_configured_rule,
+                    relative_path=rule.relative_path,
+                    filter_type=rule.filter_type,
+                    behavior=rule.behavior,
+                    scope_type=scope_type,
+                    framework_type=framework_type,
+                )
+            )
+            row.add_widget(remove_button)
+            card.add_widget(row)
+            if rule.description.strip():
+                card.add_widget(
+                    WrappedLabel(
+                        text=rule.description,
+                        font_size=12,
+                        color_role="text_muted",
+                    )
+                )
+        return card
+
+    def _build_add_global_rule_form(self) -> SurfaceBoxLayout:
+        palette = get_active_theme()
+        card = _build_field_card(
+            title="Add Global Sync Rule",
+            help_text="Create a rule applied to every project sync scope.",
+        )
+        column = BoxLayout(orientation="vertical", spacing=12, size_hint_y=None)
+        column.bind(minimum_height=column.setter("height"))
+        self._global_rule_path_input = TextInput(
+            text="",
+            multiline=False,
+            size_hint_y=None,
+            height=44,
+            background_color=palette.card_subtle_background,
+            foreground_color=palette.text_primary,
+            cursor_color=palette.text_primary,
+        )
+        self._global_rule_description_input = TextInput(
+            text="",
+            multiline=False,
+            size_hint_y=None,
+            height=44,
+            background_color=palette.card_subtle_background,
+            foreground_color=palette.text_primary,
+            cursor_color=palette.text_primary,
+        )
+        self._global_rule_filter_type_spinner = Spinner(
+            text="Directory",
+            values=["Directory", "File", "Glob"],
+            size_hint_y=None,
+            height=44,
+            background_normal="",
+            background_color=palette.card_subtle_background,
+            color=palette.text_primary,
+        )
+        self._global_rule_behavior_spinner = Spinner(
+            text="Exclude",
+            values=["Include", "Exclude"],
+            size_hint_y=None,
+            height=44,
+            background_normal="",
+            background_color=palette.card_subtle_background,
+            color=palette.text_primary,
+        )
+        column.add_widget(WrappedLabel(text="Relative Path or Pattern", font_size=14, bold=True))
+        column.add_widget(self._global_rule_path_input)
+        column.add_widget(WrappedLabel(text="Description", font_size=14, bold=True))
+        column.add_widget(self._global_rule_description_input)
+        column.add_widget(self._global_rule_filter_type_spinner)
+        column.add_widget(self._global_rule_behavior_spinner)
+        add_button = AppButton(text="Add Global Rule", primary=False)
+        add_button.bind(on_release=self._add_global_rule)
+        column.add_widget(add_button)
+        card.add_widget(column)
+        return card
+
+    def _build_add_framework_rule_form(self) -> SurfaceBoxLayout:
+        palette = get_active_theme()
+        card = _build_field_card(
+            title="Add Framework Sync Rule",
+            help_text="Create a rule applied to projects of a specific framework type.",
+        )
+        column = BoxLayout(orientation="vertical", spacing=12, size_hint_y=None)
+        column.bind(minimum_height=column.setter("height"))
+        self._framework_rule_type_spinner = Spinner(
+            text=self._framework_type_options[0].label,
+            values=[option.label for option in self._framework_type_options],
+            size_hint_y=None,
+            height=44,
+            background_normal="",
+            background_color=palette.card_subtle_background,
+            color=palette.text_primary,
+        )
+        self._framework_rule_path_input = TextInput(
+            text="",
+            multiline=False,
+            size_hint_y=None,
+            height=44,
+            background_color=palette.card_subtle_background,
+            foreground_color=palette.text_primary,
+            cursor_color=palette.text_primary,
+        )
+        self._framework_rule_description_input = TextInput(
+            text="",
+            multiline=False,
+            size_hint_y=None,
+            height=44,
+            background_color=palette.card_subtle_background,
+            foreground_color=palette.text_primary,
+            cursor_color=palette.text_primary,
+        )
+        self._framework_rule_filter_type_spinner = Spinner(
+            text="Directory",
+            values=["Directory", "File", "Glob"],
+            size_hint_y=None,
+            height=44,
+            background_normal="",
+            background_color=palette.card_subtle_background,
+            color=palette.text_primary,
+        )
+        self._framework_rule_behavior_spinner = Spinner(
+            text="Exclude",
+            values=["Include", "Exclude"],
+            size_hint_y=None,
+            height=44,
+            background_normal="",
+            background_color=palette.card_subtle_background,
+            color=palette.text_primary,
+        )
+        column.add_widget(WrappedLabel(text="Framework Type", font_size=14, bold=True))
+        column.add_widget(self._framework_rule_type_spinner)
+        column.add_widget(WrappedLabel(text="Relative Path or Pattern", font_size=14, bold=True))
+        column.add_widget(self._framework_rule_path_input)
+        column.add_widget(WrappedLabel(text="Description", font_size=14, bold=True))
+        column.add_widget(self._framework_rule_description_input)
+        column.add_widget(self._framework_rule_filter_type_spinner)
+        column.add_widget(self._framework_rule_behavior_spinner)
+        add_button = AppButton(text="Add Framework Rule", primary=False)
+        add_button.bind(on_release=self._add_framework_rule)
+        column.add_widget(add_button)
+        card.add_widget(column)
+        return card
+
     def _back_to_dashboard(self, *_args: object) -> None:
         self._shell.open_dashboard()
         self.show_route("dashboard")
 
     def _apply_settings(self, *_args: object) -> None:
+        self._clear_form_error()
         draft = self._require_draft()
-        if self._width_input is not None and self._height_input is not None:
-            width_text = self._width_input.text.strip()
-            height_text = self._height_input.text.strip()
-            if width_text and height_text:
+        try:
+            if self._width_input is not None and self._height_input is not None:
+                width_text = self._width_input.text.strip()
+                height_text = self._height_input.text.strip()
+                if width_text and height_text:
+                    draft = replace(
+                        draft,
+                        window_width=int(width_text),
+                        window_height=int(height_text),
+                    )
+            if (
+                self._database_directory_input is not None
+                and self._database_filename_input is not None
+            ):
                 draft = replace(
                     draft,
-                    window_width=int(width_text),
-                    window_height=int(height_text),
+                    database_directory=self._database_directory_input.text.strip(),
+                    database_filename=self._database_filename_input.text.strip(),
                 )
-        if self._database_directory_input is not None and self._database_filename_input is not None:
-            draft = replace(
-                draft,
-                database_directory=self._database_directory_input.text.strip(),
-                database_filename=self._database_filename_input.text.strip(),
-            )
-        if self._sync_progress_log_limit_input is not None:
-            limit_text = self._sync_progress_log_limit_input.text.strip()
-            if limit_text:
-                draft = replace(draft, sync_progress_log_limit=int(limit_text))
+            if self._sync_progress_log_limit_input is not None:
+                limit_text = self._sync_progress_log_limit_input.text.strip()
+                if limit_text:
+                    draft = replace(draft, sync_progress_log_limit=int(limit_text))
+        except ValueError:
+            self._show_form_error(ValueError("Numeric settings must be whole numbers."))
+            return
+
         self._draft_settings = draft
         self._shell.update_settings_draft(draft)
         self._shell.save_settings()
@@ -477,13 +770,37 @@ class SettingsScreen(BaseShellScreen):
         self._draft_settings = replace(draft, developer_mode=value)
         state_label.text = "Enabled" if value else "Disabled"
 
+    def _toggle_use_gitignore_rules(
+        self,
+        _widget: object,
+        value: bool,
+        state_label: WrappedLabel,
+    ) -> None:
+        draft = self._require_draft()
+        self._draft_settings = replace(
+            draft,
+            sync_scope_settings=replace(
+                draft.sync_scope_settings,
+                use_gitignore_rules=value,
+            ),
+        )
+        state_label.text = "Enabled" if value else "Disabled"
+
     def _on_theme_mode_selected(self, _widget: object, text: str) -> None:
-        value = _find_option_value(self._require_state().theme_mode_field.options, text)
+        try:
+            value = _find_option_value(self._require_state().theme_mode_field.options, text)
+        except LookupError as error:
+            self._show_form_error(error)
+            return
         draft = self._require_draft()
         self._draft_settings = replace(draft, theme_mode=value)
 
     def _on_ui_language_selected(self, _widget: object, text: str) -> None:
-        value = _find_option_value(self._require_state().ui_language_field.options, text)
+        try:
+            value = _find_option_value(self._require_state().ui_language_field.options, text)
+        except LookupError as error:
+            self._show_form_error(error)
+            return
         draft = self._require_draft()
         self._draft_settings = replace(draft, ui_language=value)
 
@@ -500,6 +817,172 @@ class SettingsScreen(BaseShellScreen):
             msg = "Settings draft must be initialized before editing."
             raise ValueError(msg)
         return draft
+
+    def _add_global_rule(self, *_args: object) -> None:
+        self._clear_form_error()
+        draft = self._require_draft()
+        try:
+            new_rule = _build_configured_rule(
+                relative_path=self._require_text_input(self._global_rule_path_input).text.strip(),
+                description=(
+                    self._require_text_input(self._global_rule_description_input).text.strip()
+                ),
+                filter_type_label=self._require_spinner(self._global_rule_filter_type_spinner).text,
+                behavior_label=self._require_spinner(self._global_rule_behavior_spinner).text,
+            )
+        except (ValueError, LookupError) as error:
+            self._show_form_error(error)
+            return
+        self._draft_settings = replace(
+            draft,
+            sync_scope_settings=replace(
+                draft.sync_scope_settings,
+                global_rules=(*draft.sync_scope_settings.global_rules, new_rule),
+            ),
+        )
+        self.refresh()
+
+    def _add_framework_rule(self, *_args: object) -> None:
+        self._clear_form_error()
+        draft = self._require_draft()
+        try:
+            framework_type = _find_option_value(
+                self._framework_type_options,
+                self._require_spinner(self._framework_rule_type_spinner).text,
+            )
+            new_rule = _build_configured_rule(
+                relative_path=self._require_text_input(
+                    self._framework_rule_path_input
+                ).text.strip(),
+                description=(
+                    self._require_text_input(self._framework_rule_description_input).text.strip()
+                ),
+                filter_type_label=self._require_spinner(
+                    self._framework_rule_filter_type_spinner
+                ).text,
+                behavior_label=self._require_spinner(self._framework_rule_behavior_spinner).text,
+            )
+        except (ValueError, LookupError) as error:
+            self._show_form_error(error)
+            return
+        self._draft_settings = replace(
+            draft,
+            sync_scope_settings=_append_framework_rule(
+                draft.sync_scope_settings,
+                framework_type=framework_type,
+                rule=new_rule,
+            ),
+        )
+        self.refresh()
+
+    def _clear_form_error(self) -> None:
+        self._shell.latest_error = None
+        self.update_error_label()
+
+    def _show_form_error(self, error: Exception) -> None:
+        self._shell.latest_error = str(error)
+        self.update_error_label()
+
+    def _handle_toggle_configured_rule(  # noqa: PLR0913
+        self,
+        _widget: object,
+        *,
+        relative_path: str,
+        filter_type: SyncFilterType,
+        behavior: SyncRuleBehavior,
+        is_enabled: bool,
+        scope_type: str,
+        framework_type: str | None,
+    ) -> None:
+        self._toggle_configured_rule(
+            relative_path=relative_path,
+            filter_type=filter_type,
+            behavior=behavior,
+            is_enabled=is_enabled,
+            scope_type=scope_type,
+            framework_type=framework_type,
+        )
+
+    def _handle_remove_configured_rule(
+        self,
+        _widget: object,
+        *,
+        relative_path: str,
+        filter_type: SyncFilterType,
+        behavior: SyncRuleBehavior,
+        scope_type: str,
+        framework_type: str | None,
+    ) -> None:
+        self._remove_configured_rule(
+            relative_path=relative_path,
+            filter_type=filter_type,
+            behavior=behavior,
+            scope_type=scope_type,
+            framework_type=framework_type,
+        )
+
+    def _toggle_configured_rule(  # noqa: PLR0913
+        self,
+        *,
+        relative_path: str,
+        filter_type: SyncFilterType,
+        behavior: SyncRuleBehavior,
+        is_enabled: bool,
+        scope_type: str,
+        framework_type: str | None,
+    ) -> None:
+        self._draft_settings = replace(
+            self._require_draft(),
+            sync_scope_settings=_toggle_configured_rule(
+                self._require_draft().sync_scope_settings,
+                relative_path=relative_path,
+                filter_type=filter_type,
+                behavior=behavior,
+                new_enabled=not is_enabled,
+                scope_type=scope_type,
+                framework_type=framework_type,
+            ),
+        )
+        self.refresh()
+
+    def _remove_configured_rule(
+        self,
+        *,
+        relative_path: str,
+        filter_type: SyncFilterType,
+        behavior: SyncRuleBehavior,
+        scope_type: str,
+        framework_type: str | None,
+    ) -> None:
+        self._draft_settings = replace(
+            self._require_draft(),
+            sync_scope_settings=_remove_configured_rule(
+                self._require_draft().sync_scope_settings,
+                relative_path=relative_path,
+                filter_type=filter_type,
+                behavior=behavior,
+                scope_type=scope_type,
+                framework_type=framework_type,
+            ),
+        )
+        self.refresh()
+
+    def _require_text_input(self, widget: TextInput | None) -> TextInput:
+        if widget is None:
+            msg = "Text input must exist before using the settings form."
+            raise ValueError(msg)
+        return widget
+
+    def _build_framework_type_options(self) -> list[SettingsOptionViewModel]:
+        return build_framework_type_options_from_descriptors(
+            FrameworkAdapterRegistry.discover_installed().list_framework_descriptors()
+        )
+
+    def _require_spinner(self, widget: Spinner | None) -> Spinner:
+        if widget is None:
+            msg = "Spinner must exist before using the settings form."
+            raise ValueError(msg)
+        return widget
 
 
 def _build_information_card(*, title: str, body: str) -> SurfaceBoxLayout:
@@ -544,3 +1027,203 @@ def _find_option_value(options: list[SettingsOptionViewModel], label: str) -> st
             return option.value
     msg = f"Unknown option label: {label}"
     raise LookupError(msg)
+
+
+def _build_configured_rule(
+    *,
+    relative_path: str,
+    description: str,
+    filter_type_label: str,
+    behavior_label: str,
+) -> ConfiguredSyncRule:
+    normalized_relative_path = relative_path.strip().strip("/")
+    if normalized_relative_path == "":
+        msg = "Sync rules require a non-empty relative path or pattern."
+        raise ValueError(msg)
+    return ConfiguredSyncRule(
+        relative_path=normalized_relative_path,
+        filter_type=_map_filter_type_label(filter_type_label),
+        behavior=_map_behavior_label(behavior_label),
+        description=description.strip() or normalized_relative_path,
+        is_enabled=True,
+    )
+
+
+def _append_framework_rule(
+    sync_scope_settings: AdapterSyncScopeSettings,
+    *,
+    framework_type: str,
+    rule: ConfiguredSyncRule,
+) -> AdapterSyncScopeSettings:
+    normalized_framework_type = framework_type.strip().lower()
+    if normalized_framework_type == "":
+        msg = "Framework sync rules require a non-empty framework type."
+        raise ValueError(msg)
+    updated_rule_sets: list[FrameworkSyncRuleSet] = []
+    framework_rule_added = False
+    for rule_set in sync_scope_settings.framework_rule_sets:
+        if rule_set.normalized_framework_type() == normalized_framework_type:
+            updated_rule_sets.append(
+                FrameworkSyncRuleSet(
+                    framework_type=normalized_framework_type,
+                    rules=(*rule_set.rules, rule),
+                )
+            )
+            framework_rule_added = True
+            continue
+        updated_rule_sets.append(rule_set)
+    if not framework_rule_added:
+        updated_rule_sets.append(
+            FrameworkSyncRuleSet(
+                framework_type=normalized_framework_type,
+                rules=(rule,),
+            )
+        )
+    return replace(
+        sync_scope_settings,
+        framework_rule_sets=tuple(updated_rule_sets),
+    )
+
+
+def _toggle_configured_rule(  # noqa: PLR0913
+    sync_scope_settings: AdapterSyncScopeSettings,
+    *,
+    relative_path: str,
+    filter_type: SyncFilterType,
+    behavior: SyncRuleBehavior,
+    new_enabled: bool,
+    scope_type: str,
+    framework_type: str | None,
+) -> AdapterSyncScopeSettings:
+    if scope_type == "global":
+        return replace(
+            sync_scope_settings,
+            global_rules=tuple(
+                replace(rule, is_enabled=new_enabled)
+                if _matches_configured_rule(
+                    rule,
+                    relative_path=relative_path,
+                    filter_type=filter_type,
+                    behavior=behavior,
+                )
+                else rule
+                for rule in sync_scope_settings.global_rules
+            ),
+        )
+    if framework_type is None:
+        msg = "Framework sync rules require a framework type."
+        raise ValueError(msg)
+    return replace(
+        sync_scope_settings,
+        framework_rule_sets=tuple(
+            FrameworkSyncRuleSet(
+                framework_type=rule_set.framework_type,
+                rules=tuple(
+                    replace(rule, is_enabled=new_enabled)
+                    if _matches_configured_rule(
+                        rule,
+                        relative_path=relative_path,
+                        filter_type=filter_type,
+                        behavior=behavior,
+                    )
+                    and rule_set.normalized_framework_type() == framework_type.strip().lower()
+                    else rule
+                    for rule in rule_set.rules
+                ),
+            )
+            for rule_set in sync_scope_settings.framework_rule_sets
+        ),
+    )
+
+
+def _remove_configured_rule(  # noqa: PLR0913
+    sync_scope_settings: AdapterSyncScopeSettings,
+    *,
+    relative_path: str,
+    filter_type: SyncFilterType,
+    behavior: SyncRuleBehavior,
+    scope_type: str,
+    framework_type: str | None,
+) -> AdapterSyncScopeSettings:
+    if scope_type == "global":
+        return replace(
+            sync_scope_settings,
+            global_rules=tuple(
+                rule
+                for rule in sync_scope_settings.global_rules
+                if not _matches_configured_rule(
+                    rule,
+                    relative_path=relative_path,
+                    filter_type=filter_type,
+                    behavior=behavior,
+                )
+            ),
+        )
+    if framework_type is None:
+        msg = "Framework sync rules require a framework type."
+        raise ValueError(msg)
+    normalized_framework_type = framework_type.strip().lower()
+    updated_rule_sets: list[FrameworkSyncRuleSet] = []
+    for rule_set in sync_scope_settings.framework_rule_sets:
+        if rule_set.normalized_framework_type() != normalized_framework_type:
+            updated_rule_sets.append(rule_set)
+            continue
+        next_rules = tuple(
+            rule
+            for rule in rule_set.rules
+            if not _matches_configured_rule(
+                rule,
+                relative_path=relative_path,
+                filter_type=filter_type,
+                behavior=behavior,
+            )
+        )
+        if next_rules != ():
+            updated_rule_sets.append(
+                FrameworkSyncRuleSet(
+                    framework_type=rule_set.framework_type,
+                    rules=next_rules,
+                )
+            )
+    return replace(sync_scope_settings, framework_rule_sets=tuple(updated_rule_sets))
+
+
+def _matches_configured_rule(
+    rule: ConfiguredSyncRule,
+    *,
+    relative_path: str,
+    filter_type: SyncFilterType,
+    behavior: SyncRuleBehavior,
+) -> bool:
+    return (
+        rule.relative_path == relative_path
+        and rule.filter_type is filter_type
+        and rule.behavior is behavior
+    )
+
+
+def _map_filter_type_label(label: str) -> SyncFilterType:
+    normalized_label = label.strip().lower()
+    label_mapping = {
+        "directory": SyncFilterType.DIRECTORY,
+        "file": SyncFilterType.FILE,
+        "glob": SyncFilterType.GLOB,
+    }
+    value = label_mapping.get(normalized_label)
+    if value is None:
+        msg = f"Unsupported filter type label: {label}"
+        raise ValueError(msg)
+    return value
+
+
+def _map_behavior_label(label: str) -> SyncRuleBehavior:
+    normalized_label = label.strip().lower()
+    label_mapping = {
+        "include": SyncRuleBehavior.INCLUDE,
+        "exclude": SyncRuleBehavior.EXCLUDE,
+    }
+    value = label_mapping.get(normalized_label)
+    if value is None:
+        msg = f"Unsupported behavior label: {label}"
+        raise ValueError(msg)
+    return value

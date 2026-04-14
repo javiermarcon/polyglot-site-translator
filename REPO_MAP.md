@@ -12,6 +12,7 @@ This map describes the intended repository layout.
 Update it whenever the structure changes.
 
 ### Root
+
 - `src/`
   Main Python package(s) for the application.
   Current package: `polyglot_site_translator/`
@@ -76,7 +77,13 @@ Current frontend base:
   Presentation-shell wiring and injectable service bundle assembly.
 
 - `polyglot_site_translator/infrastructure/settings.py`
-  TOML-backed settings persistence, validation, and per-user config-path resolution.
+  TOML-backed settings persistence, validation, per-user config-path resolution, and persistence of general app settings such as the SQLite location.
+
+- `polyglot_site_translator/infrastructure/sync_scope_sqlite.py`
+  SQLite-backed persistence for shared global/framework sync rules and the `use_gitignore_rules` toggle used by sync scope resolution.
+
+- `polyglot_site_translator/infrastructure/sync_gitignore.py`
+  Supported translation of `.gitignore` patterns into sync exclusions.
 
 - `polyglot_site_translator/infrastructure/remote_connections/base.py`
   Shared provider and reusable-session base classes, structured remote-operation errors, controlled connect retry behavior, bounded `list_remote_files()` materialization, and incremental traversal helpers.
@@ -112,7 +119,7 @@ Current frontend base:
   Registry-backed framework detection orchestration with path validation and framework catalog exposure.
 
 - `polyglot_site_translator/services/framework_sync_scope.py`
-  Explicit resolution of adapter-defined sync include/exclude rules plus persisted project overrides from the current framework type, without hardcoding framework paths in generic sync services or Kivy UI modules.
+  Explicit resolution of global sync rules, framework-level settings rules, adapter-defined include/exclude rules, optional `.gitignore` exclusions, and persisted project overrides from the current framework type, without hardcoding framework paths in generic sync services or Kivy UI modules.
 
 - `polyglot_site_translator/services/site_registry.py`
   Site registry CRUD orchestration and validation independent from Kivy or SQLite details, with optional remote-connection integration and optional framework detection integration.
@@ -154,7 +161,7 @@ Current frontend base:
   Responsive layout rules for the settings screen so compact windows switch to a usable stacked layout.
 
 - `polyglot_site_translator/presentation/kivy/screens/settings.py`
-  Extensible settings screen with the initial App / UI / Kivy section, including editable SQLite directory/filename fields and the configurable sync progress log limit.
+  Extensible settings screen with editable App / UI / Kivy settings plus general sync-rule administration for global rules, framework rules, and `.gitignore` integration.
 
 - `polyglot_site_translator/presentation/kivy/screens/project_editor.py`
   Thin create/edit screen for site registry records driven entirely by typed presentation state, including the discoverable remote connection selector, the persisted "Use Adapter Sync Filters" switch, the visible sync-scope catalog, per-rule toggles, project-level rule editing, and the "Test Connection" action.
@@ -262,23 +269,29 @@ Keep this map updated if the strategy changes.
 ## Where to add new code
 
 ### New UI screen
+
 Add under the UI/presentation package and wire it from the app entrypoint.
 Update:
+
 - `ARCHITECTURE.md`
 - `REPO_MAP.md`
 - `CODEBASE_ENTRYPOINTS.md`
 
 ### New shared service
+
 Add under services/domain as appropriate.
 Update:
+
 - `ARCHITECTURE.md`
 - `DOMAIN_MAP.md`
 - `CODEBASE_ENTRYPOINTS.md`
 - tests
 
 ### New framework adapter/plugin
+
 Add under `adapters/` or `plugins/`.
 Update:
+
 - `ARCHITECTURE.md`
 - `DOMAIN_MAP.md`
 - `CODEBASE_ENTRYPOINTS.md`
@@ -286,15 +299,19 @@ Update:
 - tests
 
 ### New persistence/repository module
+
 Add under infrastructure/persistence.
 Update:
+
 - `ARCHITECTURE.md`
 - `REPO_MAP.md`
 - tests
 
 ### New report format
+
 Add under reporting.
 Update:
+
 - `ARCHITECTURE.md`
 - `CODEBASE_ENTRYPOINTS.md`
 - tests
@@ -305,6 +322,7 @@ Update:
 ## Repository hygiene expectations
 
 Any structural change must keep:
+
 - module responsibilities explicit
 - documentation aligned
 - tests discoverable

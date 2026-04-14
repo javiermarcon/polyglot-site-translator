@@ -5,6 +5,12 @@ from __future__ import annotations
 from dataclasses import replace
 
 from polyglot_site_translator.bootstrap import create_frontend_shell
+from polyglot_site_translator.domain.sync.scope import (
+    ConfiguredSyncRule,
+    FrameworkSyncRuleSet,
+    SyncFilterType,
+    SyncRuleBehavior,
+)
 from polyglot_site_translator.presentation.router import RouteName
 from tests.support.frontend_doubles import (
     build_failing_settings_load_services,
@@ -109,3 +115,55 @@ def test_settings_save_failure_keeps_error_state() -> None:
     assert shell.settings_state is not None
     assert shell.settings_state.status == "failed"
     assert shell.latest_error == "App settings could not be saved."
+
+
+def test_selecting_framework_settings_section_exposes_editable_sync_scope_controls() -> None:
+    shell = create_frontend_shell(build_seeded_services())
+
+    shell.open_settings()
+    shell.select_settings_section("frameworks")
+
+    assert shell.settings_state is not None
+    assert shell.settings_state.selected_section_key == "frameworks"
+    assert shell.settings_state.selected_section_is_available is True
+
+
+def test_update_and_save_settings_persists_global_and_framework_sync_rules() -> None:
+    shell = create_frontend_shell(build_seeded_services())
+
+    shell.open_settings()
+    assert shell.settings_state is not None
+    settings = shell.settings_state.app_settings.sync_scope_settings
+    shell.update_settings_draft(
+        replace(
+            shell.settings_state.app_settings,
+            sync_scope_settings=replace(
+                settings,
+                use_gitignore_rules=True,
+                framework_rule_sets=(
+                    *settings.framework_rule_sets,
+                    FrameworkSyncRuleSet(
+                        framework_type="django",
+                        rules=(
+                            ConfiguredSyncRule(
+                                relative_path=".venv",
+                                filter_type=SyncFilterType.DIRECTORY,
+                                behavior=SyncRuleBehavior.EXCLUDE,
+                                description="Ignore local virtualenv.",
+                                is_enabled=True,
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+    )
+    shell.save_settings()
+    shell.open_settings()
+
+    assert shell.settings_state is not None
+    assert shell.settings_state.app_settings.sync_scope_settings.use_gitignore_rules is True
+    assert (
+        shell.settings_state.app_settings.sync_scope_settings.framework_rule_sets[-1].framework_type
+        == "django"
+    )

@@ -13,6 +13,9 @@ from polyglot_site_translator.domain.framework_detection.models import (
 from polyglot_site_translator.domain.site_registry.models import RegisteredSite, SiteProject
 from polyglot_site_translator.domain.sync.scope import (
     AdapterSyncScope,
+    AdapterSyncScopeSettings,
+    ConfiguredSyncRule,
+    FrameworkSyncRuleSet,
     ProjectSyncRuleOverride,
     SyncFilterSpec,
     SyncFilterType,
@@ -149,6 +152,151 @@ def test_framework_sync_scope_service_uses_project_rules_when_no_adapter_exists(
 
     assert resolved_scope.status is SyncScopeStatus.FILTERED
     assert resolved_scope.includes("locale_custom/es/messages.po") is True
+
+
+def test_framework_sync_scope_service_applies_global_settings_rules(tmp_path: Path) -> None:
+    service = FrameworkSyncScopeService(
+        registry=FrameworkAdapterRegistry.discover_installed(),
+        sync_scope_settings_provider=lambda: AdapterSyncScopeSettings(
+            global_rules=(
+                ConfiguredSyncRule(
+                    relative_path=".git",
+                    filter_type=SyncFilterType.DIRECTORY,
+                    behavior=SyncRuleBehavior.EXCLUDE,
+                    description="Ignore Git metadata.",
+                    is_enabled=True,
+                ),
+            ),
+            framework_rule_sets=(),
+            use_gitignore_rules=False,
+        ),
+    )
+
+    resolved_scope = service.resolve_for_site(_build_site(tmp_path, framework_type="wordpress"))
+
+    assert resolved_scope.includes(".git/HEAD") is False
+
+
+def test_framework_sync_scope_service_applies_framework_settings_rules(tmp_path: Path) -> None:
+    service = FrameworkSyncScopeService(
+        registry=FrameworkAdapterRegistry.discover_installed(),
+        sync_scope_settings_provider=lambda: AdapterSyncScopeSettings(
+            global_rules=(),
+            framework_rule_sets=(
+                FrameworkSyncRuleSet(
+                    framework_type="django",
+                    rules=(
+                        ConfiguredSyncRule(
+                            relative_path=".ruff_cache",
+                            filter_type=SyncFilterType.DIRECTORY,
+                            behavior=SyncRuleBehavior.EXCLUDE,
+                            description="Ignore Ruff cache.",
+                            is_enabled=True,
+                        ),
+                    ),
+                ),
+            ),
+            use_gitignore_rules=False,
+        ),
+    )
+
+    resolved_scope = service.resolve_for_site(_build_site(tmp_path, framework_type="django"))
+
+    assert resolved_scope.includes(".ruff_cache/check") is False
+
+
+def test_framework_sync_scope_service_applies_gitignore_rules_when_enabled(
+    tmp_path: Path,
+) -> None:
+    local_root = tmp_path / "django"
+    local_root.mkdir()
+    (local_root / ".gitignore").write_text("__snapshots__/\n*.pyc\n", encoding="utf-8")
+    service = FrameworkSyncScopeService(
+        registry=FrameworkAdapterRegistry.discover_installed(),
+        sync_scope_settings_provider=lambda: AdapterSyncScopeSettings(
+            global_rules=(),
+            framework_rule_sets=(),
+            use_gitignore_rules=True,
+        ),
+    )
+
+    resolved_scope = service.resolve_for_site(
+        RegisteredSite(
+            project=SiteProject(
+                id="django-site",
+                name="django-site",
+                framework_type="django",
+                local_path=str(local_root),
+                default_locale="en",
+                is_active=True,
+            ),
+            remote_connection=None,
+        )
+    )
+
+    assert resolved_scope.includes("__snapshots__/message.txt") is False
+    assert resolved_scope.includes("locale/__pycache__/settings.cpython-312.pyc") is False
+
+
+def test_framework_sync_scope_service_respects_gitignore_precedence_over_project_overrides(
+    tmp_path: Path,
+) -> None:
+    local_root = tmp_path / "custom"
+    local_root.mkdir()
+    (local_root / ".gitignore").write_text("keep/\n", encoding="utf-8")
+    service = FrameworkSyncScopeService(
+        registry=FrameworkAdapterRegistry.discover_installed(),
+        sync_scope_settings_provider=lambda: AdapterSyncScopeSettings(
+            global_rules=(),
+            framework_rule_sets=(),
+            use_gitignore_rules=True,
+        ),
+    )
+
+    resolved_scope = service.resolve_for_framework(
+        framework_type="customapp",
+        project_path=local_root,
+        project_rule_overrides=(
+            ProjectSyncRuleOverride(
+                rule_key=build_sync_rule_key(
+                    relative_path="keep",
+                    filter_type=SyncFilterType.DIRECTORY,
+                    behavior=SyncRuleBehavior.INCLUDE,
+                ),
+                target_rule_key=None,
+                relative_path="keep",
+                filter_type=SyncFilterType.DIRECTORY,
+                behavior=SyncRuleBehavior.INCLUDE,
+                is_enabled=True,
+                description="Project override keeps a folder.",
+            ),
+        ),
+    )
+
+    assert resolved_scope.includes("keep/secret.txt") is False
+
+
+def test_framework_sync_scope_service_ignores_gitignore_rules_when_disabled(
+    tmp_path: Path,
+) -> None:
+    local_root = tmp_path / "customapp"
+    local_root.mkdir()
+    (local_root / ".gitignore").write_text("__snapshots__/\n", encoding="utf-8")
+    service = FrameworkSyncScopeService(
+        registry=FrameworkAdapterRegistry.discover_installed(),
+        sync_scope_settings_provider=lambda: AdapterSyncScopeSettings(
+            global_rules=(),
+            framework_rule_sets=(),
+            use_gitignore_rules=False,
+        ),
+    )
+
+    resolved_scope = service.resolve_for_framework(
+        framework_type="customapp",
+        project_path=local_root,
+    )
+
+    assert resolved_scope.includes("__snapshots__/message.txt") is True
 
 
 def _build_site(tmp_path: Path, *, framework_type: str) -> RegisteredSite:

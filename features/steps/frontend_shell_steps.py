@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+from dataclasses import replace
 from pathlib import Path
 import tempfile
 from typing import Protocol, TypeVar, cast
@@ -10,6 +11,12 @@ from typing import Protocol, TypeVar, cast
 import behave as behave_module  # type: ignore[import-untyped]
 
 from polyglot_site_translator.bootstrap import create_frontend_shell
+from polyglot_site_translator.domain.sync.scope import (
+    ConfiguredSyncRule,
+    FrameworkSyncRuleSet,
+    SyncFilterType,
+    SyncRuleBehavior,
+)
 from polyglot_site_translator.infrastructure.settings import build_default_settings_service
 from polyglot_site_translator.presentation.frontend_shell import FrontendShell
 from polyglot_site_translator.presentation.router import RouteName
@@ -234,10 +241,137 @@ def step_select_settings_section(context: object, section_key: str) -> None:
     typed_context.shell.select_settings_section(section_key)
 
 
+@when("the operator enables gitignore-based sync exclusions")
+def step_enable_gitignore_sync_exclusions(context: object) -> None:
+    typed_context = _context_with_shell(context)
+    state = typed_context.shell.settings_state
+    if state is None:
+        msg = "Settings must be loaded before editing gitignore sync exclusions."
+        raise AssertionError(msg)
+    typed_context.shell.update_settings_draft(
+        replace(
+            state.app_settings,
+            sync_scope_settings=replace(
+                state.app_settings.sync_scope_settings,
+                use_gitignore_rules=True,
+            ),
+        )
+    )
+
+
+@when('the operator adds the global sync rule "{relative_path}" as "{behavior}" "{filter_type}"')
+def step_add_global_sync_rule(
+    context: object,
+    relative_path: str,
+    behavior: str,
+    filter_type: str,
+) -> None:
+    typed_context = _context_with_shell(context)
+    state = typed_context.shell.settings_state
+    if state is None:
+        msg = "Settings must be loaded before editing global sync rules."
+        raise AssertionError(msg)
+    new_rule = ConfiguredSyncRule(
+        relative_path=relative_path,
+        filter_type=SyncFilterType(filter_type),
+        behavior=SyncRuleBehavior(behavior),
+        description=relative_path,
+        is_enabled=True,
+    )
+    typed_context.shell.update_settings_draft(
+        replace(
+            state.app_settings,
+            sync_scope_settings=replace(
+                state.app_settings.sync_scope_settings,
+                global_rules=(
+                    *state.app_settings.sync_scope_settings.global_rules,
+                    new_rule,
+                ),
+            ),
+        )
+    )
+
+
+@when(
+    'the operator adds the framework sync rule "{relative_path}" '
+    'for "{framework_type}" as "{behavior}" "{filter_type}"'
+)
+def step_add_framework_sync_rule(
+    context: object,
+    relative_path: str,
+    framework_type: str,
+    behavior: str,
+    filter_type: str,
+) -> None:
+    typed_context = _context_with_shell(context)
+    state = typed_context.shell.settings_state
+    if state is None:
+        msg = "Settings must be loaded before editing framework sync rules."
+        raise AssertionError(msg)
+    new_rule = ConfiguredSyncRule(
+        relative_path=relative_path,
+        filter_type=SyncFilterType(filter_type),
+        behavior=SyncRuleBehavior(behavior),
+        description=relative_path,
+        is_enabled=True,
+    )
+    framework_rules = list(state.app_settings.sync_scope_settings.framework_rule_sets)
+    framework_rules.append(
+        FrameworkSyncRuleSet(
+            framework_type=framework_type,
+            rules=(new_rule,),
+        )
+    )
+    typed_context.shell.update_settings_draft(
+        replace(
+            state.app_settings,
+            sync_scope_settings=replace(
+                state.app_settings.sync_scope_settings,
+                framework_rule_sets=tuple(framework_rules),
+            ),
+        )
+    )
+
+
 @then("the dashboard is the active route")
 def step_assert_dashboard_route(context: object) -> None:
     typed_context = _context_with_shell(context)
     assert typed_context.shell.router.current.name is RouteName.DASHBOARD
+
+
+@then("the saved settings enable gitignore-based sync exclusions")
+def step_assert_saved_gitignore_sync_exclusions(context: object) -> None:
+    typed_context = _context_with_shell(context)
+    assert typed_context.shell.settings_state is not None
+    assert typed_context.shell.settings_state.app_settings.sync_scope_settings.use_gitignore_rules
+
+
+@then('the saved settings contain the global sync rule "{relative_path}"')
+def step_assert_saved_global_sync_rule(context: object, relative_path: str) -> None:
+    typed_context = _context_with_shell(context)
+    assert typed_context.shell.settings_state is not None
+    assert relative_path in [
+        rule.relative_path
+        for rule in typed_context.shell.settings_state.app_settings.sync_scope_settings.global_rules
+    ]
+
+
+@then('the saved settings contain the framework sync rule "{relative_path}" for "{framework_type}"')
+def step_assert_saved_framework_sync_rule(
+    context: object,
+    relative_path: str,
+    framework_type: str,
+) -> None:
+    typed_context = _context_with_shell(context)
+    assert typed_context.shell.settings_state is not None
+    framework_rule_sets = (
+        typed_context.shell.settings_state.app_settings.sync_scope_settings.framework_rule_sets
+    )
+    framework_rules = [
+        rule_set for rule_set in framework_rule_sets if rule_set.framework_type == framework_type
+    ]
+    assert framework_rules != []
+    assert relative_path in [rule.relative_path for rule in framework_rules[0].rules]
 
 
 @then("the dashboard shows the main workflow sections")
