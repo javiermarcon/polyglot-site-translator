@@ -72,6 +72,9 @@ Current frontend-facing service entrypoints:
 - `FrontendShell.start_sync_to_remote_async`
 - `ProjectWorkflowService.start_audit`
 - `ProjectWorkflowService.start_po_processing`
+- `polyglot_site_translator.services.po_processing.POProcessingService.process_site`
+- `polyglot_site_translator.infrastructure.po_files.PolibPOCatalogRepository.discover_po_files`
+- `polyglot_site_translator.infrastructure.po_files.PolibPOCatalogRepository.save_po_files`
 - `SettingsService.load_settings`
 - `SettingsService.save_settings`
 - `SettingsService.reset_settings`
@@ -264,6 +267,7 @@ Current frontend test-covered entrypoints:
 - `FrontendShell.start_sync`
 - `FrontendShell.start_audit`
 - `FrontendShell.start_po_processing`
+- `SiteRegistryPresentationWorkflowService.start_po_processing`
 - `FrontendShell.open_settings`
 - `FrontendShell.open_application_menu`
 - `FrontendShell.open_route_from_menu`

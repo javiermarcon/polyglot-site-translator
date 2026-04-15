@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from polyglot_site_translator.adapters.framework_registry import FrameworkAdapterRegistry
+from polyglot_site_translator.infrastructure.po_files import PolibPOCatalogRepository
 from polyglot_site_translator.infrastructure.remote_connections.registry import (
     RemoteConnectionRegistry,
 )
@@ -25,6 +26,7 @@ from polyglot_site_translator.services.framework_detection import (
 from polyglot_site_translator.services.framework_sync_scope import (
     FrameworkSyncScopeService,
 )
+from polyglot_site_translator.services.po_processing import POProcessingService
 from polyglot_site_translator.services.project_sync import ProjectSyncService
 from polyglot_site_translator.services.remote_connections import RemoteConnectionService
 from polyglot_site_translator.services.site_registry import SiteRegistryService
@@ -65,6 +67,7 @@ def build_default_frontend_services(
         workflows=SiteRegistryPresentationWorkflowService(
             service=site_registry_service,
             project_sync_service=resolved_project_sync_service,
+            po_processing_service=POProcessingService(repository=PolibPOCatalogRepository()),
         ),
         settings=settings_service,
         registry=SiteRegistryPresentationManagementService(

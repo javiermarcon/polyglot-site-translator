@@ -7,6 +7,7 @@ from dataclasses import replace
 from pathlib import Path
 from typing import Any
 
+import polib
 import pytest
 
 from polyglot_site_translator.adapters.framework_registry import FrameworkAdapterRegistry
@@ -44,6 +45,7 @@ from polyglot_site_translator.domain.sync.scope import (
     SyncRuleBehavior,
     build_sync_rule_key,
 )
+from polyglot_site_translator.infrastructure.po_files import PolibPOCatalogRepository
 from polyglot_site_translator.infrastructure.remote_connections.registry import (
     RemoteConnectionRegistry,
 )
@@ -65,6 +67,7 @@ from polyglot_site_translator.presentation.view_models import (
 )
 from polyglot_site_translator.services.framework_detection import FrameworkDetectionService
 from polyglot_site_translator.services.framework_sync_scope import FrameworkSyncScopeService
+from polyglot_site_translator.services.po_processing import POProcessingService
 from polyglot_site_translator.services.remote_connections import RemoteConnectionService
 from polyglot_site_translator.services.site_registry import SiteRegistryService
 
@@ -735,16 +738,58 @@ def test_framework_aware_workflow_service_builds_audit_preview_from_detection() 
 
 
 def test_workflow_service_builds_po_processing_preview() -> None:
+    repository = InMemorySiteRegistryRepository()
+    site_service = _build_domain_service(repository)
+    site = site_service.create_site(_build_registration(local_path="/workspace/marketing-site"))
     workflow = SiteRegistryPresentationWorkflowService(
-        service=_build_domain_service(InMemorySiteRegistryRepository()),
+        service=site_service,
         project_sync_service=SyncStub(),
+        po_processing_service=POProcessingService(repository=PolibPOCatalogRepository()),
     )
 
-    preview = workflow.start_po_processing("site-1")
+    preview = workflow.start_po_processing(site.id)
 
     assert preview.status == "completed"
-    assert preview.processed_families == 4
-    assert preview.summary == "Prepared 4 locale families for future PO synchronization."
+    assert preview.processed_families == 0
+    assert "Families processed: 0" in preview.summary
+
+
+def test_workflow_service_processes_po_variants_from_site_workspace(tmp_path: Path) -> None:
+    locale_dir = tmp_path / "locale"
+    locale_dir.mkdir(parents=True, exist_ok=True)
+    _write_po_file(locale_dir / "messages-es_ES.po", [("Hello", "Hola")])
+    _write_po_file(locale_dir / "messages-es_AR.po", [("Hello", "")])
+
+    repository = InMemorySiteRegistryRepository()
+    site_service = _build_domain_service(repository)
+    site = site_service.create_site(
+        SiteRegistrationInput(
+            name="Marketing Site",
+            framework_type="wordpress",
+            local_path=str(tmp_path),
+            default_locale="es_ES",
+            remote_connection=RemoteConnectionConfigInput(
+                connection_type="sftp",
+                host="example.com",
+                port=22,
+                username="deploy",
+                password="super-secret",
+                remote_path="/srv/app",
+            ),
+            is_active=True,
+        )
+    )
+    workflow = SiteRegistryPresentationWorkflowService(
+        service=site_service,
+        project_sync_service=SyncStub(),
+        po_processing_service=POProcessingService(repository=PolibPOCatalogRepository()),
+    )
+
+    preview = workflow.start_po_processing(site.id)
+
+    assert preview.status == "completed"
+    assert preview.processed_families == 1
+    assert "Synchronized entries: 1" in preview.summary
 
 
 def test_workflow_service_trusts_remote_host_key_with_explicit_confirmation() -> None:
@@ -1002,3 +1047,11 @@ def _build_editor() -> SiteEditorViewModel:
         is_active=True,
         use_adapter_sync_filters=False,
     )
+
+
+def _write_po_file(path: Path, entries: list[tuple[str, str]]) -> None:
+    po_file = polib.POFile()
+    po_file.metadata = {"Language": path.stem.split("-")[-1]}
+    for msgid, msgstr in entries:
+        po_file.append(polib.POEntry(msgid=msgid, msgstr=msgstr))
+    po_file.save(str(path))

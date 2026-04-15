@@ -130,6 +130,15 @@ Current frontend base:
 - `polyglot_site_translator/services/project_sync.py`
   Bidirectional sync orchestration over the existing remote provider registry, including one reusable remote session per sync run, optional adapter-resolved sync scopes, typed results, and controlled failures.
 
+- `polyglot_site_translator/domain/po_processing/`
+  Typed PO processing models, contracts, and explicit domain/infrastructure errors.
+
+- `polyglot_site_translator/services/po_processing.py`
+  Shared PO workflow orchestration for discovery, locale-family grouping, and cross-variant translation synchronization.
+
+- `polyglot_site_translator/infrastructure/po_files.py`
+  Real PO repository based on `polib` for reading/writing project PO catalogs.
+
 - `polyglot_site_translator/infrastructure/remote_connections/`
   Discoverable FTP/FTPS/SFTP/SCP provider implementations, reusable transport sessions, and the runtime provider registry.
 
@@ -246,6 +255,9 @@ Current frontend coverage:
 - `features/presentation/remote_connections.feature`
 - `features/presentation/sync.feature`
 - `features/presentation/sync_filters.feature`
+- `features/presentation/po_processing.feature`
+- `features/steps/po_processing_steps.py`
+- `tests/unit/services/test_po_processing_service.py`
 
 If UI tests are added, they should remain isolated and clearly labeled.
 

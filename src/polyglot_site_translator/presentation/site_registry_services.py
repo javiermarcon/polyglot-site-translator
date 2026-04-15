@@ -13,6 +13,8 @@ from polyglot_site_translator.domain.framework_detection.errors import (
 from polyglot_site_translator.domain.framework_detection.models import (
     FrameworkDetectionResult,
 )
+from polyglot_site_translator.domain.po_processing.errors import POProcessingError
+from polyglot_site_translator.domain.po_processing.models import POProcessingResult
 from polyglot_site_translator.domain.remote_connections.models import (
     NO_REMOTE_CONNECTION_VALUE,
     RemoteConnectionConfigInput,
@@ -108,6 +110,13 @@ class ProjectSyncWorkflowService(Protocol):
         progress_callback: Callable[[SyncProgressEvent], None] | None = None,
     ) -> SyncResult:
         """Synchronize the local workspace into the remote project."""
+
+
+class POProcessingWorkflowService(Protocol):
+    """PO processing contract consumed by workflow presentation adapters."""
+
+    def process_site(self, site: RegisteredSite) -> POProcessingResult:
+        """Run PO processing for a site workspace."""
 
 
 class SiteRegistryPresentationCatalogService(ProjectCatalogService):
@@ -293,9 +302,11 @@ class SiteRegistryPresentationWorkflowService(ProjectWorkflowService):
         *,
         service: SiteRegistryWorkflowService,
         project_sync_service: ProjectSyncWorkflowService,
+        po_processing_service: POProcessingWorkflowService | None = None,
     ) -> None:
         self._service = service
         self._project_sync_service = project_sync_service
+        self._po_processing_service = po_processing_service
 
     def start_sync(
         self,
@@ -408,11 +419,36 @@ class SiteRegistryPresentationWorkflowService(ProjectWorkflowService):
         )
 
     def start_po_processing(self, project_id: str) -> POProcessingSummaryViewModel:
-        """Return the current PO processing preview placeholder."""
+        """Run PO processing and return a typed workflow summary."""
+        try:
+            site = self._service.get_site(project_id)
+        except (
+            SiteRegistryNotFoundError,
+            SiteRegistryPersistenceError,
+            SiteRegistryConfigurationError,
+        ) as error:
+            raise ControlledServiceError(str(error)) from error
+        if self._po_processing_service is None:
+            return POProcessingSummaryViewModel(
+                status="completed",
+                processed_families=0,
+                summary=(
+                    "PO processing service is not configured in this runtime. "
+                    "Families processed: 0 | Synchronized entries: 0"
+                ),
+            )
+        try:
+            result = self._po_processing_service.process_site(site)
+        except POProcessingError as error:
+            raise ControlledServiceError(str(error)) from error
         return POProcessingSummaryViewModel(
             status="completed",
-            processed_families=4,
-            summary="Prepared 4 locale families for future PO synchronization.",
+            processed_families=result.families_processed,
+            summary=(
+                f"Families processed: {result.families_processed} | "
+                f"PO files discovered: {result.files_discovered} | "
+                f"Synchronized entries: {result.entries_synchronized}"
+            ),
         )
 
 

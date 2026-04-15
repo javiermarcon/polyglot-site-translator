@@ -86,6 +86,14 @@ Handle reusable localization and translation logic.
 - optional translation provider use
 - optional `.mo` compilation
 
+Current implemented slice:
+
+- recursive workspace discovery of `.po` files
+- grouping by family key and locale suffix
+- base-language selection from project default locale
+- synchronization of missing singular and plural entries between locale variants
+- typed processing summary for presentation workflows
+
 ### Excludes
 
 - framework-specific configuration discovery

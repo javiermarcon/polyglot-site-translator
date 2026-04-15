@@ -178,6 +178,25 @@ Responsible for:
 
 This logic must remain reusable across framework adapters.
 
+Current implemented PO stage:
+
+- real PO discovery from a project workspace (`*.po` recursive)
+- locale-family grouping by shared relative path and locale suffix
+- base-language filtering from the project default locale
+- synchronization of missing entries between locale variants
+- synchronization supports gettext identity by `msgctxt + msgid + msgid_plural`
+- plural translations are synchronized when available in sibling variants
+- persisted write-back to the same PO files after synchronization
+- typed service result with discovered files, processed families, and synchronized entry count
+- UI workflow wiring through `ProjectWorkflowService.start_po_processing` without embedding PO logic in Kivy screens
+
+Not yet implemented in this stage:
+
+- automatic external translation provider calls
+- translation cache persistence
+- `.mo` compilation pipeline
+- inconsistency reporting workflow
+
 ### 4. Framework adapters / plugins
 
 Responsible for target-specific behavior such as:

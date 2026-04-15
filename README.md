@@ -47,6 +47,9 @@ El repositorio está en una etapa temprana y hoy incluye principalmente:
 - registry real de adapters/framework detection con resultados tipados
 - detección efectiva de proyectos WordPress, Django y Flask a partir de `local_path`
 - auto-discovery dinámico de adapters al iniciar, sin registro manual en el runtime
+- workflow real de PO processing con descubrimiento `.po`, agrupación por familia y sincronización de faltantes entre variantes del mismo idioma base
+- sincronización PO con identidad gettext (`msgctxt`, `msgid`, `msgid_plural`) y soporte de plurales
+- escritura real de cambios en archivos `.po` del workspace con resultado tipado para UI
 - integración real del flujo principal de proyectos con `site_registry` persistido
 - audit preview del runtime real enriquecido por el resultado de framework detection
 - implementaciones fake/in-memory para workflows de desarrollo y dobles aislados de tests
@@ -57,7 +60,9 @@ Todavía no están implementados en forma real:
 
 - presets o perfiles más avanzados de sync selectivo por entorno/dirección
 - scanner de auditoría
-- procesamiento real de `.po/.mo`
+- traducción automática de faltantes por proveedor externo
+- caché persistente de traducciones
+- compilación `.mo`
 - reporting final
 
 ## Objetivos del proyecto
@@ -96,6 +101,8 @@ La base actual implementa una base funcional de presentación, settings y `site_
 - `services/project_sync.py`: sync real `remote -> local` y `local -> remote` con resultados tipados, errores controlados y eventos de progreso
 - `services/framework_detection.py`: orquestación de detección desde el registry de adapters
 - `services/framework_sync_scope.py`: resolución explícita de filtros y exclusiones de sync por framework/adapter
+- `domain/po_processing/`: modelos tipados, contratos y errores explícitos para procesamiento compartido de catálogos PO
+- `services/po_processing.py`: descubrimiento, agrupación por familia y sincronización de traducciones faltantes entre variantes
 - `adapters/base.py`: contrato base discoverable para nuevos adapters
 - `infrastructure/settings.py`: persistencia TOML de settings generales por usuario
 - `infrastructure/sync_gitignore.py`: traducción explícita de patrones soportados de `.gitignore` a exclusiones de sync
@@ -104,6 +111,7 @@ La base actual implementa una base funcional de presentación, settings y `site_
 - `infrastructure/remote_connections/`: registry discoverable y providers concretos de conexión remota
 - `infrastructure/remote_connections/base.py`: contrato base compartido para materialización acotada de listados remotos e iteración incremental completa
 - `infrastructure/sync_local.py`: preparación del workspace local, listado de archivos fuente y persistencia de archivos descargados durante sync
+- `infrastructure/po_files.py`: lectura/escritura real de archivos `.po` con `polib`
 - `infrastructure/site_secrets.py`: cifrado local de secretos persistidos del site registry
 - `adapters/framework_registry.py`: registry/resolver real de adapters con descubrimiento dinámico por paquete
 - `adapters/wordpress.py`, `adapters/django.py`, `adapters/flask.py`: detección framework-specific y evidencia estructurada
@@ -136,10 +144,10 @@ La base actual del frontend incluye:
 - Sync Screen con wiring real de `remote -> local` y `local -> remote`, con resumen estructurado del resultado
 - ventana de progreso de sync abierta desde Project Detail para no bloquear el hilo principal de Kivy en ambos sentidos
 - Audit Screen para mostrar resultados fake de auditoría
-- PO Processing Screen para mostrar resultados fake de procesamiento
+- PO Processing Screen con resumen real de archivos detectados, familias procesadas y entradas sincronizadas
 - Settings generales con persistencia TOML, campos para configurar la ubicación/nombre de la base SQLite, ABM de reglas globales de sync, ABM de reglas por framework y toggle para exclusiones derivadas de `.gitignore`
 
-La navegación mantiene el contexto del proyecto seleccionado. El flujo principal de create/list/detail/update y el sync bidireccional ya usan servicios reales para `site_registry` y el subsistema remoto; audit y PO processing siguen usando servicios fake detrás de los mismos contratos de UI.
+La navegación mantiene el contexto del proyecto seleccionado. El flujo principal de create/list/detail/update, sync bidireccional y PO processing ya usan servicios reales para `site_registry`, subsistema remoto y procesamiento de `.po`; el audit sigue usando servicios fake detrás de los mismos contratos de UI.
 Cuando la preferencia `Use Adapter Sync Filters` está activa en la configuración remota persistida del proyecto, ambos sentidos de sync usan el scope resuelto por `FrameworkSyncScopeService`; cuando está desactivada, el servicio ejecuta full sync. Ese scope ahora compone reglas globales persistidas en settings, reglas persistidas por framework, reglas base del adapter, overrides persistidos por proyecto y exclusiones derivadas de `.gitignore` cuando la opción está habilitada. El Project Editor sigue mostrando el catálogo resuelto por proyecto y permite activar/desactivar reglas individuales y agregar includes/excludes adicionales persistidos por proyecto. La pantalla general de Settings ahora expone el ABM de reglas globales y por framework más el toggle `Use .gitignore Exclusions`. Si el proyecto pide sync filtrado pero no existe un scope utilizable, el sync falla de forma explícita en vez de caer en un fallback silencioso.
 
 El entrypoint gráfico por defecto (`create_kivy_app()` / `python -m polyglot_site_translator`) arranca con settings TOML y `site_registry` SQLite reales. Los bundles fake seeded quedan reservados para tests y escenarios de desarrollo controlados.
@@ -290,7 +298,7 @@ Comandos recomendados:
 .venv/bin/python -m ruff format --check .
 .venv/bin/python -m mypy src tests features/steps
 .venv/bin/python -m pytest
-.venv/bin/python -m behave features/presentation/frontend_shell.feature features/presentation/settings.feature features/presentation/site_registry.feature features/presentation/framework_detection.feature features/presentation/remote_connections.feature features/presentation/sync.feature features/presentation/sync_filters.feature
+.venv/bin/python -m behave features/presentation/frontend_shell.feature features/presentation/settings.feature features/presentation/site_registry.feature features/presentation/framework_detection.feature features/presentation/remote_connections.feature features/presentation/sync.feature features/presentation/sync_filters.feature features/presentation/po_processing.feature
 ```
 
 El repositorio sigue un flujo obligatorio BDD + TDD:

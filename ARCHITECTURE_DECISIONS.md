@@ -312,6 +312,23 @@ Project-local overrides are necessary but insufficient. Real operators also need
 
 ---
 
+## AD-021: Reimplement legacy PO synchronization as a modular shared service
+
+**Decision**
+Implement the first real PO-processing slice as typed domain + service + infrastructure modules, and wire it through `ProjectWorkflowService.start_po_processing`.
+
+**Why**
+Legacy `traducir.py` mixed discovery, synchronization, translation-provider calls, cache, CLI, and output concerns in one script. The current architecture needs reusable PO behavior without coupling presentation to parsing or file IO.
+
+**Implications**
+
+- PO discovery and persistence are isolated in `infrastructure/po_files.py`.
+- Shared synchronization rules live in `services/po_processing.py` and are framework-agnostic.
+- The first slice focuses on discovery, family grouping, and synchronization of missing entries (including plurals) between locale variants.
+- External translation API calls, persistent cache, and `.mo` compilation remain future stages.
+
+---
+
 ## AD-015: Long-running sync runs in background and reports typed progress events
 
 **Decision**

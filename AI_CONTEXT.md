@@ -177,5 +177,8 @@ The frontend baseline now also includes:
 - dynamic adapter discovery from the `adapters/` package at runtime
 - concrete WordPress, Django, and Flask detection adapters
 - project-detail enrichment that shows framework detection evidence or warnings without moving heuristics into Kivy
+- a first real shared PO-processing workflow for discovery, locale-family grouping, and cross-variant synchronization of missing entries
+- typed PO-processing results surfaced through the presentation workflow service
+- `polib`-backed PO repository wiring in runtime frontend services (instead of fixed preview placeholders)
 
 When extending the frontend, keep new behavior behind those boundaries unless the architecture docs are intentionally updated.
