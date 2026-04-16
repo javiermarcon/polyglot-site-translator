@@ -21,6 +21,9 @@ from polyglot_site_translator.presentation.kivy.widgets.path_picker import (
     PathFieldPicker,
     build_labeled_path_field,
 )
+from polyglot_site_translator.presentation.kivy.widgets.ssh_host_key_trust_dialog import (
+    open_ssh_host_key_trust_confirmation,
+)
 from polyglot_site_translator.presentation.view_models import (
     ProjectEditorStateViewModel,
     SettingsOptionViewModel,
@@ -150,12 +153,7 @@ class ProjectEditorScreen(BaseShellScreen):
         )
         panel.add_widget(self._build_sync_scope_panel(state))
         if state.connection_test_result is not None:
-            panel.add_widget(
-                _build_information_card(
-                    title="Remote Connection Test",
-                    body=state.connection_test_result.message,
-                )
-            )
+            panel.add_widget(self._build_remote_connection_test_card(state))
         panel.add_widget(self._build_active_toggle(state.editor.is_active))
         actions = BoxLayout(orientation="horizontal", spacing=12, size_hint_y=None, height=48)
         save_button = AppButton(text=state.submit_label, primary=True)
@@ -216,6 +214,54 @@ class ProjectEditorScreen(BaseShellScreen):
         row.add_widget(self._is_active_switch)
         card.add_widget(row)
         return card
+
+    def _build_remote_connection_test_card(
+        self,
+        state: ProjectEditorStateViewModel,
+    ) -> SurfaceBoxLayout:
+        """Show connection test output and optional SSH host-key trust flow."""
+        result = state.connection_test_result
+        if result is None:
+            msg = "Connection test result is required to build the test card."
+            raise ValueError(msg)
+        card = SurfaceBoxLayout(
+            orientation="vertical",
+            spacing=8,
+            padding=16,
+            size_hint_y=None,
+            background_role="card_background",
+        )
+        card.bind(minimum_height=card.setter("height"))
+        card.add_widget(WrappedLabel(text="Remote Connection Test", font_size=18, bold=True))
+        card.add_widget(
+            WrappedLabel(
+                text=result.message,
+                font_size=14,
+                color_role="text_muted",
+            )
+        )
+        if not result.success and result.error_code == "unknown_ssh_host_key":
+            trust_button = AppButton(
+                text="Trust SSH Host Key and Retry",
+                primary=True,
+                size_hint_y=None,
+                height=48,
+            )
+            trust_button.bind(
+                on_release=lambda *_args: open_ssh_host_key_trust_confirmation(
+                    on_trust=self._retest_connection_with_trusted_host_key,
+                    purpose="connection_test",
+                ),
+            )
+            card.add_widget(trust_button)
+        return card
+
+    def _retest_connection_with_trusted_host_key(self) -> None:
+        state = self._require_state()
+        editor = self._collect_editor_from_form(state)
+        self._draft_editor = editor
+        self._shell.trust_project_editor_remote_host_key(editor)
+        self.refresh()
 
     def _build_sync_scope_panel(self, state: ProjectEditorStateViewModel) -> SurfaceBoxLayout:
         card = SurfaceBoxLayout(

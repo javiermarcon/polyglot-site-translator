@@ -10,6 +10,9 @@ from kivy.uix.scrollview import ScrollView
 
 from polyglot_site_translator.presentation.frontend_shell import FrontendShell
 from polyglot_site_translator.presentation.kivy.widgets.common import AppButton, WrappedLabel
+from polyglot_site_translator.presentation.kivy.widgets.ssh_host_key_trust_dialog import (
+    open_ssh_host_key_trust_confirmation,
+)
 
 
 class SyncProgressPopup(Popup):  # type: ignore[misc]
@@ -106,34 +109,11 @@ class SyncProgressPopup(Popup):  # type: ignore[misc]
         self.refresh()
 
     def _open_host_key_confirmation(self, *_args: object) -> None:
-        confirmation = Popup(
-            title="Trust SSH Host Key?",
-            size_hint=(0.72, 0.42),
-            auto_dismiss=False,
+        open_ssh_host_key_trust_confirmation(
+            on_trust=self._run_trust_host_key_after_confirmation,
+            purpose="sync",
         )
-        container = BoxLayout(orientation="vertical", spacing=12, padding=12)
-        container.add_widget(
-            WrappedLabel(
-                text=(
-                    "The remote SSH host key is not in known_hosts. Trust it only if "
-                    "you verified this server is expected, then retry sync."
-                )
-            )
-        )
-        actions = BoxLayout(orientation="horizontal", spacing=12, size_hint_y=None, height=48)
-        accept_button = AppButton(text="Trust and Retry", primary=True)
-        cancel_button = AppButton(text="Cancel", primary=False)
-        accept_button.bind(
-            on_release=lambda *_event_args: self._accept_host_key_confirmation(confirmation)
-        )
-        cancel_button.bind(on_release=lambda *_event_args: confirmation.dismiss())
-        actions.add_widget(accept_button)
-        actions.add_widget(cancel_button)
-        container.add_widget(actions)
-        confirmation.content = container
-        confirmation.open()
 
-    def _accept_host_key_confirmation(self, confirmation: Popup) -> None:
-        confirmation.dismiss()
+    def _run_trust_host_key_after_confirmation(self) -> None:
         self._shell.trust_selected_project_remote_host_key()
         self.refresh()

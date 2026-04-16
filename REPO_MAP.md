@@ -181,6 +181,9 @@ Current frontend base:
 - `polyglot_site_translator/presentation/kivy/widgets/path_picker.py`
   Kivy Garden `FileBrowser`-backed modal picker and path-input rows for local filesystem paths (for example project `local_path` and SQLite directory/filename fields). Directory pickers use a filter so listings show folders only, plus disabled filename/filter fields to keep that mode consistent.
 
+- `polyglot_site_translator/presentation/kivy/widgets/ssh_host_key_trust_dialog.py`
+  Shared confirmation popup for trusting an unknown SSH host key (`known_hosts` TOFU), used by the sync progress window and the project editor connection test.
+
 - `services/`
   - use-case orchestration
   - audit flows

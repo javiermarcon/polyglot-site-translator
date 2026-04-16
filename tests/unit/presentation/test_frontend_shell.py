@@ -7,10 +7,13 @@ from dataclasses import dataclass, replace
 from threading import Event
 from typing import Any, cast
 
+from pytest import MonkeyPatch
+
 from polyglot_site_translator.bootstrap import create_frontend_shell
 from polyglot_site_translator.domain.sync.models import SyncProgressEvent, SyncProgressStage
 from polyglot_site_translator.presentation.contracts import FrontendServices
 from polyglot_site_translator.presentation.errors import ControlledServiceError
+from polyglot_site_translator.presentation.frontend_shell import FrontendShell
 from polyglot_site_translator.presentation.router import RouteName
 from polyglot_site_translator.presentation.view_models import (
     AuditSummaryViewModel,
@@ -450,6 +453,39 @@ def test_project_connection_test_failure_is_exposed_in_editor_state() -> None:
 
 def _sync_state_is_cleared(shell: Any) -> bool:
     return shell.sync_state is None
+
+
+def test_trust_project_editor_remote_host_key_reruns_test_without_host_verification(
+    monkeypatch: MonkeyPatch,
+) -> None:
+    captured: list[SiteEditorViewModel] = []
+
+    def fake_test(_self: object, editor: SiteEditorViewModel) -> None:
+        captured.append(editor)
+
+    monkeypatch.setattr(FrontendShell, "test_project_connection", fake_test)
+
+    shell = create_frontend_shell(build_seeded_services())
+    editor = SiteEditorViewModel(
+        site_id=None,
+        name="Site",
+        framework_type="wordpress",
+        local_path="/tmp/x",
+        default_locale="en_US",
+        connection_type="sftp",
+        remote_host="localhost",
+        remote_port="22",
+        remote_username="u",
+        remote_password="p",
+        remote_path="/tmp",
+        is_active=True,
+        remote_verify_host=True,
+    )
+
+    shell.trust_project_editor_remote_host_key(editor)
+
+    assert len(captured) == 1
+    assert captured[0].remote_verify_host is False
 
 
 def test_audit_and_po_actions_update_independent_panels() -> None:

@@ -532,6 +532,11 @@ class FrontendShell:
             self.latest_error = str(error)
         self._set_route(RouteName.PROJECT_EDITOR, project_id=editor.site_id)
 
+    def trust_project_editor_remote_host_key(self, editor: SiteEditorViewModel) -> None:
+        """Re-run the connection test after confirmation (Paramiko TOFU adds the host key)."""
+        trusted_editor = replace(editor, remote_verify_host=False)
+        self.test_project_connection(trusted_editor)
+
     def preview_project_editor(self, editor: SiteEditorViewModel) -> None:
         """Rebuild the current project-editor draft without persisting changes."""
         state = self._require_project_editor_state()

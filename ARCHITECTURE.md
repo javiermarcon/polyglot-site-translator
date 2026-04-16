@@ -302,7 +302,7 @@ The project editor now also owns:
 
 - a discoverable remote connection-type combo with an explicit "No Remote Connection" option
 - an optional remote connection draft separate from the persisted site/project identity
-- a "Test Connection" action that delegates to application services and renders structured results without opening network sessions from widgets
+- a "Test Connection" action that delegates to application services and renders structured results without opening network sessions from widgets; when SFTP/SCP reports `unknown_ssh_host_key`, the same host-key trust confirmation popup used by sync can be shown before re-testing with TOFU `known_hosts` handling
 - a visible sync-scope catalog driven by typed presentation state
 - project-level sync rule rows with enable/disable toggles and add/remove actions, while rule resolution and persistence stay behind services
 

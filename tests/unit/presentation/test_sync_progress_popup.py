@@ -199,7 +199,6 @@ def test_sync_progress_popup_trust_confirmation_delegates_to_shell(
 ) -> None:
     shell = create_frontend_shell(build_seeded_services())
     popup = SyncProgressPopup(shell=shell)
-    confirmation = _FakeConfirmationPopup()
     trust_calls: list[str] = []
 
     def record_trust() -> None:
@@ -207,9 +206,8 @@ def test_sync_progress_popup_trust_confirmation_delegates_to_shell(
 
     monkeypatch.setattr(shell, "trust_selected_project_remote_host_key", record_trust)
 
-    popup._accept_host_key_confirmation(cast(Any, confirmation))
+    popup._run_trust_host_key_after_confirmation()
 
-    assert confirmation.dismissed is True
     assert trust_calls == ["trusted"]
 
 
@@ -235,7 +233,7 @@ def test_sync_progress_popup_opens_host_key_confirmation(
         return confirmation
 
     monkeypatch.setattr(
-        "polyglot_site_translator.presentation.kivy.widgets.sync_progress_popup.Popup",
+        "polyglot_site_translator.presentation.kivy.widgets.ssh_host_key_trust_dialog.Popup",
         build_confirmation_popup,
     )
 

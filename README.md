@@ -140,7 +140,7 @@ La base actual del frontend incluye:
 - Projects / Sites List para listar proyectos persistidos en SQLite
 - Project / Site Detail con lectura real del registry persistido y metadata de detección de framework
 - Project Editor con combo dinámico de framework, combo dinámico de tipo de conexión remota, switch persistido para elegir `Use Adapter Sync Filters`, catálogo visible del scope resuelto y editor de reglas adicionales por proyecto
-- acción "Test Connection" en el editor, resuelta por servicios y con resultado estructurado en pantalla
+- acción "Test Connection" en el editor, resuelta por servicios y con resultado estructurado en pantalla; si el error es `unknown_ssh_host_key`, se ofrece el mismo popup de confianza de host key que en sync y se puede reintentar el test con TOFU en `known_hosts`
 - Audit Screen con preview basado en la detección real del proyecto en vez de un conteo fijo del runtime
 - Sync Screen con wiring real de `remote -> local` y `local -> remote`, con resumen estructurado del resultado
 - ventana de progreso de sync abierta desde Project Detail para no bloquear el hilo principal de Kivy en ambos sentidos
@@ -271,7 +271,7 @@ Ese último valor define cuántas operaciones recientes conserva en memoria y mu
 La contraseña remota no se guarda en texto plano en SQLite.
 Se persiste cifrada con una key local almacenada junto al config dir de la app.
 Si el runtime encuentra una base heredada con columnas `ftp_*`, migra esos datos a la tabla de conexiones remotas relacionadas sin convertir el ciphertext a texto plano durante la migración.
-Para SFTP/SCP, la verificación de host key queda activa por defecto. Si un host todavía no está en `known_hosts`, el sync falla de forma controlada con `unknown_ssh_host_key` y la ventana de progreso ofrece un popup explícito para confiar el host y reintentar. Esa acción solo está disponible mientras el progreso actual está fallido por host key desconocida; al confirmar y comenzar el reintento, se oculta para evitar aceptar el host otra vez durante la sincronización. Al confirmar, la app crea/carga `~/.ssh/known_hosts` y permite que Paramiko agregue la host key desconocida, equivalente al flujo TOFU de aceptar un host nuevo en `ssh`.
+Para SFTP/SCP, la verificación de host key queda activa por defecto. Si un host todavía no está en `known_hosts`, el sync falla de forma controlada con `unknown_ssh_host_key` y la ventana de progreso ofrece un popup explícito para confiar el host y reintentar. El mismo diálogo compartido está disponible en el editor de proyecto cuando "Test Connection" devuelve ese código. En sync, la acción solo está disponible mientras el progreso actual está fallido por host key desconocida; al confirmar y comenzar el reintento, se oculta para evitar aceptar el host otra vez durante la sincronización. Al confirmar, la app crea/carga `~/.ssh/known_hosts` y permite que Paramiko agregue la host key desconocida, equivalente al flujo TOFU de aceptar un host nuevo en `ssh`.
 
 El flujo de sync actual usa la conexión remota persistida del proyecto para listar/descargar el contenido remoto y también para crear directorios/subir archivos desde el árbol local.
 Cuando se dispara desde Project Detail, el trabajo corre en background y se abre una ventana dedicada con barra de progreso y log de comandos del transporte y del workspace local.
