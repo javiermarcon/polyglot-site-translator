@@ -17,6 +17,10 @@ from polyglot_site_translator.presentation.kivy.widgets.common import (
     SurfaceBoxLayout,
     WrappedLabel,
 )
+from polyglot_site_translator.presentation.kivy.widgets.path_picker import (
+    PathFieldPicker,
+    build_labeled_path_field,
+)
 from polyglot_site_translator.presentation.view_models import (
     ProjectEditorStateViewModel,
     SettingsOptionViewModel,
@@ -105,7 +109,19 @@ class ProjectEditorScreen(BaseShellScreen):
         )
         panel.add_widget(_build_field("Framework Type", self._framework_spinner))
         self._local_path_input = self._build_text_input(state.editor.local_path)
-        panel.add_widget(_build_field("Local Path", self._local_path_input))
+        panel.add_widget(
+            build_labeled_path_field(
+                "Local Path",
+                self._local_path_input,
+                PathFieldPicker(
+                    pick_mode="directory",
+                    title="Choose project directory",
+                    path_hint=lambda: (
+                        self._local_path_input.text if self._local_path_input is not None else ""
+                    ),
+                ),
+            ),
+        )
         self._default_locale_input = self._build_text_input(state.editor.default_locale)
         panel.add_widget(_build_field("Default Locale", self._default_locale_input))
         self._connection_type_spinner = self._build_spinner(

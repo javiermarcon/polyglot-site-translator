@@ -130,6 +130,7 @@ The current Kivy frontend base is organized around:
 - `polyglot_site_translator/presentation/view_models.py` for typed screen state
 - `polyglot_site_translator/presentation/fakes.py` for deterministic in-memory services
 - `polyglot_site_translator/presentation/kivy/` for thin screen rendering
+- `polyglot_site_translator/presentation/kivy/widgets/path_picker.py` for Kivy Garden `FileBrowser` path entry (directory listings can be folder-only; still no domain or SQL in that module)
 
 The frontend baseline now also includes:
 

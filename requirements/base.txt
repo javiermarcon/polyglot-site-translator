@@ -1,4 +1,5 @@
 kivy
+kivy-garden.filebrowser>=1.1.2
 polib
 googletrans==4.0.2
 paramiko>=3.4

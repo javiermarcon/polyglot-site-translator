@@ -54,6 +54,7 @@ El repositorio está en una etapa temprana y hoy incluye principalmente:
 - audit preview del runtime real enriquecido por el resultado de framework detection
 - implementaciones fake/in-memory para workflows de desarrollo y dobles aislados de tests
 - escenarios BDD y tests de presentación/orquestación
+- selector de archivos/carpetas locales (Kivy Garden `FileBrowser`) junto a campos de ruta en el editor de proyecto y en ajustes del registro SQLite; en rutas de proyecto/carpeta el listado se limita a directorios
 - documentación arquitectónica para guiar futuras iteraciones
 
 Todavía no están implementados en forma real:

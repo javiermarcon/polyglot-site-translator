@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections.abc import Callable
 from dataclasses import replace
 from functools import partial
+from pathlib import Path
 
 from kivy.core.window import Window
 from kivy.uix.boxlayout import BoxLayout
@@ -32,6 +33,10 @@ from polyglot_site_translator.presentation.kivy.widgets.common import (
     AppButton,
     SurfaceBoxLayout,
     WrappedLabel,
+)
+from polyglot_site_translator.presentation.kivy.widgets.path_picker import (
+    PathFieldPicker,
+    build_path_input_row,
 )
 from polyglot_site_translator.presentation.view_models import (
     AppSettingsViewModel,
@@ -406,6 +411,18 @@ class SettingsScreen(BaseShellScreen):
         card.add_widget(row)
         return card
 
+    def _database_file_browse_hint(self) -> str:
+        """Return a path hint for opening the SQLite file picker."""
+        if self._database_directory_input is None or self._database_filename_input is None:
+            return ""
+        directory = str(self._database_directory_input.text).strip()
+        filename = str(self._database_filename_input.text).strip()
+        if directory != "" and filename != "":
+            return str(Path(directory) / filename)
+        if directory != "":
+            return directory
+        return filename
+
     def _build_database_field(
         self,
         *,
@@ -441,9 +458,32 @@ class SettingsScreen(BaseShellScreen):
             cursor_color=palette.text_primary,
         )
         column.add_widget(WrappedLabel(text="Database Directory", font_size=14, bold=True))
-        column.add_widget(self._database_directory_input)
+        column.add_widget(
+            build_path_input_row(
+                self._database_directory_input,
+                PathFieldPicker(
+                    pick_mode="directory",
+                    title="Choose SQLite directory",
+                    path_hint=lambda: (
+                        self._database_directory_input.text
+                        if self._database_directory_input is not None
+                        else ""
+                    ),
+                ),
+            ),
+        )
         column.add_widget(WrappedLabel(text="Database Filename", font_size=14, bold=True))
-        column.add_widget(self._database_filename_input)
+        column.add_widget(
+            build_path_input_row(
+                self._database_filename_input,
+                PathFieldPicker(
+                    pick_mode="file",
+                    title="Choose SQLite database file",
+                    path_hint=self._database_file_browse_hint,
+                    use_basename_only=True,
+                ),
+            ),
+        )
         card.add_widget(column)
         return card
 

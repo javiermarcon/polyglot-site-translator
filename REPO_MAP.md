@@ -178,6 +178,9 @@ Current frontend base:
 - `polyglot_site_translator/presentation/kivy/widgets/sync_progress_popup.py`
   Dedicated Kivy popup that renders background sync progress and a bounded command-log output without moving remote work into widgets.
 
+- `polyglot_site_translator/presentation/kivy/widgets/path_picker.py`
+  Kivy Garden `FileBrowser`-backed modal picker and path-input rows for local filesystem paths (for example project `local_path` and SQLite directory/filename fields). Directory pickers use a filter so listings show folders only, plus disabled filename/filter fields to keep that mode consistent.
+
 - `services/`
   - use-case orchestration
   - audit flows

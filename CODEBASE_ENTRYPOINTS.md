@@ -186,6 +186,10 @@ Current Kivy sync-progress entrypoint:
 
 - `polyglot_site_translator.presentation.kivy.widgets.sync_progress_popup.SyncProgressPopup`
 
+Current Kivy local path picker entrypoint:
+
+- `polyglot_site_translator.presentation.kivy.widgets.path_picker.show_path_picker_popup`
+
 ---
 
 ## Persistence entrypoints

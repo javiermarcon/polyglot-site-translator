@@ -360,3 +360,19 @@ Listing once and reconnecting for every downloaded file is fragile, slow, and ha
 - FTP, FTPS, SFTP, and SCP providers implement the same session contract.
 - Provider convenience methods remain available for bounded materialization or one-off operations, but they must delegate through sessions.
 - Transport errors are normalized into structured remote-operation errors where possible; widgets only render typed progress and final sync results.
+
+---
+
+## AD-017: Kivy Garden FileBrowser for local path picking
+
+**Decision**
+Use the `kivy-garden.filebrowser` `FileBrowser` widget (declared in `requirements/base.txt`) for filesystem pickers in the Kivy UI instead of embedding only the stock `FileChooserListView`.
+
+**Why**
+The garden widget provides a clearer layout (shortcuts, list/icon tabs, integrated actions) while still delegating to the same `FileChooserController` semantics (`dirselect`, `filters`, `filter_dirs`).
+
+**Implications**
+
+- Directory-only workflows (for example project `local_path` and SQLite directory) combine `dirselect=True`, `filter_dirs=True`, and a callable filter that keeps directory entries in the listing so regular files are not offered as first-class picks.
+- File picking for SQLite filename continues to use the same widget in file-selection mode without that listing restriction.
+- The dependency must remain explicit under `requirements/` and mypy may ignore missing stubs for `kivy_garden.filebrowser` via `pyproject.toml` overrides.

@@ -194,6 +194,7 @@ Provide the graphical user experience through Kivy.
 
 - screens
 - widgets
+- local path browser widgets (Kivy Garden `FileBrowser` via `path_picker`, without embedding domain or persistence rules)
 - navigation router
 - selected-project UI context
 - presentation shell/controller orchestration
