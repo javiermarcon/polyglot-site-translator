@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections import defaultdict
 from pathlib import Path
+from typing import Any, cast
 
 import polib
 
@@ -64,6 +65,25 @@ class PolibPOCatalogRepository(POCatalogRepository):
                 raise POProcessingInfrastructureError(msg) from error
 
 
+def _domain_msgstr_plural_from_polib(entry: polib.POEntry) -> dict[str, str]:
+    """Map polib plural translations to domain ``dict[str, str]``.
+
+    At runtime polib stores ``msgstr_plural`` as ``dict[int, str]``. Published
+    stubs for ``polib`` have disagreed on the annotated type; treating the value
+    as :class:`object` and branching on ``isinstance`` keeps mypy strict without
+    misrepresenting polib's real shape.
+    """
+    raw = cast(object, entry.msgstr_plural)
+    if isinstance(raw, dict):
+        return {str(key): str(value) for key, value in raw.items()}
+    if isinstance(raw, list):
+        return {str(index): str(text) for index, text in enumerate(raw)}
+    if not raw:
+        return {}
+    msg = f"Unexpected msgstr_plural type (msgid={entry.msgid!r}): {type(raw).__name__}"
+    raise TypeError(msg)
+
+
 def _entry_from_polib(entry: polib.POEntry) -> POEntryData:
     msgid_plural = entry.msgid_plural or None
     return POEntryData(
@@ -73,7 +93,7 @@ def _entry_from_polib(entry: polib.POEntry) -> POEntryData:
             msgid_plural=msgid_plural,
         ),
         msgstr=entry.msgstr,
-        msgstr_plural={str(key): value for key, value in entry.msgstr_plural.items()},
+        msgstr_plural=_domain_msgstr_plural_from_polib(entry),
     )
 
 
@@ -89,7 +109,10 @@ def _apply_entries_to_polib(po_file: polib.POFile, entries: tuple[POEntryData, .
         if updated_entry is None:
             continue
         item.msgstr = updated_entry.msgstr
-        item.msgstr_plural = {int(key): value for key, value in updated_entry.msgstr_plural.items()}
+        plural_for_polib = {int(key): value for key, value in updated_entry.msgstr_plural.items()}
+        # Third-party stubs sometimes type ``msgstr_plural`` as ``list[str]``; polib
+        # persists plural forms as ``dict[int, str]`` at runtime.
+        cast(Any, item).msgstr_plural = plural_for_polib
 
 
 def _locale_from_filename(path: Path) -> str:

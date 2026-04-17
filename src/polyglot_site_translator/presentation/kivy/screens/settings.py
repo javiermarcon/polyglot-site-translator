@@ -28,6 +28,10 @@ from polyglot_site_translator.presentation.kivy.screens.base import BaseShellScr
 from polyglot_site_translator.presentation.kivy.settings_layout import (
     build_settings_layout_spec,
 )
+from polyglot_site_translator.presentation.kivy.site_editor_form import (
+    find_option_label,
+    find_option_value,
+)
 from polyglot_site_translator.presentation.kivy.theme import get_active_theme
 from polyglot_site_translator.presentation.kivy.widgets.common import (
     AppButton,
@@ -213,7 +217,7 @@ class SettingsScreen(BaseShellScreen):
                 label=state.theme_mode_field.label,
                 help_text=state.theme_mode_field.help_text,
                 values=[option.label for option in state.theme_mode_field.options],
-                current_label=_find_option_label(
+                current_label=find_option_label(
                     state.theme_mode_field.options,
                     draft.theme_mode,
                 ),
@@ -253,7 +257,7 @@ class SettingsScreen(BaseShellScreen):
                 label=state.ui_language_field.label,
                 help_text=state.ui_language_field.help_text,
                 values=[option.label for option in state.ui_language_field.options],
-                current_label=_find_option_label(
+                current_label=find_option_label(
                     state.ui_language_field.options,
                     draft.ui_language,
                 ),
@@ -828,7 +832,7 @@ class SettingsScreen(BaseShellScreen):
 
     def _on_theme_mode_selected(self, _widget: object, text: str) -> None:
         try:
-            value = _find_option_value(self._require_state().theme_mode_field.options, text)
+            value = find_option_value(self._require_state().theme_mode_field.options, text)
         except LookupError as error:
             self._show_form_error(error)
             return
@@ -837,7 +841,7 @@ class SettingsScreen(BaseShellScreen):
 
     def _on_ui_language_selected(self, _widget: object, text: str) -> None:
         try:
-            value = _find_option_value(self._require_state().ui_language_field.options, text)
+            value = find_option_value(self._require_state().ui_language_field.options, text)
         except LookupError as error:
             self._show_form_error(error)
             return
@@ -886,7 +890,7 @@ class SettingsScreen(BaseShellScreen):
         self._clear_form_error()
         draft = self._require_draft()
         try:
-            framework_type = _find_option_value(
+            framework_type = find_option_value(
                 self._framework_type_options,
                 self._require_spinner(self._framework_rule_type_spinner).text,
             )
@@ -1051,22 +1055,6 @@ def _build_field_card(*, title: str, help_text: str) -> SurfaceBoxLayout:
     card.add_widget(WrappedLabel(text=title, font_size=16, bold=True))
     card.add_widget(WrappedLabel(text=help_text, font_size=13, color_role="text_muted"))
     return card
-
-
-def _find_option_label(options: list[SettingsOptionViewModel], value: str) -> str:
-    for option in options:
-        if option.value == value:
-            return option.label
-    msg = f"Unknown option value: {value}"
-    raise LookupError(msg)
-
-
-def _find_option_value(options: list[SettingsOptionViewModel], label: str) -> str:
-    for option in options:
-        if option.label == label:
-            return option.value
-    msg = f"Unknown option label: {label}"
-    raise LookupError(msg)
 
 
 def _build_configured_rule(

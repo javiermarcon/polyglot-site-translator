@@ -173,7 +173,10 @@ Current frontend base:
   Extensible settings screen with editable App / UI / Kivy settings plus general sync-rule administration for global rules, framework rules, and `.gitignore` integration.
 
 - `polyglot_site_translator/presentation/kivy/screens/project_editor.py`
-  Thin create/edit screen for site registry records driven entirely by typed presentation state, including the discoverable remote connection selector, the persisted "Use Adapter Sync Filters" switch, the visible sync-scope catalog, per-rule toggles, project-level rule editing, and the "Test Connection" action.
+  Thin create/edit screen for site registry records driven entirely by typed presentation state, including the discoverable remote connection selector, the persisted "Use Adapter Sync Filters" switch, the visible sync-scope catalog, per-rule toggles, project-level rule editing, and the "Test Connection" action. Labeled inputs, spinners, and the remote password row are built via `site_editor_form.py` so create and edit stay aligned.
+
+- `polyglot_site_translator/presentation/kivy/site_editor_form.py`
+  Shared Kivy helpers for the project editor form (create and edit use the same screen): text inputs, spinners, field cards, remote password with visibility toggle, and `find_option_label` / `find_option_value` for spinner option lists (also used by the settings screen).
 
 - `polyglot_site_translator/presentation/kivy/widgets/sync_progress_popup.py`
   Dedicated Kivy popup that renders background sync progress and a bounded command-log output without moving remote work into widgets.
@@ -183,6 +186,12 @@ Current frontend base:
 
 - `polyglot_site_translator/presentation/kivy/widgets/ssh_host_key_trust_dialog.py`
   Shared confirmation popup for trusting an unknown SSH host key (`known_hosts` TOFU), used by the sync progress window and the project editor connection test.
+
+- `polyglot_site_translator/presentation/kivy/assets/fonts/`
+  Bundled **Material Icons** font (Apache 2.0, see ``NOTICE.txt`` in that folder) so icon glyphs render the same on every platform without relying on system emoji fonts.
+
+- `polyglot_site_translator/presentation/kivy/widgets/password_visibility.py`
+  Horizontal layout that pairs a masked ``TextInput`` with a Material Icons toggle (visibility / visibility_off codepoints) using the packaged ``MaterialIcons-Regular.ttf``.
 
 - `services/`
   - use-case orchestration

@@ -55,6 +55,7 @@ El repositorio está en una etapa temprana y hoy incluye principalmente:
 - implementaciones fake/in-memory para workflows de desarrollo y dobles aislados de tests
 - escenarios BDD y tests de presentación/orquestación
 - selector de archivos/carpetas locales (Kivy Garden `FileBrowser`) junto a campos de ruta en el editor de proyecto y en ajustes del registro SQLite; en rutas de proyecto/carpeta el listado se limita a directorios
+- fuente **Material Icons** incluida en el paquete (Apache 2.0, ver `presentation/kivy/assets/fonts/NOTICE.txt`) para iconos de UI como mostrar/ocultar contraseña sin depender de emojis o fuentes del sistema
 - documentación arquitectónica para guiar futuras iteraciones
 
 Todavía no están implementados en forma real:
@@ -139,7 +140,7 @@ La base actual del frontend incluye:
 - Home / Dashboard como punto de entrada
 - Projects / Sites List para listar proyectos persistidos en SQLite
 - Project / Site Detail con lectura real del registry persistido y metadata de detección de framework
-- Project Editor con combo dinámico de framework, combo dinámico de tipo de conexión remota, switch persistido para elegir `Use Adapter Sync Filters`, catálogo visible del scope resuelto y editor de reglas adicionales por proyecto
+- Project Editor con combo dinámico de framework, combo dinámico de tipo de conexión remota, switch persistido para elegir `Use Adapter Sync Filters`, catálogo visible del scope resuelto y editor de reglas adicionales por proyecto; la contraseña remota incluye un control tipo “ojo” para mostrar u ocultar el texto mientras se edita
 - acción "Test Connection" en el editor, resuelta por servicios y con resultado estructurado en pantalla; si el error es `unknown_ssh_host_key`, se ofrece el mismo popup de confianza de host key que en sync y se puede reintentar el test con TOFU en `known_hosts`
 - Audit Screen con preview basado en la detección real del proyecto en vez de un conteo fijo del runtime
 - Sync Screen con wiring real de `remote -> local` y `local -> remote`, con resumen estructurado del resultado

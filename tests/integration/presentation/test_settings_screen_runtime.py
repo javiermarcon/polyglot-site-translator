@@ -12,9 +12,9 @@ from kivy.uix.textinput import TextInput
 import pytest
 
 from polyglot_site_translator.app import create_kivy_app
-from polyglot_site_translator.presentation.kivy.screens.settings import (
-    _find_option_label,
-    _find_option_value,
+from polyglot_site_translator.presentation.kivy.site_editor_form import (
+    find_option_label,
+    find_option_value,
 )
 from polyglot_site_translator.presentation.kivy.theme import (
     get_active_theme_mode,
@@ -386,10 +386,10 @@ def test_settings_screen_raises_for_missing_state_or_draft_and_option_lookup_fai
     options = [SettingsOptionViewModel(value="en", label="English")]
 
     with pytest.raises(LookupError, match="Unknown option value: es"):
-        _find_option_label(options, "es")
+        find_option_label(options, "es")
 
     with pytest.raises(LookupError, match="Unknown option label: Spanish"):
-        _find_option_value(options, "Spanish")
+        find_option_value(options, "Spanish")
 
 
 def _find_button_by_text(root_widget: object, text: str) -> Button:

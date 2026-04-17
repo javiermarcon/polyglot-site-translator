@@ -37,6 +37,12 @@ classifiers = [
 [tool.setuptools]
 package-dir = {"" = "src"}
 
+[tool.setuptools.package-data]
+polyglot_site_translator = [
+  "presentation/kivy/assets/fonts/*.ttf",
+  "presentation/kivy/assets/fonts/NOTICE.txt",
+]
+
 [tool.setuptools.packages.find]
 where = ["src"]
 

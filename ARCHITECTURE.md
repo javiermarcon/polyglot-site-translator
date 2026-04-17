@@ -414,6 +414,7 @@ Key responsibilities:
 - `presentation/fakes.py` is now limited to real runtime wiring for the graphical entrypoint.
 - test doubles for implemented frontend workflows live in test-only support modules, not in production bundles under `src/`.
 - `presentation/kivy/` contains thin `ScreenManager` wiring and screen classes that render already-prepared state.
+- `presentation/kivy/assets/fonts/` ships third-party icon fonts (for example **Material Icons**, Apache 2.0) inside the Python package so glyphs such as password visibility icons render consistently without relying on system emoji fonts; see `NOTICE.txt` in that directory.
 - `presentation/contracts.py` now also defines a settings contract for frontend configuration workflows.
 - `presentation/contracts.py` now also defines a project-registry management contract for create/edit flows.
 - `presentation/view_models.py` now includes extensible settings sections and typed app/UI/Kivy settings.

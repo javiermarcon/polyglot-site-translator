@@ -7,11 +7,17 @@ from kivy.uix.screenmanager import ScreenManager
 from kivy.uix.spinner import Spinner
 from kivy.uix.switch import Switch
 from kivy.uix.textinput import TextInput
-from kivy.uix.widget import Widget
 
 from polyglot_site_translator.presentation.frontend_shell import FrontendShell
 from polyglot_site_translator.presentation.kivy.screens.base import BaseShellScreen
-from polyglot_site_translator.presentation.kivy.theme import get_active_theme
+from polyglot_site_translator.presentation.kivy.site_editor_form import (
+    build_remote_password_field_card,
+    build_site_editor_field_card,
+    build_site_editor_spinner,
+    build_site_editor_text_input,
+    find_option_label,
+    find_option_value,
+)
 from polyglot_site_translator.presentation.kivy.widgets.common import (
     AppButton,
     SurfaceBoxLayout,
@@ -101,17 +107,17 @@ class ProjectEditorScreen(BaseShellScreen):
                 color_role="text_muted",
             )
         )
-        self._name_input = self._build_text_input(state.editor.name)
-        panel.add_widget(_build_field("Name", self._name_input))
-        self._framework_spinner = self._build_spinner(
+        self._name_input = build_site_editor_text_input(state.editor.name)
+        panel.add_widget(build_site_editor_field_card("Name", self._name_input))
+        self._framework_spinner = build_site_editor_spinner(
             values=[option.label for option in state.framework_options],
-            current_label=_find_option_label(
+            current_label=find_option_label(
                 state.framework_options,
                 state.editor.framework_type,
             ),
         )
-        panel.add_widget(_build_field("Framework Type", self._framework_spinner))
-        self._local_path_input = self._build_text_input(state.editor.local_path)
+        panel.add_widget(build_site_editor_field_card("Framework Type", self._framework_spinner))
+        self._local_path_input = build_site_editor_text_input(state.editor.local_path)
         panel.add_widget(
             build_labeled_path_field(
                 "Local Path",
@@ -125,29 +131,32 @@ class ProjectEditorScreen(BaseShellScreen):
                 ),
             ),
         )
-        self._default_locale_input = self._build_text_input(state.editor.default_locale)
-        panel.add_widget(_build_field("Default Locale", self._default_locale_input))
-        self._connection_type_spinner = self._build_spinner(
+        self._default_locale_input = build_site_editor_text_input(state.editor.default_locale)
+        panel.add_widget(build_site_editor_field_card("Default Locale", self._default_locale_input))
+        self._connection_type_spinner = build_site_editor_spinner(
             values=[option.label for option in state.connection_type_options],
-            current_label=_find_option_label(
+            current_label=find_option_label(
                 state.connection_type_options,
                 state.editor.connection_type,
             ),
         )
-        panel.add_widget(_build_field("Remote Connection Type", self._connection_type_spinner))
-        self._remote_host_input = self._build_text_input(state.editor.remote_host)
-        panel.add_widget(_build_field("Remote Host", self._remote_host_input))
-        self._remote_port_input = self._build_text_input(state.editor.remote_port)
-        panel.add_widget(_build_field("Remote Port", self._remote_port_input))
-        self._remote_username_input = self._build_text_input(state.editor.remote_username)
-        panel.add_widget(_build_field("Remote Username", self._remote_username_input))
-        self._remote_password_input = self._build_text_input(
-            state.editor.remote_password,
-            password=True,
+        panel.add_widget(
+            build_site_editor_field_card("Remote Connection Type", self._connection_type_spinner)
         )
-        panel.add_widget(_build_field("Remote Password", self._remote_password_input))
-        self._remote_path_input = self._build_text_input(state.editor.remote_path)
-        panel.add_widget(_build_field("Remote Path", self._remote_path_input))
+        self._remote_host_input = build_site_editor_text_input(state.editor.remote_host)
+        panel.add_widget(build_site_editor_field_card("Remote Host", self._remote_host_input))
+        self._remote_port_input = build_site_editor_text_input(state.editor.remote_port)
+        panel.add_widget(build_site_editor_field_card("Remote Port", self._remote_port_input))
+        self._remote_username_input = build_site_editor_text_input(state.editor.remote_username)
+        panel.add_widget(
+            build_site_editor_field_card("Remote Username", self._remote_username_input),
+        )
+        self._remote_password_input, remote_password_card = build_remote_password_field_card(
+            state.editor.remote_password,
+        )
+        panel.add_widget(remote_password_card)
+        self._remote_path_input = build_site_editor_text_input(state.editor.remote_path)
+        panel.add_widget(build_site_editor_field_card("Remote Path", self._remote_path_input))
         panel.add_widget(
             self._build_adapter_sync_filters_toggle(state.editor.use_adapter_sync_filters)
         )
@@ -173,30 +182,6 @@ class ProjectEditorScreen(BaseShellScreen):
         self._refresh_test_connection_button_state(state)
         panel.add_widget(actions)
         return panel
-
-    def _build_text_input(self, value: str, *, password: bool = False) -> TextInput:
-        palette = get_active_theme()
-        return TextInput(
-            text=value,
-            multiline=False,
-            password=password,
-            size_hint_y=None,
-            height=44,
-            background_color=palette.card_subtle_background,
-            foreground_color=palette.text_primary,
-            cursor_color=palette.text_primary,
-        )
-
-    def _build_spinner(self, *, values: list[str], current_label: str) -> Spinner:
-        palette = get_active_theme()
-        return Spinner(
-            text=current_label,
-            values=values,
-            size_hint_y=None,
-            height=44,
-            background_color=palette.card_subtle_background,
-            color=palette.text_primary,
-        )
 
     def _build_active_toggle(self, is_active: bool) -> SurfaceBoxLayout:
         card = SurfaceBoxLayout(
@@ -366,20 +351,24 @@ class ProjectEditorScreen(BaseShellScreen):
         )
         card.bind(minimum_height=card.setter("height"))
         card.add_widget(WrappedLabel(text="Project Sync Rule Overrides", font_size=15, bold=True))
-        self._sync_rule_path_input = self._build_text_input("")
-        card.add_widget(_build_field("Relative Path", self._sync_rule_path_input))
-        self._sync_rule_description_input = self._build_text_input("")
-        card.add_widget(_build_field("Description", self._sync_rule_description_input))
-        self._sync_rule_filter_type_spinner = self._build_spinner(
+        self._sync_rule_path_input = build_site_editor_text_input("")
+        card.add_widget(build_site_editor_field_card("Relative Path", self._sync_rule_path_input))
+        self._sync_rule_description_input = build_site_editor_text_input("")
+        card.add_widget(
+            build_site_editor_field_card("Description", self._sync_rule_description_input)
+        )
+        self._sync_rule_filter_type_spinner = build_site_editor_spinner(
             values=[option.label for option in state.sync_rule_filter_type_options],
             current_label=state.sync_rule_filter_type_options[0].label,
         )
-        card.add_widget(_build_field("Filter Type", self._sync_rule_filter_type_spinner))
-        self._sync_rule_behavior_spinner = self._build_spinner(
+        card.add_widget(
+            build_site_editor_field_card("Filter Type", self._sync_rule_filter_type_spinner)
+        )
+        self._sync_rule_behavior_spinner = build_site_editor_spinner(
             values=[option.label for option in state.sync_rule_behavior_options],
             current_label=state.sync_rule_behavior_options[0].label,
         )
-        card.add_widget(_build_field("Behavior", self._sync_rule_behavior_spinner))
+        card.add_widget(build_site_editor_field_card("Behavior", self._sync_rule_behavior_spinner))
         add_button = AppButton(text="Add Project Rule", primary=False)
         add_button.bind(on_release=lambda *_args: self._add_sync_rule(state))
         card.add_widget(add_button)
@@ -608,37 +597,7 @@ class ProjectEditorScreen(BaseShellScreen):
         if field is None:
             msg = "Project editor input field is not available."
             raise ValueError(msg)
-        return _find_option_value(options, str(field.text).strip())
-
-
-def _build_field(label: str, field: Widget) -> SurfaceBoxLayout:
-    card = SurfaceBoxLayout(
-        orientation="vertical",
-        spacing=8,
-        padding=14,
-        size_hint_y=None,
-        background_role="card_subtle_background",
-    )
-    card.bind(minimum_height=card.setter("height"))
-    card.add_widget(WrappedLabel(text=label, font_size=16, bold=True))
-    card.add_widget(field)
-    return card
-
-
-def _find_option_label(options: list[SettingsOptionViewModel], value: str) -> str:
-    for option in options:
-        if option.value == value:
-            return option.label
-    msg = f"Unknown option value: {value}"
-    raise LookupError(msg)
-
-
-def _find_option_value(options: list[SettingsOptionViewModel], label: str) -> str:
-    for option in options:
-        if option.label == label:
-            return option.value
-    msg = f"Unknown option label: {label}"
-    raise LookupError(msg)
+        return find_option_value(options, str(field.text).strip())
 
 
 def _build_information_card(*, title: str, body: str) -> SurfaceBoxLayout:

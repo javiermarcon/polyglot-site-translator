@@ -11,9 +11,9 @@ import pytest
 from polyglot_site_translator.app import create_kivy_app
 from polyglot_site_translator.infrastructure.settings import build_default_settings_service
 from polyglot_site_translator.presentation.fakes import build_default_frontend_services
-from polyglot_site_translator.presentation.kivy.screens.project_editor import (
-    _find_option_label,
-    _find_option_value,
+from polyglot_site_translator.presentation.kivy.site_editor_form import (
+    find_option_label,
+    find_option_value,
 )
 from polyglot_site_translator.presentation.view_models import (
     SiteEditorViewModel,
@@ -55,10 +55,10 @@ def test_project_editor_screen_renders_empty_state_and_requires_loaded_state() -
         editor_screen._require_framework_value([], None)
 
     with pytest.raises(LookupError, match="Unknown option value: tornado"):
-        _find_option_label([], "tornado")
+        find_option_label([], "tornado")
 
     with pytest.raises(LookupError, match="Unknown option label: Tornado"):
-        _find_option_value([], "Tornado")
+        find_option_value([], "Tornado")
 
 
 def test_project_editor_screen_saves_new_projects_and_can_return_to_projects() -> None:
@@ -113,9 +113,9 @@ def test_project_editor_screen_exposes_dynamic_framework_options() -> None:
         "WordPress",
     )
     assert (
-        _find_option_label(shell.project_editor_state.framework_options, "wordpress") == "WordPress"
+        find_option_label(shell.project_editor_state.framework_options, "wordpress") == "WordPress"
     )
-    assert _find_option_value(shell.project_editor_state.framework_options, "Flask") == "flask"
+    assert find_option_value(shell.project_editor_state.framework_options, "Flask") == "flask"
     assert tuple(editor_screen._connection_type_spinner.values) == (
         "No Remote Connection",
         "FTP",
