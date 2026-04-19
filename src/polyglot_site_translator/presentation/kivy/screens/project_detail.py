@@ -7,6 +7,9 @@ from kivy.uix.screenmanager import ScreenManager
 from polyglot_site_translator.presentation.frontend_shell import FrontendShell
 from polyglot_site_translator.presentation.kivy.screens.base import BaseShellScreen
 from polyglot_site_translator.presentation.kivy.widgets.common import WrappedLabel
+from polyglot_site_translator.presentation.kivy.widgets.po_locale_selection_popup import (
+    POLocaleSelectionPopup,
+)
 from polyglot_site_translator.presentation.kivy.widgets.sync_progress_popup import (
     SyncProgressPopup,
 )
@@ -31,6 +34,7 @@ class ProjectDetailScreen(BaseShellScreen):
         self.add_nav_button("Process PO", self._start_po_processing)
         self._detail_label = WrappedLabel(font_size=15)
         self._sync_progress_popup: SyncProgressPopup | None = None
+        self._po_locale_popup: POLocaleSelectionPopup | None = None
         self._content.add_widget(self._detail_label)
         self.refresh()
 
@@ -55,7 +59,17 @@ class ProjectDetailScreen(BaseShellScreen):
         self.show_route("audit")
 
     def _start_po_processing(self, *_args: object) -> None:
-        self._shell.start_po_processing()
+        detail = self._shell.project_detail_state
+        if detail is None:
+            return
+        self._po_locale_popup = POLocaleSelectionPopup(
+            default_locales=detail.default_locale,
+            on_confirm=self._confirm_po_processing,
+        )
+        self._po_locale_popup.open()
+
+    def _confirm_po_processing(self, locales: str) -> None:
+        self._shell.start_po_processing_async(locales)
         self.show_route("po_processing")
 
     def _edit_project(self, *_args: object) -> None:

@@ -792,6 +792,44 @@ def test_workflow_service_processes_po_variants_from_site_workspace(tmp_path: Pa
     assert "Synchronized entries: 1" in preview.summary
 
 
+def test_workflow_service_processes_po_variants_from_selected_locales(tmp_path: Path) -> None:
+    locale_dir = tmp_path / "locale"
+    locale_dir.mkdir(parents=True, exist_ok=True)
+    _write_po_file(locale_dir / "messages-pt_BR.po", [("Hello", "Ola")])
+    _write_po_file(locale_dir / "messages-pt_PT.po", [("Hello", "")])
+
+    repository = InMemorySiteRegistryRepository()
+    site_service = _build_domain_service(repository)
+    site = site_service.create_site(
+        SiteRegistrationInput(
+            name="Marketing Site",
+            framework_type="wordpress",
+            local_path=str(tmp_path),
+            default_locale="es_ES",
+            remote_connection=RemoteConnectionConfigInput(
+                connection_type="sftp",
+                host="example.com",
+                port=22,
+                username="deploy",
+                password="super-secret",
+                remote_path="/srv/app",
+            ),
+            is_active=True,
+        )
+    )
+    workflow = SiteRegistryPresentationWorkflowService(
+        service=site_service,
+        project_sync_service=SyncStub(),
+        po_processing_service=POProcessingService(repository=PolibPOCatalogRepository()),
+    )
+
+    preview = workflow.start_po_processing(site.id, "pt_BR")
+
+    assert preview.status == "completed"
+    assert preview.processed_families == 1
+    assert "Synchronized entries: 1" in preview.summary
+
+
 def test_workflow_service_trusts_remote_host_key_with_explicit_confirmation() -> None:
     repository = InMemorySiteRegistryRepository()
     service = _build_domain_service(repository)
@@ -966,6 +1004,7 @@ def test_build_project_detail_without_remote_connection_is_explicit() -> None:
         )
     )
 
+    assert detail.default_locale == "en_US"
     assert detail.configuration_summary == "Locale: en_US | Remote connection: None"
     assert detail.metadata_summary == "Framework: Django | Remote connection: none configured"
 

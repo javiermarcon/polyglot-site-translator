@@ -15,3 +15,10 @@ Feature: PO processing workflow
     When the operator runs the PO processing workflow for that site
     Then the PO processing result reports completed status
     And the PO processing result reports zero processed families
+
+  Scenario: Run the PO workflow with selected locales instead of the persisted default
+    Given a site project with Portuguese PO locale variants in the local workspace
+    When the operator runs the PO processing workflow for that site with selected locale "pt_BR"
+    Then the PO processing result reports completed status
+    And the PO processing result reports one processed family
+    And the PO processing result reports synchronized entries

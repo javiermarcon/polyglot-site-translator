@@ -163,10 +163,47 @@ def step_given_site_without_variants(context: object) -> None:
     )
 
 
+@given("a site project with Portuguese PO locale variants in the local workspace")
+def step_given_site_with_portuguese_variants(context: object) -> None:
+    typed = _context(context)
+    typed.temp_dir = tempfile.TemporaryDirectory()
+    workspace = Path(typed.temp_dir.name)
+    locale_dir = workspace / "locale"
+    locale_dir.mkdir(parents=True, exist_ok=True)
+    _write_po(
+        locale_dir / "messages-pt_BR.po",
+        [
+            ("Hello", "Ola"),
+        ],
+    )
+    _write_po(
+        locale_dir / "messages-pt_PT.po",
+        [
+            ("Hello", ""),
+        ],
+    )
+    site = _build_site(workspace)
+    typed.site_id = site.id
+    typed.workflow_service = SiteRegistryPresentationWorkflowService(
+        service=_InMemorySiteWorkflowService(site),
+        project_sync_service=_SyncStub(),
+        po_processing_service=POProcessingService(),
+    )
+
+
 @when("the operator runs the PO processing workflow for that site")
 def step_when_run_po(context: object) -> None:
     typed = _context(context)
     result = typed.workflow_service.start_po_processing(typed.site_id)
+    typed.po_result_status = result.status
+    typed.po_result_families = result.processed_families
+    typed.po_result_summary = result.summary
+
+
+@when('the operator runs the PO processing workflow for that site with selected locale "{locale}"')
+def step_when_run_po_with_selected_locale(context: object, locale: str) -> None:
+    typed = _context(context)
+    result = typed.workflow_service.start_po_processing(typed.site_id, locale)
     typed.po_result_status = result.status
     typed.po_result_families = result.processed_families
     typed.po_result_summary = result.summary

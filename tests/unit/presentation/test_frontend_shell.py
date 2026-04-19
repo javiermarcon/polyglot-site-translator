@@ -89,8 +89,12 @@ class _BlockingWorkflowService:
     def start_audit(self, project_id: str) -> AuditSummaryViewModel:
         return build_seeded_services().workflows.start_audit(project_id)
 
-    def start_po_processing(self, project_id: str) -> POProcessingSummaryViewModel:
-        return build_seeded_services().workflows.start_po_processing(project_id)
+    def start_po_processing(
+        self,
+        project_id: str,
+        locales: str | None = None,
+    ) -> POProcessingSummaryViewModel:
+        return build_seeded_services().workflows.start_po_processing(project_id, locales)
 
 
 @dataclass
@@ -133,8 +137,84 @@ class _FailingBackgroundWorkflowService:
     def start_audit(self, project_id: str) -> AuditSummaryViewModel:
         return build_seeded_services().workflows.start_audit(project_id)
 
-    def start_po_processing(self, project_id: str) -> POProcessingSummaryViewModel:
-        return build_seeded_services().workflows.start_po_processing(project_id)
+    def start_po_processing(
+        self,
+        project_id: str,
+        locales: str | None = None,
+    ) -> POProcessingSummaryViewModel:
+        return build_seeded_services().workflows.start_po_processing(project_id, locales)
+
+
+@dataclass
+class _BlockingPOProcessingWorkflowService:
+    started: Event
+    release: Event
+    requested_locales: list[str]
+
+    def start_sync(
+        self,
+        project_id: str,
+        progress_callback: Callable[[SyncProgressEvent], None] | None = None,
+    ) -> SyncStatusViewModel:
+        return build_seeded_services().workflows.start_sync(project_id, progress_callback)
+
+    def trust_remote_host_key(self, project_id: str) -> RemoteConnectionTestResultViewModel:
+        return build_seeded_services().workflows.trust_remote_host_key(project_id)
+
+    def start_sync_to_remote(
+        self,
+        project_id: str,
+        progress_callback: Callable[[SyncProgressEvent], None] | None = None,
+    ) -> SyncStatusViewModel:
+        return build_seeded_services().workflows.start_sync_to_remote(project_id, progress_callback)
+
+    def start_audit(self, project_id: str) -> AuditSummaryViewModel:
+        return build_seeded_services().workflows.start_audit(project_id)
+
+    def start_po_processing(
+        self,
+        project_id: str,
+        locales: str | None = None,
+    ) -> POProcessingSummaryViewModel:
+        self.requested_locales.append("" if locales is None else locales)
+        self.started.set()
+        self.release.wait(timeout=1)
+        return POProcessingSummaryViewModel(
+            status="completed",
+            processed_families=2,
+            summary="Families processed: 2 | PO files discovered: 3 | Synchronized entries: 4",
+        )
+
+
+@dataclass
+class _FailingPOProcessingWorkflowService:
+    def start_sync(
+        self,
+        project_id: str,
+        progress_callback: Callable[[SyncProgressEvent], None] | None = None,
+    ) -> SyncStatusViewModel:
+        return build_seeded_services().workflows.start_sync(project_id, progress_callback)
+
+    def trust_remote_host_key(self, project_id: str) -> RemoteConnectionTestResultViewModel:
+        return build_seeded_services().workflows.trust_remote_host_key(project_id)
+
+    def start_sync_to_remote(
+        self,
+        project_id: str,
+        progress_callback: Callable[[SyncProgressEvent], None] | None = None,
+    ) -> SyncStatusViewModel:
+        return build_seeded_services().workflows.start_sync_to_remote(project_id, progress_callback)
+
+    def start_audit(self, project_id: str) -> AuditSummaryViewModel:
+        return build_seeded_services().workflows.start_audit(project_id)
+
+    def start_po_processing(
+        self,
+        project_id: str,
+        locales: str | None = None,
+    ) -> POProcessingSummaryViewModel:
+        msg = f"PO processing failed for locales: {locales}"
+        raise ControlledServiceError(msg)
 
 
 class _FailingConnectionTestRegistry(InMemoryProjectRegistryManagementService):
@@ -505,3 +585,63 @@ def test_audit_and_po_actions_update_independent_panels() -> None:
     assert shell.po_processing_state is not None
     assert shell.po_processing_state.status == "completed"
     assert shell.po_processing_state.processed_families == 4
+
+
+def test_po_processing_can_run_in_background_with_selected_locales() -> None:
+    seeded_services = build_seeded_services()
+    workflow = _BlockingPOProcessingWorkflowService(
+        started=Event(),
+        release=Event(),
+        requested_locales=[],
+    )
+    shell = create_frontend_shell(
+        FrontendServices(
+            catalog=seeded_services.catalog,
+            workflows=workflow,
+            settings=seeded_services.settings,
+            registry=seeded_services.registry,
+        )
+    )
+
+    shell.open_projects()
+    shell.select_project("wp-site")
+    shell.start_po_processing_async("es_ES, es_AR")
+
+    assert workflow.started.wait(timeout=1) is True
+    assert shell.router.current.name is RouteName.PROJECT_DETAIL
+    assert shell.po_processing_state is not None
+    assert shell.po_processing_state.status == "running"
+    assert "es_ES,es_AR" in shell.po_processing_state.summary
+    assert workflow.requested_locales == ["es_ES,es_AR"]
+
+    workflow.release.set()
+    assert shell._active_po_processing_thread is not None
+    shell._active_po_processing_thread.join(timeout=1)
+
+    assert shell.po_processing_state is not None
+    assert shell.po_processing_state.status == "completed"
+    assert shell.po_processing_state.processed_families == 2
+
+
+def test_background_po_processing_failure_is_exposed_without_crashing() -> None:
+    seeded_services = build_seeded_services()
+    shell = create_frontend_shell(
+        FrontendServices(
+            catalog=seeded_services.catalog,
+            workflows=_FailingPOProcessingWorkflowService(),
+            settings=seeded_services.settings,
+            registry=seeded_services.registry,
+        )
+    )
+
+    shell.open_projects()
+    shell.select_project("wp-site")
+    shell.start_po_processing_async("es_ES")
+
+    if shell._active_po_processing_thread is not None:
+        shell._active_po_processing_thread.join(timeout=1)
+
+    assert shell.po_processing_state is not None
+    assert shell.po_processing_state.status == "failed"
+    assert shell.po_processing_state.summary == "PO processing failed for locales: es_ES"
+    assert shell.latest_error == "PO processing failed for locales: es_ES"

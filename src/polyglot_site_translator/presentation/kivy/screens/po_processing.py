@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from kivy.clock import Clock, ClockEvent
 from kivy.uix.screenmanager import ScreenManager
 
 from polyglot_site_translator.presentation.frontend_shell import FrontendShell
@@ -22,6 +23,7 @@ class POProcessingScreen(BaseShellScreen):
         )
         self.add_nav_button("Back to Project", self._back_to_project)
         self._summary_label = WrappedLabel(font_size=15)
+        self._refresh_event: ClockEvent | None = None
         self._content.add_widget(self._summary_label)
         self.refresh()
 
@@ -39,3 +41,17 @@ class POProcessingScreen(BaseShellScreen):
                 f"Status: {state.status}\nFamilies: {state.processed_families}\n{state.summary}"
             )
         self.update_error_label()
+        if state is not None and state.status == "running" and self._refresh_event is None:
+            self._refresh_event = Clock.schedule_interval(self._refresh_from_clock, 0.25)
+        if (state is None or state.status != "running") and self._refresh_event is not None:
+            self._refresh_event.cancel()
+            self._refresh_event = None
+
+    def _refresh_from_clock(self, _dt: float) -> None:
+        self.refresh()
+
+    def on_leave(self, *args: object) -> None:
+        super().on_leave(*args)
+        if self._refresh_event is not None:
+            self._refresh_event.cancel()
+            self._refresh_event = None

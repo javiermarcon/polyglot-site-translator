@@ -54,7 +54,11 @@ class ProjectWorkflowService(Protocol):
     def start_audit(self, project_id: str) -> AuditSummaryViewModel:
         """Start an audit workflow for a project."""
 
-    def start_po_processing(self, project_id: str) -> POProcessingSummaryViewModel:
+    def start_po_processing(
+        self,
+        project_id: str,
+        locales: str | None = None,
+    ) -> POProcessingSummaryViewModel:
         """Start a PO processing workflow for a project."""
 
 

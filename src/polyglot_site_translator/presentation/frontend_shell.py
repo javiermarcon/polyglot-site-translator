@@ -6,6 +6,7 @@ from collections.abc import Callable
 from dataclasses import dataclass, replace
 from threading import Lock, Thread
 
+from polyglot_site_translator.domain.site_registry.locales import normalize_default_locale
 from polyglot_site_translator.domain.sync.models import SyncProgressEvent, SyncProgressStage
 from polyglot_site_translator.presentation.contracts import FrontendServices
 from polyglot_site_translator.presentation.errors import ControlledServiceError
@@ -102,6 +103,8 @@ class FrontendShell:
         self.latest_error = None
         self._sync_state_lock = Lock()
         self._active_sync_thread: Thread | None = None
+        self._po_processing_lock = Lock()
+        self._active_po_processing_thread: Thread | None = None
 
     def open_dashboard(self) -> None:
         """Open the dashboard route."""
@@ -134,6 +137,7 @@ class FrontendShell:
             detail = self.services.catalog.get_project_detail(project_id)
             self.project_detail_state = ProjectDetailStateViewModel(
                 project=detail.project,
+                default_locale=detail.default_locale,
                 configuration_summary=detail.configuration_summary,
                 metadata_summary=detail.metadata_summary,
                 actions=_build_project_actions(detail.actions),
@@ -249,12 +253,36 @@ class FrontendShell:
         self.audit_state = self.services.workflows.start_audit(project_id)
         self._set_route(RouteName.AUDIT, project_id=project_id)
 
-    def start_po_processing(self) -> None:
+    def start_po_processing(self, locales: str | None = None) -> None:
         """Trigger PO processing through the workflow contract."""
         project_id = self._require_project_id()
         self.latest_error = None
-        self.po_processing_state = self.services.workflows.start_po_processing(project_id)
+        self.po_processing_state = self.services.workflows.start_po_processing(project_id, locales)
         self._set_route(RouteName.PO_PROCESSING, project_id=project_id)
+
+    def start_po_processing_async(self, locales: str) -> None:
+        """Trigger PO processing in a background thread after locale selection."""
+        project_id = self._require_project_id()
+        normalized_locales = normalize_default_locale(locales, label="Selected locales")
+        with self._po_processing_lock:
+            if (
+                self._active_po_processing_thread is not None
+                and self._active_po_processing_thread.is_alive()
+            ):
+                return
+            self.po_processing_state = POProcessingSummaryViewModel(
+                status="running",
+                processed_families=0,
+                summary=f"Processing PO files for locales: {normalized_locales}",
+            )
+        worker = Thread(
+            target=self._run_po_processing_in_background,
+            args=(project_id, normalized_locales),
+            daemon=True,
+            name=f"po-processing-{project_id}",
+        )
+        self._active_po_processing_thread = worker
+        worker.start()
 
     def open_settings(self) -> None:
         """Load settings and open the settings route."""
@@ -464,6 +492,7 @@ class FrontendShell:
             detail = self.services.registry.create_project(editor)
             self.project_detail_state = ProjectDetailStateViewModel(
                 project=detail.project,
+                default_locale=detail.default_locale,
                 configuration_summary=detail.configuration_summary,
                 metadata_summary=detail.metadata_summary,
                 actions=_build_project_actions(detail.actions),
@@ -488,6 +517,7 @@ class FrontendShell:
             detail = self.services.registry.update_project(project_id, editor)
             self.project_detail_state = ProjectDetailStateViewModel(
                 project=detail.project,
+                default_locale=detail.default_locale,
                 configuration_summary=detail.configuration_summary,
                 metadata_summary=detail.metadata_summary,
                 actions=_build_project_actions(detail.actions),
@@ -622,6 +652,24 @@ class FrontendShell:
                 progress_is_indeterminate=False,
             )
             self._active_sync_thread = None
+
+    def _run_po_processing_in_background(self, project_id: str, locales: str) -> None:
+        try:
+            self.po_processing_state = self.services.workflows.start_po_processing(
+                project_id,
+                locales,
+            )
+            self.latest_error = None
+        except ControlledServiceError as error:
+            self.po_processing_state = POProcessingSummaryViewModel(
+                status="failed",
+                processed_families=0,
+                summary=str(error),
+            )
+            self.latest_error = str(error)
+        finally:
+            with self._po_processing_lock:
+                self._active_po_processing_thread = None
 
     def _surface_background_sync_failure(
         self,

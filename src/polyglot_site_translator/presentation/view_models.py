@@ -126,6 +126,7 @@ class ProjectDetailViewModel:
     """Detailed project information rendered by the UI."""
 
     project: ProjectSummaryViewModel
+    default_locale: str
     configuration_summary: str
     metadata_summary: str
     actions: list[ProjectActionViewModel]
@@ -167,6 +168,7 @@ class ProjectDetailStateViewModel:
     """Project detail state consumed by the detail screen."""
 
     project: ProjectSummaryViewModel
+    default_locale: str
     configuration_summary: str
     metadata_summary: str
     actions: list[ProjectActionViewModel]

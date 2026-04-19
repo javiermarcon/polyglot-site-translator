@@ -86,6 +86,7 @@ class InMemoryProjectCatalogService:
             if project.id == project_id:
                 return ProjectDetailViewModel(
                     project=project,
+                    default_locale="en_US",
                     configuration_summary="Framework adapter and storage wiring are pending.",
                     metadata_summary=(
                         "This screen is prepared for site registry, sync, audit and PO workflows."
@@ -155,7 +156,11 @@ class StubProjectWorkflowService:
             findings_summary="No supported framework was detected for this project.",
         )
 
-    def start_po_processing(self, project_id: str) -> POProcessingSummaryViewModel:
+    def start_po_processing(
+        self,
+        project_id: str,
+        locales: str | None = None,
+    ) -> POProcessingSummaryViewModel:
         return POProcessingSummaryViewModel(
             status="completed",
             processed_families=4,

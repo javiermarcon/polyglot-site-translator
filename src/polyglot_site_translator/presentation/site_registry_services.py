@@ -418,7 +418,11 @@ class SiteRegistryPresentationWorkflowService(ProjectWorkflowService):
             ),
         )
 
-    def start_po_processing(self, project_id: str) -> POProcessingSummaryViewModel:
+    def start_po_processing(
+        self,
+        project_id: str,
+        locales: str | None = None,
+    ) -> POProcessingSummaryViewModel:
         """Run PO processing and return a typed workflow summary."""
         try:
             site = self._service.get_site(project_id)
@@ -437,8 +441,14 @@ class SiteRegistryPresentationWorkflowService(ProjectWorkflowService):
                     "Families processed: 0 | Synchronized entries: 0"
                 ),
             )
+        processing_site = site
+        if locales is not None:
+            processing_site = replace(
+                site,
+                project=replace(site.project, default_locale=locales),
+            )
         try:
-            result = self._po_processing_service.process_site(site)
+            result = self._po_processing_service.process_site(processing_site)
         except POProcessingError as error:
             raise ControlledServiceError(str(error)) from error
         return POProcessingSummaryViewModel(
@@ -538,6 +548,7 @@ def _build_project_detail(
 ) -> ProjectDetailViewModel:
     return ProjectDetailViewModel(
         project=_build_project_summary(site),
+        default_locale=site.default_locale,
         configuration_summary=_build_configuration_summary(site),
         metadata_summary=_build_metadata_summary(site, detection_result),
         actions=[],
