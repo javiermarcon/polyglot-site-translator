@@ -16,3 +16,10 @@ class POCatalogRepository(Protocol):
 
     def save_po_files(self, files: tuple[POFileData, ...]) -> None:
         """Persist PO files after synchronization changes."""
+
+
+class POTranslationProvider(Protocol):
+    """External translation provider used for missing PO entries."""
+
+    def translate_text(self, *, text: str, target_locale: str) -> str:
+        """Translate ``text`` into the base language implied by ``target_locale``."""

@@ -141,6 +141,10 @@ Test:
 - locale extraction
 - family grouping
 - synchronization
+- exact-locale filtering vs single-locale base expansion
+- translation-memory reuse across files/families
+- external translation provider behavior
+- progress reporting by completed untranslated entries
 - plurals
 - fuzzy/untranslated handling
 - output persistence

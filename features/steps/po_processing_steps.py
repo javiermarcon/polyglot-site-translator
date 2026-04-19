@@ -39,6 +39,7 @@ class _BehavePOContext(Protocol):
     po_result_status: str
     po_result_families: int
     po_result_summary: str
+    processed_po_text: str
     temp_dir: tempfile.TemporaryDirectory[str]
     site_id: str
 
@@ -117,6 +118,15 @@ class _SyncStub:
         )
 
 
+class _BehaveTranslationProvider:
+    def translate_text(self, *, text: str, target_locale: str) -> str:
+        translations = {
+            ("es_ES", "Save"): "Guardar",
+            ("es_AR", "Save"): "Guardar",
+        }
+        return translations[(target_locale, text)]
+
+
 def _context(context: object) -> _BehavePOContext:
     return cast(_BehavePOContext, context)
 
@@ -146,6 +156,26 @@ def step_given_site_with_variants(context: object) -> None:
         service=_InMemorySiteWorkflowService(site),
         project_sync_service=_SyncStub(),
         po_processing_service=POProcessingService(),
+    )
+
+
+@given("a site project with untranslated PO locale variants in the local workspace")
+def step_given_site_with_untranslated_variants(context: object) -> None:
+    typed = _context(context)
+    typed.temp_dir = tempfile.TemporaryDirectory()
+    workspace = Path(typed.temp_dir.name)
+    locale_dir = workspace / "locale"
+    locale_dir.mkdir(parents=True, exist_ok=True)
+    _write_po(locale_dir / "messages-es_ES.po", [("Save", "")])
+    _write_po(locale_dir / "messages-es_AR.po", [("Save", "")])
+    site = _build_site(workspace)
+    typed.site_id = site.id
+    typed.workflow_service = SiteRegistryPresentationWorkflowService(
+        service=_InMemorySiteWorkflowService(site),
+        project_sync_service=_SyncStub(),
+        po_processing_service=POProcessingService(
+            translation_provider=_BehaveTranslationProvider()
+        ),
     )
 
 
@@ -198,6 +228,13 @@ def step_when_run_po(context: object) -> None:
     typed.po_result_status = result.status
     typed.po_result_families = result.processed_families
     typed.po_result_summary = result.summary
+    translated_path = Path(typed.temp_dir.name) / "locale" / "messages-es_ES.po"
+    if not translated_path.exists():
+        typed.processed_po_text = ""
+        return
+    translated_po = polib.pofile(str(translated_path))
+    translated_entry = translated_po.find("Save")
+    typed.processed_po_text = "" if translated_entry is None else translated_entry.msgstr
 
 
 @when('the operator runs the PO processing workflow for that site with selected locale "{locale}"')
@@ -225,6 +262,18 @@ def step_then_one_family(context: object) -> None:
 def step_then_synced_entries(context: object) -> None:
     typed = _context(context)
     assert "Synchronized entries: 1" in typed.po_result_summary
+
+
+@then("the PO processing result reports translated entries")
+def step_then_translated_entries(context: object) -> None:
+    typed = _context(context)
+    assert "Translated entries: 1" in typed.po_result_summary
+
+
+@then("the processed PO file contains the translated text")
+def step_then_processed_po_contains_translation(context: object) -> None:
+    typed = _context(context)
+    assert typed.processed_po_text == "Guardar"
 
 
 @then("the PO processing result reports zero processed families")

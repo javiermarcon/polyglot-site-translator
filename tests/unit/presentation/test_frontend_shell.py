@@ -10,6 +10,7 @@ from typing import Any, cast
 from pytest import MonkeyPatch
 
 from polyglot_site_translator.bootstrap import create_frontend_shell
+from polyglot_site_translator.domain.po_processing.models import POProcessingProgress
 from polyglot_site_translator.domain.sync.models import SyncProgressEvent, SyncProgressStage
 from polyglot_site_translator.presentation.contracts import FrontendServices
 from polyglot_site_translator.presentation.errors import ControlledServiceError
@@ -93,8 +94,13 @@ class _BlockingWorkflowService:
         self,
         project_id: str,
         locales: str | None = None,
+        progress_callback: Callable[[POProcessingProgress], None] | None = None,
     ) -> POProcessingSummaryViewModel:
-        return build_seeded_services().workflows.start_po_processing(project_id, locales)
+        return build_seeded_services().workflows.start_po_processing(
+            project_id,
+            locales,
+            progress_callback,
+        )
 
 
 @dataclass
@@ -141,8 +147,13 @@ class _FailingBackgroundWorkflowService:
         self,
         project_id: str,
         locales: str | None = None,
+        progress_callback: Callable[[POProcessingProgress], None] | None = None,
     ) -> POProcessingSummaryViewModel:
-        return build_seeded_services().workflows.start_po_processing(project_id, locales)
+        return build_seeded_services().workflows.start_po_processing(
+            project_id,
+            locales,
+            progress_callback,
+        )
 
 
 @dataclass
@@ -175,14 +186,33 @@ class _BlockingPOProcessingWorkflowService:
         self,
         project_id: str,
         locales: str | None = None,
+        progress_callback: Callable[[POProcessingProgress], None] | None = None,
     ) -> POProcessingSummaryViewModel:
         self.requested_locales.append("" if locales is None else locales)
+        if progress_callback is not None:
+            progress_callback(
+                POProcessingProgress(
+                    processed_families=0,
+                    completed_entries=0,
+                    total_entries=5,
+                    files_discovered=3,
+                    entries_synchronized=0,
+                    entries_translated=0,
+                    message="Preparing 2 PO families for synchronization.",
+                )
+            )
         self.started.set()
         self.release.wait(timeout=1)
         return POProcessingSummaryViewModel(
             status="completed",
             processed_families=2,
-            summary="Families processed: 2 | PO files discovered: 3 | Synchronized entries: 4",
+            progress_current=5,
+            progress_total=5,
+            progress_is_indeterminate=False,
+            summary=(
+                "Families processed: 2 | PO files discovered: 3 | "
+                "Synchronized entries: 4 | Translated entries: 1"
+            ),
         )
 
 
@@ -212,6 +242,7 @@ class _FailingPOProcessingWorkflowService:
         self,
         project_id: str,
         locales: str | None = None,
+        progress_callback: Callable[[POProcessingProgress], None] | None = None,
     ) -> POProcessingSummaryViewModel:
         msg = f"PO processing failed for locales: {locales}"
         raise ControlledServiceError(msg)
@@ -585,6 +616,8 @@ def test_audit_and_po_actions_update_independent_panels() -> None:
     assert shell.po_processing_state is not None
     assert shell.po_processing_state.status == "completed"
     assert shell.po_processing_state.processed_families == 4
+    assert shell.po_processing_state.progress_current == 0
+    assert shell.po_processing_state.progress_total == 0
 
 
 def test_po_processing_can_run_in_background_with_selected_locales() -> None:
@@ -611,7 +644,9 @@ def test_po_processing_can_run_in_background_with_selected_locales() -> None:
     assert shell.router.current.name is RouteName.PROJECT_DETAIL
     assert shell.po_processing_state is not None
     assert shell.po_processing_state.status == "running"
-    assert "es_ES,es_AR" in shell.po_processing_state.summary
+    assert "Preparing 2 PO families" in shell.po_processing_state.summary
+    assert shell.po_processing_state.progress_current == 0
+    assert shell.po_processing_state.progress_total == 5
     assert workflow.requested_locales == ["es_ES,es_AR"]
 
     workflow.release.set()
@@ -621,6 +656,8 @@ def test_po_processing_can_run_in_background_with_selected_locales() -> None:
     assert shell.po_processing_state is not None
     assert shell.po_processing_state.status == "completed"
     assert shell.po_processing_state.processed_families == 2
+    assert shell.po_processing_state.progress_current == 5
+    assert shell.po_processing_state.progress_total == 5
 
 
 def test_background_po_processing_failure_is_exposed_without_crashing() -> None:

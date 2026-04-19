@@ -131,6 +131,9 @@ def test_workflow_screens_render_empty_and_loaded_states_and_return_to_detail() 
     shell.start_po_processing()
     po_screen.refresh()
     assert "Families: 4" in po_screen._summary_label.text
+    assert "Progress: 0/0" in po_screen._summary_label.text
+    assert "Completed entries: 0/0" in po_screen._summary_label.text
+    assert po_screen._progress_bar.value == 1
     po_screen._back_to_project()
     assert root.current == "project_detail"
 

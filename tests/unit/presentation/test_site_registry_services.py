@@ -72,6 +72,12 @@ from polyglot_site_translator.services.remote_connections import RemoteConnectio
 from polyglot_site_translator.services.site_registry import SiteRegistryService
 
 
+class _StubPOTranslationProvider:
+    def translate_text(self, *, text: str, target_locale: str) -> str:
+        translations = {("es_ES", "Save"): "Guardar", ("es_AR", "Save"): "Guardar"}
+        return translations[(target_locale, text)]
+
+
 class InMemorySiteRegistryRepository:
     """Small test repository for presentation adapter coverage."""
 
@@ -751,6 +757,8 @@ def test_workflow_service_builds_po_processing_preview() -> None:
 
     assert preview.status == "completed"
     assert preview.processed_families == 0
+    assert preview.progress_current == 0
+    assert preview.progress_total == 0
     assert "Families processed: 0" in preview.summary
 
 
@@ -789,7 +797,10 @@ def test_workflow_service_processes_po_variants_from_site_workspace(tmp_path: Pa
 
     assert preview.status == "completed"
     assert preview.processed_families == 1
+    assert preview.progress_current == 1
+    assert preview.progress_total == 1
     assert "Synchronized entries: 1" in preview.summary
+    assert "Translated entries: 0" in preview.summary
 
 
 def test_workflow_service_processes_po_variants_from_selected_locales(tmp_path: Path) -> None:
@@ -827,7 +838,51 @@ def test_workflow_service_processes_po_variants_from_selected_locales(tmp_path: 
 
     assert preview.status == "completed"
     assert preview.processed_families == 1
+    assert preview.progress_current == 1
+    assert preview.progress_total == 1
     assert "Synchronized entries: 1" in preview.summary
+    assert "Translated entries: 0" in preview.summary
+
+
+def test_workflow_service_reports_translated_entries_when_provider_is_used(tmp_path: Path) -> None:
+    locale_dir = tmp_path / "locale"
+    locale_dir.mkdir(parents=True, exist_ok=True)
+    _write_po_file(locale_dir / "messages-es_ES.po", [("Save", "")])
+    _write_po_file(locale_dir / "messages-es_AR.po", [("Save", "")])
+
+    repository = InMemorySiteRegistryRepository()
+    site_service = _build_domain_service(repository)
+    site = site_service.create_site(
+        SiteRegistrationInput(
+            name="Marketing Site",
+            framework_type="wordpress",
+            local_path=str(tmp_path),
+            default_locale="es_ES,es_AR",
+            remote_connection=RemoteConnectionConfigInput(
+                connection_type="sftp",
+                host="example.com",
+                port=22,
+                username="deploy",
+                password="super-secret",
+                remote_path="/srv/app",
+            ),
+            is_active=True,
+        )
+    )
+    workflow = SiteRegistryPresentationWorkflowService(
+        service=site_service,
+        project_sync_service=SyncStub(),
+        po_processing_service=POProcessingService(
+            repository=PolibPOCatalogRepository(),
+            translation_provider=_StubPOTranslationProvider(),
+        ),
+    )
+
+    preview = workflow.start_po_processing(site.id)
+
+    assert preview.status == "completed"
+    assert "Synchronized entries: 1" in preview.summary
+    assert "Translated entries: 1" in preview.summary
 
 
 def test_workflow_service_trusts_remote_host_key_with_explicit_confirmation() -> None:

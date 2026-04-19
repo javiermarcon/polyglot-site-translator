@@ -9,3 +9,7 @@ class POProcessingError(Exception):
 
 class POProcessingInfrastructureError(POProcessingError):
     """Raised when PO files cannot be loaded or saved from infrastructure."""
+
+
+class POProcessingTranslationError(POProcessingError):
+    """Raised when an external translation provider fails."""

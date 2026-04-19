@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from kivy.clock import Clock, ClockEvent
+from kivy.uix.progressbar import ProgressBar
 from kivy.uix.screenmanager import ScreenManager
 
 from polyglot_site_translator.presentation.frontend_shell import FrontendShell
@@ -23,7 +24,9 @@ class POProcessingScreen(BaseShellScreen):
         )
         self.add_nav_button("Back to Project", self._back_to_project)
         self._summary_label = WrappedLabel(font_size=15)
+        self._progress_bar = ProgressBar(max=1, value=0, size_hint_y=None, height=20)
         self._refresh_event: ClockEvent | None = None
+        self._content.add_widget(self._progress_bar)
         self._content.add_widget(self._summary_label)
         self.refresh()
 
@@ -35,10 +38,22 @@ class POProcessingScreen(BaseShellScreen):
     def refresh(self) -> None:
         state = self._shell.po_processing_state
         if state is None:
+            self._progress_bar.max = 1
+            self._progress_bar.value = 0
             self._summary_label.text = "No PO processing action started."
         else:
+            progress_max = state.progress_total if state.progress_total > 0 else 1
+            progress_value = state.progress_current
+            if not state.progress_is_indeterminate and state.progress_total == 0:
+                progress_value = 1
+            self._progress_bar.max = progress_max
+            self._progress_bar.value = min(progress_value, progress_max)
             self._summary_label.text = (
-                f"Status: {state.status}\nFamilies: {state.processed_families}\n{state.summary}"
+                f"Status: {state.status}\n"
+                f"Families: {state.processed_families}\n"
+                f"Progress: {state.progress_current}/{state.progress_total}\n"
+                f"Completed entries: {state.progress_current}/{state.progress_total}\n"
+                f"{state.summary}"
             )
         self.update_error_label()
         if state is not None and state.status == "running" and self._refresh_event is None:

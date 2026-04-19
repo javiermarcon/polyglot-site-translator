@@ -23,7 +23,7 @@ All code must follow these principles:
 - OCP
 
 Interpretation for this repository:
-- **DRY**: scanning rules, classification rules, persistence helpers, adapter registration, and reporting logic must not be duplicated.
+- **DRY**: scanning rules, classification rules, persistence helpers, locale-validation rules, translation-memory logic, adapter registration, and reporting logic must not be duplicated.
 - **SRP**: each module should have one reason to change.
 - **OCP**: new scanners, reports, or framework adapters should be added through extension, not through widespread rewrites.
 - **SOLID** should guide service boundaries and abstractions, especially between UI, services, adapters, storage, and infrastructure.

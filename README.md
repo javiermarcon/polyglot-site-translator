@@ -47,9 +47,11 @@ El repositorio está en una etapa temprana y hoy incluye principalmente:
 - registry real de adapters/framework detection con resultados tipados
 - detección efectiva de proyectos WordPress, Django y Flask a partir de `local_path`
 - auto-discovery dinámico de adapters al iniciar, sin registro manual en el runtime
-- workflow real de PO processing con descubrimiento `.po`, agrupación por familia y sincronización de faltantes entre variantes del mismo idioma base
+- workflow real de PO processing con descubrimiento `.po`, agrupación por familia, reutilización entre archivos/familias y traducción externa de faltantes
 - acción `Process PO` con popup para elegir locales, precargado con el `default_locale` del proyecto, y ejecución en background para no bloquear la UI
+- barra de progreso en la pantalla de PO processing basada en entradas gettext completadas para saber cuántas líneas faltantes ya se resolvieron
 - sincronización PO con identidad gettext (`msgctxt`, `msgid`, `msgid_plural`) y soporte de plurales
+- resumen visible de PO processing con conteos separados de entradas sincronizadas y entradas traducidas
 - escritura real de cambios en archivos `.po` del workspace con resultado tipado para UI
 - integración real del flujo principal de proyectos con `site_registry` persistido
 - validación de `default_locale` en el editor como locale simple o lista separada por comas, con persistencia normalizada sin espacios superfluos
@@ -64,7 +66,6 @@ Todavía no están implementados en forma real:
 
 - presets o perfiles más avanzados de sync selectivo por entorno/dirección
 - scanner de auditoría
-- traducción automática de faltantes por proveedor externo
 - caché persistente de traducciones
 - compilación `.mo`
 - reporting final

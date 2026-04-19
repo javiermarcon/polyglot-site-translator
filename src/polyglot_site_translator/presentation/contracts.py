@@ -6,6 +6,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Protocol
 
+from polyglot_site_translator.domain.po_processing.models import POProcessingProgress
 from polyglot_site_translator.domain.sync.models import SyncProgressEvent
 from polyglot_site_translator.presentation.view_models import (
     AppSettingsViewModel,
@@ -58,6 +59,7 @@ class ProjectWorkflowService(Protocol):
         self,
         project_id: str,
         locales: str | None = None,
+        progress_callback: Callable[[POProcessingProgress], None] | None = None,
     ) -> POProcessingSummaryViewModel:
         """Start a PO processing workflow for a project."""
 

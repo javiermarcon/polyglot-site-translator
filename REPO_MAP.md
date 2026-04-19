@@ -134,10 +134,13 @@ Current frontend base:
   Typed PO processing models, contracts, and explicit domain/infrastructure errors.
 
 - `polyglot_site_translator/services/po_processing.py`
-  Shared PO workflow orchestration for discovery, locale-family grouping, and cross-variant translation synchronization.
+  Shared PO workflow orchestration for discovery, locale-family grouping, translation-memory reuse across families, cross-variant synchronization, and optional external translation.
 
 - `polyglot_site_translator/infrastructure/po_files.py`
   Real PO repository based on `polib` for reading/writing project PO catalogs.
+
+- `polyglot_site_translator/infrastructure/po_translator_googletrans.py`
+  External translation-provider adapter for PO processing, isolated behind the shared PO translation contract.
 
 - `polyglot_site_translator/infrastructure/remote_connections/`
   Discoverable FTP/FTPS/SFTP/SCP provider implementations, reusable transport sessions, and the runtime provider registry.

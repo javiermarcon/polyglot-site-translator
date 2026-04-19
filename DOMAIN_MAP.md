@@ -90,8 +90,11 @@ Current implemented slice:
 
 - recursive workspace discovery of `.po` files
 - grouping by family key and locale suffix
-- base-language selection from project default locale
+- exact locale-list selection with normalized comma-separated persistence
+- base-language expansion when only one locale is configured
 - synchronization of missing singular and plural entries between locale variants
+- translation-memory reuse across files and families for sibling locales
+- optional external translation through the shared provider contract
 - typed processing summary for presentation workflows
 
 ### Excludes

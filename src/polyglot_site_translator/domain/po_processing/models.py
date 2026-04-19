@@ -31,6 +31,7 @@ class POFileData:
     relative_path: str
     locale: str
     family_key: str
+    nplurals: int
     entries: tuple[POEntryData, ...]
 
 
@@ -40,4 +41,19 @@ class POProcessingResult:
 
     files_discovered: int
     families_processed: int
+    entries_pending: int
     entries_synchronized: int
+    entries_translated: int
+
+
+@dataclass(frozen=True)
+class POProcessingProgress:
+    """Progress update emitted while processing PO families."""
+
+    processed_families: int
+    completed_entries: int
+    total_entries: int
+    files_discovered: int
+    entries_synchronized: int
+    entries_translated: int
+    message: str

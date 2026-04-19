@@ -126,6 +126,7 @@ Domain logic should be reachable through well-defined service or module interfac
 Examples of domain entrypoints:
 
 - PO processing orchestrator
+- PO translation provider contract
 - source scan orchestrator
 - finding classifier
 - report summary builder
@@ -238,6 +239,13 @@ Infrastructure adapters should expose narrow interfaces for:
 - translation provider integration
 - filesystem operations that need abstraction
 - export writing
+
+Current PO-processing entrypoints:
+
+- `polyglot_site_translator.services.po_processing.POProcessingService.process_site`
+- `polyglot_site_translator.infrastructure.po_files.PolibPOCatalogRepository.discover_po_files`
+- `polyglot_site_translator.infrastructure.po_files.PolibPOCatalogRepository.save_po_files`
+- `polyglot_site_translator.infrastructure.po_translator_googletrans.GoogleTransPOTranslationProvider.translate_text`
 
 ---
 

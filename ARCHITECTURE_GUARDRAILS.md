@@ -36,6 +36,7 @@ They must remain separate.
 ### 4. Do not duplicate heuristics
 
 String detection, classification, path inference, and framework-specific conventions must be centralized.
+Locale selection rules, locale normalization, translation-memory reuse, and translation-provider invocation rules must also stay centralized.
 
 ### 5. Do not add output formats without tests
 

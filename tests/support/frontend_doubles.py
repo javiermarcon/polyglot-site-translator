@@ -6,6 +6,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 
 from polyglot_site_translator.adapters.framework_registry import FrameworkAdapterRegistry
+from polyglot_site_translator.domain.po_processing.models import POProcessingProgress
 from polyglot_site_translator.domain.remote_connections.models import (
     NO_REMOTE_CONNECTION_VALUE,
 )
@@ -160,11 +161,19 @@ class StubProjectWorkflowService:
         self,
         project_id: str,
         locales: str | None = None,
+        progress_callback: Callable[[POProcessingProgress], None] | None = None,
     ) -> POProcessingSummaryViewModel:
+        del progress_callback
         return POProcessingSummaryViewModel(
             status="completed",
             processed_families=4,
-            summary="Prepared 4 locale families for future PO synchronization.",
+            progress_current=0,
+            progress_total=0,
+            progress_is_indeterminate=False,
+            summary=(
+                "Families processed: 4 | PO files discovered: 4 | "
+                "Synchronized entries: 0 | Translated entries: 0"
+            ),
         )
 
 

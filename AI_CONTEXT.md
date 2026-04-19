@@ -52,6 +52,7 @@ When changing this codebase, prioritize:
 - Keep the Kivy layer thin.
 - Push business/domain logic into services and dedicated modules.
 - Push IO/integration concerns into infrastructure modules.
+- Keep translation providers behind explicit contracts and infrastructure adapters.
 - Model findings and important records explicitly.
 - Keep shared services framework-agnostic when feasible.
 - Put target-specific rules into adapters/plugins.

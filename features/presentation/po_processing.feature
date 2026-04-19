@@ -1,7 +1,7 @@
 Feature: PO processing workflow
   As an operator working with project locale variants
-  I want the PO workflow to synchronize reusable translations between variants
-  So that missing entries are completed without duplicating translation work
+  I want the PO workflow to reuse and translate missing gettext entries
+  So that the processed PO files are actually completed and saved
 
   Scenario: Synchronize missing entries between locale variants
     Given a site project with PO locale variants in the local workspace
@@ -9,6 +9,14 @@ Feature: PO processing workflow
     Then the PO processing result reports completed status
     And the PO processing result reports one processed family
     And the PO processing result reports synchronized entries
+
+  Scenario: Translate missing entries when no variant already contains them
+    Given a site project with untranslated PO locale variants in the local workspace
+    When the operator runs the PO processing workflow for that site
+    Then the PO processing result reports completed status
+    And the PO processing result reports one processed family
+    And the PO processing result reports translated entries
+    And the processed PO file contains the translated text
 
   Scenario: Keep completed status when no locale variants are found
     Given a site project without PO locale variants in the local workspace

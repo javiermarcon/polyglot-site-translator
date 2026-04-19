@@ -6,6 +6,7 @@ from collections.abc import Callable
 from dataclasses import dataclass, replace
 from threading import Lock, Thread
 
+from polyglot_site_translator.domain.po_processing.models import POProcessingProgress
 from polyglot_site_translator.domain.site_registry.locales import normalize_default_locale
 from polyglot_site_translator.domain.sync.models import SyncProgressEvent, SyncProgressStage
 from polyglot_site_translator.presentation.contracts import FrontendServices
@@ -257,7 +258,10 @@ class FrontendShell:
         """Trigger PO processing through the workflow contract."""
         project_id = self._require_project_id()
         self.latest_error = None
-        self.po_processing_state = self.services.workflows.start_po_processing(project_id, locales)
+        self.po_processing_state = self.services.workflows.start_po_processing(
+            project_id,
+            locales,
+        )
         self._set_route(RouteName.PO_PROCESSING, project_id=project_id)
 
     def start_po_processing_async(self, locales: str) -> None:
@@ -273,6 +277,9 @@ class FrontendShell:
             self.po_processing_state = POProcessingSummaryViewModel(
                 status="running",
                 processed_families=0,
+                progress_current=0,
+                progress_total=0,
+                progress_is_indeterminate=True,
                 summary=f"Processing PO files for locales: {normalized_locales}",
             )
         worker = Thread(
@@ -658,18 +665,40 @@ class FrontendShell:
             self.po_processing_state = self.services.workflows.start_po_processing(
                 project_id,
                 locales,
+                progress_callback=self._record_po_processing_progress,
             )
             self.latest_error = None
         except ControlledServiceError as error:
             self.po_processing_state = POProcessingSummaryViewModel(
                 status="failed",
                 processed_families=0,
+                progress_current=0,
+                progress_total=0,
+                progress_is_indeterminate=False,
                 summary=str(error),
             )
             self.latest_error = str(error)
         finally:
             with self._po_processing_lock:
                 self._active_po_processing_thread = None
+
+    def _record_po_processing_progress(self, event: POProcessingProgress) -> None:
+        current_state = self.po_processing_state
+        if current_state is None:
+            return
+        self.po_processing_state = replace(
+            current_state,
+            status="running",
+            processed_families=event.processed_families,
+            progress_current=event.completed_entries,
+            progress_total=event.total_entries,
+            progress_is_indeterminate=False,
+            summary=(
+                f"{event.message} | PO files discovered: {event.files_discovered} | "
+                f"Synchronized entries: {event.entries_synchronized} | "
+                f"Translated entries: {event.entries_translated}"
+            ),
+        )
 
     def _surface_background_sync_failure(
         self,

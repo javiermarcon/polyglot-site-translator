@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections import defaultdict
 from pathlib import Path
+import re
 from typing import Any, cast
 
 import polib
@@ -42,6 +43,7 @@ class PolibPOCatalogRepository(POCatalogRepository):
                 relative_path=str(relative_path),
                 locale=locale,
                 family_key=family_key,
+                nplurals=_nplurals_from_po(po_file),
                 entries=tuple(_entry_from_polib(item) for item in po_file),
             )
             by_family[family_key].append(file_data)
@@ -124,3 +126,11 @@ def _build_family_key(relative_path: Path, locale: str) -> str:
     stem = relative_path.stem
     family_stem = stem[: -len(suffix)] if stem.endswith(suffix) else stem
     return str(relative_path.with_name(family_stem))
+
+
+def _nplurals_from_po(po_file: polib.POFile) -> int:
+    plural_forms = po_file.metadata.get("Plural-Forms", "")
+    match = re.search(r"nplurals\s*=\s*(\d+)", plural_forms)
+    if match is None:
+        return 2
+    return int(match.group(1))

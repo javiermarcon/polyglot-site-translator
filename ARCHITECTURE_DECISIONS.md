@@ -85,6 +85,7 @@ PO handling is useful across multiple frameworks and should not be tied to a sin
 - UI should invoke it through services, not inline code.
 - Tests must protect previous useful behavior.
 - Framework adapters may guide discovery, but should not reimplement shared PO logic.
+- External translators must stay behind provider contracts so the shared workflow does not depend directly on a concrete API client.
 
 ---
 

@@ -288,6 +288,9 @@ class POProcessingSummaryViewModel:
     status: str
     processed_families: int
     summary: str
+    progress_current: int = 0
+    progress_total: int = 0
+    progress_is_indeterminate: bool = True
 
 
 def build_settings_sections() -> list[SettingsSectionViewModel]:

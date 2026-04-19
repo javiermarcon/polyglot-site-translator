@@ -14,7 +14,10 @@ from polyglot_site_translator.domain.framework_detection.models import (
     FrameworkDetectionResult,
 )
 from polyglot_site_translator.domain.po_processing.errors import POProcessingError
-from polyglot_site_translator.domain.po_processing.models import POProcessingResult
+from polyglot_site_translator.domain.po_processing.models import (
+    POProcessingProgress,
+    POProcessingResult,
+)
 from polyglot_site_translator.domain.remote_connections.models import (
     NO_REMOTE_CONNECTION_VALUE,
     RemoteConnectionConfigInput,
@@ -115,7 +118,11 @@ class ProjectSyncWorkflowService(Protocol):
 class POProcessingWorkflowService(Protocol):
     """PO processing contract consumed by workflow presentation adapters."""
 
-    def process_site(self, site: RegisteredSite) -> POProcessingResult:
+    def process_site(
+        self,
+        site: RegisteredSite,
+        progress_callback: Callable[[POProcessingProgress], None] | None = None,
+    ) -> POProcessingResult:
         """Run PO processing for a site workspace."""
 
 
@@ -422,6 +429,7 @@ class SiteRegistryPresentationWorkflowService(ProjectWorkflowService):
         self,
         project_id: str,
         locales: str | None = None,
+        progress_callback: Callable[[POProcessingProgress], None] | None = None,
     ) -> POProcessingSummaryViewModel:
         """Run PO processing and return a typed workflow summary."""
         try:
@@ -436,9 +444,12 @@ class SiteRegistryPresentationWorkflowService(ProjectWorkflowService):
             return POProcessingSummaryViewModel(
                 status="completed",
                 processed_families=0,
+                progress_current=0,
+                progress_total=0,
+                progress_is_indeterminate=False,
                 summary=(
                     "PO processing service is not configured in this runtime. "
-                    "Families processed: 0 | Synchronized entries: 0"
+                    "Families processed: 0 | Synchronized entries: 0 | Translated entries: 0"
                 ),
             )
         processing_site = site
@@ -448,16 +459,23 @@ class SiteRegistryPresentationWorkflowService(ProjectWorkflowService):
                 project=replace(site.project, default_locale=locales),
             )
         try:
-            result = self._po_processing_service.process_site(processing_site)
+            result = self._po_processing_service.process_site(
+                processing_site,
+                progress_callback=progress_callback,
+            )
         except POProcessingError as error:
             raise ControlledServiceError(str(error)) from error
         return POProcessingSummaryViewModel(
             status="completed",
             processed_families=result.families_processed,
+            progress_current=result.entries_synchronized + result.entries_translated,
+            progress_total=result.entries_pending,
+            progress_is_indeterminate=False,
             summary=(
                 f"Families processed: {result.families_processed} | "
                 f"PO files discovered: {result.files_discovered} | "
-                f"Synchronized entries: {result.entries_synchronized}"
+                f"Synchronized entries: {result.entries_synchronized} | "
+                f"Translated entries: {result.entries_translated}"
             ),
         )
 
