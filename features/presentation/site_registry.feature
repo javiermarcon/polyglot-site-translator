@@ -52,6 +52,19 @@ Feature: SQLite-backed site registry management
     Then reopening the persisted site editor shows the custom sync rule "locale_custom"
     And reopening the persisted site editor shows the adapter rule "__pycache__" disabled
 
+  Scenario: Normalize a persisted default locale list
+    Given the frontend shell is wired with SQLite-backed site registry services
+    When the operator opens the create project workflow
+    And the operator submits a new site registry entry with a spaced default locale list
+    Then the project detail shows the persisted default locale "es_ES,es_AR"
+    And reopening the persisted site editor shows the persisted default locale "es_ES,es_AR"
+
+  Scenario: Reject an invalid default locale value
+    Given the frontend shell is wired with SQLite-backed site registry services
+    When the operator opens the create project workflow
+    And the operator submits a new site registry entry with an invalid default locale
+    Then the project editor shows the default locale validation error
+
   Scenario: Surface an invalid SQLite configuration through the projects flow
     Given the frontend shell is wired with SQLite-backed services and invalid database settings
     When the operator opens the projects list

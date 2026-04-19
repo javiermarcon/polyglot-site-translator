@@ -171,6 +171,50 @@ def step_submit_new_site_with_adapter_sync_filters(context: object) -> None:
     typed_context.created_site_id = typed_context.shell.project_detail_state.project.id
 
 
+@when("the operator submits a new site registry entry with a spaced default locale list")
+def step_submit_new_site_with_spaced_default_locale_list(context: object) -> None:
+    typed_context = _context_with_shell(context)
+    typed_context.shell.save_new_project(
+        SiteEditorViewModel(
+            site_id=None,
+            name="Marketing Site",
+            framework_type="wordpress",
+            local_path="/workspace/marketing-site",
+            default_locale="es_ES, es_AR",
+            connection_type="ftp",
+            remote_host="ftp.example.com",
+            remote_port="21",
+            remote_username="deploy",
+            remote_password="super-secret",
+            remote_path="/public_html",
+            is_active=True,
+        )
+    )
+    assert typed_context.shell.project_detail_state is not None
+    typed_context.created_site_id = typed_context.shell.project_detail_state.project.id
+
+
+@when("the operator submits a new site registry entry with an invalid default locale")
+def step_submit_new_site_with_invalid_default_locale(context: object) -> None:
+    typed_context = _context_with_shell(context)
+    typed_context.shell.save_new_project(
+        SiteEditorViewModel(
+            site_id=None,
+            name="Marketing Site",
+            framework_type="wordpress",
+            local_path="/workspace/marketing-site",
+            default_locale="asad@",
+            connection_type="ftp",
+            remote_host="ftp.example.com",
+            remote_port="21",
+            remote_username="deploy",
+            remote_password="super-secret",
+            remote_path="/public_html",
+            is_active=True,
+        )
+    )
+
+
 @when("the operator submits a new Django site registry entry with custom sync rule overrides")
 def step_submit_django_site_with_custom_sync_rule_overrides(context: object) -> None:
     typed_context = _context_with_shell(context)
@@ -296,6 +340,16 @@ def step_assert_site_detail(context: object) -> None:
     assert typed_context.shell.project_detail_state.project.name == "Marketing Site"
 
 
+@then('the project detail shows the persisted default locale "{default_locale}"')
+def step_assert_persisted_default_locale(context: object, default_locale: str) -> None:
+    typed_context = _context_with_shell(context)
+    assert typed_context.shell.project_detail_state is not None
+    assert (
+        f"Locale: {default_locale}"
+        in typed_context.shell.project_detail_state.configuration_summary
+    )
+
+
 @then("the projects list shows the persisted SQLite site")
 def step_assert_persisted_site_list(context: object) -> None:
     typed_context = _context_with_shell(context)
@@ -324,6 +378,14 @@ def step_assert_updated_remote_connection(context: object) -> None:
     assert typed_context.shell.project_editor_state.editor.remote_username == "deployer"
     assert typed_context.shell.project_editor_state.editor.remote_password == "super-secret-v2"
     assert typed_context.shell.project_editor_state.editor.remote_path == "/public_html/v2"
+
+
+@then('reopening the persisted site editor shows the persisted default locale "{default_locale}"')
+def step_assert_reopened_default_locale(context: object, default_locale: str) -> None:
+    typed_context = _context_with_shell(context)
+    typed_context.shell.open_project_editor_edit(typed_context.created_site_id)
+    assert typed_context.shell.project_editor_state is not None
+    assert typed_context.shell.project_editor_state.editor.default_locale == default_locale
 
 
 @then('the project detail shows the persisted sync mode "{mode}"')
@@ -386,3 +448,14 @@ def step_assert_registry_error(context: object) -> None:
     typed_context = _context_with_shell(context)
     assert typed_context.shell.latest_error is not None
     assert typed_context.shell.latest_error != ""
+
+
+@then("the project editor shows the default locale validation error")
+def step_assert_default_locale_validation_error(context: object) -> None:
+    typed_context = _context_with_shell(context)
+    assert typed_context.shell.project_editor_state is not None
+    assert typed_context.shell.project_editor_state.status == "failed"
+    assert typed_context.shell.project_editor_state.status_message == (
+        "Default locale must be a valid locale or a comma-separated list of valid "
+        "locales. Invalid values: asad@."
+    )

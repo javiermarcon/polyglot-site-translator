@@ -81,6 +81,41 @@ def test_process_site_handles_plural_entries_with_same_key(tmp_path: Path) -> No
     assert plural_entry.msgstr_plural[1] == "archivos"
 
 
+def test_process_site_accepts_multiple_configured_default_locales(tmp_path: Path) -> None:
+    workspace = tmp_path / "workspace"
+    locale_dir = workspace / "locale"
+    locale_dir.mkdir(parents=True, exist_ok=True)
+    _write_po(
+        locale_dir / "messages-es_ES.po",
+        [
+            ("Hello", "Hola"),
+        ],
+    )
+    _write_po(
+        locale_dir / "messages-es_AR.po",
+        [
+            ("Hello", ""),
+        ],
+    )
+    _write_po(
+        locale_dir / "messages-pt_BR.po",
+        [
+            ("Hello", "Ola"),
+        ],
+    )
+
+    service = POProcessingService(repository=PolibPOCatalogRepository())
+
+    result = service.process_site(_build_site(str(workspace), "pt_BR, es_ES"))
+
+    synced_po = polib.pofile(str(locale_dir / "messages-es_AR.po"))
+    assert result.families_processed == 1
+    assert result.entries_synchronized == 1
+    synced_entry = synced_po.find("Hello")
+    assert synced_entry is not None
+    assert synced_entry.msgstr == "Hola"
+
+
 def test_process_site_returns_zero_result_when_no_matching_locale_files(tmp_path: Path) -> None:
     workspace = tmp_path / "workspace"
     workspace.mkdir(parents=True, exist_ok=True)

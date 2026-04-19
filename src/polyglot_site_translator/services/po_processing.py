@@ -12,6 +12,9 @@ from polyglot_site_translator.domain.po_processing.models import (
     POFileData,
     POProcessingResult,
 )
+from polyglot_site_translator.domain.site_registry.locales import (
+    parse_default_locale_list,
+)
 from polyglot_site_translator.domain.site_registry.models import RegisteredSite
 from polyglot_site_translator.infrastructure.po_files import PolibPOCatalogRepository
 
@@ -25,9 +28,9 @@ class POProcessingService:
     def process_site(self, site: RegisteredSite) -> POProcessingResult:
         workspace_root = Path(site.local_path)
         discovered_files = self._repository.discover_po_files(workspace_root)
-        target_files = _filter_files_by_base_language(
+        target_files = _filter_files_by_base_languages(
             discovered_files=discovered_files,
-            locale=site.default_locale,
+            locales=parse_default_locale_list(site.default_locale),
         )
         if target_files == ():
             return POProcessingResult(
@@ -50,16 +53,16 @@ class POProcessingService:
         )
 
 
-def _filter_files_by_base_language(
+def _filter_files_by_base_languages(
     *,
     discovered_files: tuple[POFileData, ...],
-    locale: str,
+    locales: tuple[str, ...],
 ) -> tuple[POFileData, ...]:
-    base_language = _base_language(locale)
+    base_languages = {_base_language(locale) for locale in locales}
     matching_files = [
         file_data
         for file_data in discovered_files
-        if _base_language(file_data.locale) == base_language
+        if _base_language(file_data.locale) in base_languages
     ]
     return tuple(matching_files)
 

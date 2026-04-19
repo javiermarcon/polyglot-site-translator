@@ -154,6 +154,14 @@ def test_site_registry_service_allows_projects_without_remote_connections() -> N
     assert created_site.remote_connection is None
 
 
+def test_site_registry_service_normalizes_comma_separated_default_locales() -> None:
+    service = _build_service()
+
+    created_site = service.create_site(_build_registration(default_locale="es_ES, es_AR"))
+
+    assert created_site.default_locale == "es_ES,es_AR"
+
+
 def test_site_registry_service_lists_and_gets_sites_from_the_repository() -> None:
     service = _build_service()
     created_site = service.create_site(_build_registration())
@@ -323,6 +331,23 @@ def test_site_registry_service_keeps_the_operator_framework_when_detection_does_
             "",
             None,
             r"Default locale must not be empty\.",
+        ),
+        (
+            "Marketing Site",
+            "/workspace/marketing-site",
+            "asad@",
+            None,
+            (
+                r"Default locale must be a valid locale or a comma-separated list of "
+                r"valid locales\. Invalid values: asad@\."
+            ),
+        ),
+        (
+            "Marketing Site",
+            "/workspace/marketing-site",
+            "es_ES,,es_AR",
+            None,
+            r"Default locale must be a valid locale or a comma-separated list of valid locales\.",
         ),
         (
             "Marketing Site",

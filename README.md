@@ -51,6 +51,7 @@ El repositorio está en una etapa temprana y hoy incluye principalmente:
 - sincronización PO con identidad gettext (`msgctxt`, `msgid`, `msgid_plural`) y soporte de plurales
 - escritura real de cambios en archivos `.po` del workspace con resultado tipado para UI
 - integración real del flujo principal de proyectos con `site_registry` persistido
+- validación de `default_locale` en el editor como locale simple o lista separada por comas, con persistencia normalizada sin espacios superfluos
 - audit preview del runtime real enriquecido por el resultado de framework detection
 - implementaciones fake/in-memory para workflows de desarrollo y dobles aislados de tests
 - escenarios BDD y tests de presentación/orquestación

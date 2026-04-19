@@ -19,6 +19,9 @@ from polyglot_site_translator.domain.site_registry.contracts import SiteRegistry
 from polyglot_site_translator.domain.site_registry.errors import (
     SiteRegistryValidationError,
 )
+from polyglot_site_translator.domain.site_registry.locales import (
+    normalize_default_locale,
+)
 from polyglot_site_translator.domain.site_registry.models import (
     RegisteredSite,
     SiteProject,
@@ -54,7 +57,7 @@ class SiteRegistryService:
                         framework_detection_service=self._framework_detection_service,
                     ),
                     local_path=_require_text(registration.local_path, "Local path"),
-                    default_locale=_require_text(registration.default_locale, "Default locale"),
+                    default_locale=normalize_default_locale(registration.default_locale),
                     is_active=registration.is_active,
                 ),
                 remote_connection=_resolve_remote_connection(
@@ -91,7 +94,7 @@ class SiteRegistryService:
                         framework_detection_service=self._framework_detection_service,
                     ),
                     local_path=_require_text(registration.local_path, "Local path"),
-                    default_locale=_require_text(registration.default_locale, "Default locale"),
+                    default_locale=normalize_default_locale(registration.default_locale),
                     is_active=registration.is_active,
                 ),
                 remote_connection=_resolve_remote_connection(
