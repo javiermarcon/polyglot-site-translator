@@ -48,8 +48,10 @@ El repositorio está en una etapa temprana y hoy incluye principalmente:
 - detección efectiva de proyectos WordPress, Django y Flask a partir de `local_path`
 - auto-discovery dinámico de adapters al iniciar, sin registro manual en el runtime
 - workflow real de PO processing con descubrimiento `.po`, agrupación por familia, reutilización entre archivos/familias y traducción externa de faltantes
+- proveedor externo de traducción PO reutilizando el mismo loop async por hilo para evitar reiniciar el transporte HTTP en cada entrada
 - acción `Process PO` con popup para elegir locales, precargado con el `default_locale` del proyecto, y ejecución en background para no bloquear la UI
 - barra de progreso en la pantalla de PO processing basada en entradas gettext completadas para saber cuántas líneas faltantes ya se resolvieron
+- la pantalla de PO processing muestra además el archivo `.po` actual y el `msgid` actual para hacer trazable el avance durante ejecuciones largas
 - sincronización PO con identidad gettext (`msgctxt`, `msgid`, `msgid_plural`) y soporte de plurales
 - resumen visible de PO processing con conteos separados de entradas sincronizadas, traducidas y fallidas, incluyendo archivo/msgid cuando un proveedor externo falla
 - omisión explícita de tokens tipo hashtag como `#tag1` para no enviar slugs/no-text al traductor externo

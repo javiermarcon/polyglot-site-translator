@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
+import asyncio
 from dataclasses import dataclass
 from typing import Any
 
 import pytest
+from pytest import MonkeyPatch
 
 from polyglot_site_translator.domain.po_processing.errors import (
     POProcessingTranslationError,
@@ -84,3 +86,25 @@ def test_googletrans_provider_rejects_multiple_results_for_single_request() -> N
 
     with pytest.raises(POProcessingTranslationError, match="multiple results"):
         provider.translate_text(text="Hello", target_locale="es_AR")
+
+
+def test_googletrans_provider_reuses_loop_without_asyncio_run(monkeypatch: MonkeyPatch) -> None:
+    translator = _StubTranslator(translated_text="Hola")
+    provider = GoogleTransPOTranslationProvider(translator=translator)
+
+    def _forbidden_asyncio_run(coro: object) -> object:
+        if asyncio.iscoroutine(coro):
+            coro.close()
+        msg = "asyncio.run must not be used per translation request"
+        raise AssertionError(msg)
+
+    monkeypatch.setattr(
+        "polyglot_site_translator.infrastructure.po_translator_googletrans.asyncio.run",
+        _forbidden_asyncio_run,
+    )
+
+    first = provider.translate_text(text="Hello", target_locale="es_AR")
+    second = provider.translate_text(text="World", target_locale="es_AR")
+
+    assert first == "Hola"
+    assert second == "Hola"

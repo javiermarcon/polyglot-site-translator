@@ -18,6 +18,15 @@ Feature: PO processing workflow
     And the PO processing result reports translated entries
     And the processed PO file contains the translated text
 
+  Scenario: Translate several missing entries from the same PO file
+    Given a site project with several untranslated entries in one PO file
+    When the operator runs the PO processing workflow for that site
+    Then the PO processing result reports completed status
+    And the PO processing result reports one processed family
+    And the PO processing result reports three translated entries
+    And the processed PO file contains all translated texts
+    And the PO processing progress reports the current file and entry
+
   Scenario: Keep completed status when no locale variants are found
     Given a site project without PO locale variants in the local workspace
     When the operator runs the PO processing workflow for that site

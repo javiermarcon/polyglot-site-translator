@@ -46,6 +46,12 @@ class POProcessingScreen(BaseShellScreen):
             progress_value = state.progress_current
             if not state.progress_is_indeterminate and state.progress_total == 0:
                 progress_value = 1
+            current_file_line = ""
+            if state.current_file is not None:
+                current_file_line = f"Current file: {state.current_file}\n"
+            current_entry_line = ""
+            if state.current_entry is not None:
+                current_entry_line = f"Current entry: {state.current_entry}\n"
             self._progress_bar.max = progress_max
             self._progress_bar.value = min(progress_value, progress_max)
             self._summary_label.text = (
@@ -53,6 +59,8 @@ class POProcessingScreen(BaseShellScreen):
                 f"Families: {state.processed_families}\n"
                 f"Progress: {state.progress_current}/{state.progress_total}\n"
                 f"Completed entries: {state.progress_current}/{state.progress_total}\n"
+                f"{current_file_line}"
+                f"{current_entry_line}"
                 f"{state.summary}"
             )
         self.update_error_label()

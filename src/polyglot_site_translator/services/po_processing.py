@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections import defaultdict
 from collections.abc import Callable
+from dataclasses import dataclass
 from pathlib import Path
 import re
 
@@ -27,6 +28,32 @@ from polyglot_site_translator.domain.site_registry.models import RegisteredSite
 from polyglot_site_translator.infrastructure.po_files import PolibPOCatalogRepository
 
 type TranslationValue = str | dict[str, str]
+
+
+@dataclass(frozen=True)
+class _FamilyProgressUpdate:
+    synchronized_entries: int
+    translated_entries: int
+    failed_entries: int
+    current_file: str | None
+    current_entry: str | None
+
+
+@dataclass(frozen=True)
+class _FamilyProcessingRuntime:
+    translation_provider: POTranslationProvider | None
+    progress_callback: Callable[[_FamilyProgressUpdate], None] | None = None
+
+
+@dataclass(frozen=True)
+class _FamilyProgressContext:
+    processed_families: int
+    total_families: int
+    total_entries: int
+    files_discovered: int
+    synchronized_entries: int
+    translated_entries: int
+    failed_entries: int
 
 
 class POProcessingService:
@@ -76,23 +103,67 @@ class POProcessingService:
         entries_translated = 0
         entries_failed = 0
         failures: list[POProcessingFailure] = []
+        current_file: str | None = None
+        current_entry: str | None = None
 
-        if progress_callback is not None:
-            progress_callback(
-                POProcessingProgress(
-                    processed_families=0,
-                    completed_entries=0,
-                    total_entries=total_entries,
-                    files_discovered=len(target_files),
-                    entries_synchronized=0,
-                    entries_translated=0,
-                    entries_failed=0,
-                    message=f"Preparing {total_families} PO families for processing.",
-                )
+        def emit_progress(event: POProcessingProgress) -> None:
+            if progress_callback is None:
+                return
+            progress_callback(event)
+
+        emit_progress(
+            POProcessingProgress(
+                processed_families=0,
+                completed_entries=0,
+                total_entries=total_entries,
+                files_discovered=len(target_files),
+                entries_synchronized=0,
+                entries_translated=0,
+                entries_failed=0,
+                message=f"Preparing {total_families} PO families for processing.",
             )
+        )
 
         updated_files: list[POFileData] = []
         for processed_families, family_files in enumerate(grouped_files.values(), start=1):
+            progress_context = _FamilyProgressContext(
+                processed_families=processed_families,
+                total_families=total_families,
+                total_entries=total_entries,
+                files_discovered=len(target_files),
+                synchronized_entries=entries_synchronized,
+                translated_entries=entries_translated,
+                failed_entries=entries_failed,
+            )
+
+            def report_family_progress(
+                update: _FamilyProgressUpdate,
+                context: _FamilyProgressContext = progress_context,
+            ) -> None:
+                emit_progress(
+                    POProcessingProgress(
+                        processed_families=context.processed_families - 1,
+                        completed_entries=(
+                            context.synchronized_entries
+                            + context.translated_entries
+                            + update.synchronized_entries
+                            + update.translated_entries
+                        ),
+                        total_entries=context.total_entries,
+                        files_discovered=context.files_discovered,
+                        entries_synchronized=context.synchronized_entries
+                        + update.synchronized_entries,
+                        entries_translated=context.translated_entries + update.translated_entries,
+                        entries_failed=context.failed_entries + update.failed_entries,
+                        message=(
+                            "Processing PO family "
+                            f"{context.processed_families} of {context.total_families}."
+                        ),
+                        current_file=update.current_file,
+                        current_entry=update.current_entry,
+                    )
+                )
+
             (
                 updated_family_files,
                 family_synced,
@@ -103,26 +174,33 @@ class POProcessingService:
                 selected_locales=selected_locales,
                 locale_groups=locale_groups,
                 translation_memory=translation_memory,
-                translation_provider=self._translation_provider,
+                runtime=_FamilyProcessingRuntime(
+                    translation_provider=self._translation_provider,
+                    progress_callback=report_family_progress,
+                ),
             )
             updated_files.extend(updated_family_files)
             entries_synchronized += family_synced
             entries_translated += family_translated
             entries_failed += len(family_failures)
             failures.extend(family_failures)
-            if progress_callback is not None:
-                progress_callback(
-                    POProcessingProgress(
-                        processed_families=processed_families,
-                        completed_entries=entries_synchronized + entries_translated,
-                        total_entries=total_entries,
-                        files_discovered=len(target_files),
-                        entries_synchronized=entries_synchronized,
-                        entries_translated=entries_translated,
-                        entries_failed=entries_failed,
-                        message=f"Processed {processed_families} of {total_families} PO families.",
-                    )
+            if family_failures:
+                current_file = family_failures[-1].relative_path
+                current_entry = family_failures[-1].msgid
+            emit_progress(
+                POProcessingProgress(
+                    processed_families=processed_families,
+                    completed_entries=entries_synchronized + entries_translated,
+                    total_entries=total_entries,
+                    files_discovered=len(target_files),
+                    entries_synchronized=entries_synchronized,
+                    entries_translated=entries_translated,
+                    entries_failed=entries_failed,
+                    message=f"Processed {processed_families} of {total_families} PO families.",
+                    current_file=current_file,
+                    current_entry=current_entry,
                 )
+            )
 
         self._repository.save_po_files(tuple(updated_files))
         return POProcessingResult(
@@ -219,7 +297,7 @@ def _process_family(
     selected_locales: tuple[str, ...],
     locale_groups: dict[str, tuple[str, ...]],
     translation_memory: dict[str, dict[POEntryId, TranslationValue]],
-    translation_provider: POTranslationProvider | None,
+    runtime: _FamilyProcessingRuntime,
 ) -> tuple[tuple[POFileData, ...], int, int, tuple[POProcessingFailure, ...]]:
     file_by_locale = {file_data.locale: file_data for file_data in family_files}
     family_entries: dict[str, list[POEntryData]] = {
@@ -236,7 +314,7 @@ def _process_family(
         selected_locales=selected_locales,
         file_by_locale=file_by_locale,
         translation_memory=translation_memory,
-        translation_provider=translation_provider,
+        runtime=runtime,
     )
     updated_files = tuple(
         POFileData(
@@ -292,7 +370,7 @@ def _translate_missing_entries(
     selected_locales: tuple[str, ...],
     translation_memory: dict[str, dict[POEntryId, TranslationValue]],
     file_by_locale: dict[str, POFileData],
-    translation_provider: POTranslationProvider | None,
+    runtime: _FamilyProcessingRuntime,
 ) -> tuple[int, int, tuple[POProcessingFailure, ...]]:
     synchronized_entries = 0
     translated_entries = 0
@@ -308,6 +386,16 @@ def _translate_missing_entries(
         for entry in entries:
             if _is_translated(entry):
                 continue
+            if runtime.progress_callback is not None:
+                runtime.progress_callback(
+                    _FamilyProgressUpdate(
+                        synchronized_entries=synchronized_entries,
+                        translated_entries=translated_entries,
+                        failed_entries=len(failures),
+                        current_file=file_by_locale[locale].relative_path,
+                        current_entry=entry.entry_id.msgid,
+                    )
+                )
             candidate = _candidate_translation_from_memory(
                 locale=locale,
                 entry_id=entry.entry_id,
@@ -326,7 +414,7 @@ def _translate_missing_entries(
                     translation_memory=translation_memory,
                 )
                 continue
-            if translation_provider is None:
+            if runtime.translation_provider is None:
                 continue
             if not _should_attempt_external_translation(entry):
                 continue
@@ -335,7 +423,7 @@ def _translate_missing_entries(
                     entry=entry,
                     locale=locale,
                     nplurals=nplurals_by_locale.get(locale, 2),
-                    translation_provider=translation_provider,
+                    translation_provider=runtime.translation_provider,
                 )
             except POProcessingTranslationError as error:
                 file_data = file_by_locale[locale]

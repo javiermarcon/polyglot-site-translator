@@ -8,6 +8,7 @@ from pytest import MonkeyPatch
 
 from polyglot_site_translator.app import create_kivy_app
 from polyglot_site_translator.presentation.kivy.screens.base import _route_to_screen_name
+from polyglot_site_translator.presentation.view_models import POProcessingSummaryViewModel
 from tests.support.frontend_doubles import build_seeded_services
 
 
@@ -136,6 +137,29 @@ def test_workflow_screens_render_empty_and_loaded_states_and_return_to_detail() 
     assert po_screen._progress_bar.value == 1
     po_screen._back_to_project()
     assert root.current == "project_detail"
+
+
+def test_po_processing_screen_shows_current_file_and_entry() -> None:
+    app = cast(Any, create_kivy_app(services=build_seeded_services()))
+    root = app.build()
+    po_screen = root.get_screen("po_processing")
+    shell = po_screen._shell
+
+    shell.po_processing_state = POProcessingSummaryViewModel(
+        status="running",
+        processed_families=1,
+        progress_current=3,
+        progress_total=8,
+        progress_is_indeterminate=False,
+        summary="Processing PO family 1 of 2.",
+        current_file="locale/messages-es_ES.po",
+        current_entry="Title",
+    )
+
+    po_screen.refresh()
+
+    assert "Current file: locale/messages-es_ES.po" in po_screen._summary_label.text
+    assert "Current entry: Title" in po_screen._summary_label.text
 
 
 def test_base_screen_helpers_cover_menu_building_copy_updates_and_route_mapping(

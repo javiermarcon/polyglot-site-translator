@@ -291,6 +291,8 @@ class POProcessingSummaryViewModel:
     progress_current: int = 0
     progress_total: int = 0
     progress_is_indeterminate: bool = True
+    current_file: str | None = None
+    current_entry: str | None = None
 
 
 def build_settings_sections() -> list[SettingsSectionViewModel]:

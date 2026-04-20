@@ -166,10 +166,13 @@ def test_process_site_reports_entry_progress_for_partial_completion(tmp_path: Pa
 
     assert result.entries_synchronized == 0
     assert result.entries_translated == 0
-    assert len(progress_events) == 2
+    assert len(progress_events) == 3
     assert progress_events[0].total_entries == 1
     assert progress_events[1].completed_entries == 0
     assert progress_events[1].total_entries == 1
+    assert progress_events[1].current_file == "locale/messages-es_ES.po"
+    assert progress_events[1].current_entry == "Save"
+    assert progress_events[2].completed_entries == 0
 
 
 def test_process_site_skips_hashtag_like_tokens_for_external_translation(tmp_path: Path) -> None:
@@ -221,6 +224,74 @@ def test_process_site_collects_translation_failures_and_continues(tmp_path: Path
     )
     assert cast(polib.POEntry, translated_po.find("Broken")).msgstr == ""
     assert cast(polib.POEntry, translated_po.find("Save")).msgstr == "Guardar"
+
+
+def test_process_site_translates_multiple_entries_in_one_file(tmp_path: Path) -> None:
+    workspace = tmp_path / "workspace"
+    locale_dir = workspace / "locale"
+    locale_dir.mkdir(parents=True, exist_ok=True)
+    _write_po(
+        locale_dir / "messages-es_ES.po",
+        [("Save", ""), ("Title", ""), ("Price", "")],
+    )
+    provider = StubTranslationProvider(
+        {
+            ("es_ES", "Save"): "Guardar",
+            ("es_ES", "Title"): "Titulo",
+            ("es_ES", "Price"): "Precio",
+        }
+    )
+
+    service = POProcessingService(
+        repository=PolibPOCatalogRepository(),
+        translation_provider=provider,
+    )
+
+    result = service.process_site(_build_site(str(workspace), "es_ES"))
+
+    translated_po = polib.pofile(str(locale_dir / "messages-es_ES.po"))
+    assert result.entries_translated == 3
+    assert provider.requests == [
+        ("es_ES", "Save"),
+        ("es_ES", "Title"),
+        ("es_ES", "Price"),
+    ]
+    assert cast(polib.POEntry, translated_po.find("Save")).msgstr == "Guardar"
+    assert cast(polib.POEntry, translated_po.find("Title")).msgstr == "Titulo"
+    assert cast(polib.POEntry, translated_po.find("Price")).msgstr == "Precio"
+
+
+def test_process_site_progress_reports_current_file_and_entry(tmp_path: Path) -> None:
+    workspace = tmp_path / "workspace"
+    locale_dir = workspace / "locale"
+    locale_dir.mkdir(parents=True, exist_ok=True)
+    _write_po(locale_dir / "messages-es_ES.po", [("Save", ""), ("Title", "")])
+    provider = StubTranslationProvider(
+        {
+            ("es_ES", "Save"): "Guardar",
+            ("es_ES", "Title"): "Titulo",
+        }
+    )
+    progress_events: list[POProcessingProgress] = []
+
+    service = POProcessingService(
+        repository=PolibPOCatalogRepository(),
+        translation_provider=provider,
+    )
+
+    service.process_site(
+        _build_site(str(workspace), "es_ES"),
+        progress_callback=progress_events.append,
+    )
+
+    assert any(
+        event.current_file == "locale/messages-es_ES.po" and event.current_entry == "Save"
+        for event in progress_events
+    )
+    assert any(
+        event.current_file == "locale/messages-es_ES.po" and event.current_entry == "Title"
+        for event in progress_events
+    )
 
 
 def test_process_site_accepts_multiple_configured_default_locales(tmp_path: Path) -> None:

@@ -60,6 +60,8 @@ class POProcessingProgress:
     entries_translated: int
     entries_failed: int
     message: str
+    current_file: str | None = None
+    current_entry: str | None = None
 
 
 @dataclass(frozen=True)

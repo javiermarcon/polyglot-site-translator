@@ -200,6 +200,8 @@ class _BlockingPOProcessingWorkflowService:
                     entries_translated=0,
                     entries_failed=0,
                     message="Preparing 2 PO families for synchronization.",
+                    current_file="locale/messages-es_ES.po",
+                    current_entry="Save",
                 )
             )
         self.started.set()
@@ -214,6 +216,8 @@ class _BlockingPOProcessingWorkflowService:
                 "Families processed: 2 | PO files discovered: 3 | "
                 "Synchronized entries: 4 | Translated entries: 1 | Failed entries: 0"
             ),
+            current_file=None,
+            current_entry=None,
         )
 
 
@@ -648,6 +652,8 @@ def test_po_processing_can_run_in_background_with_selected_locales() -> None:
     assert "Preparing 2 PO families" in shell.po_processing_state.summary
     assert shell.po_processing_state.progress_current == 0
     assert shell.po_processing_state.progress_total == 5
+    assert shell.po_processing_state.current_file == "locale/messages-es_ES.po"
+    assert shell.po_processing_state.current_entry == "Save"
     assert workflow.requested_locales == ["es_ES,es_AR"]
 
     workflow.release.set()
@@ -682,4 +688,6 @@ def test_background_po_processing_failure_is_exposed_without_crashing() -> None:
     assert shell.po_processing_state is not None
     assert shell.po_processing_state.status == "failed"
     assert shell.po_processing_state.summary == "PO processing failed for locales: es_ES"
+    assert shell.po_processing_state.current_file is None
+    assert shell.po_processing_state.current_entry is None
     assert shell.latest_error == "PO processing failed for locales: es_ES"

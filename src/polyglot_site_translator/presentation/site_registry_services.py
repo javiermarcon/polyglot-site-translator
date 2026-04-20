@@ -452,6 +452,8 @@ class SiteRegistryPresentationWorkflowService(ProjectWorkflowService):
                     "Families processed: 0 | Synchronized entries: 0 | "
                     "Translated entries: 0 | Failed entries: 0"
                 ),
+                current_file=None,
+                current_entry=None,
             )
         processing_site = site
         if locales is not None:
@@ -493,6 +495,8 @@ class SiteRegistryPresentationWorkflowService(ProjectWorkflowService):
             progress_total=result.entries_pending,
             progress_is_indeterminate=False,
             summary="\n".join(summary_lines),
+            current_file=None,
+            current_entry=None,
         )
 
 

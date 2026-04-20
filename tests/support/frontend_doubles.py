@@ -174,6 +174,8 @@ class StubProjectWorkflowService:
                 "Families processed: 4 | PO files discovered: 4 | "
                 "Synchronized entries: 0 | Translated entries: 0 | Failed entries: 0"
             ),
+            current_file=None,
+            current_entry=None,
         )
 
 

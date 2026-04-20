@@ -14,6 +14,7 @@ from polyglot_site_translator.domain.framework_detection.models import Framework
 from polyglot_site_translator.domain.po_processing.errors import (
     POProcessingTranslationError,
 )
+from polyglot_site_translator.domain.po_processing.models import POProcessingProgress
 from polyglot_site_translator.domain.remote_connections.models import (
     RemoteConnectionTestResult,
 )
@@ -43,6 +44,7 @@ class _BehavePOContext(Protocol):
     po_result_families: int
     po_result_summary: str
     processed_po_text: str
+    po_progress_events: list[POProcessingProgress]
     temp_dir: tempfile.TemporaryDirectory[str]
     site_id: str
 
@@ -126,6 +128,8 @@ class _BehaveTranslationProvider:
         translations = {
             ("es_ES", "Save"): "Guardar",
             ("es_AR", "Save"): "Guardar",
+            ("es_ES", "Title"): "Titulo",
+            ("es_ES", "Price"): "Precio",
         }
         return translations[(target_locale, text)]
 
@@ -182,6 +186,28 @@ def step_given_site_with_untranslated_variants(context: object) -> None:
     locale_dir.mkdir(parents=True, exist_ok=True)
     _write_po(locale_dir / "messages-es_ES.po", [("Save", "")])
     _write_po(locale_dir / "messages-es_AR.po", [("Save", "")])
+    site = _build_site(workspace)
+    typed.site_id = site.id
+    typed.workflow_service = SiteRegistryPresentationWorkflowService(
+        service=_InMemorySiteWorkflowService(site),
+        project_sync_service=_SyncStub(),
+        po_processing_service=POProcessingService(
+            translation_provider=_BehaveTranslationProvider()
+        ),
+    )
+
+
+@given("a site project with several untranslated entries in one PO file")
+def step_given_site_with_multiple_untranslated_entries(context: object) -> None:
+    typed = _context(context)
+    typed.temp_dir = tempfile.TemporaryDirectory()
+    workspace = Path(typed.temp_dir.name)
+    locale_dir = workspace / "locale"
+    locale_dir.mkdir(parents=True, exist_ok=True)
+    _write_po(
+        locale_dir / "messages-es_ES.po",
+        [("Save", ""), ("Title", ""), ("Price", "")],
+    )
     site = _build_site(workspace)
     typed.site_id = site.id
     typed.workflow_service = SiteRegistryPresentationWorkflowService(
@@ -257,7 +283,11 @@ def step_given_site_with_partial_translation_failure(context: object) -> None:
 @when("the operator runs the PO processing workflow for that site")
 def step_when_run_po(context: object) -> None:
     typed = _context(context)
-    result = typed.workflow_service.start_po_processing(typed.site_id)
+    typed.po_progress_events = []
+    result = typed.workflow_service.start_po_processing(
+        typed.site_id,
+        progress_callback=typed.po_progress_events.append,
+    )
     typed.po_result_status = result.status
     typed.po_result_families = result.processed_families
     typed.po_result_summary = result.summary
@@ -266,14 +296,18 @@ def step_when_run_po(context: object) -> None:
         typed.processed_po_text = ""
         return
     translated_po = polib.pofile(str(translated_path))
-    translated_entry = translated_po.find("Save")
-    typed.processed_po_text = "" if translated_entry is None else translated_entry.msgstr
+    typed.processed_po_text = "\n".join(f"{entry.msgid}={entry.msgstr}" for entry in translated_po)
 
 
 @when('the operator runs the PO processing workflow for that site with selected locale "{locale}"')
 def step_when_run_po_with_selected_locale(context: object, locale: str) -> None:
     typed = _context(context)
-    result = typed.workflow_service.start_po_processing(typed.site_id, locale)
+    typed.po_progress_events = []
+    result = typed.workflow_service.start_po_processing(
+        typed.site_id,
+        locale,
+        progress_callback=typed.po_progress_events.append,
+    )
     typed.po_result_status = result.status
     typed.po_result_families = result.processed_families
     typed.po_result_summary = result.summary
@@ -309,6 +343,12 @@ def step_then_translated_entries(context: object) -> None:
     assert "Translated entries: 1" in typed.po_result_summary
 
 
+@then("the PO processing result reports three translated entries")
+def step_then_three_translated_entries(context: object) -> None:
+    typed = _context(context)
+    assert "Translated entries: 3" in typed.po_result_summary
+
+
 @then("the PO processing result reports failed entries for the source file")
 def step_then_failed_entries_for_source_file(context: object) -> None:
     typed = _context(context)
@@ -320,7 +360,28 @@ def step_then_failed_entries_for_source_file(context: object) -> None:
 @then("the processed PO file contains the translated text")
 def step_then_processed_po_contains_translation(context: object) -> None:
     typed = _context(context)
-    assert typed.processed_po_text == "Guardar"
+    assert "Save=Guardar" in typed.processed_po_text
+
+
+@then("the processed PO file contains all translated texts")
+def step_then_processed_po_contains_all_translations(context: object) -> None:
+    typed = _context(context)
+    assert "Save=Guardar" in typed.processed_po_text
+    assert "Title=Titulo" in typed.processed_po_text
+    assert "Price=Precio" in typed.processed_po_text
+
+
+@then("the PO processing progress reports the current file and entry")
+def step_then_progress_reports_current_file_and_entry(context: object) -> None:
+    typed = _context(context)
+    assert any(
+        event.current_file == "locale/messages-es_ES.po" and event.current_entry == "Save"
+        for event in typed.po_progress_events
+    )
+    assert any(
+        event.current_file == "locale/messages-es_ES.po" and event.current_entry == "Title"
+        for event in typed.po_progress_events
+    )
 
 
 @then("the PO processing result reports zero processed families")

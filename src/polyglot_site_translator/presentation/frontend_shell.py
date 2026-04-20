@@ -281,6 +281,8 @@ class FrontendShell:
                 progress_total=0,
                 progress_is_indeterminate=True,
                 summary=f"Processing PO files for locales: {normalized_locales}",
+                current_file=None,
+                current_entry=None,
             )
         worker = Thread(
             target=self._run_po_processing_in_background,
@@ -676,6 +678,8 @@ class FrontendShell:
                 progress_total=0,
                 progress_is_indeterminate=False,
                 summary=str(error),
+                current_file=None,
+                current_entry=None,
             )
             self.latest_error = str(error)
         finally:
@@ -699,6 +703,8 @@ class FrontendShell:
                 f"Translated entries: {event.entries_translated} | "
                 f"Failed entries: {event.entries_failed}"
             ),
+            current_file=event.current_file,
+            current_entry=event.current_entry,
         )
 
     def _surface_background_sync_failure(
