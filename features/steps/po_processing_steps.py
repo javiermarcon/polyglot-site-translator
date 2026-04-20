@@ -11,6 +11,9 @@ import behave as behave_module  # type: ignore[import-untyped]
 import polib
 
 from polyglot_site_translator.domain.framework_detection.models import FrameworkDetectionResult
+from polyglot_site_translator.domain.po_processing.errors import (
+    POProcessingTranslationError,
+)
 from polyglot_site_translator.domain.remote_connections.models import (
     RemoteConnectionTestResult,
 )
@@ -127,6 +130,17 @@ class _BehaveTranslationProvider:
         return translations[(target_locale, text)]
 
 
+class _BehavePartiallyFailingTranslationProvider:
+    def translate_text(self, *, text: str, target_locale: str) -> str:
+        if text == "Broken":
+            msg = f"provider exploded for {target_locale}:{text}"
+            raise POProcessingTranslationError(msg)
+        translations = {
+            ("es_ES", "Save"): "Guardar",
+        }
+        return translations[(target_locale, text)]
+
+
 def _context(context: object) -> _BehavePOContext:
     return cast(_BehavePOContext, context)
 
@@ -221,6 +235,25 @@ def step_given_site_with_portuguese_variants(context: object) -> None:
     )
 
 
+@given("a site project with one failing PO entry and one translatable entry")
+def step_given_site_with_partial_translation_failure(context: object) -> None:
+    typed = _context(context)
+    typed.temp_dir = tempfile.TemporaryDirectory()
+    workspace = Path(typed.temp_dir.name)
+    locale_dir = workspace / "locale"
+    locale_dir.mkdir(parents=True, exist_ok=True)
+    _write_po(locale_dir / "messages-es_ES.po", [("Broken", ""), ("Save", "")])
+    site = _build_site(workspace)
+    typed.site_id = site.id
+    typed.workflow_service = SiteRegistryPresentationWorkflowService(
+        service=_InMemorySiteWorkflowService(site),
+        project_sync_service=_SyncStub(),
+        po_processing_service=POProcessingService(
+            translation_provider=_BehavePartiallyFailingTranslationProvider()
+        ),
+    )
+
+
 @when("the operator runs the PO processing workflow for that site")
 def step_when_run_po(context: object) -> None:
     typed = _context(context)
@@ -252,6 +285,12 @@ def step_then_completed(context: object) -> None:
     assert typed.po_result_status == "completed"
 
 
+@then("the PO processing result reports completed with errors status")
+def step_then_completed_with_errors(context: object) -> None:
+    typed = _context(context)
+    assert typed.po_result_status == "completed_with_errors"
+
+
 @then("the PO processing result reports one processed family")
 def step_then_one_family(context: object) -> None:
     typed = _context(context)
@@ -268,6 +307,14 @@ def step_then_synced_entries(context: object) -> None:
 def step_then_translated_entries(context: object) -> None:
     typed = _context(context)
     assert "Translated entries: 1" in typed.po_result_summary
+
+
+@then("the PO processing result reports failed entries for the source file")
+def step_then_failed_entries_for_source_file(context: object) -> None:
+    typed = _context(context)
+    assert "Failed entries: 1" in typed.po_result_summary
+    assert "locale/messages-es_ES.po" in typed.po_result_summary
+    assert "Broken" in typed.po_result_summary
 
 
 @then("the processed PO file contains the translated text")

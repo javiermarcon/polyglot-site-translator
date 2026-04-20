@@ -145,6 +145,8 @@ Test:
 - translation-memory reuse across files/families
 - external translation provider behavior
 - progress reporting by completed untranslated entries
+- partial translation failures that must be reported per file while processing continues
+- token-like entries that should be skipped instead of sent to the external translator
 - plurals
 - fuzzy/untranslated handling
 - output persistence

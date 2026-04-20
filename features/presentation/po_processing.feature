@@ -30,3 +30,10 @@ Feature: PO processing workflow
     Then the PO processing result reports completed status
     And the PO processing result reports one processed family
     And the PO processing result reports synchronized entries
+
+  Scenario: Continue processing when one PO entry fails in external translation
+    Given a site project with one failing PO entry and one translatable entry
+    When the operator runs the PO processing workflow for that site
+    Then the PO processing result reports completed with errors status
+    And the PO processing result reports translated entries
+    And the PO processing result reports failed entries for the source file

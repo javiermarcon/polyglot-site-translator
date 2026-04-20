@@ -449,7 +449,8 @@ class SiteRegistryPresentationWorkflowService(ProjectWorkflowService):
                 progress_is_indeterminate=False,
                 summary=(
                     "PO processing service is not configured in this runtime. "
-                    "Families processed: 0 | Synchronized entries: 0 | Translated entries: 0"
+                    "Families processed: 0 | Synchronized entries: 0 | "
+                    "Translated entries: 0 | Failed entries: 0"
                 ),
             )
         processing_site = site
@@ -465,18 +466,33 @@ class SiteRegistryPresentationWorkflowService(ProjectWorkflowService):
             )
         except POProcessingError as error:
             raise ControlledServiceError(str(error)) from error
+        summary_lines = [
+            f"Families processed: {result.families_processed}",
+            f"PO files discovered: {result.files_discovered}",
+            f"Synchronized entries: {result.entries_synchronized}",
+            f"Translated entries: {result.entries_translated}",
+            f"Failed entries: {result.entries_failed}",
+        ]
+        if result.failures:
+            summary_lines.extend(
+                [
+                    "Failed items:",
+                    *[
+                        (
+                            f"- {failure.relative_path} | locale {failure.locale} | "
+                            f"msgid '{failure.msgid}' | {failure.error_message}"
+                        )
+                        for failure in result.failures
+                    ],
+                ]
+            )
         return POProcessingSummaryViewModel(
-            status="completed",
+            status="completed_with_errors" if result.entries_failed > 0 else "completed",
             processed_families=result.families_processed,
             progress_current=result.entries_synchronized + result.entries_translated,
             progress_total=result.entries_pending,
             progress_is_indeterminate=False,
-            summary=(
-                f"Families processed: {result.families_processed} | "
-                f"PO files discovered: {result.files_discovered} | "
-                f"Synchronized entries: {result.entries_synchronized} | "
-                f"Translated entries: {result.entries_translated}"
-            ),
+            summary="\n".join(summary_lines),
         )
 
 

@@ -44,6 +44,8 @@ class POProcessingResult:
     entries_pending: int
     entries_synchronized: int
     entries_translated: int
+    entries_failed: int
+    failures: tuple[POProcessingFailure, ...]
 
 
 @dataclass(frozen=True)
@@ -56,4 +58,15 @@ class POProcessingProgress:
     files_discovered: int
     entries_synchronized: int
     entries_translated: int
+    entries_failed: int
     message: str
+
+
+@dataclass(frozen=True)
+class POProcessingFailure:
+    """One PO entry that could not be completed during processing."""
+
+    relative_path: str
+    locale: str
+    msgid: str
+    error_message: str

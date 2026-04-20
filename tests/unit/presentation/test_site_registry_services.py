@@ -17,6 +17,9 @@ from polyglot_site_translator.domain.framework_detection.errors import (
 from polyglot_site_translator.domain.framework_detection.models import (
     FrameworkDetectionResult,
 )
+from polyglot_site_translator.domain.po_processing.errors import (
+    POProcessingTranslationError,
+)
 from polyglot_site_translator.domain.remote_connections.models import (
     RemoteConnectionConfig,
     RemoteConnectionConfigInput,
@@ -75,6 +78,15 @@ from polyglot_site_translator.services.site_registry import SiteRegistryService
 class _StubPOTranslationProvider:
     def translate_text(self, *, text: str, target_locale: str) -> str:
         translations = {("es_ES", "Save"): "Guardar", ("es_AR", "Save"): "Guardar"}
+        return translations[(target_locale, text)]
+
+
+class _PartiallyFailingPOTranslationProvider:
+    def translate_text(self, *, text: str, target_locale: str) -> str:
+        if text == "Broken":
+            msg = f"translation failed for {target_locale}:{text}"
+            raise POProcessingTranslationError(msg)
+        translations = {("es_ES", "Save"): "Guardar"}
         return translations[(target_locale, text)]
 
 
@@ -883,6 +895,48 @@ def test_workflow_service_reports_translated_entries_when_provider_is_used(tmp_p
     assert preview.status == "completed"
     assert "Synchronized entries: 1" in preview.summary
     assert "Translated entries: 1" in preview.summary
+
+
+def test_workflow_service_reports_partial_po_translation_failures(tmp_path: Path) -> None:
+    locale_dir = tmp_path / "locale"
+    locale_dir.mkdir(parents=True, exist_ok=True)
+    _write_po_file(locale_dir / "messages-es_ES.po", [("Broken", ""), ("Save", "")])
+
+    repository = InMemorySiteRegistryRepository()
+    site_service = _build_domain_service(repository)
+    site = site_service.create_site(
+        SiteRegistrationInput(
+            name="Marketing Site",
+            framework_type="wordpress",
+            local_path=str(tmp_path),
+            default_locale="es_ES",
+            remote_connection=RemoteConnectionConfigInput(
+                connection_type="sftp",
+                host="example.com",
+                port=22,
+                username="deploy",
+                password="super-secret",
+                remote_path="/srv/app",
+            ),
+            is_active=True,
+        )
+    )
+    workflow = SiteRegistryPresentationWorkflowService(
+        service=site_service,
+        project_sync_service=SyncStub(),
+        po_processing_service=POProcessingService(
+            repository=PolibPOCatalogRepository(),
+            translation_provider=_PartiallyFailingPOTranslationProvider(),
+        ),
+    )
+
+    preview = workflow.start_po_processing(site.id)
+
+    assert preview.status == "completed_with_errors"
+    assert "Translated entries: 1" in preview.summary
+    assert "Failed entries: 1" in preview.summary
+    assert "locale/messages-es_ES.po" in preview.summary
+    assert "Broken" in preview.summary
 
 
 def test_workflow_service_trusts_remote_host_key_with_explicit_confirmation() -> None:

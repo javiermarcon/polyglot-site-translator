@@ -5,15 +5,18 @@ from __future__ import annotations
 from collections import defaultdict
 from collections.abc import Callable
 from pathlib import Path
+import re
 
 from polyglot_site_translator.domain.po_processing.contracts import (
     POCatalogRepository,
     POTranslationProvider,
 )
+from polyglot_site_translator.domain.po_processing.errors import POProcessingTranslationError
 from polyglot_site_translator.domain.po_processing.models import (
     POEntryData,
     POEntryId,
     POFileData,
+    POProcessingFailure,
     POProcessingProgress,
     POProcessingResult,
 )
@@ -56,6 +59,8 @@ class POProcessingService:
                 entries_pending=0,
                 entries_synchronized=0,
                 entries_translated=0,
+                entries_failed=0,
+                failures=(),
             )
 
         selected_locales = _resolve_processing_locales(
@@ -69,6 +74,8 @@ class POProcessingService:
         total_entries = _count_untranslated_entries(target_files)
         entries_synchronized = 0
         entries_translated = 0
+        entries_failed = 0
+        failures: list[POProcessingFailure] = []
 
         if progress_callback is not None:
             progress_callback(
@@ -79,13 +86,19 @@ class POProcessingService:
                     files_discovered=len(target_files),
                     entries_synchronized=0,
                     entries_translated=0,
+                    entries_failed=0,
                     message=f"Preparing {total_families} PO families for processing.",
                 )
             )
 
         updated_files: list[POFileData] = []
         for processed_families, family_files in enumerate(grouped_files.values(), start=1):
-            updated_family_files, family_synced, family_translated = _process_family(
+            (
+                updated_family_files,
+                family_synced,
+                family_translated,
+                family_failures,
+            ) = _process_family(
                 family_files=family_files,
                 selected_locales=selected_locales,
                 locale_groups=locale_groups,
@@ -95,6 +108,8 @@ class POProcessingService:
             updated_files.extend(updated_family_files)
             entries_synchronized += family_synced
             entries_translated += family_translated
+            entries_failed += len(family_failures)
+            failures.extend(family_failures)
             if progress_callback is not None:
                 progress_callback(
                     POProcessingProgress(
@@ -104,6 +119,7 @@ class POProcessingService:
                         files_discovered=len(target_files),
                         entries_synchronized=entries_synchronized,
                         entries_translated=entries_translated,
+                        entries_failed=entries_failed,
                         message=f"Processed {processed_families} of {total_families} PO families.",
                     )
                 )
@@ -115,6 +131,8 @@ class POProcessingService:
             entries_pending=total_entries,
             entries_synchronized=entries_synchronized,
             entries_translated=entries_translated,
+            entries_failed=entries_failed,
+            failures=tuple(failures),
         )
 
 
@@ -202,7 +220,8 @@ def _process_family(
     locale_groups: dict[str, tuple[str, ...]],
     translation_memory: dict[str, dict[POEntryId, TranslationValue]],
     translation_provider: POTranslationProvider | None,
-) -> tuple[tuple[POFileData, ...], int, int]:
+) -> tuple[tuple[POFileData, ...], int, int, tuple[POProcessingFailure, ...]]:
+    file_by_locale = {file_data.locale: file_data for file_data in family_files}
     family_entries: dict[str, list[POEntryData]] = {
         file_data.locale: list(file_data.entries) for file_data in family_files
     }
@@ -215,7 +234,7 @@ def _process_family(
     translated_entries = _translate_missing_entries(
         family_entries=family_entries,
         selected_locales=selected_locales,
-        family_files=family_files,
+        file_by_locale=file_by_locale,
         translation_memory=translation_memory,
         translation_provider=translation_provider,
     )
@@ -230,7 +249,12 @@ def _process_family(
         )
         for file_data in family_files
     )
-    return updated_files, synchronized_entries + translated_entries[0], translated_entries[1]
+    return (
+        updated_files,
+        synchronized_entries + translated_entries[0],
+        translated_entries[1],
+        translated_entries[2],
+    )
 
 
 def _synchronize_family(
@@ -266,14 +290,17 @@ def _translate_missing_entries(
     *,
     family_entries: dict[str, list[POEntryData]],
     selected_locales: tuple[str, ...],
-    family_files: tuple[POFileData, ...],
     translation_memory: dict[str, dict[POEntryId, TranslationValue]],
+    file_by_locale: dict[str, POFileData],
     translation_provider: POTranslationProvider | None,
-) -> tuple[int, int]:
+) -> tuple[int, int, tuple[POProcessingFailure, ...]]:
     synchronized_entries = 0
     translated_entries = 0
+    failures: list[POProcessingFailure] = []
     locale_groups = _group_locales_by_base(selected_locales)
-    nplurals_by_locale = {file_data.locale: file_data.nplurals for file_data in family_files}
+    nplurals_by_locale = {
+        locale: file_data.nplurals for locale, file_data in file_by_locale.items()
+    }
     for locale in selected_locales:
         entries = family_entries.get(locale)
         if entries is None:
@@ -301,12 +328,26 @@ def _translate_missing_entries(
                 continue
             if translation_provider is None:
                 continue
-            translation = _translate_entry(
-                entry=entry,
-                locale=locale,
-                nplurals=nplurals_by_locale.get(locale, 2),
-                translation_provider=translation_provider,
-            )
+            if not _should_attempt_external_translation(entry):
+                continue
+            try:
+                translation = _translate_entry(
+                    entry=entry,
+                    locale=locale,
+                    nplurals=nplurals_by_locale.get(locale, 2),
+                    translation_provider=translation_provider,
+                )
+            except POProcessingTranslationError as error:
+                file_data = file_by_locale[locale]
+                failures.append(
+                    POProcessingFailure(
+                        relative_path=file_data.relative_path,
+                        locale=locale,
+                        msgid=entry.entry_id.msgid,
+                        error_message=str(error),
+                    )
+                )
+                continue
             _apply_translation(entry, translation)
             translation_memory.setdefault(locale, {})[entry.entry_id] = translation
             translated_entries += 1
@@ -317,7 +358,7 @@ def _translate_missing_entries(
                 translation=translation,
                 translation_memory=translation_memory,
             )
-    return synchronized_entries, translated_entries
+    return synchronized_entries, translated_entries, tuple(failures)
 
 
 def _entries_by_key(
@@ -436,6 +477,18 @@ def _is_effectively_empty_translation(translation: TranslationValue | None) -> b
     if isinstance(translation, dict):
         return not any(value.strip() for value in translation.values())
     return translation.strip() == ""
+
+
+def _should_attempt_external_translation(entry: POEntryData) -> bool:
+    singular = entry.entry_id.msgid.strip()
+    if _is_hashtag_like_token(singular):
+        return False
+    plural = entry.entry_id.msgid_plural
+    return not (plural is not None and _is_hashtag_like_token(plural.strip()))
+
+
+def _is_hashtag_like_token(text: str) -> bool:
+    return re.fullmatch(r"#[A-Za-z0-9_-]+", text) is not None
 
 
 def _is_translated(entry: POEntryData) -> bool:

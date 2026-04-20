@@ -36,7 +36,11 @@ class GoogleTransPOTranslationProvider:
                 )
             )
         except (AttributeError, LookupError, OSError, RuntimeError, TypeError, ValueError) as error:
-            msg = f"External PO translation failed for locale '{target_locale}' and text {text!r}."
+            cause = str(error).strip() or error.__class__.__name__
+            msg = (
+                f"External PO translation failed for locale '{target_locale}' and text {text!r}. "
+                f"Cause: {cause}"
+            )
             raise POProcessingTranslationError(msg) from error
         if isinstance(translated, list):
             msg = "External PO translation returned multiple results for a single text request."

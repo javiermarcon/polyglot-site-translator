@@ -198,6 +198,7 @@ class _BlockingPOProcessingWorkflowService:
                     files_discovered=3,
                     entries_synchronized=0,
                     entries_translated=0,
+                    entries_failed=0,
                     message="Preparing 2 PO families for synchronization.",
                 )
             )
@@ -211,7 +212,7 @@ class _BlockingPOProcessingWorkflowService:
             progress_is_indeterminate=False,
             summary=(
                 "Families processed: 2 | PO files discovered: 3 | "
-                "Synchronized entries: 4 | Translated entries: 1"
+                "Synchronized entries: 4 | Translated entries: 1 | Failed entries: 0"
             ),
         )
 

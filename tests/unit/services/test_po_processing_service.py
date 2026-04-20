@@ -12,7 +12,10 @@ from polyglot_site_translator.domain.po_processing.errors import (
     POProcessingInfrastructureError,
     POProcessingTranslationError,
 )
-from polyglot_site_translator.domain.po_processing.models import POProcessingProgress
+from polyglot_site_translator.domain.po_processing.models import (
+    POProcessingFailure,
+    POProcessingProgress,
+)
 from polyglot_site_translator.domain.site_registry.models import RegisteredSite, SiteProject
 from polyglot_site_translator.infrastructure.po_files import PolibPOCatalogRepository
 from polyglot_site_translator.services.po_processing import POProcessingService
@@ -37,6 +40,21 @@ class FailingTranslationProvider:
     def translate_text(self, *, text: str, target_locale: str) -> str:
         msg = f"translation failed for {target_locale}:{text}"
         raise POProcessingTranslationError(msg)
+
+
+class PartiallyFailingTranslationProvider:
+    """Provider stub that fails for one text and succeeds for another."""
+
+    def __init__(self) -> None:
+        self.requests: list[tuple[str, str]] = []
+
+    def translate_text(self, *, text: str, target_locale: str) -> str:
+        request = (target_locale, text)
+        self.requests.append(request)
+        if text == "Broken":
+            msg = f"translation failed for {target_locale}:{text}"
+            raise POProcessingTranslationError(msg)
+        return "Guardar"
 
 
 def test_process_site_syncs_missing_variant_entries(tmp_path: Path) -> None:
@@ -152,6 +170,57 @@ def test_process_site_reports_entry_progress_for_partial_completion(tmp_path: Pa
     assert progress_events[0].total_entries == 1
     assert progress_events[1].completed_entries == 0
     assert progress_events[1].total_entries == 1
+
+
+def test_process_site_skips_hashtag_like_tokens_for_external_translation(tmp_path: Path) -> None:
+    workspace = tmp_path / "workspace"
+    locale_dir = workspace / "locale"
+    locale_dir.mkdir(parents=True, exist_ok=True)
+    _write_po(locale_dir / "messages-es_ES.po", [("#tag1", ""), ("Save", "")])
+    provider = StubTranslationProvider({("es_ES", "Save"): "Guardar"})
+
+    service = POProcessingService(
+        repository=PolibPOCatalogRepository(),
+        translation_provider=provider,
+    )
+
+    result = service.process_site(_build_site(str(workspace), "es_ES"))
+
+    translated_po = polib.pofile(str(locale_dir / "messages-es_ES.po"))
+    assert result.entries_translated == 1
+    assert result.entries_failed == 0
+    assert provider.requests == [("es_ES", "Save")]
+    assert cast(polib.POEntry, translated_po.find("#tag1")).msgstr == ""
+    assert cast(polib.POEntry, translated_po.find("Save")).msgstr == "Guardar"
+
+
+def test_process_site_collects_translation_failures_and_continues(tmp_path: Path) -> None:
+    workspace = tmp_path / "workspace"
+    locale_dir = workspace / "locale"
+    locale_dir.mkdir(parents=True, exist_ok=True)
+    _write_po(locale_dir / "messages-es_ES.po", [("Broken", ""), ("Save", "")])
+    provider = PartiallyFailingTranslationProvider()
+
+    service = POProcessingService(
+        repository=PolibPOCatalogRepository(),
+        translation_provider=provider,
+    )
+
+    result = service.process_site(_build_site(str(workspace), "es_ES"))
+
+    translated_po = polib.pofile(str(locale_dir / "messages-es_ES.po"))
+    assert result.entries_translated == 1
+    assert result.entries_failed == 1
+    assert result.failures == (
+        POProcessingFailure(
+            relative_path="locale/messages-es_ES.po",
+            locale="es_ES",
+            msgid="Broken",
+            error_message="translation failed for es_ES:Broken",
+        ),
+    )
+    assert cast(polib.POEntry, translated_po.find("Broken")).msgstr == ""
+    assert cast(polib.POEntry, translated_po.find("Save")).msgstr == "Guardar"
 
 
 def test_process_site_accepts_multiple_configured_default_locales(tmp_path: Path) -> None:
@@ -320,7 +389,9 @@ def test_process_site_filters_by_exact_selected_locales(tmp_path: Path) -> None:
     assert cast(polib.POEntry, es_mx_po.find("Hello")).msgstr == ""
 
 
-def test_process_site_raises_when_external_translation_fails(tmp_path: Path) -> None:
+def test_process_site_raises_when_every_external_translation_fails_and_no_file_can_continue(
+    tmp_path: Path,
+) -> None:
     workspace = tmp_path / "workspace"
     locale_dir = workspace / "locale"
     locale_dir.mkdir(parents=True, exist_ok=True)
@@ -330,8 +401,11 @@ def test_process_site_raises_when_external_translation_fails(tmp_path: Path) -> 
         translation_provider=FailingTranslationProvider(),
     )
 
-    with pytest.raises(POProcessingTranslationError, match="translation failed"):
-        service.process_site(_build_site(str(workspace), "es_ES"))
+    result = service.process_site(_build_site(str(workspace), "es_ES"))
+
+    assert result.entries_translated == 0
+    assert result.entries_failed == 1
+    assert result.failures[0].relative_path == "locale/messages-es_ES.po"
 
 
 def _build_site(local_path: str, default_locale: str) -> RegisteredSite:

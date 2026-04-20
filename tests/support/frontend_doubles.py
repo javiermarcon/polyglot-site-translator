@@ -172,7 +172,7 @@ class StubProjectWorkflowService:
             progress_is_indeterminate=False,
             summary=(
                 "Families processed: 4 | PO files discovered: 4 | "
-                "Synchronized entries: 0 | Translated entries: 0"
+                "Synchronized entries: 0 | Translated entries: 0 | Failed entries: 0"
             ),
         )
 

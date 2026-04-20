@@ -51,7 +51,8 @@ El repositorio está en una etapa temprana y hoy incluye principalmente:
 - acción `Process PO` con popup para elegir locales, precargado con el `default_locale` del proyecto, y ejecución en background para no bloquear la UI
 - barra de progreso en la pantalla de PO processing basada en entradas gettext completadas para saber cuántas líneas faltantes ya se resolvieron
 - sincronización PO con identidad gettext (`msgctxt`, `msgid`, `msgid_plural`) y soporte de plurales
-- resumen visible de PO processing con conteos separados de entradas sincronizadas y entradas traducidas
+- resumen visible de PO processing con conteos separados de entradas sincronizadas, traducidas y fallidas, incluyendo archivo/msgid cuando un proveedor externo falla
+- omisión explícita de tokens tipo hashtag como `#tag1` para no enviar slugs/no-text al traductor externo
 - escritura real de cambios en archivos `.po` del workspace con resultado tipado para UI
 - integración real del flujo principal de proyectos con `site_registry` persistido
 - validación de `default_locale` en el editor como locale simple o lista separada por comas, con persistencia normalizada sin espacios superfluos

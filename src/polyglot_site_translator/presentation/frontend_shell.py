@@ -696,7 +696,8 @@ class FrontendShell:
             summary=(
                 f"{event.message} | PO files discovered: {event.files_discovered} | "
                 f"Synchronized entries: {event.entries_synchronized} | "
-                f"Translated entries: {event.entries_translated}"
+                f"Translated entries: {event.entries_translated} | "
+                f"Failed entries: {event.entries_failed}"
             ),
         )
 
