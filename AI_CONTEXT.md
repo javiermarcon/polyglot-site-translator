@@ -138,6 +138,9 @@ The frontend baseline now also includes:
 - an extensible settings screen
 - a dedicated settings contract for frontend configuration
 - typed App / UI / Kivy settings state
+- runtime-level exception routing so uncaught thread/callback failures become visible shell state when recovery is possible
+- typed wrapping of framework-detection, sync-scope, provider-transport, and persisted-secret decoding failures before they reach Kivy callbacks
+- workflow-by-workflow hardening should prefer typed adapter/infrastructure failures over leaked raw transport, decoding, sqlite, or registry exceptions
 - TOML-backed frontend settings persistence for runtime configuration
 - persisted global sync rules and framework sync rules in general settings
 - explicit `.gitignore` integration for filtered sync resolution
@@ -162,6 +165,7 @@ The frontend baseline now also includes:
 - a real bidirectional sync service that reuses the discoverable remote provider registry
 - reusable remote provider sessions with explicit state for connect/list/download/upload/close across a full sync run
 - remote connection tests and sync failures report operation/project/protocol/host/port/path-specific errors instead of raw generic transport messages
+- FTP/FTPS/SFTP/SCP providers should keep operational failures under typed `RemoteConnectionOperationError` subtypes before project sync consumes them
 - typed sync direction, remote file descriptors, summaries, results, and controlled sync errors
 - typed sync progress events used to drive a background execution popup in the frontend
 - local workspace preparation, local file discovery/reads, and file writes isolated in infrastructure for sync workflows
@@ -174,6 +178,8 @@ The frontend baseline now also includes:
 - `FrameworkSyncScopeService` now composes global settings rules, framework settings rules, adapter defaults, project overrides, and optional `.gitignore` exclusions
 - the remote project configuration now persists whether sync should use adapter filters or full sync
 - the project editor only captures that preference; `ProjectSyncService` and `FrameworkSyncScopeService` resolve the effective behavior outside the Kivy layer
+- sync-scope resolution failures are surfaced as structured workflow/editor failures instead of falling through as raw adapter/gitignore/settings exceptions
+- framework-detection service entrypoints likewise wrap adapter-registry runtime failures before catalog/detail workflows consume them
 - the project editor now also renders the resolved sync-rule catalog and captures project-level include/exclude overrides, but rule composition and persistence still stay in services/infrastructure
 - a real adapter registry for framework detection with typed results
 - dynamic adapter discovery from the `adapters/` package at runtime
@@ -181,6 +187,7 @@ The frontend baseline now also includes:
 - project-detail enrichment that shows framework detection evidence or warnings without moving heuristics into Kivy
 - a first real shared PO-processing workflow for discovery, locale-family grouping, and cross-variant synchronization of missing entries
 - typed PO-processing results surfaced through the presentation workflow service
+- external PO translation providers should distinguish configuration, transport/protocol, and response-shape failures with typed PO translation errors
 - `polib`-backed PO repository wiring in runtime frontend services (instead of fixed preview placeholders)
 
 When extending the frontend, keep new behavior behind those boundaries unless the architecture docs are intentionally updated.

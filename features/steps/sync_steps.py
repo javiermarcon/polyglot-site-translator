@@ -305,6 +305,13 @@ class ProjectSetupSpec:
     use_adapter_sync_filters: bool = False
 
 
+class _FailingFrameworkSyncScopeService:
+    def resolve_for_site(self, site: Any) -> Any:
+        del site
+        msg = "broken sync scope"
+        raise OSError(msg)
+
+
 def _context(context: object) -> BehaveSyncContext:
     return cast(BehaveSyncContext, context)
 
@@ -327,6 +334,38 @@ def step_real_sync_shell(context: object) -> None:
             project_sync_service=ProjectSyncService(
                 registry=registry,
                 framework_sync_scope_service=FrameworkSyncScopeService(registry=framework_registry),
+            ),
+        )
+    )
+    typed_context.sync_root = app.build()
+    typed_context.shell = app._shell
+    typed_context.sync_screen = cast(SyncScreen, typed_context.sync_root.get_screen("sync"))
+    typed_context.detail_screen = cast(
+        ProjectDetailScreen,
+        typed_context.sync_root.get_screen("project_detail"),
+    )
+
+
+@given(
+    "the frontend shell is wired with a real sync workflow "
+    "and failing adapter sync scope resolution"
+)
+def step_real_sync_shell_with_failing_scope_resolution(context: object) -> None:
+    typed_context = _context(context)
+    typed_context.settings_temp_dir = tempfile.TemporaryDirectory()
+    typed_context.sync_provider = ScenarioSyncProvider()
+    typed_context.project_ids = {}
+    settings_service = build_default_settings_service(
+        config_dir=Path(typed_context.settings_temp_dir.name)
+    )
+    registry = RemoteConnectionRegistry.default_registry(providers=[typed_context.sync_provider])
+    app = create_kivy_app(
+        services=build_default_frontend_services(
+            settings_service=settings_service,
+            remote_connection_service=RemoteConnectionService(registry=registry),
+            project_sync_service=ProjectSyncService(
+                registry=registry,
+                framework_sync_scope_service=_FailingFrameworkSyncScopeService(),
             ),
         )
     )

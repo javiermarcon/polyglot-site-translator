@@ -25,7 +25,13 @@ from polyglot_site_translator.domain.sync.models import (
 from polyglot_site_translator.infrastructure.remote_connections.base import (
     BaseRemoteConnectionProvider,
     BaseRemoteConnectionSession,
+    RemoteConnectionDependencyError,
+    RemoteConnectionDirectoryError,
+    RemoteConnectionDownloadError,
+    RemoteConnectionListingError,
     RemoteConnectionOperationError,
+    RemoteConnectionTransportError,
+    RemoteConnectionUploadError,
 )
 
 
@@ -99,7 +105,7 @@ class _SshRemoteConnectionSession(BaseRemoteConnectionSession):
         self._ssh_client = _connect_ssh_client(self._config)
         try:
             self._sftp_client = self._ssh_client.open_sftp()
-        except OSError as error:
+        except _ssh_runtime_error_types() as error:
             self._reset_after_failed_connect()
             raise _normalize_ssh_error(
                 error,
@@ -124,7 +130,7 @@ class _SshRemoteConnectionSession(BaseRemoteConnectionSession):
                 current_remote_path=normalized_root,
                 progress_callback=progress_callback,
             )
-        except OSError as error:
+        except _ssh_runtime_error_types() as error:
             raise _normalize_ssh_error(error, default_code="remote_listing_failed") from error
 
     def _download_file(
@@ -152,7 +158,7 @@ class _SshRemoteConnectionSession(BaseRemoteConnectionSession):
                 return cast(bytes, remote_file.read())
             finally:
                 remote_file.close()
-        except OSError as error:
+        except _ssh_runtime_error_types() as error:
             raise _normalize_ssh_operation_error(
                 error,
                 default_code="download_failed",
@@ -180,7 +186,7 @@ class _SshRemoteConnectionSession(BaseRemoteConnectionSession):
             current_path = f"{current_path}/{segment}" if current_path else f"/{segment}"
             try:
                 self._sftp_client.stat(current_path)
-            except OSError:
+            except _ssh_runtime_error_types():
                 try:
                     _emit_progress(
                         progress_callback,
@@ -192,7 +198,7 @@ class _SshRemoteConnectionSession(BaseRemoteConnectionSession):
                     )
                     self._sftp_client.mkdir(current_path)
                     created_segments += 1
-                except OSError as error:
+                except _ssh_runtime_error_types() as error:
                     raise _normalize_ssh_operation_error(
                         error,
                         default_code="remote_directory_failed",
@@ -227,7 +233,7 @@ class _SshRemoteConnectionSession(BaseRemoteConnectionSession):
                 remote_file.write(contents)
             finally:
                 remote_file.close()
-        except OSError as error:
+        except _ssh_runtime_error_types() as error:
             raise _normalize_ssh_operation_error(
                 error,
                 default_code="upload_failed",
@@ -260,22 +266,22 @@ def _test_ssh_connection(
     config: RemoteConnectionConfigInput,
     success_message: str,
 ) -> RemoteConnectionTestResult:
+    ssh_client: Any | None = None
+    sftp_client: Any | None = None
     try:
         ssh_client = _connect_ssh_client(config)
         sftp_client = ssh_client.open_sftp()
         sftp_client.chdir(config.remote_path)
-        sftp_client.close()
-        ssh_client.close()
-    except ModuleNotFoundError:
+    except RemoteConnectionDependencyError as error:
         return RemoteConnectionTestResult(
             success=False,
             connection_type=config.connection_type,
             host=config.host,
             port=config.port,
-            message="Paramiko is required for SSH-based remote connections.",
-            error_code="missing_dependency",
+            message=str(error),
+            error_code=error.error_code,
         )
-    except OSError as error:
+    except _ssh_runtime_error_types() as error:
         normalized_error = _normalize_ssh_error(
             error,
             default_code="ssh_connection_failed",
@@ -291,6 +297,9 @@ def _test_ssh_connection(
             ),
             error_code=normalized_error.error_code,
         )
+    finally:
+        _close_sftp_client(sftp_client)
+        _close_ssh_client(ssh_client)
     return RemoteConnectionTestResult(
         success=True,
         connection_type=config.connection_type,
@@ -302,25 +311,33 @@ def _test_ssh_connection(
 
 
 def _build_ssh_client() -> Any:
-    paramiko = import_module("paramiko")
+    try:
+        paramiko = import_module("paramiko")
+    except ModuleNotFoundError as error:
+        msg = "Paramiko is required for SSH-based remote connections."
+        raise RemoteConnectionDependencyError(
+            error_code="missing_dependency",
+            message=msg,
+        ) from error
     return paramiko.SSHClient()
 
 
 def _connect_ssh_client(
     config: RemoteConnectionConfig | RemoteConnectionConfigInput,
 ) -> Any:
-    ssh_client = _build_ssh_client()
+    try:
+        ssh_client = _build_ssh_client()
+    except ModuleNotFoundError as error:
+        msg = "Paramiko is required for SSH-based remote connections."
+        raise RemoteConnectionDependencyError(
+            error_code="missing_dependency",
+            message=msg,
+        ) from error
     ssh_exception_type: type[BaseException] = OSError
     paramiko_module: Any | None = None
-    try:
-        paramiko_module = import_module("paramiko")
-    except ModuleNotFoundError:
-        pass
-    else:
-        ssh_exception_type = cast(
-            type[BaseException],
-            paramiko_module.SSHException,
-        )
+    paramiko_module = _load_paramiko_module_if_available()
+    if paramiko_module is not None:
+        ssh_exception_type = cast(type[BaseException], paramiko_module.SSHException)
     try:
         _configure_host_key_policy(
             ssh_client=ssh_client,
@@ -334,10 +351,36 @@ def _connect_ssh_client(
             password=config.password,
             timeout=10,
         )
-    except (OSError, ssh_exception_type) as error:
+    except ModuleNotFoundError as error:
+        ssh_client.close()
+        msg = "Paramiko is required for SSH-based remote connections."
+        raise RemoteConnectionDependencyError(
+            error_code="missing_dependency",
+            message=msg,
+        ) from error
+    except (OSError, TimeoutError, EOFError, ssh_exception_type) as error:
         ssh_client.close()
         raise _normalize_ssh_error(error, default_code="ssh_connection_failed") from error
     return ssh_client
+
+
+def _load_paramiko_module_if_available() -> Any | None:
+    try:
+        return import_module("paramiko")
+    except ModuleNotFoundError:
+        return None
+
+
+def _ssh_runtime_error_types() -> tuple[type[BaseException], ...]:
+    paramiko_module = _load_paramiko_module_if_available()
+    if paramiko_module is None:
+        return (OSError, TimeoutError, EOFError)
+    return (
+        OSError,
+        TimeoutError,
+        EOFError,
+        cast(type[BaseException], paramiko_module.SSHException),
+    )
 
 
 def _configure_host_key_policy(
@@ -376,7 +419,11 @@ def _iter_ssh_files(
         ),
     )
     ssh_client = _connect_ssh_client(config)
-    sftp_client = ssh_client.open_sftp()
+    try:
+        sftp_client = ssh_client.open_sftp()
+    except _ssh_runtime_error_types() as error:
+        ssh_client.close()
+        raise _normalize_ssh_error(error, default_code="ssh_connection_failed") from error
     try:
         normalized_root = posixpath.normpath(config.remote_path)
         yield from _walk_sftp_directory(
@@ -385,7 +432,7 @@ def _iter_ssh_files(
             current_remote_path=normalized_root,
             progress_callback=progress_callback,
         )
-    except OSError as error:
+    except _ssh_runtime_error_types() as error:
         raise _normalize_ssh_error(error, default_code="remote_listing_failed") from error
     finally:
         sftp_client.close()
@@ -407,7 +454,11 @@ def _download_ssh_file(
         ),
     )
     ssh_client = _connect_ssh_client(config)
-    sftp_client = ssh_client.open_sftp()
+    try:
+        sftp_client = ssh_client.open_sftp()
+    except _ssh_runtime_error_types() as error:
+        ssh_client.close()
+        raise _normalize_ssh_error(error, default_code="ssh_connection_failed") from error
     try:
         _emit_progress(
             progress_callback,
@@ -422,7 +473,7 @@ def _download_ssh_file(
             return cast(bytes, remote_file.read())
         finally:
             remote_file.close()
-    except OSError as error:
+    except _ssh_runtime_error_types() as error:
         raise _normalize_ssh_operation_error(
             error,
             default_code="download_failed",
@@ -500,7 +551,8 @@ def _normalize_ssh_error(
         error_code = "remote_path_not_found"
     elif _matches_any(normalized_message, ["channel", "connection reset", "broken pipe"]):
         error_code = "transport_io_failed"
-    return RemoteConnectionOperationError(
+    error_type = _ssh_error_type_for(error_code=error_code, default_code=default_code)
+    return error_type(
         error_code=error_code,
         message=error_message,
     )
@@ -523,10 +575,47 @@ def _normalize_ssh_operation_error(
             "or a file blocked by server permissions. Verify the remote path type and "
             "read permissions on the server."
         )
-    return RemoteConnectionOperationError(
+    error_type = _ssh_error_type_for(
+        error_code=normalized_error.error_code,
+        default_code=default_code,
+    )
+    return error_type(
         error_code=normalized_error.error_code,
         message=message,
     )
+
+
+def _ssh_error_type_for(
+    *,
+    error_code: str,
+    default_code: str,
+) -> type[RemoteConnectionOperationError]:
+    error_type: type[RemoteConnectionOperationError] = RemoteConnectionOperationError
+    if error_code == "missing_dependency":
+        error_type = RemoteConnectionDependencyError
+    elif default_code == "remote_listing_failed":
+        error_type = RemoteConnectionListingError
+    elif default_code == "download_failed":
+        error_type = RemoteConnectionDownloadError
+    elif default_code == "remote_directory_failed":
+        error_type = RemoteConnectionDirectoryError
+    elif default_code == "upload_failed":
+        error_type = RemoteConnectionUploadError
+    elif (
+        error_code
+        in {
+            "dns_resolution_failed",
+            "connection_timeout",
+            "connection_refused",
+            "authentication_failed",
+            "unknown_ssh_host_key",
+            "host_key_failed",
+            "transport_io_failed",
+        }
+        or default_code == "ssh_connection_failed"
+    ):
+        error_type = RemoteConnectionTransportError
+    return error_type
 
 
 def _format_connection_test_error(

@@ -2,6 +2,10 @@
 
 from __future__ import annotations
 
+import os
+
+os.environ.setdefault("KIVY_NO_FILELOG", "1")
+
 from polyglot_site_translator.bootstrap import create_frontend_shell
 from polyglot_site_translator.infrastructure.settings import build_default_settings_service
 from polyglot_site_translator.presentation.contracts import FrontendServices

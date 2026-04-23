@@ -55,6 +55,13 @@ El repositorio está en una etapa temprana y hoy incluye principalmente:
 - sincronización PO con identidad gettext (`msgctxt`, `msgid`, `msgid_plural`) y soporte de plurales
 - resumen visible de PO processing con conteos separados de entradas sincronizadas, traducidas y fallidas, incluyendo archivo/msgid cuando un proveedor externo falla
 - omisión explícita de tokens tipo hashtag como `#tag1` para no enviar slugs/no-text al traductor externo
+- el adaptador `googletrans` trata errores HTTP/protocolo como fallos controlados de traducción para que el workflow continúe con las demás entradas
+- framework detection y sync scope envuelven fallos de adapters, `.gitignore` y settings persistidos en errores tipados para que los workflows fallen de forma controlada
+- los secretos remotos corruptos leídos desde SQLite se reportan como errores explícitos de persistencia en vez de dejar escapar errores de decoding
+- los workflows que dependen de adapters externos endurecen sus fallos operacionales en errores tipados y mensajes controlados antes de llegar a la UI
+- los proveedores remotos `ftp`, `ftps_explicit`, `ftps_implicit`, `sftp` y `scp` diferencian fallos de dependencia, transporte, listing, download, creación de directorios y upload con subtipos operacionales estables
+- el proveedor externo `googletrans` diferencia fallos de configuración, transporte/protocolo y respuesta inválida bajo el contrato compartido de PO translation
+- el runtime gráfico enruta errores no controlados de main thread, background threads y callbacks Kivy hacia estados visibles de la UI cuando la app puede recuperarse sin abortar
 - escritura real de cambios en archivos `.po` del workspace con resultado tipado para UI
 - integración real del flujo principal de proyectos con `site_registry` persistido
 - validación de `default_locale` en el editor como locale simple o lista separada por comas, con persistencia normalizada sin espacios superfluos
@@ -157,8 +164,11 @@ La base actual del frontend incluye:
 
 La navegación mantiene el contexto del proyecto seleccionado. El flujo principal de create/list/detail/update, sync bidireccional y PO processing ya usan servicios reales para `site_registry`, subsistema remoto y procesamiento de `.po`; el audit sigue usando servicios fake detrás de los mismos contratos de UI.
 Cuando la preferencia `Use Adapter Sync Filters` está activa en la configuración remota persistida del proyecto, ambos sentidos de sync usan el scope resuelto por `FrameworkSyncScopeService`; cuando está desactivada, el servicio ejecuta full sync. Ese scope ahora compone reglas globales persistidas en settings, reglas persistidas por framework, reglas base del adapter, overrides persistidos por proyecto y exclusiones derivadas de `.gitignore` cuando la opción está habilitada. El Project Editor sigue mostrando el catálogo resuelto por proyecto y permite activar/desactivar reglas individuales y agregar includes/excludes adicionales persistidos por proyecto. La pantalla general de Settings ahora expone el ABM de reglas globales y por framework más el toggle `Use .gitignore Exclusions`. Si el proyecto pide sync filtrado pero no existe un scope utilizable, el sync falla de forma explícita en vez de caer en un fallback silencioso.
+Si la resolución del scope falla por un adapter roto, por lectura de `.gitignore` o por persistencia/configuración compartida, el editor y el workflow de sync muestran un error controlado con mensaje explícito sin romper el runtime.
+La detección de framework también envuelve fallos operacionales del registry/discovery en errores tipados, y la lectura de secretos remotos corruptos en SQLite falla con un error de persistencia explícito en vez de propagar errores crudos de base64/UTF-8.
 
 El entrypoint gráfico por defecto (`create_kivy_app()` / `python -m polyglot_site_translator`) arranca con settings TOML y `site_registry` SQLite reales. Los bundles fake seeded quedan reservados para tests y escenarios de desarrollo controlados.
+Ese entrypoint también desactiva el file logger de Kivy por defecto e instala hooks globales para convertir fallos no controlados en estados visibles del frontend cuando existe una ruta de recuperación.
 Los doubles/stubs de test para funcionalidades ya implementadas viven en soporte de tests y no forman parte del runtime productivo.
 
 ## Estructura del repositorio

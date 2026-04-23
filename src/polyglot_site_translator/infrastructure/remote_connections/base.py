@@ -28,6 +28,34 @@ class RemoteConnectionOperationError(OSError):
         self.error_code = error_code
 
 
+class RemoteConnectionDependencyError(RemoteConnectionOperationError):
+    """Raised when a remote provider cannot run because a dependency is missing."""
+
+
+class RemoteConnectionConfigurationError(RemoteConnectionOperationError):
+    """Raised when local provider configuration prevents a remote operation."""
+
+
+class RemoteConnectionTransportError(RemoteConnectionOperationError):
+    """Raised when opening or using the remote transport fails."""
+
+
+class RemoteConnectionListingError(RemoteConnectionOperationError):
+    """Raised when remote file discovery fails."""
+
+
+class RemoteConnectionDownloadError(RemoteConnectionOperationError):
+    """Raised when a remote file download fails."""
+
+
+class RemoteConnectionDirectoryError(RemoteConnectionOperationError):
+    """Raised when remote directory preparation fails."""
+
+
+class RemoteConnectionUploadError(RemoteConnectionOperationError):
+    """Raised when uploading a remote file fails."""
+
+
 class BaseRemoteConnectionSession(ABC):
     """Reusable remote connection session with state and controlled connect retries."""
 

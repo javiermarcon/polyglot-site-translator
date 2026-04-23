@@ -15,6 +15,10 @@ from polyglot_site_translator.domain.remote_connections.models import (
     RemoteConnectionConfig,
 )
 from polyglot_site_translator.domain.site_registry.models import RegisteredSite
+from polyglot_site_translator.domain.sync.errors import (
+    SyncConfigurationError,
+    SyncScopePersistenceError,
+)
 from polyglot_site_translator.domain.sync.models import (
     LocalSyncFile,
     SyncDirection,
@@ -352,7 +356,32 @@ class ProjectSyncService:
                     ),
                 ),
             )
-        scope = self._framework_sync_scope_service.resolve_for_site(site)
+        try:
+            scope = self._framework_sync_scope_service.resolve_for_site(site)
+        except (
+            SyncConfigurationError,
+            SyncScopePersistenceError,
+            LookupError,
+            OSError,
+            RuntimeError,
+            ValueError,
+        ) as error:
+            return None, self._failure_result(
+                direction=direction,
+                context=_FailureContext(
+                    site=site,
+                    connection_type=remote_connection.connection_type,
+                    summary=summary,
+                ),
+                error=SyncError(
+                    code="sync_scope_resolution_failed",
+                    message=(
+                        "Adapter-filtered sync is enabled for project "
+                        f"'{site.name}', but sync scope resolution failed. "
+                        f"Cause: {_format_error_cause(error)}"
+                    ),
+                ),
+            )
         if scope.is_filtered:
             return scope, None
         return None, self._failure_result(

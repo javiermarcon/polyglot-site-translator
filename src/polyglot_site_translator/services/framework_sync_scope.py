@@ -7,6 +7,10 @@ from pathlib import Path
 
 from polyglot_site_translator.adapters.framework_registry import FrameworkAdapterRegistry
 from polyglot_site_translator.domain.site_registry.models import RegisteredSite
+from polyglot_site_translator.domain.sync.errors import (
+    SyncConfigurationError,
+    SyncScopePersistenceError,
+)
 from polyglot_site_translator.domain.sync.scope import (
     AdapterSyncScope,
     AdapterSyncScopeSettings,
@@ -67,17 +71,17 @@ class FrameworkSyncScopeService:
     ) -> ResolvedSyncScope:
         """Resolve the sync scope for a framework type and project path."""
         normalized_framework_type = framework_type.strip().lower()
-        sync_scope_settings = self._sync_scope_settings_provider()
+        sync_scope_settings = self._load_sync_scope_settings()
+        gitignore_rules = self._load_project_gitignore_rules(
+            sync_scope_settings=sync_scope_settings,
+            project_path=Path(project_path),
+        )
         resolved_shared_rules = _resolve_scope_rules(
             framework_type=normalized_framework_type,
             adapter_scope=AdapterSyncScope(),
             global_rules=sync_scope_settings.global_rules,
             framework_rules=sync_scope_settings.rules_for_framework(normalized_framework_type),
-            gitignore_rules=_load_gitignore_rules(
-                sync_scope_settings=sync_scope_settings,
-                project_path=Path(project_path),
-                gitignore_rule_loader=self._gitignore_rule_loader,
-            ),
+            gitignore_rules=gitignore_rules,
             project_rule_overrides=project_rule_overrides,
         )
         if normalized_framework_type in {"", UNKNOWN_FRAMEWORK_TYPE}:
@@ -135,16 +139,17 @@ class FrameworkSyncScopeService:
                 ),
                 catalog_rules=(),
             )
+        adapter_scope = self._load_adapter_scope(
+            framework_type=normalized_framework_type,
+            adapter_name=adapter.adapter_name,
+            project_path=Path(project_path),
+        )
         resolved_rules = _resolve_scope_rules(
             framework_type=normalized_framework_type,
-            adapter_scope=adapter.get_sync_scope(Path(project_path)),
+            adapter_scope=adapter_scope,
             global_rules=sync_scope_settings.global_rules,
             framework_rules=sync_scope_settings.rules_for_framework(normalized_framework_type),
-            gitignore_rules=_load_gitignore_rules(
-                sync_scope_settings=sync_scope_settings,
-                project_path=Path(project_path),
-                gitignore_rule_loader=self._gitignore_rule_loader,
-            ),
+            gitignore_rules=gitignore_rules,
             project_rule_overrides=project_rule_overrides,
         )
         return _build_scope_from_rules(
@@ -163,6 +168,56 @@ class FrameworkSyncScopeService:
                 f"'{adapter.adapter_name}'."
             ),
         )
+
+    def _load_sync_scope_settings(self) -> AdapterSyncScopeSettings:
+        try:
+            return self._sync_scope_settings_provider()
+        except SyncScopePersistenceError:
+            raise
+        except (LookupError, OSError, RuntimeError, ValueError) as error:
+            msg = f"Shared sync scope settings could not be loaded. Cause: {error}"
+            raise SyncConfigurationError(msg) from error
+
+    def _load_project_gitignore_rules(
+        self,
+        *,
+        sync_scope_settings: AdapterSyncScopeSettings,
+        project_path: Path,
+    ) -> tuple[ConfiguredSyncRule, ...]:
+        try:
+            return _load_gitignore_rules(
+                sync_scope_settings=sync_scope_settings,
+                project_path=project_path,
+                gitignore_rule_loader=self._gitignore_rule_loader,
+            )
+        except SyncScopePersistenceError:
+            raise
+        except (LookupError, OSError, RuntimeError, ValueError) as error:
+            msg = (
+                f"Project gitignore sync rules could not be resolved for '{project_path}'. "
+                f"Cause: {error}"
+            )
+            raise SyncConfigurationError(msg) from error
+
+    def _load_adapter_scope(
+        self,
+        *,
+        framework_type: str,
+        adapter_name: str,
+        project_path: Path,
+    ) -> AdapterSyncScope:
+        adapter = self._registry.find_adapter(framework_type)
+        if adapter is None:
+            msg = f"No installed framework adapter can provide sync filters for '{framework_type}'."
+            raise SyncConfigurationError(msg)
+        try:
+            return adapter.get_sync_scope(project_path)
+        except (LookupError, OSError, RuntimeError, ValueError) as error:
+            msg = (
+                f"Framework adapter '{adapter_name}' failed while resolving sync scope for "
+                f"'{project_path}'. Cause: {error}"
+            )
+            raise SyncConfigurationError(msg) from error
 
 
 def _build_scope_from_rules(  # noqa: PLR0913

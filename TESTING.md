@@ -146,6 +146,8 @@ Test:
 - external translation provider behavior
 - progress reporting by completed untranslated entries
 - partial translation failures that must be reported per file while processing continues
+- provider transport/protocol failures that must be wrapped and reported without aborting the full PO run
+- provider configuration failures and invalid response shapes as typed translation-provider errors
 - token-like entries that should be skipped instead of sent to the external translator
 - plurals
 - fuzzy/untranslated handling
@@ -170,6 +172,8 @@ Test:
 - target-specific extraction behavior
 - normalization into shared contracts
 - failure behavior for invalid configurations
+- typed wrapping of adapter/runtime failures instead of raw filesystem or transport exceptions
+- frontend-facing workflows that consume those adapters still surface controlled error states instead of uncaught failures
 
 ### If changing report generation
 
@@ -191,6 +195,8 @@ Test:
 - configured database-path resolution from settings
 - explicit persistence/configuration error wrapping
 - encrypted secret storage behavior if credential fields are persisted
+- corrupted encrypted secrets and invalid ciphertext payloads
+- repository reads that must translate sqlite/decode failures into typed persistence errors
 
 ### If changing remote connection code
 
@@ -202,6 +208,8 @@ Test:
 - optional no-connection flows
 - structured connection-test results
 - failure behavior through mocks/stubs
+- typed operation errors for dependency, transport, listing, download, directory preparation, and upload failures
+- malformed remote listings that should not leak raw parser exceptions
 - no accidental destructive behavior
 
 ### If changing sync code
@@ -214,7 +222,9 @@ Test:
 - remote listing failures
 - download failures
 - local workspace preparation and directory creation
+- sync-scope resolution failures coming from adapters, `.gitignore`, or persisted shared sync rules
 - UI-facing sync summaries and controlled error codes
+- editor fallback behavior when sync-scope resolution fails before a sync run starts
 
 ### If changing CLI
 
@@ -224,6 +234,15 @@ Test:
 - command dispatch
 - error messaging
 - output files where applicable
+
+### If changing runtime bootstrap or global error handling
+
+Test:
+
+- uncaught worker-thread failures are surfaced into failed shell state
+- uncaught Kivy callback failures become visible UI failure state when recovery is possible
+- startup/settings bootstrap still falls back to a safe state on controlled errors
+- external provider protocol/transport failures are converted into controlled operational errors
 
 ### If changing Kivy orchestration
 

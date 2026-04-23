@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from base64 import urlsafe_b64decode, urlsafe_b64encode
+import binascii
 import hashlib
 import hmac
 from pathlib import Path
@@ -36,7 +37,11 @@ class LocalKeySiteSecretCipher:
     def decrypt(self, ciphertext: str) -> str:
         """Decrypt a stored secret."""
         key = self._load_or_create_key()
-        payload = urlsafe_b64decode(ciphertext.encode("ascii"))
+        try:
+            payload = urlsafe_b64decode(ciphertext.encode("ascii"))
+        except (UnicodeEncodeError, ValueError, binascii.Error) as error:
+            msg = "Stored site secret could not be decoded."
+            raise SiteRegistryPersistenceError(msg) from error
         nonce = payload[:_NONCE_SIZE]
         mac = payload[_NONCE_SIZE : _NONCE_SIZE + _MAC_SIZE]
         encrypted_bytes = payload[_NONCE_SIZE + _MAC_SIZE :]
@@ -48,7 +53,11 @@ class LocalKeySiteSecretCipher:
             encrypted_bytes,
             _build_keystream(key, nonce, len(encrypted_bytes)),
         )
-        return plaintext_bytes.decode("utf-8")
+        try:
+            return plaintext_bytes.decode("utf-8")
+        except UnicodeDecodeError as error:
+            msg = "Stored site secret could not be decoded."
+            raise SiteRegistryPersistenceError(msg) from error
 
     def _load_or_create_key(self) -> bytes:
         try:

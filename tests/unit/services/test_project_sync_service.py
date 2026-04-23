@@ -18,6 +18,7 @@ from polyglot_site_translator.domain.remote_connections.models import (
     RemoteConnectionTypeDescriptor,
 )
 from polyglot_site_translator.domain.site_registry.models import RegisteredSite, SiteProject
+from polyglot_site_translator.domain.sync.errors import SyncConfigurationError
 from polyglot_site_translator.domain.sync.models import (
     RemoteSyncFile,
     SyncDirection,
@@ -50,6 +51,15 @@ class StubFrameworkSyncScopeService:
     def resolve_for_site(self, site: RegisteredSite) -> ResolvedSyncScope:
         self.calls.append(site.id)
         return self.resolved_scope
+
+
+@dataclass
+class FailingFrameworkSyncScopeService:
+    error: OSError | SyncConfigurationError
+
+    def resolve_for_site(self, site: RegisteredSite) -> ResolvedSyncScope:
+        del site
+        raise self.error
 
 
 @dataclass
@@ -965,6 +975,39 @@ def test_project_sync_service_returns_a_controlled_error_when_filtered_sync_scop
     assert result.success is False
     assert result.error is not None
     assert result.error.code == "sync_scope_unavailable"
+
+
+def test_project_sync_service_returns_a_controlled_error_when_filtered_sync_scope_resolution_fails(
+    tmp_path: Path,
+) -> None:
+    service = ProjectSyncService(
+        registry=RemoteConnectionRegistry.default_registry(providers=[StubSyncProvider()]),
+        framework_sync_scope_service=FailingFrameworkSyncScopeService(
+            error=OSError("gitignore read failed")
+        ),
+    )
+
+    result = service.sync_remote_to_local(
+        _build_site(
+            local_root=tmp_path,
+            remote_connection=RemoteConnectionConfig(
+                id="remote-site-123",
+                site_project_id="site-123",
+                connection_type="sftp",
+                host="example.test",
+                port=22,
+                username="deploy",
+                password="secret",
+                remote_path="/srv/app",
+                flags=RemoteConnectionFlags(use_adapter_sync_filters=True),
+            ),
+        )
+    )
+
+    assert result.success is False
+    assert result.error is not None
+    assert result.error.code == "sync_scope_resolution_failed"
+    assert "gitignore read failed" in result.error.message
 
 
 def test_project_sync_service_returns_a_controlled_result_when_incremental_listing_fails(

@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections.abc import Callable
 from dataclasses import dataclass, replace
 from threading import Lock, Thread
+from types import TracebackType
 
 from polyglot_site_translator.domain.po_processing.models import POProcessingProgress
 from polyglot_site_translator.domain.site_registry.locales import normalize_default_locale
@@ -250,18 +251,39 @@ class FrontendShell:
     def start_audit(self) -> None:
         """Trigger audit through the workflow contract."""
         project_id = self._require_project_id()
-        self.latest_error = None
-        self.audit_state = self.services.workflows.start_audit(project_id)
+        try:
+            self.audit_state = self.services.workflows.start_audit(project_id)
+            self.latest_error = None
+        except ControlledServiceError as error:
+            self.audit_state = AuditSummaryViewModel(
+                status="failed",
+                findings_count=0,
+                findings_summary=str(error),
+            )
+            self.latest_error = str(error)
         self._set_route(RouteName.AUDIT, project_id=project_id)
 
     def start_po_processing(self, locales: str | None = None) -> None:
         """Trigger PO processing through the workflow contract."""
         project_id = self._require_project_id()
-        self.latest_error = None
-        self.po_processing_state = self.services.workflows.start_po_processing(
-            project_id,
-            locales,
-        )
+        try:
+            self.po_processing_state = self.services.workflows.start_po_processing(
+                project_id,
+                locales,
+            )
+            self.latest_error = None
+        except ControlledServiceError as error:
+            self.po_processing_state = POProcessingSummaryViewModel(
+                status="failed",
+                processed_families=0,
+                progress_current=0,
+                progress_total=0,
+                progress_is_indeterminate=False,
+                summary=str(error),
+                current_file=None,
+                current_entry=None,
+            )
+            self.latest_error = str(error)
         self._set_route(RouteName.PO_PROCESSING, project_id=project_id)
 
     def start_po_processing_async(self, locales: str) -> None:
@@ -706,6 +728,98 @@ class FrontendShell:
             current_file=event.current_file,
             current_entry=event.current_entry,
         )
+
+    def surface_unhandled_runtime_error(
+        self,
+        error: BaseException,
+        *,
+        context: str,
+        thread_name: str | None = None,
+        traceback: TracebackType | None = None,
+    ) -> None:
+        """Convert an unhandled runtime error into visible UI state."""
+        del traceback
+        cause = str(error).strip() or error.__class__.__name__
+        error_message = (
+            f"Unhandled runtime error in {context}. Cause: {error.__class__.__name__}: {cause}"
+        )
+        self.latest_error = error_message
+
+        if thread_name is not None and thread_name.startswith("po-processing-"):
+            self._surface_unhandled_po_processing_error(error_message)
+            return
+
+        if thread_name is not None and thread_name.startswith("sync-"):
+            self._surface_unhandled_sync_error(error_message)
+            return
+
+        route_handled = self._surface_unhandled_route_error(error_message)
+        if not route_handled and self.router.current.name is RouteName.SYNC:
+            self._surface_unhandled_sync_error(error_message)
+
+    def _surface_unhandled_po_processing_error(self, error_message: str) -> None:
+        current_state = self.po_processing_state
+        if current_state is None:
+            self.po_processing_state = POProcessingSummaryViewModel(
+                status="failed",
+                processed_families=0,
+                progress_current=0,
+                progress_total=0,
+                progress_is_indeterminate=False,
+                summary=error_message,
+                current_file=None,
+                current_entry=None,
+            )
+            return
+        self.po_processing_state = replace(
+            current_state,
+            status="failed",
+            progress_is_indeterminate=False,
+            summary=error_message,
+        )
+
+    def _surface_unhandled_sync_error(self, error_message: str) -> None:
+        self.sync_state = SyncStatusViewModel(
+            status="failed",
+            files_synced=0,
+            summary=error_message,
+            error_code="sync_runtime_failure",
+        )
+        if self.sync_progress_state is not None:
+            self.sync_progress_state = replace(
+                self.sync_progress_state,
+                status="failed",
+                message=error_message,
+                progress_is_indeterminate=False,
+            )
+
+    def _surface_unhandled_route_error(self, error_message: str) -> bool:
+        current_route = self.router.current.name
+        if current_route is RouteName.AUDIT:
+            self.audit_state = AuditSummaryViewModel(
+                status="failed",
+                findings_count=0,
+                findings_summary=error_message,
+            )
+            return True
+        if current_route is RouteName.PO_PROCESSING:
+            self._surface_unhandled_po_processing_error(error_message)
+            return True
+        if current_route is RouteName.SETTINGS and self.settings_state is not None:
+            self.settings_state = replace(
+                self.settings_state,
+                status="failed",
+                status_message=error_message,
+            )
+            return True
+        if current_route is RouteName.PROJECT_EDITOR and self.project_editor_state is not None:
+            self.project_editor_state = replace(
+                self.project_editor_state,
+                status="failed",
+                status_message=error_message,
+            )
+            return True
+        return False
 
     def _surface_background_sync_failure(
         self,

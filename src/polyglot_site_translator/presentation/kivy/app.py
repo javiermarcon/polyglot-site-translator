@@ -2,9 +2,13 @@
 
 from __future__ import annotations
 
-from typing import Any
+import sys
+import threading
+from types import TracebackType
+from typing import Any, cast
 
 from kivy.app import App
+from kivy.base import ExceptionHandler, ExceptionManager
 from kivy.core.window import Window
 
 from polyglot_site_translator.presentation.errors import ControlledServiceError
@@ -26,13 +30,24 @@ class PolyglotSiteTranslatorApp(App):  # type: ignore[misc]
         super().__init__(**kwargs)
         self._shell = shell
         self._built_root: Any | None = None
+        self._previous_excepthook = sys.excepthook
+        self._previous_threading_excepthook = threading.excepthook
+        self._runtime_exception_handler = _RuntimeExceptionHandler(self)
 
     def build(self) -> Any:
         """Build the root widget tree."""
         self.title = "Polyglot Site Translator"
+        self._install_runtime_error_handlers()
         self._open_initial_route()
         self._built_root = build_root_widget(self._shell, self.apply_runtime_settings)
         return self._built_root
+
+    def on_stop(self) -> None:
+        """Restore global runtime exception hooks on shutdown."""
+        ExceptionManager.remove_handler(self._runtime_exception_handler)
+        sys.excepthook = self._previous_excepthook
+        threading.excepthook = self._previous_threading_excepthook
+        super().on_stop()
 
     def apply_runtime_settings(self, app_settings: AppSettingsViewModel) -> None:
         """Apply runtime Kivy settings after a successful save."""
@@ -81,3 +96,56 @@ class PolyglotSiteTranslatorApp(App):  # type: ignore[misc]
             self._shell.settings_state = state
             self._shell.latest_error = str(error)
         return self._shell.settings_state
+
+    def _install_runtime_error_handlers(self) -> None:
+        """Install app-level exception routing for foreground and background failures."""
+        sys.excepthook = self._handle_main_exception
+        threading.excepthook = self._handle_thread_exception
+        ExceptionManager.add_handler(self._runtime_exception_handler)
+
+    def _handle_main_exception(
+        self,
+        exc_type: type[BaseException],
+        exc_value: BaseException,
+        exc_traceback: TracebackType | None,
+    ) -> None:
+        """Route uncaught main-thread exceptions into shell state."""
+        if issubclass(exc_type, KeyboardInterrupt | SystemExit):
+            self._previous_excepthook(exc_type, exc_value, exc_traceback)
+            return
+        self._shell.surface_unhandled_runtime_error(
+            exc_value,
+            context="main thread",
+        )
+
+    def _handle_thread_exception(self, args: threading.ExceptHookArgs) -> None:
+        """Route uncaught worker-thread exceptions into shell state."""
+        if issubclass(args.exc_type, KeyboardInterrupt | SystemExit):
+            self._previous_threading_excepthook(args)
+            return
+        if args.exc_value is None:
+            return
+        thread_name = None if args.thread is None else args.thread.name
+        self._shell.surface_unhandled_runtime_error(
+            args.exc_value,
+            context=f"background thread '{thread_name or 'unknown'}'",
+            thread_name=thread_name,
+            traceback=args.exc_traceback,
+        )
+
+
+class _RuntimeExceptionHandler(ExceptionHandler):  # type: ignore[misc]
+    """Kivy exception bridge that surfaces callback failures in the shell."""
+
+    def __init__(self, app: PolyglotSiteTranslatorApp) -> None:
+        super().__init__()
+        self._app = app
+
+    def handle_exception(self, inst: BaseException) -> int:
+        if isinstance(inst, KeyboardInterrupt | SystemExit):
+            return cast(int, ExceptionManager.RAISE)
+        self._app._shell.surface_unhandled_runtime_error(
+            inst,
+            context="kivy callback",
+        )
+        return cast(int, ExceptionManager.PASS)

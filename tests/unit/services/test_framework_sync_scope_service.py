@@ -5,12 +5,15 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
+import pytest
+
 from polyglot_site_translator.adapters.framework_registry import FrameworkAdapterRegistry
 from polyglot_site_translator.adapters.wordpress import WordPressFrameworkAdapter
 from polyglot_site_translator.domain.framework_detection.models import (
     FrameworkDetectionResult,
 )
 from polyglot_site_translator.domain.site_registry.models import RegisteredSite, SiteProject
+from polyglot_site_translator.domain.sync.errors import SyncConfigurationError
 from polyglot_site_translator.domain.sync.scope import (
     AdapterSyncScope,
     AdapterSyncScopeSettings,
@@ -297,6 +300,40 @@ def test_framework_sync_scope_service_ignores_gitignore_rules_when_disabled(
     )
 
     assert resolved_scope.includes("__snapshots__/message.txt") is True
+
+
+def test_framework_sync_scope_service_wraps_adapter_scope_resolution_failures(
+    tmp_path: Path,
+) -> None:
+    @dataclass(frozen=True)
+    class _FailingAdapter:
+        framework_type: str = "broken"
+        adapter_name: str = "broken_adapter"
+        display_name: str = "Broken"
+
+        def detect(self, project_path: Path) -> FrameworkDetectionResult:
+            return FrameworkDetectionResult.unmatched(project_path=str(project_path))
+
+        def get_sync_scope(self, project_path: Path) -> AdapterSyncScope:
+            msg = f"cannot inspect {project_path}"
+            raise OSError(msg)
+
+        def get_sync_filters(self, project_path: Path) -> tuple[SyncFilterSpec, ...]:
+            del project_path
+            return ()
+
+    service = FrameworkSyncScopeService(
+        registry=FrameworkAdapterRegistry.default_registry(adapters=[_FailingAdapter()])
+    )
+
+    with pytest.raises(
+        SyncConfigurationError,
+        match=r"Framework adapter 'broken_adapter' failed while resolving sync scope",
+    ):
+        service.resolve_for_framework(
+            framework_type="broken",
+            project_path=tmp_path / "broken-project",
+        )
 
 
 def _build_site(tmp_path: Path, *, framework_type: str) -> RegisteredSite:

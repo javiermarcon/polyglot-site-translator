@@ -26,7 +26,12 @@ from polyglot_site_translator.domain.sync.models import (
 from polyglot_site_translator.infrastructure.remote_connections.base import (
     BaseRemoteConnectionProvider,
     BaseRemoteConnectionSession,
+    RemoteConnectionDirectoryError,
+    RemoteConnectionDownloadError,
+    RemoteConnectionListingError,
     RemoteConnectionOperationError,
+    RemoteConnectionTransportError,
+    RemoteConnectionUploadError,
 )
 
 _ConnectFunction = Callable[
@@ -247,12 +252,20 @@ class _FtpRemoteConnectionSession(BaseRemoteConnectionSession):
         progress_callback: SyncProgressCallback | None,
     ) -> Iterator[RemoteSyncFile]:
         normalized_root = _normalize_remote_path(self._config.remote_path)
-        yield from _walk_ftp_directory(
-            client=self._client,
-            base_remote_path=normalized_root,
-            current_remote_path=normalized_root,
-            progress_callback=progress_callback,
-        )
+        try:
+            yield from _walk_ftp_directory(
+                client=self._client,
+                base_remote_path=normalized_root,
+                current_remote_path=normalized_root,
+                progress_callback=progress_callback,
+            )
+        except RemoteConnectionListingError:
+            raise
+        except all_errors as error:
+            raise _normalize_ftp_error(
+                error,
+                default_code="remote_listing_failed",
+            ) from error
 
     def _download_file(
         self,
@@ -403,10 +416,21 @@ def _walk_ftp_directory(
             continue
         if facts.get("type") != "file":
             continue
+        try:
+            size_bytes = int(facts.get("size", "0"))
+        except ValueError as error:
+            msg = (
+                f"FTP remote listing returned an invalid size for '{remote_path}': "
+                f"{facts.get('size')!r}."
+            )
+            raise RemoteConnectionListingError(
+                error_code="remote_listing_malformed",
+                message=msg,
+            ) from error
         yield RemoteSyncFile(
             remote_path=remote_path,
             relative_path=posixpath.relpath(remote_path, base_remote_path),
-            size_bytes=int(facts.get("size", "0")),
+            size_bytes=size_bytes,
         )
 
 
@@ -491,10 +515,35 @@ def _normalize_ftp_error(
         error_code = "tls_handshake_failed"
     elif "permission denied" in normalized_message:
         error_code = "remote_permission_denied"
-    return RemoteConnectionOperationError(
+    error_type = _ftp_error_type_for(error_code=error_code, default_code=default_code)
+    return error_type(
         error_code=error_code,
         message=error_message,
     )
+
+
+def _ftp_error_type_for(
+    *,
+    error_code: str,
+    default_code: str,
+) -> type[RemoteConnectionOperationError]:
+    if error_code in {
+        "dns_resolution_failed",
+        "connection_timeout",
+        "connection_refused",
+        "authentication_failed",
+        "tls_handshake_failed",
+    } or default_code.endswith("_connection_failed"):
+        return RemoteConnectionTransportError
+    if default_code == "remote_listing_failed":
+        return RemoteConnectionListingError
+    if default_code == "download_failed":
+        return RemoteConnectionDownloadError
+    if default_code == "remote_directory_failed":
+        return RemoteConnectionDirectoryError
+    if default_code == "upload_failed":
+        return RemoteConnectionUploadError
+    return RemoteConnectionOperationError
 
 
 def _matches_any(message: str, patterns: list[str]) -> bool:

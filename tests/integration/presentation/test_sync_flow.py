@@ -16,11 +16,13 @@ from polyglot_site_translator.domain.remote_connections.models import (
     RemoteConnectionTestResult,
     RemoteConnectionTypeDescriptor,
 )
+from polyglot_site_translator.domain.site_registry.models import RegisteredSite
 from polyglot_site_translator.domain.sync.models import (
     RemoteSyncFile,
     SyncProgressEvent,
     SyncProgressStage,
 )
+from polyglot_site_translator.domain.sync.scope import ResolvedSyncScope
 from polyglot_site_translator.infrastructure.remote_connections.registry import (
     RemoteConnectionRegistry,
 )
@@ -33,6 +35,13 @@ from polyglot_site_translator.services.framework_sync_scope import (
 )
 from polyglot_site_translator.services.project_sync import ProjectSyncService
 from polyglot_site_translator.services.remote_connections import RemoteConnectionService
+
+
+class _FailingFrameworkSyncScopeService:
+    def resolve_for_site(self, site: RegisteredSite) -> ResolvedSyncScope:
+        del site
+        msg = "broken sync scope"
+        raise OSError(msg)
 
 
 @dataclass(frozen=True)
@@ -353,6 +362,54 @@ def test_real_sync_flow_uses_filtered_mode_when_the_project_preference_enables_i
     assert shell.sync_state.files_synced == 1
     assert (local_root / "wp-content" / "themes" / "theme" / "style.css").exists() is True
     assert (local_root / "readme.html").exists() is False
+
+
+def test_real_sync_flow_surfaces_scope_resolution_failures_without_crashing(
+    tmp_path: Path,
+) -> None:
+    settings_service = build_default_settings_service(config_dir=tmp_path / "config")
+    remote_registry = RemoteConnectionRegistry.default_registry(providers=[StubSyncProvider()])
+    app = create_kivy_app(
+        services=build_default_frontend_services(
+            settings_service=settings_service,
+            remote_connection_service=RemoteConnectionService(registry=remote_registry),
+            project_sync_service=ProjectSyncService(
+                registry=remote_registry,
+                framework_sync_scope_service=_FailingFrameworkSyncScopeService(),
+            ),
+        )
+    )
+    shell = app._shell
+    local_root = tmp_path / "workspace" / "filtered-site"
+
+    shell.open_project_editor_create()
+    shell.save_new_project(
+        SiteEditorViewModel(
+            site_id=None,
+            name="Filtered Site",
+            framework_type="wordpress",
+            local_path=str(local_root),
+            default_locale="en_US",
+            connection_type="sftp",
+            remote_host="filtered.example.test",
+            remote_port="22",
+            remote_username="deploy",
+            remote_password="secret",
+            remote_path="/srv/app",
+            is_active=True,
+            use_adapter_sync_filters=True,
+        )
+    )
+
+    shell.open_projects()
+    created_project = shell.projects_state.projects[0]
+    shell.select_project(created_project.id)
+    shell.start_sync()
+
+    assert shell.sync_state is not None
+    assert shell.sync_state.status == "failed"
+    assert shell.sync_state.error_code == "sync_scope_resolution_failed"
+    assert "broken sync scope" in shell.sync_state.summary
 
 
 def test_sync_screen_renders_real_sync_results(tmp_path: Path) -> None:

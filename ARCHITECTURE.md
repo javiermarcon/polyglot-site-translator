@@ -36,6 +36,7 @@ The codebase should be organized around these layers:
    - user interaction
    - progress and feedback display
    - dedicated sync progress popups for long-running remote transfers
+   - runtime exception routing for main thread, worker threads, and Kivy callbacks when the app can continue safely
 
 2. **Application services**
    - orchestrate workflows
@@ -106,10 +107,11 @@ Current first real implementation:
 - `services/site_registry.py` validates and orchestrates CRUD use cases
 - `services/remote_connections.py` validates optional remote configs, exposes the discoverable catalog, and dispatches connection tests
 - `services/framework_sync_scope.py` resolves adapter-defined sync scopes from the persisted framework type, shared settings-level rules, optional `.gitignore` exclusions, and project-specific overrides
-- `services/project_sync.py` orchestrates remote-to-local listing/download and local-to-remote upload, plus structured sync results
+- `services/project_sync.py` orchestrates remote-to-local listing/download and local-to-remote upload, plus structured sync results and typed sync-scope resolution failures
 - `infrastructure/sync_scope_sqlite.py` owns schema creation, row mapping, and SQLite persistence for shared global/framework sync rules and the optional `.gitignore` setting
-- `infrastructure/site_registry_sqlite.py` owns schema creation, row mapping, and SQLite access
-- `infrastructure/remote_connections/` owns discoverable remote connection providers and transport-specific connectivity checks
+- `infrastructure/site_registry_sqlite.py` owns schema creation, row mapping, SQLite access, and explicit wrapping of corrupted encrypted-secret reads
+- `infrastructure/site_secrets.py` and `infrastructure/site_registry_sqlite.py` treat corrupted encrypted secrets as explicit persistence failures rather than leaking decoding errors
+- `infrastructure/remote_connections/` owns discoverable remote connection providers, transport-specific connectivity checks, and typed operation errors for dependency, transport, listing, download, directory, and upload failures
 - `infrastructure/sync_local.py` owns local workspace directory creation, local file discovery, reads, and file writes for synchronized content
 - `presentation/site_registry_services.py` adapts the real service into UI-facing catalog/editor workflows
 
@@ -119,7 +121,8 @@ Current framework detection implementation:
 - `adapters/base.py` defines the discoverable adapter base class
 - `adapters/framework_registry.py` auto-discovers ordered adapters from the package and handles explicit ambiguity
 - `adapters/wordpress.py`, `adapters/django.py`, and `adapters/flask.py` own target-specific detection heuristics
-- `services/framework_detection.py` validates local paths, delegates to the adapter registry, and exposes framework catalog metadata
+- `services/framework_detection.py` validates local paths, delegates to the adapter registry, exposes framework catalog metadata, and wraps adapter-registry runtime failures into typed detection errors
+- `services/framework_detection.py` wraps adapter-registry runtime failures into typed framework-detection errors before presentation consumes them
 - `services/site_registry.py` can enrich persisted `framework_type` through the detection service without embedding heuristics itself
 
 ### 2. Remote connections and synchronization
@@ -136,6 +139,7 @@ Current implemented sync stage:
 - reuses the existing discoverable remote provider registry
 - opens one reusable remote session per sync run, so listing/download or mkdir/upload share the same connection lifecycle
 - returns typed sync results with structured success/failure details
+- FTP/FTPS/SFTP/SCP providers normalize operational failures into `RemoteConnectionOperationError` subtypes before sync orchestration consumes them
 - prepares the local workspace automatically when directories are missing
 - prepares missing remote directories automatically before upload
 
@@ -143,6 +147,8 @@ Current UI behavior for sync mode:
 
 - the project editor persists a per-project remote setting that selects adapter-filtered sync or full sync
 - `ProjectSyncService` reads that persisted preference and resolves the effective sync scope outside the Kivy layer
+- `FrameworkSyncScopeService` wraps adapter, `.gitignore`, and persisted-settings failures into typed sync-configuration errors before returning to presentation workflows
+- if adapter, `.gitignore`, or persisted sync-scope settings resolution fails, `ProjectSyncService` returns a structured sync failure and the project editor keeps a usable fallback state with an explicit message
 - the resolved scope can include localization-relevant paths and exclude framework-specific artifacts such as virtualenvs or bytecode caches
 - the project editor renders the resolved rule catalog, allows enabling/disabling individual rules, and persists additional project-specific include/exclude overrides without moving scope logic into Kivy
 - shared global sync rules, framework sync rules and the optional `use_gitignore_rules` toggle are persisted in SQLite for runtime sync scope resolution while the UI remains a typed editor of that persisted state
@@ -188,6 +194,8 @@ Current implemented PO stage:
 - translation memory reuse across families for sibling variants of the same base language
 - external translation provider integration through an infrastructure adapter
 - per-entry external-translation failures are collected with file/msgid attribution so processing can continue for the remaining PO entries
+- provider-level transport/protocol failures are wrapped into controlled PO translation errors before they reach the shared service
+- provider configuration, transport/protocol, and invalid response failures use specific `POProcessingTranslationError` subtypes while remaining compatible with the shared PO workflow
 - synchronization supports gettext identity by `msgctxt + msgid + msgid_plural`
 - plural translations are synchronized when available in sibling variants
 - plural translations can be generated by the external provider using the PO `nplurals` metadata
@@ -412,14 +420,17 @@ The current repository baseline includes a first Kivy frontend shell under `src/
 Key responsibilities:
 
 - `app.py` and `__main__.py` expose the graphical entrypoint.
+- `app.py` now also applies safe runtime defaults before importing Kivy-heavy modules.
 - `bootstrap.py` wires the presentation shell with injectable service contracts.
 - `presentation/contracts.py` defines UI-facing protocols for project catalog and workflow actions.
 - `presentation/view_models.py` defines typed dataclasses for dashboard, projects, project detail, sync, audit, and PO processing states.
 - `presentation/frontend_shell.py` centralizes navigation-safe orchestration without embedding infrastructure logic in widgets.
+- `presentation/frontend_shell.py` also surfaces recoverable unhandled runtime failures into typed UI state.
 - `presentation/frontend_shell.py` now also owns the grouped application menu state and contextual route enabling.
 - `presentation/fakes.py` is now limited to real runtime wiring for the graphical entrypoint.
 - test doubles for implemented frontend workflows live in test-only support modules, not in production bundles under `src/`.
 - `presentation/kivy/` contains thin `ScreenManager` wiring and screen classes that render already-prepared state.
+- `presentation/kivy/app.py` installs runtime exception routing so uncaught foreground/background failures are converted into visible shell state whenever possible.
 - `presentation/kivy/assets/fonts/` ships third-party icon fonts (for example **Material Icons**, Apache 2.0) inside the Python package so glyphs such as password visibility icons render consistently without relying on system emoji fonts; see `NOTICE.txt` in that directory.
 - `presentation/contracts.py` now also defines a settings contract for frontend configuration workflows.
 - `presentation/contracts.py` now also defines a project-registry management contract for create/edit flows.

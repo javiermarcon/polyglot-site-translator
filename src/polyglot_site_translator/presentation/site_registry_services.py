@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Protocol
 
 from polyglot_site_translator.domain.framework_detection.errors import (
-    FrameworkDetectionAmbiguityError,
+    FrameworkDetectionError,
 )
 from polyglot_site_translator.domain.framework_detection.models import (
     FrameworkDetectionResult,
@@ -34,6 +34,10 @@ from polyglot_site_translator.domain.site_registry.errors import (
 from polyglot_site_translator.domain.site_registry.models import (
     RegisteredSite,
     SiteRegistrationInput,
+)
+from polyglot_site_translator.domain.sync.errors import (
+    SyncConfigurationError,
+    SyncScopePersistenceError,
 )
 from polyglot_site_translator.domain.sync.models import (
     SyncDirection,
@@ -152,7 +156,7 @@ class SiteRegistryPresentationCatalogService(ProjectCatalogService):
             SiteRegistryNotFoundError,
             SiteRegistryPersistenceError,
             SiteRegistryConfigurationError,
-            FrameworkDetectionAmbiguityError,
+            FrameworkDetectionError,
         ) as error:
             raise ControlledServiceError(str(error)) from error
         return _build_project_detail(site, detection_result)
@@ -196,6 +200,8 @@ class SiteRegistryPresentationManagementService(ProjectRegistryManagementService
             SiteRegistryNotFoundError,
             SiteRegistryPersistenceError,
             SiteRegistryConfigurationError,
+            SyncConfigurationError,
+            SyncScopePersistenceError,
         ) as error:
             raise ControlledServiceError(str(error)) from error
         return _build_editor_state(
@@ -215,7 +221,7 @@ class SiteRegistryPresentationManagementService(ProjectRegistryManagementService
             detection_result = self._service.detect_framework(site.local_path)
         except (
             ValueError,
-            FrameworkDetectionAmbiguityError,
+            FrameworkDetectionError,
             SiteRegistryValidationError,
             SiteRegistryConflictError,
             SiteRegistryConfigurationError,
@@ -238,7 +244,7 @@ class SiteRegistryPresentationManagementService(ProjectRegistryManagementService
             detection_result = self._service.detect_framework(site.local_path)
         except (
             ValueError,
-            FrameworkDetectionAmbiguityError,
+            FrameworkDetectionError,
             SiteRegistryValidationError,
             SiteRegistryConflictError,
             SiteRegistryNotFoundError,
@@ -285,7 +291,11 @@ class SiteRegistryPresentationManagementService(ProjectRegistryManagementService
                 status_message="Project editor draft updated.",
                 connection_test_result=None,
             )
-        except ValueError as error:
+        except (
+            ValueError,
+            SyncConfigurationError,
+            SyncScopePersistenceError,
+        ) as error:
             raise ControlledServiceError(str(error)) from error
 
     def _default_workspace_root(self) -> Path:
@@ -327,6 +337,8 @@ class SiteRegistryPresentationWorkflowService(ProjectWorkflowService):
             SiteRegistryNotFoundError,
             SiteRegistryPersistenceError,
             SiteRegistryConfigurationError,
+            SyncConfigurationError,
+            SyncScopePersistenceError,
         ) as error:
             raise ControlledServiceError(str(error)) from error
         result = self._project_sync_service.sync_remote_to_local(
@@ -347,6 +359,8 @@ class SiteRegistryPresentationWorkflowService(ProjectWorkflowService):
             SiteRegistryNotFoundError,
             SiteRegistryPersistenceError,
             SiteRegistryConfigurationError,
+            SyncConfigurationError,
+            SyncScopePersistenceError,
         ) as error:
             raise ControlledServiceError(str(error)) from error
         result = self._project_sync_service.sync_local_to_remote(
@@ -405,7 +419,7 @@ class SiteRegistryPresentationWorkflowService(ProjectWorkflowService):
             SiteRegistryNotFoundError,
             SiteRegistryPersistenceError,
             SiteRegistryConfigurationError,
-            FrameworkDetectionAmbiguityError,
+            FrameworkDetectionError,
         ) as error:
             raise ControlledServiceError(str(error)) from error
         if detection_result.matched:
@@ -742,11 +756,29 @@ def _resolve_editor_sync_scope(
             message="Framework sync scope service is not available in this frontend runtime.",
             catalog_rules=_build_resolved_rules_from_editor_items(editor.sync_rule_items),
         )
-    return framework_sync_scope_service.resolve_for_framework(
-        framework_type=framework_type,
-        project_path=editor.local_path,
-        project_rule_overrides=_build_project_rule_overrides(editor.sync_rule_items),
-    )
+    try:
+        return framework_sync_scope_service.resolve_for_framework(
+            framework_type=framework_type,
+            project_path=editor.local_path,
+            project_rule_overrides=_build_project_rule_overrides(editor.sync_rule_items),
+        )
+    except (
+        SyncConfigurationError,
+        SyncScopePersistenceError,
+        LookupError,
+        OSError,
+        RuntimeError,
+        ValueError,
+    ) as error:
+        return ResolvedSyncScope(
+            framework_type=framework_type or "unknown",
+            adapter_name=None,
+            status=SyncScopeStatus.ADAPTER_UNAVAILABLE,
+            filters=(),
+            excludes=(),
+            message=f"Framework sync scope resolution failed. Cause: {error}",
+            catalog_rules=_build_resolved_rules_from_editor_items(editor.sync_rule_items),
+        )
 
 
 def _apply_resolved_scope_to_editor(

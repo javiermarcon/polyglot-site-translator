@@ -8,9 +8,13 @@ import threading
 from typing import Protocol, runtime_checkable
 
 from googletrans import Translator  # type: ignore[import-untyped]
+import httpcore
+import httpx
 
 from polyglot_site_translator.domain.po_processing.errors import (
-    POProcessingTranslationError,
+    POTranslationProviderConfigurationError,
+    POTranslationProviderResponseError,
+    POTranslationProviderTransportError,
 )
 
 
@@ -37,22 +41,34 @@ class GoogleTransPOTranslationProvider:
                     dest=destination_language,
                 )
             )
-        except (AttributeError, LookupError, OSError, RuntimeError, TypeError, ValueError) as error:
+        except (AttributeError, LookupError, TypeError, ValueError) as error:
+            cause = str(error).strip() or error.__class__.__name__
+            msg = (
+                f"External PO translation provider is misconfigured for locale "
+                f"'{target_locale}' and text {text!r}. Cause: {cause}"
+            )
+            raise POTranslationProviderConfigurationError(msg) from error
+        except (
+            OSError,
+            RuntimeError,
+            httpcore.ProtocolError,
+            httpx.HTTPError,
+        ) as error:
             cause = str(error).strip() or error.__class__.__name__
             msg = (
                 f"External PO translation failed for locale '{target_locale}' and text {text!r}. "
                 f"Cause: {cause}"
             )
-            raise POProcessingTranslationError(msg) from error
+            raise POTranslationProviderTransportError(msg) from error
         if isinstance(translated, list):
             msg = "External PO translation returned multiple results for a single text request."
-            raise POProcessingTranslationError(msg)
+            raise POTranslationProviderResponseError(msg)
         if not isinstance(translated, _TranslationResult):
             msg = (
                 "External PO translation returned an unexpected result type: "
                 f"{type(translated).__name__}."
             )
-            raise POProcessingTranslationError(msg)
+            raise POTranslationProviderResponseError(msg)
         return str(translated.text)
 
     def _loop(self) -> asyncio.AbstractEventLoop:
@@ -69,7 +85,7 @@ class GoogleTransPOTranslationProvider:
         translator = getattr(self._thread_state, "translator", None)
         if isinstance(translator, Translator):
             return translator
-        translator = Translator()
+        translator = Translator(http2=False)
         self._thread_state.translator = translator
         return translator
 

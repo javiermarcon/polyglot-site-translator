@@ -245,8 +245,12 @@ class SqliteSiteRegistryRepository:
             FROM site_remote_connections
             WHERE site_project_id = ?
         """
-        with self._connect() as connection:
-            row = connection.execute(statement, (site_id,)).fetchone()
+        try:
+            with self._connect() as connection:
+                row = connection.execute(statement, (site_id,)).fetchone()
+        except sqlite3.Error as error:
+            msg = f"SQLite site registry read failed at {self._location.database_path}."
+            raise SiteRegistryPersistenceError(msg) from error
         if row is None:
             msg = f"Unknown site id: {site_id}"
             raise SiteRegistryNotFoundError(msg)

@@ -2,16 +2,20 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import replace
 from typing import cast
 
 import pytest
 
 from polyglot_site_translator.bootstrap import create_frontend_shell
+from polyglot_site_translator.domain.po_processing.models import POProcessingProgress
 from polyglot_site_translator.presentation.contracts import FrontendServices
 from polyglot_site_translator.presentation.errors import ControlledServiceError
 from polyglot_site_translator.presentation.router import RouteName
 from polyglot_site_translator.presentation.view_models import (
+    AuditSummaryViewModel,
+    POProcessingSummaryViewModel,
     ProjectDetailViewModel,
     ProjectEditorStateViewModel,
     ProjectSummaryViewModel,
@@ -86,6 +90,24 @@ class FailingRegistryService:
         mode: str,
     ) -> ProjectEditorStateViewModel:
         msg = f"Project editor preview unavailable for {mode}:{editor.name}."
+        raise ControlledServiceError(msg)
+
+
+class FailingAuditAndPOWorkflowService(StubProjectWorkflowService):
+    """Workflow fake that fails on audit and PO processing."""
+
+    def start_audit(self, project_id: str) -> AuditSummaryViewModel:
+        msg = f"Audit failed for {project_id}."
+        raise ControlledServiceError(msg)
+
+    def start_po_processing(
+        self,
+        project_id: str,
+        locales: str | None = None,
+        progress_callback: Callable[[POProcessingProgress], None] | None = None,
+    ) -> POProcessingSummaryViewModel:
+        del locales, progress_callback
+        msg = f"PO processing failed for {project_id}."
         raise ControlledServiceError(msg)
 
 
@@ -271,6 +293,32 @@ def test_shell_wraps_project_catalog_failures_and_registry_failures() -> None:
     shell.open_project_editor_edit("wp-site")
     assert shell.project_editor_state is None
     assert shell.latest_error == "Edit workflow unavailable for wp-site."
+
+
+def test_shell_surfaces_audit_and_po_failures_without_raising() -> None:
+    seeded_services = build_seeded_services()
+    shell = create_frontend_shell(
+        FrontendServices(
+            catalog=seeded_services.catalog,
+            workflows=FailingAuditAndPOWorkflowService(),
+            settings=seeded_services.settings,
+            registry=seeded_services.registry,
+        )
+    )
+    shell.open_projects()
+    shell.select_project("wp-site")
+
+    shell.start_audit()
+    assert shell.audit_state is not None
+    assert shell.audit_state.status == "failed"
+    assert shell.audit_state.findings_summary == "Audit failed for wp-site."
+    assert shell.latest_error == "Audit failed for wp-site."
+
+    shell.start_po_processing()
+    assert shell.po_processing_state is not None
+    assert shell.po_processing_state.status == "failed"
+    assert shell.po_processing_state.summary == "PO processing failed for wp-site."
+    assert shell.latest_error == "PO processing failed for wp-site."
 
 
 def test_shell_handles_project_editor_failures_and_missing_editor_state() -> None:

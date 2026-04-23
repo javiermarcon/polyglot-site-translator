@@ -48,3 +48,13 @@ def test_secret_cipher_wraps_os_errors_when_key_storage_fails(
         match=r"Site secret key could not be loaded from",
     ):
         cipher.encrypt("super-secret")
+
+
+def test_secret_cipher_rejects_invalid_encoded_payloads(tmp_path: Path) -> None:
+    cipher = LocalKeySiteSecretCipher(tmp_path / "site_registry.key")
+
+    with pytest.raises(
+        SiteRegistryPersistenceError,
+        match=r"Stored site secret failed integrity validation\.",
+    ):
+        cipher.decrypt("not-valid-base64***")

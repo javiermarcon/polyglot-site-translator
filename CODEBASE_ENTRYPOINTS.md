@@ -35,10 +35,13 @@ Current entrypoints:
 - `polyglot_site_translator.__main__:main`
 - `run_app.py`
 - `polyglot_site_translator.presentation.kivy.app.PolyglotSiteTranslatorApp.apply_runtime_settings`
+- `polyglot_site_translator.presentation.kivy.app.PolyglotSiteTranslatorApp._install_runtime_error_handlers`
 
 Default runtime wiring:
 
 - `polyglot_site_translator.app:create_kivy_app` must boot the graphical app with the real TOML settings service and SQLite-backed site registry services unless a test/development bundle is injected explicitly.
+- `polyglot_site_translator.app:create_kivy_app` must also set the safe Kivy file-log default before importing Kivy-heavy runtime modules.
+- `PolyglotSiteTranslatorApp` owns the installation of global exception routing for uncaught main-thread exceptions, worker-thread exceptions, and Kivy callback failures.
 
 ---
 
@@ -83,10 +86,15 @@ Current frontend-facing service entrypoints:
 - `polyglot_site_translator.services.framework_sync_scope.FrameworkSyncScopeService.resolve_for_site`
 - `polyglot_site_translator.services.framework_sync_scope.FrameworkSyncScopeService.resolve_for_framework`
 - `polyglot_site_translator.services.framework_sync_scope.SyncScopeResolutionService`
+- `polyglot_site_translator.services.framework_detection.FrameworkDetectionService.detect_project`
+- `polyglot_site_translator.services.framework_detection.FrameworkDetectionService.list_supported_frameworks`
 - `polyglot_site_translator.services.project_sync.ProjectSyncService.sync_remote_to_local`
 - `polyglot_site_translator.services.project_sync.ProjectSyncService.sync_local_to_remote`
 - `polyglot_site_translator.services.remote_connections.RemoteConnectionService.list_supported_connection_types`
 - `polyglot_site_translator.services.remote_connections.RemoteConnectionService.test_connection`
+- `polyglot_site_translator.infrastructure.site_secrets.LocalKeySiteSecretCipher.decrypt`
+- `polyglot_site_translator.infrastructure.site_registry_sqlite.SqliteSiteRegistryRepository.fetch_encrypted_password`
+- `polyglot_site_translator.infrastructure.remote_connections.base.RemoteConnectionOperationError`
 
 ---
 
@@ -175,6 +183,7 @@ Current project-registry orchestration entrypoints:
 Current project-detail enrichment entrypoints:
 
 - `polyglot_site_translator.services.site_registry.SiteRegistryService.detect_framework`
+- `polyglot_site_translator.services.framework_detection.FrameworkDetectionService.detect_project`
 - `polyglot_site_translator.presentation.site_registry_services.SiteRegistryPresentationCatalogService.get_project_detail`
 - `polyglot_site_translator.presentation.site_registry_services.SiteRegistryPresentationManagementService.create_project`
 - `polyglot_site_translator.presentation.site_registry_services.SiteRegistryPresentationManagementService.update_project`
@@ -246,6 +255,7 @@ Current PO-processing entrypoints:
 - `polyglot_site_translator.infrastructure.po_files.PolibPOCatalogRepository.discover_po_files`
 - `polyglot_site_translator.infrastructure.po_files.PolibPOCatalogRepository.save_po_files`
 - `polyglot_site_translator.infrastructure.po_translator_googletrans.GoogleTransPOTranslationProvider.translate_text`
+- `polyglot_site_translator.domain.po_processing.errors.POProcessingTranslationError`
 
 ---
 

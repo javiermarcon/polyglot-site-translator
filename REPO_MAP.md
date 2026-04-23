@@ -68,7 +68,7 @@ Possible areas under `src/`:
 Current frontend base:
 
 - `polyglot_site_translator/app.py`
-  Public Kivy app factory.
+  Public Kivy app factory plus safe Kivy runtime defaults applied before importing Kivy-heavy modules.
 
 - `polyglot_site_translator/__main__.py`
   Executable GUI module.
@@ -86,16 +86,16 @@ Current frontend base:
   Supported translation of `.gitignore` patterns into sync exclusions.
 
 - `polyglot_site_translator/infrastructure/remote_connections/base.py`
-  Shared provider and reusable-session base classes, structured remote-operation errors, controlled connect retry behavior, bounded `list_remote_files()` materialization, and incremental traversal helpers.
+  Shared provider and reusable-session base classes, structured remote-operation errors and subtypes, controlled connect retry behavior, bounded `list_remote_files()` materialization, and incremental traversal helpers.
 
 - `polyglot_site_translator/infrastructure/database_location.py`
   Resolution and validation of the configured SQLite directory/filename into a final database path.
 
 - `polyglot_site_translator/infrastructure/site_registry_sqlite.py`
-  Real SQLite repository for the site registry, including schema setup, legacy FTP migration, related remote-connection persistence, persisted filtered-vs-full sync preference, persisted project sync-rule overrides, and configured runtime wiring from settings.
+  Real SQLite repository for the site registry, including schema setup, legacy FTP migration, related remote-connection persistence, persisted filtered-vs-full sync preference, persisted project sync-rule overrides, configured runtime wiring from settings, and typed wrapping for corrupted encrypted-secret reads.
 
 - `polyglot_site_translator/infrastructure/site_secrets.py`
-  Local reversible encryption helper used to store remote passwords encrypted at rest.
+  Local reversible encryption helper used to store remote passwords encrypted at rest, with explicit decode/integrity failures mapped to typed persistence errors.
 
 - `polyglot_site_translator/domain/remote_connections/`
   Typed remote-connection descriptors, configs, session state, test results, and provider/session contracts.
@@ -116,10 +116,10 @@ Current frontend base:
   Discoverable adapter base class, dynamic adapter registry, and concrete WordPress, Django, and Flask project detectors.
 
 - `polyglot_site_translator/services/framework_detection.py`
-  Registry-backed framework detection orchestration with path validation and framework catalog exposure.
+  Registry-backed framework detection orchestration with path validation, framework catalog exposure, and typed wrapping of adapter-registry runtime failures.
 
 - `polyglot_site_translator/services/framework_sync_scope.py`
-  Explicit resolution of global sync rules, framework-level settings rules, adapter-defined include/exclude rules, optional `.gitignore` exclusions, and persisted project overrides from the current framework type, without hardcoding framework paths in generic sync services or Kivy UI modules.
+  Explicit resolution of global sync rules, framework-level settings rules, adapter-defined include/exclude rules, optional `.gitignore` exclusions, and persisted project overrides from the current framework type, without hardcoding framework paths in generic sync services or Kivy UI modules; failures in those external inputs are wrapped into typed sync-configuration errors.
 
 - `polyglot_site_translator/services/site_registry.py`
   Site registry CRUD orchestration and validation independent from Kivy or SQLite details, with optional remote-connection integration and optional framework detection integration.
@@ -128,7 +128,7 @@ Current frontend base:
   Validation, discoverable catalog exposure, and connection-test orchestration for remote connection providers.
 
 - `polyglot_site_translator/services/project_sync.py`
-  Bidirectional sync orchestration over the existing remote provider registry, including one reusable remote session per sync run, optional adapter-resolved sync scopes, typed results, and controlled failures.
+  Bidirectional sync orchestration over the existing remote provider registry, including one reusable remote session per sync run, optional adapter-resolved sync scopes, typed results, controlled failures, and explicit handling of sync-scope resolution failures.
 
 - `polyglot_site_translator/domain/po_processing/`
   Typed PO processing models, contracts, and explicit domain/infrastructure errors.
@@ -140,10 +140,10 @@ Current frontend base:
   Real PO repository based on `polib` for reading/writing project PO catalogs.
 
 - `polyglot_site_translator/infrastructure/po_translator_googletrans.py`
-  External translation-provider adapter for PO processing, isolated behind the shared PO translation contract.
+  External translation-provider adapter for PO processing, isolated behind the shared PO translation contract, with typed wrapping of configuration, HTTP/protocol, and invalid-response failures.
 
 - `polyglot_site_translator/infrastructure/remote_connections/`
-  Discoverable FTP/FTPS/SFTP/SCP provider implementations, reusable transport sessions, and the runtime provider registry.
+  Discoverable FTP/FTPS/SFTP/SCP provider implementations, reusable transport sessions, typed operation failure normalization, and the runtime provider registry.
 
 - `polyglot_site_translator/infrastructure/sync_local.py`
   Local workspace directory creation, local file discovery/reads, and downloaded-file persistence for sync workflows.
@@ -155,7 +155,7 @@ Current frontend base:
   Typed dataclasses for dashboard, project list/detail, sync, audit, PO processing, settings, and project-editor sync rule catalogs.
 
 - `polyglot_site_translator/presentation/frontend_shell.py`
-  Navigation menu state, settings editing, project editor orchestration, project-editor preview refreshes, sync background execution state, and route-safe CRUD wiring independent from Kivy rendering.
+  Navigation menu state, settings editing, project editor orchestration, project-editor preview refreshes, sync background execution state, route-safe CRUD wiring, and visible surfacing of recoverable unhandled runtime failures independent from Kivy rendering.
 
 - `polyglot_site_translator/presentation/fakes.py`
   Default runtime wiring for the real TOML + SQLite-backed frontend services. This module must not keep fake bundles for workflows that already have production implementations.
@@ -165,6 +165,9 @@ Current frontend base:
 
 - `polyglot_site_translator/presentation/kivy/`
   Thin Kivy `ScreenManager`, screens, and reusable widget area.
+
+- `polyglot_site_translator/presentation/kivy/app.py`
+  Thin Kivy `App` wrapper that applies runtime settings and installs global exception routing for main thread, worker threads, and Kivy callbacks.
 
 - `polyglot_site_translator/presentation/kivy/theme.py`
   Runtime theme palette tokens and active theme selection for the Kivy frontend.

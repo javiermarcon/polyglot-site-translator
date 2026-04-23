@@ -36,6 +36,7 @@ from polyglot_site_translator.domain.site_registry.models import (
     SiteProject,
     SiteRegistrationInput,
 )
+from polyglot_site_translator.domain.sync.errors import SyncConfigurationError
 from polyglot_site_translator.domain.sync.models import (
     RemoteSyncFile,
     SyncDirection,
@@ -251,6 +252,19 @@ class SyncStub:
             ),
             error=None,
         )
+
+
+class FailingFrameworkSyncScopeService:
+    def resolve_for_framework(
+        self,
+        *,
+        framework_type: str,
+        project_path: Path | str,
+        project_rule_overrides: tuple[object, ...] = (),
+    ) -> Any:
+        del framework_type, project_path, project_rule_overrides
+        msg = "broken sync scope"
+        raise SyncConfigurationError(msg)
 
 
 def test_catalog_service_maps_project_summaries_and_detail() -> None:
@@ -541,6 +555,29 @@ def test_management_service_previews_resolved_scope_and_project_rules(
     assert "locale" in [item.relative_path for item in preview.editor.sync_rule_items]
     assert ".venv" in [item.relative_path for item in preview.editor.sync_rule_items]
     assert "locale_custom" in [item.relative_path for item in preview.editor.sync_rule_items]
+
+
+def test_management_service_keeps_editor_usable_when_sync_scope_resolution_fails(
+    tmp_path: Path,
+) -> None:
+    settings_service = TomlSettingsService(tmp_path / "settings.toml")
+    settings_service.reset_settings()
+    management = SiteRegistryPresentationManagementService(
+        service=_build_domain_service(InMemorySiteRegistryRepository()),
+        settings_service=settings_service,
+        framework_sync_scope_service=FailingFrameworkSyncScopeService(),  # type: ignore[arg-type]
+    )
+
+    preview = management.preview_project_editor(
+        replace(_build_editor(), framework_type="django", use_adapter_sync_filters=True),
+        mode="create",
+    )
+
+    assert preview.status == "editing"
+    assert preview.sync_scope_status == "adapter_unavailable"
+    assert preview.sync_scope_message == (
+        "Framework sync scope resolution failed. Cause: broken sync scope"
+    )
 
 
 def test_management_service_persists_project_sync_rule_overrides(

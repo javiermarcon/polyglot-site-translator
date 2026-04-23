@@ -4,10 +4,15 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
+
 from polyglot_site_translator.adapters.django import DjangoFrameworkAdapter
 from polyglot_site_translator.adapters.flask import FlaskFrameworkAdapter
 from polyglot_site_translator.adapters.framework_registry import FrameworkAdapterRegistry
 from polyglot_site_translator.adapters.wordpress import WordPressFrameworkAdapter
+from polyglot_site_translator.domain.framework_detection.errors import (
+    FrameworkDetectionError,
+)
 from polyglot_site_translator.domain.framework_detection.models import FrameworkDescriptor
 from polyglot_site_translator.services.framework_detection import FrameworkDetectionService
 
@@ -98,3 +103,28 @@ def test_framework_detection_service_lists_supported_frameworks() -> None:
             display_name="WordPress",
         ),
     ]
+
+
+def test_framework_detection_service_wraps_registry_runtime_failures(tmp_path: Path) -> None:
+    class _FailingRegistry:
+        def resolve(self, _project_path: Path) -> object:
+            msg = "broken adapter registry"
+            raise OSError(msg)
+
+        def list_framework_descriptors(self) -> list[FrameworkDescriptor]:
+            msg = "broken adapter registry"
+            raise RuntimeError(msg)
+
+    service = FrameworkDetectionService(registry=_FailingRegistry())  # type: ignore[arg-type]
+
+    with pytest.raises(
+        FrameworkDetectionError,
+        match=r"Framework detection failed while inspecting project path",
+    ):
+        service.detect_project(tmp_path)
+
+    with pytest.raises(
+        FrameworkDetectionError,
+        match=r"Framework descriptor discovery failed",
+    ):
+        service.list_supported_frameworks()

@@ -3,12 +3,16 @@
 from __future__ import annotations
 
 from dataclasses import replace
+import threading
 
 from polyglot_site_translator.bootstrap import create_frontend_shell
 from polyglot_site_translator.presentation.kivy.app import PolyglotSiteTranslatorApp
 from polyglot_site_translator.presentation.kivy.root import _resolve_initial_screen_name
 from polyglot_site_translator.presentation.router import RouteName
-from polyglot_site_translator.presentation.view_models import build_default_app_settings
+from polyglot_site_translator.presentation.view_models import (
+    POProcessingSummaryViewModel,
+    build_default_app_settings,
+)
 from tests.support.frontend_doubles import (
     InMemorySettingsService,
     build_failing_settings_load_services,
@@ -84,3 +88,46 @@ def test_load_startup_settings_converts_controlled_errors_to_failed_state() -> N
     assert state is not None
     assert state.status == "failed"
     assert shell.latest_error == "App settings are temporarily unavailable."
+
+
+def test_handle_thread_exception_surfaces_po_processing_failures() -> None:
+    shell = create_frontend_shell(build_seeded_services())
+    app = PolyglotSiteTranslatorApp(shell)
+    shell.po_processing_state = POProcessingSummaryViewModel(
+        status="running",
+        processed_families=1,
+        summary="Running.",
+        progress_current=2,
+        progress_total=5,
+        progress_is_indeterminate=False,
+        current_file="locale/messages-es_ES.po",
+        current_entry="Labels",
+    )
+
+    runtime_error = RuntimeError("transport closed")
+    worker_thread = threading.Thread(name="po-processing-site-1")
+    app._handle_thread_exception(
+        threading.ExceptHookArgs(
+            (RuntimeError, runtime_error, None, worker_thread),
+        )
+    )
+
+    assert shell.po_processing_state is not None
+    assert shell.po_processing_state.status == "failed"
+    assert "transport closed" in shell.po_processing_state.summary
+    assert shell.po_processing_state.current_file == "locale/messages-es_ES.po"
+    assert shell.po_processing_state.current_entry == "Labels"
+
+
+def test_runtime_exception_handler_surfaces_kivy_callback_failures() -> None:
+    shell = create_frontend_shell(build_seeded_services())
+    app = PolyglotSiteTranslatorApp(shell)
+    shell.open_settings()
+
+    result = app._runtime_exception_handler.handle_exception(RuntimeError("boom"))
+
+    assert result == 1
+    assert shell.settings_state is not None
+    assert shell.settings_state.status == "failed"
+    assert shell.settings_state.status_message is not None
+    assert "boom" in shell.settings_state.status_message

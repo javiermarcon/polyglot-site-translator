@@ -6,11 +6,15 @@ import asyncio
 from dataclasses import dataclass
 from typing import Any
 
+import httpx
 import pytest
 from pytest import MonkeyPatch
 
 from polyglot_site_translator.domain.po_processing.errors import (
     POProcessingTranslationError,
+    POTranslationProviderConfigurationError,
+    POTranslationProviderResponseError,
+    POTranslationProviderTransportError,
 )
 from polyglot_site_translator.infrastructure.po_translator_googletrans import (
     GoogleTransPOTranslationProvider,
@@ -63,6 +67,22 @@ class _ListTranslator:
         return ["bad-shape"]
 
 
+@dataclass
+class _ProtocolFailingTranslator:
+    async def translate(self, text: str, dest: str) -> Any:
+        del text, dest
+        msg = "protocol closed"
+        raise httpx.LocalProtocolError(msg)
+
+
+@dataclass
+class _MisconfiguredTranslator:
+    async def translate(self, text: str, dest: str) -> Any:
+        del text, dest
+        msg = "translator object has no HTTP client"
+        raise AttributeError(msg)
+
+
 def test_googletrans_provider_translates_to_target_base_language() -> None:
     translator = _StubTranslator(translated_text="Hola {{name}} %1$s")
     provider = GoogleTransPOTranslationProvider(translator=translator)
@@ -77,14 +97,14 @@ def test_googletrans_provider_translates_to_target_base_language() -> None:
 def test_googletrans_provider_wraps_translation_failures() -> None:
     provider = GoogleTransPOTranslationProvider(translator=_FailingTranslator())
 
-    with pytest.raises(POProcessingTranslationError, match="External PO translation failed"):
+    with pytest.raises(POTranslationProviderTransportError, match="External PO translation failed"):
         provider.translate_text(text="Hello", target_locale="es_AR")
 
 
 def test_googletrans_provider_rejects_multiple_results_for_single_request() -> None:
     provider = GoogleTransPOTranslationProvider(translator=_ListTranslator())
 
-    with pytest.raises(POProcessingTranslationError, match="multiple results"):
+    with pytest.raises(POTranslationProviderResponseError, match="multiple results"):
         provider.translate_text(text="Hello", target_locale="es_AR")
 
 
@@ -108,3 +128,24 @@ def test_googletrans_provider_reuses_loop_without_asyncio_run(monkeypatch: Monke
 
     assert first == "Hola"
     assert second == "Hola"
+
+
+def test_googletrans_provider_wraps_http_protocol_errors() -> None:
+    provider = GoogleTransPOTranslationProvider(translator=_ProtocolFailingTranslator())
+
+    with pytest.raises(POTranslationProviderTransportError, match="protocol closed"):
+        provider.translate_text(text="Hello", target_locale="es_AR")
+
+
+def test_googletrans_provider_wraps_configuration_errors() -> None:
+    provider = GoogleTransPOTranslationProvider(translator=_MisconfiguredTranslator())
+
+    with pytest.raises(POTranslationProviderConfigurationError, match="misconfigured"):
+        provider.translate_text(text="Hello", target_locale="es_AR")
+
+
+def test_googletrans_provider_translation_errors_keep_base_type() -> None:
+    provider = GoogleTransPOTranslationProvider(translator=_FailingTranslator())
+
+    with pytest.raises(POProcessingTranslationError):
+        provider.translate_text(text="Hello", target_locale="es_AR")

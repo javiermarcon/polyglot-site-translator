@@ -171,6 +171,28 @@ def test_sqlite_repository_encrypts_the_stored_remote_password(tmp_path: Path) -
     assert site.remote_connection.password not in stored_password
 
 
+def test_sqlite_repository_reports_corrupted_encrypted_passwords(tmp_path: Path) -> None:
+    repository = _build_repository(tmp_path)
+    site = _build_site()
+
+    repository.create_site(site)
+    with sqlite3.connect(tmp_path / "registry.sqlite3") as connection:
+        connection.execute(
+            """
+            UPDATE site_remote_connections
+            SET password_encrypted = ?
+            WHERE site_project_id = ?
+            """,
+            ("not-valid-base64***", site.id),
+        )
+
+    with pytest.raises(
+        SiteRegistryPersistenceError,
+        match=r"Stored site secret failed integrity validation\.",
+    ):
+        repository.get_site(site.id)
+
+
 def test_sqlite_repository_supports_projects_without_remote_connections(tmp_path: Path) -> None:
     repository = _build_repository(tmp_path)
     site = RegisteredSite(

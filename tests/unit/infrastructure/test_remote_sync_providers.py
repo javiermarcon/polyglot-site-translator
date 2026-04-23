@@ -24,7 +24,11 @@ from polyglot_site_translator.infrastructure.remote_connections import (
 from polyglot_site_translator.infrastructure.remote_connections.base import (
     BaseRemoteConnectionProvider,
     BaseRemoteConnectionSession,
+    RemoteConnectionDependencyError,
+    RemoteConnectionDownloadError,
+    RemoteConnectionListingError,
     RemoteConnectionOperationError,
+    RemoteConnectionTransportError,
 )
 
 
@@ -677,7 +681,7 @@ def test_sftp_session_wraps_open_sftp_failures(monkeypatch: pytest.MonkeyPatch) 
     monkeypatch.setattr(ssh, "_connect_ssh_client", lambda config: ssh_client)
     provider = ssh.SFTPRemoteConnectionProvider()
 
-    with pytest.raises(RemoteConnectionOperationError, match="Broken pipe") as error:
+    with pytest.raises(RemoteConnectionTransportError, match="Broken pipe") as error:
         list(provider.open_session(_build_ssh_config()).iter_remote_files())
 
     assert error.value.error_code == "transport_io_failed"
@@ -724,7 +728,7 @@ def test_sftp_session_wraps_incremental_listing_errors(
     monkeypatch.setattr(ssh, "_connect_ssh_client", lambda config: ssh_client)
     session = ssh.SFTPRemoteConnectionProvider().open_session(_build_ssh_config())
 
-    with pytest.raises(RemoteConnectionOperationError, match="No such file") as error:
+    with pytest.raises(RemoteConnectionListingError, match="No such file") as error:
         list(session.iter_remote_files())
 
     assert error.value.error_code == "remote_path_not_found"
@@ -742,10 +746,27 @@ def test_sftp_session_wraps_incremental_download_errors(
     monkeypatch.setattr(ssh, "_connect_ssh_client", lambda config: ssh_client)
     session = ssh.SFTPRemoteConnectionProvider().open_session(_build_ssh_config())
 
-    with pytest.raises(RemoteConnectionOperationError, match="Broken pipe") as error:
+    with pytest.raises(RemoteConnectionDownloadError, match="Broken pipe") as error:
         session.download_file("/srv/app/messages.po")
 
     assert error.value.error_code == "transport_io_failed"
+
+
+def test_sftp_session_wraps_missing_paramiko_as_dependency_error(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def _missing_paramiko(name: str) -> Any:
+        assert name == "paramiko"
+        msg = "No module named 'paramiko'"
+        raise ModuleNotFoundError(msg)
+
+    monkeypatch.setattr(ssh, "import_module", _missing_paramiko)
+    provider = ssh.SFTPRemoteConnectionProvider()
+
+    with pytest.raises(RemoteConnectionDependencyError) as error:
+        provider.list_remote_files(_build_ssh_config())
+
+    assert error.value.error_code == "missing_dependency"
 
 
 def test_ssh_close_helpers_ignore_missing_and_failing_clients() -> None:
@@ -855,7 +876,10 @@ def test_ftp_provider_wraps_download_failures_as_os_errors(
     provider = ftp.FTPRemoteConnectionProvider()
     monkeypatch.setattr(provider, "_build_client", lambda: fake_client)
 
-    with pytest.raises(OSError, match=r"download failed for /srv/app/messages\.po"):
+    with pytest.raises(
+        RemoteConnectionDownloadError,
+        match=r"download failed for /srv/app/messages\.po",
+    ):
         provider.download_file(_build_ftp_config(), "/srv/app/messages.po")
 
 
@@ -901,8 +925,26 @@ def test_ftp_provider_wraps_listing_failures_as_os_errors(
     provider = ftp.FTPRemoteConnectionProvider()
     monkeypatch.setattr(provider, "_build_client", lambda: fake_client)
 
-    with pytest.raises(OSError, match=r"listing failed for /srv/app"):
+    with pytest.raises(RemoteConnectionListingError, match=r"listing failed for /srv/app"):
         provider.list_remote_files(_build_ftp_config())
+
+
+def test_ftp_provider_wraps_malformed_listing_sizes(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    fake_client = _FakeFtpClient(
+        actions=[],
+        listing={"/srv/app": [("messages.po", {"type": "file", "size": "not-a-number"})]},
+        file_bytes={},
+    )
+    provider = ftp.FTPRemoteConnectionProvider()
+    monkeypatch.setattr(provider, "_build_client", lambda: fake_client)
+
+    with pytest.raises(RemoteConnectionListingError) as error:
+        provider.list_remote_files(_build_ftp_config())
+
+    assert error.value.error_code == "remote_listing_malformed"
+    assert "messages.po" in str(error.value)
 
 
 def test_close_ftp_client_ignores_quit_failures_from_half_open_connections() -> None:
@@ -1214,7 +1256,7 @@ def test_iter_ssh_files_wraps_listing_errors(monkeypatch: pytest.MonkeyPatch) ->
     ssh_client = _FakeSshClient(_ListingFailingSftpClient())
     monkeypatch.setattr(ssh, "_connect_ssh_client", lambda config: ssh_client)
 
-    with pytest.raises(RemoteConnectionOperationError, match="No such file") as error:
+    with pytest.raises(RemoteConnectionListingError, match="No such file") as error:
         list(ssh._iter_ssh_files(_build_ssh_config()))
 
     assert error.value.error_code == "remote_path_not_found"
@@ -1233,7 +1275,7 @@ def test_download_ssh_file_wraps_transport_errors(monkeypatch: pytest.MonkeyPatc
     monkeypatch.setattr(ssh, "_connect_ssh_client", lambda config: ssh_client)
 
     with pytest.raises(
-        RemoteConnectionOperationError,
+        RemoteConnectionDownloadError,
         match=r"Failed to download remote file '/srv/app/messages\.po'.*Broken pipe",
     ) as error:
         ssh._download_ssh_file(_build_ssh_config(), "/srv/app/messages.po", None, "SFTP")
@@ -1256,7 +1298,7 @@ def test_download_ssh_file_explains_generic_sftp_failures(
     monkeypatch.setattr(ssh, "_connect_ssh_client", lambda config: ssh_client)
 
     with pytest.raises(
-        RemoteConnectionOperationError,
+        RemoteConnectionDownloadError,
         match=r"generic SFTP failure.*directory, symlink, special file",
     ) as error:
         ssh._download_ssh_file(_build_ssh_config(), "/srv/app/venv/lib64", None, "SCP")

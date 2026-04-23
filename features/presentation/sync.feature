@@ -134,6 +134,14 @@ Feature: Remote to local project synchronization
     Then the sync panel shows a completed status
     And the sync panel reports 1 downloaded files
 
+  Scenario: Surface a controlled error when adapter sync scope resolution fails
+    Given the frontend shell is wired with a real sync workflow and failing adapter sync scope resolution
+    And the registered project "scope-broken-site" has mixed remote files and adapter sync filters enabled
+    When the operator opens the synced detail for project "scope-broken-site"
+    And the operator starts the sync workflow
+    Then the sync panel shows a failed status
+    And the sync panel reports the sync error code "sync_scope_resolution_failed"
+
   Scenario: Use full sync when the persisted project preference disables adapter filters
     Given the frontend shell is wired with a real sync workflow
     And the registered project "full-sync-site" has mixed remote files and adapter sync filters disabled
