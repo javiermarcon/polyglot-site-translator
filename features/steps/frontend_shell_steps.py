@@ -205,6 +205,12 @@ def step_set_theme_mode(context: object, theme_mode: str) -> None:
     typed_context.shell.set_settings_theme_mode(theme_mode)
 
 
+@when('the operator sets the default project locale to "{default_locale}"')
+def step_set_default_project_locale(context: object, default_locale: str) -> None:
+    typed_context = _context_with_shell(context)
+    typed_context.shell.set_settings_default_project_locale(default_locale)
+
+
 @when("the operator sets the window size to 1440 by 900")
 def step_set_window_size(context: object) -> None:
     typed_context = _context_with_shell(context)
@@ -575,11 +581,16 @@ def step_assert_settings_error_message(context: object) -> None:
     }
 
 
-@then("the settings screen shows the selected planned section")
-def step_assert_planned_section(context: object) -> None:
+@then("the settings screen shows the translation settings section")
+def step_assert_translation_settings_section(context: object) -> None:
     typed_context = _context_with_shell(context)
     assert typed_context.shell.settings_state is not None
     assert typed_context.shell.settings_state.selected_section_key == "translation"
-    assert typed_context.shell.settings_state.status_message == (
-        "Translation Settings will be available later."
-    )
+    assert typed_context.shell.settings_state.selected_section_is_available is True
+
+
+@then('the saved settings keep the default project locale "{default_locale}"')
+def step_assert_saved_default_project_locale(context: object, default_locale: str) -> None:
+    typed_context = _context_with_shell(context)
+    assert typed_context.shell.settings_state is not None
+    assert typed_context.shell.settings_state.app_settings.default_project_locale == default_locale

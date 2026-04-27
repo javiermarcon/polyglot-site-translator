@@ -73,14 +73,16 @@ def test_project_editor_screen_saves_new_projects_and_can_return_to_projects() -
     editor_screen._name_input.text = "New Project"
     editor_screen._framework_spinner.text = "Django"
     editor_screen._local_path_input.text = "/workspace/new-project"
+    editor_screen._is_active_switch.active = False
+    editor_screen._select_project_editor_section("translation")
     editor_screen._default_locale_input.text = "en_US"
+    editor_screen._select_project_editor_section("remote")
     editor_screen._connection_type_spinner.text = "FTP"
     editor_screen._remote_host_input.text = "ftp.example.com"
     editor_screen._remote_port_input.text = "21"
     editor_screen._remote_username_input.text = "deploy"
     editor_screen._remote_password_input.text = "super-secret"
     editor_screen._remote_path_input.text = "/srv/new-project"
-    editor_screen._is_active_switch.active = False
 
     editor_screen._save_editor()
 
@@ -116,6 +118,7 @@ def test_project_editor_screen_exposes_dynamic_framework_options() -> None:
         find_option_label(shell.project_editor_state.framework_options, "wordpress") == "WordPress"
     )
     assert find_option_value(shell.project_editor_state.framework_options, "Flask") == "flask"
+    editor_screen._select_project_editor_section("remote")
     assert tuple(editor_screen._connection_type_spinner.values) == (
         "No Remote Connection",
         "FTP",
@@ -124,6 +127,45 @@ def test_project_editor_screen_exposes_dynamic_framework_options() -> None:
         "SCP",
         "SFTP",
     )
+
+
+def test_project_editor_screen_uses_sectioned_layout_and_can_switch_sections() -> None:
+    app = cast(Any, create_kivy_app(services=build_seeded_services()))
+    root = app.build()
+    editor_screen = root.get_screen("project_editor")
+    shell = editor_screen._shell
+
+    shell.open_project_editor_create()
+    root.current = "project_editor"
+    editor_screen.refresh()
+
+    assert shell.project_editor_state is not None
+    assert shell.project_editor_state.selected_section_key == "general"
+    label_texts = [
+        widget.text for widget in editor_screen.walk(restrict=True) if hasattr(widget, "text")
+    ]
+    assert "Project Settings Sections" in label_texts
+    assert "Default Locale" not in label_texts
+    assert "Remote Connection Type" not in label_texts
+    assert "Resolved Sync Scope" not in label_texts
+
+    editor_screen._select_project_editor_section("translation")
+
+    assert shell.project_editor_state is not None
+    assert shell.project_editor_state.selected_section_key == "translation"
+    translation_labels = [
+        widget.text for widget in editor_screen.walk(restrict=True) if hasattr(widget, "text")
+    ]
+    assert "Default Locale" in translation_labels
+    assert "Remote Connection Type" not in translation_labels
+
+    editor_screen._select_project_editor_section("sync")
+
+    sync_labels = [
+        widget.text for widget in editor_screen.walk(restrict=True) if hasattr(widget, "text")
+    ]
+    assert "Resolved Sync Scope" in sync_labels
+    assert "Local Path" not in sync_labels
 
 
 def test_project_editor_screen_saves_edits_and_refreshes_when_not_routed_to_detail() -> None:
@@ -140,6 +182,7 @@ def test_project_editor_screen_saves_edits_and_refreshes_when_not_routed_to_deta
     assert root.current == "project_editor"
 
     editor_screen._local_path_input.text = "/workspace/marketing-site-v2"
+    editor_screen._select_project_editor_section("remote")
     editor_screen._connection_type_spinner.text = "FTP"
     editor_screen._remote_host_input.text = "ftp-v2.example.com"
     editor_screen._remote_port_input.text = "21"
@@ -205,6 +248,10 @@ def test_project_editor_screen_uses_save_new_project_when_site_id_is_missing_in_
         mode="edit",
         title="Edit Project",
         submit_label="Save Changes",
+        sections=shell.project_editor_state.sections,
+        selected_section_key=shell.project_editor_state.selected_section_key,
+        selected_section_title=shell.project_editor_state.selected_section_title,
+        selected_section_description=shell.project_editor_state.selected_section_description,
         editor=SiteEditorViewModel(
             **{**shell.project_editor_state.editor.__dict__, "site_id": None}
         ),
@@ -246,6 +293,7 @@ def test_project_editor_screen_refreshes_scope_and_allows_custom_project_rules(
     editor_screen.refresh()
     editor_screen._framework_spinner.text = "Django"
     editor_screen._local_path_input.text = "/workspace/django-site"
+    editor_screen._select_project_editor_section("sync")
 
     editor_screen._refresh_sync_scope()
 
@@ -287,6 +335,10 @@ def test_project_editor_screen_can_disable_and_remove_project_sync_rules(
         mode=shell.project_editor_state.mode,
         title=shell.project_editor_state.title,
         submit_label=shell.project_editor_state.submit_label,
+        sections=shell.project_editor_state.sections,
+        selected_section_key=shell.project_editor_state.selected_section_key,
+        selected_section_title=shell.project_editor_state.selected_section_title,
+        selected_section_description=shell.project_editor_state.selected_section_description,
         editor=SiteEditorViewModel(
             **{
                 **shell.project_editor_state.editor.__dict__,
@@ -316,6 +368,7 @@ def test_project_editor_screen_can_disable_and_remove_project_sync_rules(
         status=shell.project_editor_state.status,
         status_message=shell.project_editor_state.status_message,
     )
+    shell.select_project_editor_section("sync")
     editor_screen.refresh()
 
     editor_screen._toggle_sync_rule(
@@ -338,3 +391,48 @@ def test_project_editor_screen_can_disable_and_remove_project_sync_rules(
     assert ".git" in [
         sync_rule.relative_path for sync_rule in shell.project_editor_state.editor.sync_rule_items
     ]
+
+
+def test_project_editor_screen_preserves_hidden_fields_across_section_switches() -> None:
+    app = cast(Any, create_kivy_app(services=build_seeded_services()))
+    root = app.build()
+    editor_screen = root.get_screen("project_editor")
+    shell = editor_screen._shell
+
+    shell.open_project_editor_create()
+    root.current = "project_editor"
+    editor_screen.refresh()
+    editor_screen._name_input.text = "Sectioned Project"
+    editor_screen._framework_spinner.text = "WordPress"
+    editor_screen._local_path_input.text = "/workspace/sectioned-project"
+    editor_screen._is_active_switch.active = True
+
+    editor_screen._select_project_editor_section("translation")
+    editor_screen._default_locale_input.text = "es_ES"
+
+    editor_screen._select_project_editor_section("remote")
+    editor_screen._connection_type_spinner.text = "FTP"
+    editor_screen._remote_host_input.text = "ftp.sectioned.example.com"
+    editor_screen._remote_port_input.text = "21"
+    editor_screen._remote_username_input.text = "deployer"
+    editor_screen._remote_password_input.text = "remote-secret"
+    editor_screen._remote_path_input.text = "/srv/sectioned-project"
+    current_state = editor_screen._require_state()
+    collected_editor = editor_screen._collect_editor_from_form(current_state)
+
+    assert collected_editor.name == "Sectioned Project"
+    assert collected_editor.framework_type == "wordpress"
+    assert collected_editor.local_path == "/workspace/sectioned-project"
+    assert collected_editor.default_locale == "es_ES"
+    assert collected_editor.connection_type == "ftp"
+    assert collected_editor.remote_host == "ftp.sectioned.example.com"
+    assert collected_editor.remote_port == "21"
+    assert collected_editor.remote_username == "deployer"
+    assert collected_editor.remote_password == "remote-secret"
+    assert collected_editor.remote_path == "/srv/sectioned-project"
+
+    editor_screen._save_editor()
+
+    assert shell.project_detail_state is not None
+    assert shell.project_detail_state.project.name == "Sectioned Project"
+    assert shell.project_detail_state.project.framework == "Wordpress"

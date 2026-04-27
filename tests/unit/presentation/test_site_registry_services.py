@@ -347,6 +347,26 @@ def test_management_service_builds_create_and_edit_editor_states(tmp_path: Path)
     assert edit_state.editor.site_id == created.id
 
 
+def test_management_service_builds_create_state_from_translation_defaults(
+    tmp_path: Path,
+) -> None:
+    settings_service = TomlSettingsService(tmp_path / "settings.toml")
+    settings_service.save_settings(
+        replace(
+            build_default_app_settings(database_directory=str(tmp_path)),
+            default_project_locale="es_AR,es_ES",
+        )
+    )
+    management = SiteRegistryPresentationManagementService(
+        service=_build_domain_service(InMemorySiteRegistryRepository()),
+        settings_service=settings_service,
+    )
+
+    create_state = management.build_create_project_editor()
+
+    assert create_state.editor.default_locale == "es_AR,es_ES"
+
+
 def test_management_service_builds_edit_state_for_projects_without_remote_connection(
     tmp_path: Path,
 ) -> None:

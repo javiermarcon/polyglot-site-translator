@@ -153,6 +153,7 @@ Current settings orchestration entrypoints:
 - `FrontendShell.open_settings`
 - `FrontendShell.open_application_menu`
 - `FrontendShell.open_route_from_menu`
+- `FrontendShell.set_settings_default_project_locale`
 - `FrontendShell.set_settings_database_directory`
 - `FrontendShell.set_settings_database_filename`
 - `FrontendShell.select_settings_section`
@@ -167,6 +168,7 @@ Current project-registry orchestration entrypoints:
 
 - `FrontendShell.open_project_editor_create`
 - `FrontendShell.open_project_editor_edit`
+- `FrontendShell.select_project_editor_section`
 - `FrontendShell.save_new_project`
 - `FrontendShell.save_project_edits`
 - `FrontendShell.test_project_connection`
@@ -176,6 +178,7 @@ Current project-registry orchestration entrypoints:
 - `polyglot_site_translator.presentation.site_registry_services.SiteRegistryPresentationWorkflowService.start_sync_to_remote`
 - `polyglot_site_translator.presentation.site_registry_services.SiteRegistryPresentationManagementService._build_service_payload`
 - `polyglot_site_translator.presentation.site_registry_services.SiteRegistryPresentationManagementService._build_site_editor`
+- `polyglot_site_translator.presentation.kivy.screens.project_editor.ProjectEditorScreen._select_project_editor_section` preserves the current draft before switching tabs so the sectioned editor behaves like one logical form
 - `polyglot_site_translator.services.project_sync.ProjectSyncService.sync_remote_to_local`
 - `polyglot_site_translator.services.project_sync.ProjectSyncService.sync_local_to_remote`
 - `polyglot_site_translator.domain.remote_connections.contracts.RemoteConnectionProvider.open_session`

@@ -39,7 +39,7 @@ def test_open_settings_loads_sections_and_defaults() -> None:
     assert shell.settings_state.theme_mode_field.help_text != ""
 
 
-def test_selecting_planned_settings_section_updates_context() -> None:
+def test_selecting_translation_settings_section_updates_context() -> None:
     shell = create_frontend_shell(build_seeded_services())
 
     shell.open_settings()
@@ -47,7 +47,8 @@ def test_selecting_planned_settings_section_updates_context() -> None:
 
     assert shell.settings_state is not None
     assert shell.settings_state.selected_section_key == "translation"
-    assert shell.settings_state.status_message == "Translation Settings will be available later."
+    assert shell.settings_state.selected_section_is_available is True
+    assert shell.settings_state.status_message == "Translation Settings are ready to edit."
 
 
 def test_update_and_save_settings_persists_fake_state() -> None:
@@ -59,6 +60,7 @@ def test_update_and_save_settings_persists_fake_state() -> None:
     shell.toggle_remember_last_screen()
     shell.toggle_developer_mode()
     shell.set_settings_window_size(width=1440, height=900)
+    shell.set_settings_default_project_locale("es_ES, es_AR")
     shell.update_settings_draft(
         replace(shell.settings_state.app_settings, sync_progress_log_limit=25)
     )
@@ -75,6 +77,7 @@ def test_update_and_save_settings_persists_fake_state() -> None:
     assert shell.settings_state.app_settings.developer_mode is True
     assert shell.settings_state.app_settings.window_width == 1440
     assert shell.settings_state.app_settings.window_height == 900
+    assert shell.settings_state.app_settings.default_project_locale == "es_ES,es_AR"
     assert shell.settings_state.app_settings.sync_progress_log_limit == 25
     assert shell.settings_state.status == "loaded"
 
@@ -93,6 +96,19 @@ def test_restore_defaults_uses_settings_service() -> None:
     assert shell.settings_state.app_settings.window_height == 720
     assert shell.settings_state.app_settings.remember_last_screen is False
     assert shell.settings_state.status == "defaults-restored"
+
+
+def test_saving_settings_preserves_the_selected_section() -> None:
+    shell = create_frontend_shell(build_seeded_services())
+
+    shell.open_settings()
+    shell.select_settings_section("translation")
+    shell.set_settings_default_project_locale("es_AR")
+    shell.save_settings()
+
+    assert shell.settings_state is not None
+    assert shell.settings_state.selected_section_key == "translation"
+    assert shell.settings_state.app_settings.default_project_locale == "es_AR"
 
 
 def test_settings_load_failure_is_exposed() -> None:

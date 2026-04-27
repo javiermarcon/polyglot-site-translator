@@ -14,6 +14,15 @@ Feature: SQLite-backed site registry management
     Then the settings draft shows the configured database directory
     And the settings draft shows the configured database filename
 
+  Scenario: Use the translation settings default locale when creating a project
+    Given the frontend shell is wired with SQLite-backed site registry services
+    And the operator has opened the settings screen
+    When the operator selects the settings section "translation"
+    And the operator sets the default project locale to "es_AR, es_ES"
+    And the operator applies the settings changes
+    And the operator opens the create project workflow
+    Then the project editor uses the default locale "es_AR,es_ES"
+
   Scenario: Register the first site in an empty SQLite registry
     Given the frontend shell is wired with SQLite-backed site registry services
     When the operator opens the projects list

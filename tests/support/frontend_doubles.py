@@ -3,13 +3,14 @@
 from __future__ import annotations
 
 from collections.abc import Callable
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 from polyglot_site_translator.adapters.framework_registry import FrameworkAdapterRegistry
 from polyglot_site_translator.domain.po_processing.models import POProcessingProgress
 from polyglot_site_translator.domain.remote_connections.models import (
     NO_REMOTE_CONNECTION_VALUE,
 )
+from polyglot_site_translator.domain.site_registry.locales import normalize_default_locale
 from polyglot_site_translator.domain.sync.models import SyncProgressEvent
 from polyglot_site_translator.infrastructure.remote_connections.registry import (
     RemoteConnectionRegistry,
@@ -201,7 +202,13 @@ class InMemorySettingsService:
         if self.fail_save:
             msg = "App settings could not be saved."
             raise ControlledServiceError(msg)
-        self._saved_settings = app_settings
+        self._saved_settings = replace(
+            app_settings,
+            default_project_locale=normalize_default_locale(
+                app_settings.default_project_locale,
+                label="Default project locale",
+            ),
+        )
         return build_settings_state(
             app_settings=self._saved_settings,
             status="saved",

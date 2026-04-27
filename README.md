@@ -22,6 +22,7 @@ El repositorio está en una etapa temprana y hoy incluye principalmente:
 - pantallas base para dashboard, proyectos, detalle, editor de proyectos, sync, audit y PO processing
 - contratos de servicios para la UI
 - persistencia real en TOML para settings generales de la app
+- persistencia real en TOML para `Translation Settings`, incluyendo el `default_project_locale` usado por nuevos proyectos
 - persistencia real en SQLite para `site_registry`
 - persistencia real en SQLite para reglas compartidas de sync (`global`/`framework` + `use_gitignore_rules`)
 - configuración general de la app para definir `database_directory` y `database_filename`
@@ -153,14 +154,14 @@ La base actual del frontend incluye:
 - Home / Dashboard como punto de entrada
 - Projects / Sites List para listar proyectos persistidos en SQLite
 - Project / Site Detail con lectura real del registry persistido y metadata de detección de framework
-- Project Editor con combo dinámico de framework, combo dinámico de tipo de conexión remota, switch persistido para elegir `Use Adapter Sync Filters`, catálogo visible del scope resuelto y editor de reglas adicionales por proyecto; la contraseña remota incluye un control tipo “ojo” para mostrar u ocultar el texto mientras se edita
+- Project Editor con secciones (`General Settings`, `Translation Settings`, `Remote Connection Settings`, `Sync Settings`); la pestaña `General Settings` quedó acotada a metadatos generales (`name`, `framework`, `local_path`, `is_active`), mientras que locale, conexión remota y sync se editan solo en sus pestañas específicas. El editor mantiene el draft al cambiar de sección, usa combo dinámico de framework, combo dinámico de tipo de conexión remota, switch persistido para elegir `Use Adapter Sync Filters`, catálogo visible del scope resuelto y editor de reglas adicionales por proyecto; la contraseña remota incluye un control tipo “ojo” para mostrar u ocultar el texto mientras se edita
 - acción "Test Connection" en el editor, resuelta por servicios y con resultado estructurado en pantalla; si el error es `unknown_ssh_host_key`, se ofrece el mismo popup de confianza de host key que en sync y se puede reintentar el test con TOFU en `known_hosts`
 - Audit Screen con preview basado en la detección real del proyecto en vez de un conteo fijo del runtime
 - Sync Screen con wiring real de `remote -> local` y `local -> remote`, con resumen estructurado del resultado
 - ventana de progreso de sync abierta desde Project Detail para no bloquear el hilo principal de Kivy en ambos sentidos
 - Audit Screen para mostrar resultados fake de auditoría
 - PO Processing Screen con resumen real de archivos detectados, familias procesadas y entradas sincronizadas
-- Settings generales con persistencia TOML, campos para configurar la ubicación/nombre de la base SQLite, ABM de reglas globales de sync, ABM de reglas por framework y toggle para exclusiones derivadas de `.gitignore`
+- Settings generales con persistencia TOML, una sección `Translation Settings` para configurar el `default_project_locale` heredado por el create flow, campos para configurar la ubicación/nombre de la base SQLite, ABM de reglas globales de sync, ABM de reglas por framework y toggle para exclusiones derivadas de `.gitignore`
 
 La navegación mantiene el contexto del proyecto seleccionado. El flujo principal de create/list/detail/update, sync bidireccional y PO processing ya usan servicios reales para `site_registry`, subsistema remoto y procesamiento de `.po`; el audit sigue usando servicios fake detrás de los mismos contratos de UI.
 Cuando la preferencia `Use Adapter Sync Filters` está activa en la configuración remota persistida del proyecto, ambos sentidos de sync usan el scope resuelto por `FrameworkSyncScopeService`; cuando está desactivada, el servicio ejecuta full sync. Ese scope ahora compone reglas globales persistidas en settings, reglas persistidas por framework, reglas base del adapter, overrides persistidos por proyecto y exclusiones derivadas de `.gitignore` cuando la opción está habilitada. El Project Editor sigue mostrando el catálogo resuelto por proyecto y permite activar/desactivar reglas individuales y agregar includes/excludes adicionales persistidos por proyecto. La pantalla general de Settings ahora expone el ABM de reglas globales y por framework más el toggle `Use .gitignore Exclusions`. Si el proyecto pide sync filtrado pero no existe un scope utilizable, el sync falla de forma explícita en vez de caer en un fallback silencioso.
@@ -281,7 +282,7 @@ Si querés ejecutar la app local sin instalación editable, usá el launcher del
 
 Los settings generales se guardan en `settings.toml` dentro del directorio de configuración del usuario.
 Para desarrollo o pruebas locales, podés overridear la ubicación con `POLYGLOT_SITE_TRANSLATOR_CONFIG_DIR`.
-Dentro de esos settings también se persisten `database_directory`, `database_filename` y `sync_progress_log_limit`.
+Dentro de esos settings también se persisten `default_project_locale`, `database_directory`, `database_filename` y `sync_progress_log_limit`.
 Las reglas globales de sync, las reglas por framework y el toggle `use_gitignore_rules` ahora pueden vivir en SQLite para el runtime de sync mientras la configuración general sigue registrada en TOML.
 Ese último valor define cuántas operaciones recientes conserva en memoria y muestra la ventana de progreso del sync.
 

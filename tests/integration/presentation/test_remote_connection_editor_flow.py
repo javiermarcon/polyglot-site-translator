@@ -114,6 +114,7 @@ def test_project_editor_exposes_dynamic_remote_connection_options(tmp_path: Path
     shell.open_project_editor_create()
     root.current = "project_editor"
     editor_screen.refresh()
+    editor_screen._select_project_editor_section("remote")
 
     assert editor_screen._connection_type_spinner is not None
     assert isinstance(editor_screen._connection_type_spinner, Spinner)
@@ -148,6 +149,7 @@ def test_project_editor_runs_connection_tests_and_surfaces_the_result(tmp_path: 
     shell.open_project_editor_create()
     root.current = "project_editor"
     editor_screen.refresh()
+    editor_screen._select_project_editor_section("remote")
     test_button = cast(Any, editor_screen._test_connection_button)
     assert test_button is not None
     assert bool(test_button.disabled) is True
@@ -188,7 +190,9 @@ def test_project_editor_persists_remote_connection_data_when_editing_site(
     editor_screen._name_input.text = "Marketing Site"
     editor_screen._framework_spinner.text = "WordPress"
     editor_screen._local_path_input.text = "/workspace/marketing-site"
+    editor_screen._select_project_editor_section("translation")
     editor_screen._default_locale_input.text = "en_US"
+    editor_screen._select_project_editor_section("remote")
     editor_screen._connection_type_spinner.text = "FTP"
     editor_screen._remote_host_input.text = "ftp.example.com"
     editor_screen._remote_port_input.text = "21"
@@ -203,6 +207,7 @@ def test_project_editor_persists_remote_connection_data_when_editing_site(
     shell.open_project_editor_edit(project_id)
     root.current = "project_editor"
     editor_screen.refresh()
+    editor_screen._select_project_editor_section("remote")
     editor_screen._connection_type_spinner.text = "FTP"
     editor_screen._remote_host_input.text = "ftp-v2.example.com"
     editor_screen._remote_port_input.text = "21"
@@ -213,6 +218,7 @@ def test_project_editor_persists_remote_connection_data_when_editing_site(
 
     shell.open_project_editor_edit(project_id)
     editor_screen.refresh()
+    editor_screen._select_project_editor_section("remote")
 
     assert shell.project_editor_state is not None
     assert shell.project_editor_state.editor.connection_type == "ftp"
@@ -243,13 +249,16 @@ def test_project_editor_persists_filtered_sync_preference_when_editing_site(
     editor_screen._name_input.text = "Filtered Site"
     editor_screen._framework_spinner.text = "WordPress"
     editor_screen._local_path_input.text = "/workspace/filtered-site"
+    editor_screen._select_project_editor_section("translation")
     editor_screen._default_locale_input.text = "en_US"
+    editor_screen._select_project_editor_section("remote")
     editor_screen._connection_type_spinner.text = "FTP"
     editor_screen._remote_host_input.text = "ftp.example.com"
     editor_screen._remote_port_input.text = "21"
     editor_screen._remote_username_input.text = "deploy"
     editor_screen._remote_password_input.text = "super-secret"
     editor_screen._remote_path_input.text = "/public_html"
+    editor_screen._select_project_editor_section("sync")
     editor_screen._use_adapter_sync_filters_switch.active = True
     editor_screen._save_editor()
 
@@ -258,6 +267,7 @@ def test_project_editor_persists_filtered_sync_preference_when_editing_site(
     shell.open_project_editor_edit(project_id)
     root.current = "project_editor"
     editor_screen.refresh()
+    editor_screen._select_project_editor_section("sync")
 
     assert shell.project_editor_state is not None
     assert shell.project_editor_state.editor.use_adapter_sync_filters is True
@@ -283,13 +293,16 @@ def test_project_editor_persists_project_sync_rule_overrides(
     editor_screen._name_input.text = "Django Site"
     editor_screen._framework_spinner.text = "Django"
     editor_screen._local_path_input.text = "/workspace/django-site"
+    editor_screen._select_project_editor_section("translation")
     editor_screen._default_locale_input.text = "en_US"
+    editor_screen._select_project_editor_section("remote")
     editor_screen._connection_type_spinner.text = "FTP"
     editor_screen._remote_host_input.text = "ftp.example.com"
     editor_screen._remote_port_input.text = "21"
     editor_screen._remote_username_input.text = "deploy"
     editor_screen._remote_password_input.text = "super-secret"
     editor_screen._remote_path_input.text = "/public_html"
+    editor_screen._select_project_editor_section("sync")
     editor_screen._use_adapter_sync_filters_switch.active = True
     editor_screen._refresh_sync_scope()
     assert shell.project_editor_state is not None
@@ -312,6 +325,7 @@ def test_project_editor_persists_project_sync_rule_overrides(
     shell.open_project_editor_edit(project_id)
     root.current = "project_editor"
     editor_screen.refresh()
+    editor_screen._select_project_editor_section("sync")
 
     assert shell.project_editor_state is not None
     assert "locale_custom" in [

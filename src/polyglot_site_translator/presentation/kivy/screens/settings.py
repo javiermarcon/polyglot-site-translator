@@ -70,6 +70,7 @@ class SettingsScreen(BaseShellScreen):
         self._apply_runtime_settings = apply_runtime_settings
         self._width_input: TextInput | None = None
         self._height_input: TextInput | None = None
+        self._default_project_locale_input: TextInput | None = None
         self._database_directory_input: TextInput | None = None
         self._database_filename_input: TextInput | None = None
         self._sync_progress_log_limit_input: TextInput | None = None
@@ -104,6 +105,7 @@ class SettingsScreen(BaseShellScreen):
 
         if self._draft_settings is None:
             self._draft_settings = state.app_settings
+        self._default_project_locale_input = None
         self._layout_spec = build_settings_layout_spec(Window.width)
         self._content.add_widget(
             _build_information_card(
@@ -205,7 +207,36 @@ class SettingsScreen(BaseShellScreen):
         state = self._require_state()
         if state.selected_section_key == "frameworks":
             return self._build_framework_sync_rules_panel()
+        if state.selected_section_key == "translation":
+            return self._build_translation_settings_form_panel()
         return self._build_app_settings_form_panel()
+
+    def _build_translation_settings_form_panel(self) -> GridLayout:
+        draft = self._require_draft()
+        form = GridLayout(cols=1, spacing=12, size_hint_y=None)
+        form.bind(minimum_height=form.setter("height"))
+        form.add_widget(
+            self._build_default_project_locale_field(
+                value=draft.default_project_locale,
+            )
+        )
+        actions = BoxLayout(
+            orientation=self._layout_spec.action_orientation,
+            spacing=12,
+            size_hint_y=None,
+        )
+        actions.bind(minimum_height=actions.setter("height"))
+        save_button = AppButton(text="Save Changes", primary=True)
+        save_button.bind(on_release=self._apply_settings)
+        defaults_button = AppButton(text="Restore Defaults", primary=False)
+        defaults_button.bind(on_release=self._restore_defaults)
+        dashboard_button = AppButton(text="Back to Dashboard", primary=False)
+        dashboard_button.bind(on_release=self._back_to_dashboard)
+        actions.add_widget(save_button)
+        actions.add_widget(defaults_button)
+        actions.add_widget(dashboard_button)
+        form.add_widget(actions)
+        return form
 
     def _build_app_settings_form_panel(self) -> GridLayout:
         state = self._require_state()
@@ -413,6 +444,28 @@ class SettingsScreen(BaseShellScreen):
         row.add_widget(self._width_input)
         row.add_widget(self._height_input)
         card.add_widget(row)
+        return card
+
+    def _build_default_project_locale_field(self, *, value: str) -> SurfaceBoxLayout:
+        palette = get_active_theme()
+        card = _build_field_card(
+            title="Default Project Locale",
+            help_text=(
+                "Used as the initial default locale value when opening the create project "
+                "workflow. Accepts a locale or a normalized comma-separated locale list."
+            ),
+        )
+        self._default_project_locale_input = TextInput(
+            text=value,
+            multiline=False,
+            size_hint_y=None,
+            height=44,
+            background_color=palette.card_subtle_background,
+            foreground_color=palette.text_primary,
+            cursor_color=palette.text_primary,
+        )
+        card.add_widget(WrappedLabel(text="Default Project Locale", font_size=14, bold=True))
+        card.add_widget(self._default_project_locale_input)
         return card
 
     def _database_file_browse_hint(self) -> str:
@@ -765,6 +818,11 @@ class SettingsScreen(BaseShellScreen):
                     draft,
                     database_directory=self._database_directory_input.text.strip(),
                     database_filename=self._database_filename_input.text.strip(),
+                )
+            if self._default_project_locale_input is not None:
+                draft = replace(
+                    draft,
+                    default_project_locale=self._default_project_locale_input.text.strip(),
                 )
             if self._sync_progress_log_limit_input is not None:
                 limit_text = self._sync_progress_log_limit_input.text.strip()

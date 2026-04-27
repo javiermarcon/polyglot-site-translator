@@ -27,6 +27,7 @@ The codebase should be organized around these layers:
    - presentation shell / UI orchestrator
    - typed view models for screens and workflow panels
    - typed settings state and editable draft settings
+   - translation defaults persisted in a dedicated settings section and reused by create-project flows
    - Kivy runtime settings applier for theme and window behavior
    - runtime theme palette tokens for light and dark frontend modes
    - responsive layout rules for compact and desktop settings screens
@@ -152,6 +153,7 @@ Current UI behavior for sync mode:
 - the resolved scope can include localization-relevant paths and exclude framework-specific artifacts such as virtualenvs or bytecode caches
 - the project editor renders the resolved rule catalog, allows enabling/disabling individual rules, and persists additional project-specific include/exclude overrides without moving scope logic into Kivy
 - shared global sync rules, framework sync rules and the optional `use_gitignore_rules` toggle are persisted in SQLite for runtime sync scope resolution while the UI remains a typed editor of that persisted state
+- general application settings persist the default project locale in a dedicated translation section, create-project flows seed their initial locale draft from that persisted value, and the project editor keeps general-only fields separate from translation/remote/sync sections while preserving the draft across tab switches
 
 Not yet implemented in this stage:
 
@@ -435,9 +437,9 @@ Key responsibilities:
 - `presentation/contracts.py` now also defines a settings contract for frontend configuration workflows.
 - `presentation/contracts.py` now also defines a project-registry management contract for create/edit flows.
 - `presentation/view_models.py` now includes extensible settings sections and typed app/UI/Kivy settings.
-- `presentation/view_models.py` now also includes typed project-editor view models and SQLite location settings fields.
+- `presentation/view_models.py` now also includes typed project-editor section state plus SQLite location and translation-default settings fields.
 - `presentation/kivy/screens/settings.py` exposes the initial configuration screen for frontend behavior using a sectioned layout and typed field metadata.
-- `presentation/kivy/screens/project_editor.py` exposes a thin create/edit screen for site registry records.
+- `presentation/kivy/screens/project_editor.py` exposes a thin create/edit screen for site registry records, organized by project-setting sections while keeping orchestration in the shell.
 
 Current site registry runtime flow:
 

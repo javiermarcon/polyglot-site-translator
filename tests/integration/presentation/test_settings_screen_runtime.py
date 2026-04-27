@@ -132,7 +132,7 @@ def test_settings_screen_handles_section_selection_defaults_and_dashboard_naviga
     settings_screen._select_settings_section("translation")
     assert settings_screen._shell.settings_state is not None
     assert settings_screen._shell.settings_state.selected_section_key == "translation"
-    assert "Planned Section" in _collect_label_texts(settings_screen)
+    assert "Default Project Locale" in _collect_label_texts(settings_screen)
 
     settings_screen._select_settings_section("app-ui-kivy")
     remember_label = WrappedLabel(text="")
@@ -156,6 +156,29 @@ def test_settings_screen_handles_section_selection_defaults_and_dashboard_naviga
 
     settings_screen._back_to_dashboard()
     assert root.current == "dashboard"
+
+
+def test_settings_screen_can_edit_translation_defaults() -> None:
+    app = cast(Any, create_kivy_app())
+    root = app.build()
+    settings_screen = root.get_screen("settings")
+
+    settings_screen._shell.open_settings()
+    root.current = "settings"
+    settings_screen._select_settings_section("translation")
+
+    translation_input = settings_screen._require_text_input(
+        settings_screen._default_project_locale_input
+    )
+    translation_input.text = "es_ES, es_AR"
+
+    save_button = _find_button_by_text(settings_screen, "Save Changes")
+    save_button.dispatch("on_release")
+
+    assert settings_screen._shell.settings_state is not None
+    assert settings_screen._shell.settings_state.app_settings.default_project_locale == (
+        "es_ES,es_AR"
+    )
 
 
 def test_settings_screen_shows_framework_sync_scope_controls() -> None:

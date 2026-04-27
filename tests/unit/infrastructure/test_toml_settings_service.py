@@ -52,6 +52,7 @@ def test_save_settings_writes_toml_and_roundtrips_values(tmp_path: Path) -> None
             last_opened_screen="settings",
             developer_mode=True,
             ui_language="es",
+            default_project_locale="es_ES,es_AR",
         )
     )
 
@@ -65,6 +66,7 @@ def test_save_settings_writes_toml_and_roundtrips_values(tmp_path: Path) -> None
     assert reloaded_state.app_settings.last_opened_screen == "settings"
     assert reloaded_state.app_settings.developer_mode is True
     assert reloaded_state.app_settings.ui_language == "es"
+    assert reloaded_state.app_settings.default_project_locale == "es_ES,es_AR"
     assert 'theme_mode = "dark"' in settings_path.read_text(encoding="utf-8")
 
 
@@ -132,6 +134,89 @@ def test_load_settings_rejects_invalid_toml_values(tmp_path: Path) -> None:
         service.load_settings()
 
 
+def test_load_settings_rejects_invalid_sync_progress_log_limit(tmp_path: Path) -> None:
+    settings_path = tmp_path / SETTINGS_FILENAME
+    settings_path.write_text(
+        '[app]\nlast_opened_screen = "dashboard"\nsync_progress_log_limit = 0\n',
+        encoding="utf-8",
+    )
+    service = TomlSettingsService(settings_path)
+
+    with pytest.raises(
+        ControlledServiceError,
+        match=r"Sync progress log limit must be a positive integer\.",
+    ):
+        service.load_settings()
+
+
+def test_load_settings_rejects_invalid_translation_defaults(tmp_path: Path) -> None:
+    settings_path = tmp_path / SETTINGS_FILENAME
+    settings_path.write_text(
+        (
+            '[app]\nlast_opened_screen = "dashboard"\n'
+            "[translation]\n"
+            'default_project_locale = "asad@"\n'
+        ),
+        encoding="utf-8",
+    )
+    service = TomlSettingsService(settings_path)
+
+    with pytest.raises(
+        ControlledServiceError,
+        match=(
+            r"Default project locale must be a valid locale or a comma-separated "
+            r"list of valid locales\. Invalid values: asad@\."
+        ),
+    ):
+        service.load_settings()
+
+
+@pytest.mark.parametrize(
+    ("document", "expected_message"),
+    [
+        (
+            'translation = 3\n[app]\nlast_opened_screen = "dashboard"\n',
+            r"The \[translation\] settings section must be a TOML table\.",
+        ),
+        (
+            '[app]\nlast_opened_screen = "dashboard"\n[translation]\ndefault_project_locale = 3\n',
+            r"The translation setting 'default_project_locale' must be a string\.",
+        ),
+    ],
+)
+def test_load_settings_rejects_invalid_translation_section_shapes(
+    tmp_path: Path,
+    document: str,
+    expected_message: str,
+) -> None:
+    settings_path = tmp_path / SETTINGS_FILENAME
+    settings_path.write_text(document, encoding="utf-8")
+    service = TomlSettingsService(settings_path)
+
+    with pytest.raises(ControlledServiceError, match=expected_message):
+        service.load_settings()
+
+
+def test_save_settings_normalizes_default_project_locale_spacing(tmp_path: Path) -> None:
+    settings_path = tmp_path / SETTINGS_FILENAME
+    service = TomlSettingsService(settings_path)
+
+    saved_state = service.save_settings(AppSettingsViewModel(default_project_locale="es_ES, es_AR"))
+
+    assert saved_state.app_settings.default_project_locale == "es_ES,es_AR"
+    assert 'default_project_locale = "es_ES,es_AR"' in settings_path.read_text(encoding="utf-8")
+
+
+def test_save_settings_rejects_invalid_database_configuration(tmp_path: Path) -> None:
+    service = TomlSettingsService(tmp_path / SETTINGS_FILENAME)
+
+    with pytest.raises(
+        ControlledServiceError,
+        match=r"Database filename must not be empty\.",
+    ):
+        service.save_settings(AppSettingsViewModel(database_filename=""))
+
+
 @pytest.mark.parametrize(
     ("document", "expected_message"),
     [
@@ -167,6 +252,36 @@ def test_load_settings_rejects_invalid_toml_values(tmp_path: Path) -> None:
     ],
 )
 def test_load_settings_rejects_invalid_sync_scope_values(
+    tmp_path: Path,
+    document: str,
+    expected_message: str,
+) -> None:
+    settings_path = tmp_path / SETTINGS_FILENAME
+    settings_path.write_text(document, encoding="utf-8")
+    service = TomlSettingsService(settings_path)
+
+    with pytest.raises(ControlledServiceError, match=expected_message):
+        service.load_settings()
+
+
+@pytest.mark.parametrize(
+    ("document", "expected_message"),
+    [
+        (
+            'sync_scope = 3\n[app]\nlast_opened_screen = "dashboard"\n',
+            r"The \[sync_scope\] settings section must be a TOML table\.",
+        ),
+        (
+            "[sync_scope]\nglobal_rules = [3]\n",
+            r"The sync_scope\.global_rules\[0\] setting must be a TOML table\.",
+        ),
+        (
+            "[sync_scope]\nframework_rules = [3]\n",
+            r"The sync_scope\.framework_rules\[0\] setting must be a TOML table\.",
+        ),
+    ],
+)
+def test_load_settings_rejects_invalid_sync_scope_section_shapes(
     tmp_path: Path,
     document: str,
     expected_message: str,

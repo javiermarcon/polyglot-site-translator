@@ -388,6 +388,13 @@ def step_assert_reopened_default_locale(context: object, default_locale: str) ->
     assert typed_context.shell.project_editor_state.editor.default_locale == default_locale
 
 
+@then('the project editor uses the default locale "{default_locale}"')
+def step_assert_create_editor_default_locale(context: object, default_locale: str) -> None:
+    typed_context = _context_with_shell(context)
+    assert typed_context.shell.project_editor_state is not None
+    assert typed_context.shell.project_editor_state.editor.default_locale == default_locale
+
+
 @then('the project detail shows the persisted sync mode "{mode}"')
 def step_assert_persisted_sync_mode(context: object, mode: str) -> None:
     typed_context = _context_with_shell(context)

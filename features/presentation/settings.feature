@@ -58,11 +58,14 @@ Feature: Frontend settings management
     Then the settings draft uses the default window size
     And the settings draft keeps remember last screen disabled
 
-  Scenario: Browse planned settings categories
+  Scenario: Browse translation settings and persist the default project locale
     Given the frontend shell is wired with seeded frontend test doubles
     And the operator has opened the settings screen
     When the operator selects the settings section "translation"
-    Then the settings screen shows the selected planned section
+    And the operator sets the default project locale to "es_ES, es_AR"
+    And the operator applies the settings changes
+    Then the settings screen shows the translation settings section
+    And the saved settings keep the default project locale "es_ES,es_AR"
 
   Scenario: Configure global sync rules and persist them
     Given the frontend shell is wired with TOML-backed settings persistence

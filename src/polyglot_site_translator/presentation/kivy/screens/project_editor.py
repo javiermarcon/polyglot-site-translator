@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
+from dataclasses import replace
+
 from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.gridlayout import GridLayout
 from kivy.uix.screenmanager import ScreenManager
 from kivy.uix.spinner import Spinner
 from kivy.uix.switch import Switch
@@ -82,6 +85,7 @@ class ProjectEditorScreen(BaseShellScreen):
             )
             self.update_error_label()
             return
+        self._reset_form_refs()
         self.set_screen_copy(
             title=state.title,
             subtitle="Persisted through the site registry service.",
@@ -94,12 +98,68 @@ class ProjectEditorScreen(BaseShellScreen):
         panel = SurfaceBoxLayout(
             orientation="vertical",
             spacing=12,
+            padding=0,
+            size_hint_y=None,
+            background_role="app_background",
+        )
+        panel.bind(minimum_height=panel.setter("height"))
+        layout = GridLayout(cols=2, spacing=16, size_hint_y=None)
+        layout.bind(minimum_height=layout.setter("height"))
+        layout.add_widget(self._build_sections_panel(state))
+        layout.add_widget(self._build_section_content(state))
+        panel.add_widget(layout)
+        return panel
+
+    def _build_sections_panel(self, state: ProjectEditorStateViewModel) -> SurfaceBoxLayout:
+        panel = SurfaceBoxLayout(
+            orientation="vertical",
+            spacing=10,
+            padding=16,
+            size_hint=(None, None),
+            width=300,
+            background_role="card_background",
+        )
+        panel.bind(minimum_height=panel.setter("height"))
+        panel.add_widget(WrappedLabel(text="Project Settings Sections", font_size=18, bold=True))
+        panel.add_widget(
+            WrappedLabel(
+                text=(
+                    "Navigate the project configuration by domain instead of editing one flat form."
+                ),
+                font_size=14,
+                color_role="text_muted",
+            )
+        )
+        for section in state.sections:
+            button = AppButton(
+                text=f"{section.title}\n{section.description}",
+                primary=section.key == state.selected_section_key,
+                height=72,
+            )
+            button.disabled = section.key == state.selected_section_key
+            button.bind(
+                on_release=lambda _widget, key=section.key: self._select_project_editor_section(key)
+            )
+            panel.add_widget(button)
+        return panel
+
+    def _build_section_content(self, state: ProjectEditorStateViewModel) -> SurfaceBoxLayout:
+        panel = SurfaceBoxLayout(
+            orientation="vertical",
+            spacing=12,
             padding=20,
             size_hint_y=None,
             background_role="card_background",
         )
         panel.bind(minimum_height=panel.setter("height"))
-        panel.add_widget(WrappedLabel(text=state.title, font_size=22, bold=True))
+        panel.add_widget(WrappedLabel(text=state.selected_section_title, font_size=22, bold=True))
+        panel.add_widget(
+            WrappedLabel(
+                text=state.selected_section_description,
+                font_size=14,
+                color_role="text_muted",
+            )
+        )
         panel.add_widget(
             WrappedLabel(
                 text=state.status_message or "",
@@ -107,8 +167,34 @@ class ProjectEditorScreen(BaseShellScreen):
                 color_role="text_muted",
             )
         )
+        if state.selected_section_key == "translation":
+            panel.add_widget(self._build_translation_fields(state))
+        elif state.selected_section_key == "remote":
+            panel.add_widget(self._build_remote_fields(state))
+            if state.connection_test_result is not None:
+                panel.add_widget(self._build_remote_connection_test_card(state))
+        elif state.selected_section_key == "sync":
+            panel.add_widget(
+                self._build_adapter_sync_filters_toggle(state.editor.use_adapter_sync_filters)
+            )
+            panel.add_widget(self._build_sync_scope_panel(state))
+        else:
+            panel.add_widget(self._build_general_fields(state))
+            panel.add_widget(self._build_active_toggle(state.editor.is_active))
+        panel.add_widget(self._build_editor_actions(state))
+        return panel
+
+    def _build_general_fields(self, state: ProjectEditorStateViewModel) -> SurfaceBoxLayout:
+        card = SurfaceBoxLayout(
+            orientation="vertical",
+            spacing=12,
+            padding=0,
+            size_hint_y=None,
+            background_role="card_background",
+        )
+        card.bind(minimum_height=card.setter("height"))
         self._name_input = build_site_editor_text_input(state.editor.name)
-        panel.add_widget(build_site_editor_field_card("Name", self._name_input))
+        card.add_widget(build_site_editor_field_card("Name", self._name_input))
         self._framework_spinner = build_site_editor_spinner(
             values=[option.label for option in state.framework_options],
             current_label=find_option_label(
@@ -116,9 +202,9 @@ class ProjectEditorScreen(BaseShellScreen):
                 state.editor.framework_type,
             ),
         )
-        panel.add_widget(build_site_editor_field_card("Framework Type", self._framework_spinner))
+        card.add_widget(build_site_editor_field_card("Framework Type", self._framework_spinner))
         self._local_path_input = build_site_editor_text_input(state.editor.local_path)
-        panel.add_widget(
+        card.add_widget(
             build_labeled_path_field(
                 "Local Path",
                 self._local_path_input,
@@ -131,8 +217,33 @@ class ProjectEditorScreen(BaseShellScreen):
                 ),
             ),
         )
+        return card
+
+    def _build_translation_fields(
+        self,
+        state: ProjectEditorStateViewModel,
+    ) -> SurfaceBoxLayout:
+        card = SurfaceBoxLayout(
+            orientation="vertical",
+            spacing=12,
+            padding=0,
+            size_hint_y=None,
+            background_role="card_background",
+        )
+        card.bind(minimum_height=card.setter("height"))
         self._default_locale_input = build_site_editor_text_input(state.editor.default_locale)
-        panel.add_widget(build_site_editor_field_card("Default Locale", self._default_locale_input))
+        card.add_widget(build_site_editor_field_card("Default Locale", self._default_locale_input))
+        return card
+
+    def _build_remote_fields(self, state: ProjectEditorStateViewModel) -> SurfaceBoxLayout:
+        card = SurfaceBoxLayout(
+            orientation="vertical",
+            spacing=12,
+            padding=0,
+            size_hint_y=None,
+            background_role="card_background",
+        )
+        card.bind(minimum_height=card.setter("height"))
         self._connection_type_spinner = build_site_editor_spinner(
             values=[option.label for option in state.connection_type_options],
             current_label=find_option_label(
@@ -140,30 +251,26 @@ class ProjectEditorScreen(BaseShellScreen):
                 state.editor.connection_type,
             ),
         )
-        panel.add_widget(
+        card.add_widget(
             build_site_editor_field_card("Remote Connection Type", self._connection_type_spinner)
         )
         self._remote_host_input = build_site_editor_text_input(state.editor.remote_host)
-        panel.add_widget(build_site_editor_field_card("Remote Host", self._remote_host_input))
+        card.add_widget(build_site_editor_field_card("Remote Host", self._remote_host_input))
         self._remote_port_input = build_site_editor_text_input(state.editor.remote_port)
-        panel.add_widget(build_site_editor_field_card("Remote Port", self._remote_port_input))
+        card.add_widget(build_site_editor_field_card("Remote Port", self._remote_port_input))
         self._remote_username_input = build_site_editor_text_input(state.editor.remote_username)
-        panel.add_widget(
+        card.add_widget(
             build_site_editor_field_card("Remote Username", self._remote_username_input),
         )
         self._remote_password_input, remote_password_card = build_remote_password_field_card(
             state.editor.remote_password,
         )
-        panel.add_widget(remote_password_card)
+        card.add_widget(remote_password_card)
         self._remote_path_input = build_site_editor_text_input(state.editor.remote_path)
-        panel.add_widget(build_site_editor_field_card("Remote Path", self._remote_path_input))
-        panel.add_widget(
-            self._build_adapter_sync_filters_toggle(state.editor.use_adapter_sync_filters)
-        )
-        panel.add_widget(self._build_sync_scope_panel(state))
-        if state.connection_test_result is not None:
-            panel.add_widget(self._build_remote_connection_test_card(state))
-        panel.add_widget(self._build_active_toggle(state.editor.is_active))
+        card.add_widget(build_site_editor_field_card("Remote Path", self._remote_path_input))
+        return card
+
+    def _build_editor_actions(self, state: ProjectEditorStateViewModel) -> BoxLayout:
         actions = BoxLayout(orientation="horizontal", spacing=12, size_hint_y=None, height=48)
         save_button = AppButton(text=state.submit_label, primary=True)
         save_button.bind(on_release=self._save_editor)
@@ -180,8 +287,26 @@ class ProjectEditorScreen(BaseShellScreen):
         actions.add_widget(cancel_button)
         self._bind_connection_test_state_updates(state)
         self._refresh_test_connection_button_state(state)
-        panel.add_widget(actions)
-        return panel
+        return actions
+
+    def _reset_form_refs(self) -> None:
+        self._name_input = None
+        self._framework_spinner = None
+        self._local_path_input = None
+        self._default_locale_input = None
+        self._connection_type_spinner = None
+        self._remote_host_input = None
+        self._remote_port_input = None
+        self._remote_username_input = None
+        self._remote_password_input = None
+        self._remote_path_input = None
+        self._is_active_switch = None
+        self._use_adapter_sync_filters_switch = None
+        self._sync_rule_path_input = None
+        self._sync_rule_description_input = None
+        self._sync_rule_filter_type_spinner = None
+        self._sync_rule_behavior_spinner = None
+        self._test_connection_button = None
 
     def _build_active_toggle(self, is_active: bool) -> SurfaceBoxLayout:
         card = SurfaceBoxLayout(
@@ -491,6 +616,15 @@ class ProjectEditorScreen(BaseShellScreen):
         self._shell.open_projects()
         self.show_route("projects")
 
+    def _select_project_editor_section(self, section_key: str) -> None:
+        state = self._require_state()
+        editor = self._collect_editor_from_form(state)
+        self._draft_editor = editor
+        self._shell.project_editor_state = replace(state, editor=editor)
+        self._shell.select_project_editor_section(section_key)
+        self._draft_editor = self._require_state().editor
+        self.refresh()
+
     def _require_state(self) -> ProjectEditorStateViewModel:
         state = self._shell.project_editor_state
         if state is None:
@@ -526,28 +660,43 @@ class ProjectEditorScreen(BaseShellScreen):
     ) -> SiteEditorViewModel:
         return SiteEditorViewModel(
             site_id=state.editor.site_id,
-            name=self._require_text(self._name_input),
-            framework_type=self._require_framework_value(
-                state.framework_options,
-                self._framework_spinner,
+            name=self._text_or_fallback(self._name_input, state.editor.name),
+            framework_type=self._spinner_value_or_fallback(
+                options=state.framework_options,
+                field=self._framework_spinner,
+                fallback=state.editor.framework_type,
             ),
-            local_path=self._require_text(self._local_path_input),
-            default_locale=self._require_text(self._default_locale_input),
-            connection_type=self._require_framework_value(
-                state.connection_type_options,
-                self._connection_type_spinner,
+            local_path=self._text_or_fallback(self._local_path_input, state.editor.local_path),
+            default_locale=self._text_or_fallback(
+                self._default_locale_input,
+                state.editor.default_locale,
             ),
-            remote_host=self._optional_text(self._remote_host_input),
-            remote_port=self._optional_text(self._remote_port_input),
-            remote_username=self._optional_text(self._remote_username_input),
-            remote_password=self._optional_text(self._remote_password_input),
-            remote_path=self._optional_text(self._remote_path_input),
-            is_active=self._is_active_switch.active if self._is_active_switch is not None else True,
+            connection_type=self._spinner_value_or_fallback(
+                options=state.connection_type_options,
+                field=self._connection_type_spinner,
+                fallback=state.editor.connection_type,
+            ),
+            remote_host=self._text_or_fallback(self._remote_host_input, state.editor.remote_host),
+            remote_port=self._text_or_fallback(self._remote_port_input, state.editor.remote_port),
+            remote_username=self._text_or_fallback(
+                self._remote_username_input,
+                state.editor.remote_username,
+            ),
+            remote_password=self._text_or_fallback(
+                self._remote_password_input,
+                state.editor.remote_password,
+            ),
+            remote_path=self._text_or_fallback(self._remote_path_input, state.editor.remote_path),
+            is_active=(
+                self._is_active_switch.active
+                if self._is_active_switch is not None
+                else state.editor.is_active
+            ),
             remote_verify_host=True,
             use_adapter_sync_filters=(
                 self._use_adapter_sync_filters_switch.active
                 if self._use_adapter_sync_filters_switch is not None
-                else False
+                else state.editor.use_adapter_sync_filters
             ),
             sync_rule_items=(
                 self._current_sync_rule_items(state) if sync_rule_items is None else sync_rule_items
@@ -574,19 +723,22 @@ class ProjectEditorScreen(BaseShellScreen):
     def _refresh_test_connection_button_state(self, state: ProjectEditorStateViewModel) -> None:
         if self._test_connection_button is None:
             return
-        connection_type = self._require_framework_value(
-            state.connection_type_options,
-            self._connection_type_spinner,
+        connection_type = self._spinner_value_or_fallback(
+            options=state.connection_type_options,
+            field=self._connection_type_spinner,
+            fallback=state.editor.connection_type,
         )
-        remote_port = self._optional_text(self._remote_port_input)
+        remote_port = self._text_or_fallback(self._remote_port_input, state.editor.remote_port)
         self._test_connection_button.disabled = not (
             connection_type != "none"
-            and self._optional_text(self._remote_host_input) != ""
+            and self._text_or_fallback(self._remote_host_input, state.editor.remote_host) != ""
             and remote_port.isdigit()
             and int(remote_port) > 0
-            and self._optional_text(self._remote_username_input) != ""
-            and self._optional_text(self._remote_password_input) != ""
-            and self._optional_text(self._remote_path_input) != ""
+            and self._text_or_fallback(self._remote_username_input, state.editor.remote_username)
+            != ""
+            and self._text_or_fallback(self._remote_password_input, state.editor.remote_password)
+            != ""
+            and self._text_or_fallback(self._remote_path_input, state.editor.remote_path) != ""
         )
 
     def _require_framework_value(
@@ -597,6 +749,22 @@ class ProjectEditorScreen(BaseShellScreen):
         if field is None:
             msg = "Project editor input field is not available."
             raise ValueError(msg)
+        return find_option_value(options, str(field.text).strip())
+
+    def _text_or_fallback(self, field: TextInput | None, fallback: str) -> str:
+        if field is None:
+            return fallback
+        return str(field.text).strip()
+
+    def _spinner_value_or_fallback(
+        self,
+        *,
+        options: list[SettingsOptionViewModel],
+        field: Spinner | None,
+        fallback: str,
+    ) -> str:
+        if field is None:
+            return fallback
         return find_option_value(options, str(field.text).strip())
 
 

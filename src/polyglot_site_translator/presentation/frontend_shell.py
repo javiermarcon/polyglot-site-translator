@@ -32,6 +32,7 @@ from polyglot_site_translator.presentation.view_models import (
     build_default_app_settings,
     build_navigation_menu_state,
     build_settings_state,
+    select_project_editor_section,
 )
 
 
@@ -422,6 +423,19 @@ class FrontendShell:
             status_message="Settings draft updated.",
         )
 
+    def set_settings_default_project_locale(self, default_project_locale: str) -> None:
+        """Update the default project locale used by new project drafts."""
+        state = self._require_settings_state()
+        self.settings_state = replace(
+            state,
+            app_settings=replace(
+                state.app_settings,
+                default_project_locale=default_project_locale,
+            ),
+            status="editing",
+            status_message="Settings draft updated.",
+        )
+
     def set_settings_database_directory(self, database_directory: str) -> None:
         """Update the draft SQLite database directory."""
         state = self._require_settings_state()
@@ -471,7 +485,13 @@ class FrontendShell:
         """Persist the current draft settings through the settings contract."""
         state = self._require_settings_state()
         try:
-            self.settings_state = self.services.settings.save_settings(state.app_settings)
+            saved_state = self.services.settings.save_settings(state.app_settings)
+            self.settings_state = build_settings_state(
+                app_settings=saved_state.app_settings,
+                status=saved_state.status,
+                status_message=saved_state.status_message,
+                selected_section_key=state.selected_section_key,
+            )
             self.latest_error = None
         except ControlledServiceError as error:
             self.settings_state = replace(
@@ -484,11 +504,17 @@ class FrontendShell:
 
     def restore_default_settings(self) -> None:
         """Restore settings defaults through the settings contract."""
+        state = self._require_settings_state()
         try:
-            self.settings_state = self.services.settings.reset_settings()
+            reset_state = self.services.settings.reset_settings()
+            self.settings_state = build_settings_state(
+                app_settings=reset_state.app_settings,
+                status=reset_state.status,
+                status_message=reset_state.status_message,
+                selected_section_key=state.selected_section_key,
+            )
             self.latest_error = None
         except ControlledServiceError as error:
-            state = self._require_settings_state()
             self.settings_state = replace(
                 state,
                 status="failed",
@@ -516,6 +542,11 @@ class FrontendShell:
             self.project_editor_state = None
             self.latest_error = str(error)
         self._set_route(RouteName.PROJECT_EDITOR, project_id=project_id)
+
+    def select_project_editor_section(self, section_key: str) -> None:
+        """Change the selected project-editor section."""
+        state = self._require_project_editor_state()
+        self.project_editor_state = select_project_editor_section(state, section_key=section_key)
 
     def save_new_project(self, editor: SiteEditorViewModel) -> None:
         """Create a project registry record from the editor draft."""
@@ -572,7 +603,7 @@ class FrontendShell:
         state = self._require_project_editor_state()
         try:
             connection_test_result = self.services.registry.test_remote_connection(editor)
-            self.project_editor_state = replace(
+            next_state = replace(
                 state,
                 editor=editor,
                 connection_test_enabled=True,
@@ -580,15 +611,23 @@ class FrontendShell:
                 status="connection-tested",
                 status_message=connection_test_result.message,
             )
+            self.project_editor_state = select_project_editor_section(
+                next_state,
+                section_key=state.selected_section_key,
+            )
             self.latest_error = None
         except ControlledServiceError as error:
-            self.project_editor_state = replace(
+            next_state = replace(
                 state,
                 editor=editor,
                 connection_test_result=None,
                 connection_test_enabled=False,
                 status="failed",
                 status_message=str(error),
+            )
+            self.project_editor_state = select_project_editor_section(
+                next_state,
+                section_key=state.selected_section_key,
             )
             self.latest_error = str(error)
         self._set_route(RouteName.PROJECT_EDITOR, project_id=editor.site_id)
@@ -602,17 +641,25 @@ class FrontendShell:
         """Rebuild the current project-editor draft without persisting changes."""
         state = self._require_project_editor_state()
         try:
-            self.project_editor_state = self.services.registry.preview_project_editor(
+            next_state = self.services.registry.preview_project_editor(
                 editor,
                 mode=state.mode,
             )
+            self.project_editor_state = select_project_editor_section(
+                next_state,
+                section_key=state.selected_section_key,
+            )
             self.latest_error = None
         except ControlledServiceError as error:
-            self.project_editor_state = replace(
+            next_state = replace(
                 state,
                 editor=editor,
                 status="failed",
                 status_message=str(error),
+            )
+            self.project_editor_state = select_project_editor_section(
+                next_state,
+                section_key=state.selected_section_key,
             )
             self.latest_error = str(error)
         self._set_route(RouteName.PROJECT_EDITOR, project_id=editor.site_id)

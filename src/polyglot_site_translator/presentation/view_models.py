@@ -64,6 +64,15 @@ class SettingsSectionViewModel:
 
 
 @dataclass(frozen=True)
+class ProjectEditorSectionViewModel:
+    """A project-editor section rendered in the create/edit workflow."""
+
+    key: str
+    title: str
+    description: str
+
+
+@dataclass(frozen=True)
 class SettingsOptionViewModel:
     """A selectable option rendered by a settings control."""
 
@@ -93,6 +102,7 @@ class AppSettingsViewModel:
     last_opened_screen: str = "dashboard"
     developer_mode: bool = False
     ui_language: str = "en"
+    default_project_locale: str = "en_US"
     database_directory: str = ""
     database_filename: str = "site_registry.sqlite3"
     sync_progress_log_limit: int = 200
@@ -211,6 +221,10 @@ class ProjectEditorStateViewModel:
     mode: str
     title: str
     submit_label: str
+    sections: list[ProjectEditorSectionViewModel]
+    selected_section_key: str
+    selected_section_title: str
+    selected_section_description: str
     editor: SiteEditorViewModel
     framework_options: list[SettingsOptionViewModel]
     connection_type_options: list[SettingsOptionViewModel]
@@ -307,8 +321,8 @@ def build_settings_sections() -> list[SettingsSectionViewModel]:
         SettingsSectionViewModel(
             key="translation",
             title="Translation Settings",
-            description="Reserved for translation-provider and locale workflow options.",
-            is_available=False,
+            description="Locale defaults and translation workflow behavior.",
+            is_available=True,
         ),
         SettingsSectionViewModel(
             key="frameworks",
@@ -408,6 +422,7 @@ def build_default_app_settings(
         last_opened_screen="dashboard",
         developer_mode=False,
         ui_language="en",
+        default_project_locale="en_US",
         database_directory=database_directory,
         database_filename=database_filename,
         sync_progress_log_limit=200,
@@ -415,14 +430,14 @@ def build_default_app_settings(
     )
 
 
-def build_default_site_editor() -> SiteEditorViewModel:
+def build_default_site_editor(*, default_locale: str = "en_US") -> SiteEditorViewModel:
     """Return the default site registry editor draft."""
     return SiteEditorViewModel(
         site_id=None,
         name="",
         framework_type="unknown",
         local_path="",
-        default_locale="en_US",
+        default_locale=default_locale,
         connection_type=NO_REMOTE_CONNECTION_VALUE,
         remote_host="",
         remote_port="",
@@ -450,13 +465,19 @@ def build_project_editor_state(  # noqa: PLR0913
     sync_scope_message: str,
     status: str,
     status_message: str | None,
+    selected_section_key: str = "general",
 ) -> ProjectEditorStateViewModel:
     """Return the project editor state for create/edit flows."""
+    selected_section = _find_project_editor_section(selected_section_key)
     if mode == "edit":
         return ProjectEditorStateViewModel(
             mode=mode,
             title="Edit Project",
             submit_label="Save Project",
+            sections=build_project_editor_sections(),
+            selected_section_key=selected_section.key,
+            selected_section_title=selected_section.title,
+            selected_section_description=selected_section.description,
             editor=editor,
             framework_options=framework_options,
             connection_type_options=connection_type_options,
@@ -473,6 +494,10 @@ def build_project_editor_state(  # noqa: PLR0913
         mode=mode,
         title="Register Project",
         submit_label="Create Project",
+        sections=build_project_editor_sections(),
+        selected_section_key=selected_section.key,
+        selected_section_title=selected_section.title,
+        selected_section_description=selected_section.description,
         editor=editor,
         framework_options=framework_options,
         connection_type_options=connection_type_options,
@@ -530,11 +555,45 @@ def build_sync_rule_behavior_options() -> list[SettingsOptionViewModel]:
     ]
 
 
+def build_project_editor_sections() -> list[ProjectEditorSectionViewModel]:
+    """Return the logical sections rendered in the project editor."""
+    return [
+        ProjectEditorSectionViewModel(
+            key="general",
+            title="General Settings",
+            description="Core project identity, framework and active state.",
+        ),
+        ProjectEditorSectionViewModel(
+            key="translation",
+            title="Translation Settings",
+            description="Locale defaults inherited from application settings.",
+        ),
+        ProjectEditorSectionViewModel(
+            key="remote",
+            title="Remote Connection Settings",
+            description="Connection credentials and remote project path.",
+        ),
+        ProjectEditorSectionViewModel(
+            key="sync",
+            title="Sync Settings",
+            description="Adapter filters and project-specific sync overrides.",
+        ),
+    ]
+
+
 def _find_settings_section(section_key: str) -> SettingsSectionViewModel:
     for section in build_settings_sections():
         if section.key == section_key:
             return section
     msg = f"Unknown settings section: {section_key}"
+    raise LookupError(msg)
+
+
+def _find_project_editor_section(section_key: str) -> ProjectEditorSectionViewModel:
+    for section in build_project_editor_sections():
+        if section.key == section_key:
+            return section
+    msg = f"Unknown project editor section: {section_key}"
     raise LookupError(msg)
 
 
@@ -587,4 +646,33 @@ def build_settings_state(
         ui_language_field=build_ui_language_field(),
         status=status,
         status_message=status_message,
+    )
+
+
+def select_project_editor_section(
+    state: ProjectEditorStateViewModel,
+    *,
+    section_key: str,
+) -> ProjectEditorStateViewModel:
+    """Return the editor state with a different selected section."""
+    selected_section = _find_project_editor_section(section_key)
+    return ProjectEditorStateViewModel(
+        mode=state.mode,
+        title=state.title,
+        submit_label=state.submit_label,
+        sections=state.sections,
+        selected_section_key=selected_section.key,
+        selected_section_title=selected_section.title,
+        selected_section_description=selected_section.description,
+        editor=state.editor,
+        framework_options=state.framework_options,
+        connection_type_options=state.connection_type_options,
+        sync_rule_filter_type_options=state.sync_rule_filter_type_options,
+        sync_rule_behavior_options=state.sync_rule_behavior_options,
+        connection_test_enabled=state.connection_test_enabled,
+        connection_test_result=state.connection_test_result,
+        sync_scope_status=state.sync_scope_status,
+        sync_scope_message=state.sync_scope_message,
+        status=state.status,
+        status_message=state.status_message,
     )

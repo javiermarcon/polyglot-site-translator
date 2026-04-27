@@ -138,6 +138,7 @@ The frontend baseline now also includes:
 - an extensible settings screen
 - a dedicated settings contract for frontend configuration
 - typed App / UI / Kivy settings state
+- typed translation defaults inside the settings flow, including the default locale inherited by new project drafts
 - runtime-level exception routing so uncaught thread/callback failures become visible shell state when recovery is possible
 - typed wrapping of framework-detection, sync-scope, provider-transport, and persisted-secret decoding failures before they reach Kivy callbacks
 - workflow-by-workflow hardening should prefer typed adapter/infrastructure failures over leaked raw transport, decoding, sqlite, or registry exceptions
@@ -157,6 +158,8 @@ The frontend baseline now also includes:
 - SQLite repository resolution from persisted `database_directory` and `database_filename`
 - persisted `sync_progress_log_limit` for the sync progress popup
 - a thin project editor screen for create/edit flows through the presentation shell
+- a sectioned project editor workflow so project configuration is grouped like the general settings screen
+- the `General` project-editor section now owns only general metadata not covered by the translation, remote, or sync tabs, and switching tabs must preserve the in-progress draft
 - a discoverable remote connection combo with a "No Remote Connection" option
 - an editor-level "Test Connection" action delegated through presentation/application services
 - an explicit SSH host-key trust popup during sync for unknown SFTP/SCP hosts, with strict verification on by default and TOFU auto-add only after user confirmation

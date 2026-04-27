@@ -71,6 +71,7 @@ from polyglot_site_translator.presentation.view_models import (
     ProjectEditorStateViewModel,
     ProjectSummaryViewModel,
     RemoteConnectionTestResultViewModel,
+    SettingsStateViewModel,
     SiteEditorViewModel,
     SyncRuleEditorItemViewModel,
     SyncStatusViewModel,
@@ -178,8 +179,11 @@ class SiteRegistryPresentationManagementService(ProjectRegistryManagementService
 
     def build_create_project_editor(self) -> ProjectEditorStateViewModel:
         """Return the initial create-project editor state."""
+        settings_state = self._load_settings_state()
         editor = replace(
-            build_default_site_editor(),
+            build_default_site_editor(
+                default_locale=settings_state.app_settings.default_project_locale
+            ),
             local_path=str(self._default_workspace_root() / "site"),
         )
         return _build_editor_state(
@@ -299,16 +303,25 @@ class SiteRegistryPresentationManagementService(ProjectRegistryManagementService
             raise ControlledServiceError(str(error)) from error
 
     def _default_workspace_root(self) -> Path:
+        settings_state = self._load_settings_state()
         try:
-            settings_state = self._settings_service.load_settings()
             location = resolve_sqlite_database_location(settings_state.app_settings)
+        except (
+            SiteRegistryConfigurationError,
+            SiteRegistryPersistenceError,
+        ) as error:
+            raise ControlledServiceError(str(error)) from error
+        return location.directory
+
+    def _load_settings_state(self) -> SettingsStateViewModel:
+        try:
+            return self._settings_service.load_settings()
         except (
             ControlledServiceError,
             SiteRegistryConfigurationError,
             SiteRegistryPersistenceError,
         ) as error:
             raise ControlledServiceError(str(error)) from error
-        return location.directory
 
 
 class SiteRegistryPresentationWorkflowService(ProjectWorkflowService):

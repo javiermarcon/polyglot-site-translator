@@ -10,6 +10,8 @@ import sys
 import tomllib
 from typing import Any
 
+from polyglot_site_translator.domain.site_registry.errors import SiteRegistryValidationError
+from polyglot_site_translator.domain.site_registry.locales import normalize_default_locale
 from polyglot_site_translator.domain.sync.scope import (
     AdapterSyncScopeSettings,
     ConfiguredSyncRule,
@@ -171,6 +173,10 @@ class TomlSettingsService:
                 default_settings.developer_mode,
             ),
             ui_language=_read_string(raw_settings, "ui_language", default_settings.ui_language),
+            default_project_locale=_read_translation_default_project_locale(
+                raw_document,
+                default_settings.default_project_locale,
+            ),
             database_directory=_read_string(
                 raw_settings,
                 "database_directory",
@@ -259,12 +265,20 @@ def _validate_app_settings(app_settings: AppSettingsViewModel) -> AppSettingsVie
         msg = "Sync progress log limit must be a positive integer."
         raise ControlledServiceError(msg)
     try:
+        default_project_locale = normalize_default_locale(
+            app_settings.default_project_locale,
+            label="Default project locale",
+        )
+    except SiteRegistryValidationError as error:
+        raise ControlledServiceError(str(error)) from error
+    try:
         database_directory = str(validate_database_directory(app_settings.database_directory))
         database_filename = normalize_database_filename(app_settings.database_filename)
     except ValueError as error:
         raise ControlledServiceError(str(error)) from error
     return replace(
         app_settings,
+        default_project_locale=default_project_locale,
         database_directory=database_directory,
         database_filename=database_filename,
         sync_scope_settings=_validate_sync_scope_settings(app_settings.sync_scope_settings),
@@ -287,6 +301,9 @@ def _serialize_settings_document(app_settings: AppSettingsViewModel) -> str:
         f"database_directory = {_format_toml_string(app_settings.database_directory)}\n"
         f"database_filename = {_format_toml_string(app_settings.database_filename)}\n"
         f"sync_progress_log_limit = {app_settings.sync_progress_log_limit}\n"
+        "\n"
+        "[translation]\n"
+        f"default_project_locale = {_format_toml_string(app_settings.default_project_locale)}\n"
     )
     document += _serialize_sync_scope_settings(app_settings.sync_scope_settings)
     return document
@@ -300,6 +317,23 @@ def _format_toml_bool(value: bool) -> str:
     if value:
         return "true"
     return "false"
+
+
+def _read_translation_default_project_locale(
+    raw_document: dict[str, Any],
+    default_locale: str,
+) -> str:
+    raw_translation = raw_document.get("translation")
+    if raw_translation is None:
+        return default_locale
+    if not isinstance(raw_translation, dict):
+        msg = "The [translation] settings section must be a TOML table."
+        raise ControlledServiceError(msg)
+    raw_value = raw_translation.get("default_project_locale", default_locale)
+    if isinstance(raw_value, str):
+        return raw_value
+    msg = "The translation setting 'default_project_locale' must be a string."
+    raise ControlledServiceError(msg)
 
 
 def _read_sync_scope_settings(
