@@ -14,6 +14,7 @@ from kivy.uix.screenmanager import ScreenManager
 from kivy.uix.spinner import Spinner
 from kivy.uix.switch import Switch
 from kivy.uix.textinput import TextInput
+from kivy.uix.widget import Widget
 
 from polyglot_site_translator.adapters.framework_registry import FrameworkAdapterRegistry
 from polyglot_site_translator.domain.sync.scope import (
@@ -127,9 +128,22 @@ class SettingsScreen(BaseShellScreen):
             size_hint_y=None,
         )
         layout.bind(minimum_height=layout.setter("height"))
-        layout.add_widget(self._build_sections_panel())
+        layout.add_widget(self._build_sections_column())
         layout.add_widget(self._build_section_content())
         return layout
+
+    def _build_sections_column(self) -> BoxLayout:
+        column = BoxLayout(
+            orientation="vertical",
+            spacing=0,
+            size_hint_y=1,
+        )
+        if self._layout_spec.sections_width is not None:
+            column.size_hint_x = None
+            column.width = self._layout_spec.sections_width
+        column.add_widget(self._build_sections_panel())
+        column.add_widget(Widget())
+        return column
 
     def _build_sections_panel(self) -> SurfaceBoxLayout:
         state = self._require_state()

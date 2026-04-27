@@ -5,10 +5,12 @@ from __future__ import annotations
 from typing import Any, cast
 
 from kivy.core.window import Window
+from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.button import Button
 from kivy.uix.label import Label
 from kivy.uix.spinner import Spinner
 from kivy.uix.textinput import TextInput
+from kivy.uix.widget import Widget
 import pytest
 
 from polyglot_site_translator.app import create_kivy_app
@@ -156,6 +158,26 @@ def test_settings_screen_handles_section_selection_defaults_and_dashboard_naviga
 
     settings_screen._back_to_dashboard()
     assert root.current == "dashboard"
+
+
+def test_settings_screen_keeps_the_sections_menu_top_aligned() -> None:
+    app = cast(Any, create_kivy_app())
+    root = app.build()
+    settings_screen = root.get_screen("settings")
+
+    settings_screen._shell.open_settings()
+    root.current = "settings"
+    settings_screen.refresh()
+
+    main_layout = settings_screen._content.children[0]
+    sections_column = main_layout.children[1]
+
+    assert isinstance(sections_column, BoxLayout)
+    assert sections_column.size_hint_x is None
+    assert sections_column.width == settings_screen._layout_spec.sections_width
+    assert len(sections_column.children) == 2
+    assert isinstance(sections_column.children[0], Widget)
+    assert isinstance(sections_column.children[1], BoxLayout)
 
 
 def test_settings_screen_can_edit_translation_defaults() -> None:

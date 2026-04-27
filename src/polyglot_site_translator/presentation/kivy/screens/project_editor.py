@@ -10,6 +10,7 @@ from kivy.uix.screenmanager import ScreenManager
 from kivy.uix.spinner import Spinner
 from kivy.uix.switch import Switch
 from kivy.uix.textinput import TextInput
+from kivy.uix.widget import Widget
 
 from polyglot_site_translator.presentation.frontend_shell import FrontendShell
 from polyglot_site_translator.presentation.kivy.screens.base import BaseShellScreen
@@ -105,10 +106,22 @@ class ProjectEditorScreen(BaseShellScreen):
         panel.bind(minimum_height=panel.setter("height"))
         layout = GridLayout(cols=2, spacing=16, size_hint_y=None)
         layout.bind(minimum_height=layout.setter("height"))
-        layout.add_widget(self._build_sections_panel(state))
+        layout.add_widget(self._build_sections_column(state))
         layout.add_widget(self._build_section_content(state))
         panel.add_widget(layout)
         return panel
+
+    def _build_sections_column(self, state: ProjectEditorStateViewModel) -> BoxLayout:
+        column = BoxLayout(
+            orientation="vertical",
+            spacing=0,
+            size_hint_x=None,
+            size_hint_y=1,
+            width=300,
+        )
+        column.add_widget(self._build_sections_panel(state))
+        column.add_widget(Widget())
+        return column
 
     def _build_sections_panel(self, state: ProjectEditorStateViewModel) -> SurfaceBoxLayout:
         panel = SurfaceBoxLayout(

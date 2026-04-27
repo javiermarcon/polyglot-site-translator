@@ -5,7 +5,9 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any, cast
 
+from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.spinner import Spinner
+from kivy.uix.widget import Widget
 import pytest
 
 from polyglot_site_translator.app import create_kivy_app
@@ -166,6 +168,27 @@ def test_project_editor_screen_uses_sectioned_layout_and_can_switch_sections() -
     ]
     assert "Resolved Sync Scope" in sync_labels
     assert "Local Path" not in sync_labels
+
+
+def test_project_editor_screen_keeps_the_sections_menu_top_aligned() -> None:
+    app = cast(Any, create_kivy_app(services=build_seeded_services()))
+    root = app.build()
+    editor_screen = root.get_screen("project_editor")
+    shell = editor_screen._shell
+
+    shell.open_project_editor_create()
+    root.current = "project_editor"
+    editor_screen.refresh()
+
+    main_layout = editor_screen._content.children[0].children[0]
+    sections_column = main_layout.children[1]
+
+    assert isinstance(sections_column, BoxLayout)
+    assert sections_column.size_hint_x is None
+    assert sections_column.width == 300
+    assert len(sections_column.children) == 2
+    assert isinstance(sections_column.children[0], Widget)
+    assert isinstance(sections_column.children[1], BoxLayout)
 
 
 def test_project_editor_screen_saves_edits_and_refreshes_when_not_routed_to_detail() -> None:
