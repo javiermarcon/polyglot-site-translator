@@ -1,4 +1,4 @@
 kivy
 polib
 googletrans==4.0.2
-paramiko>=3.4
+paramiko>=4.0.0
