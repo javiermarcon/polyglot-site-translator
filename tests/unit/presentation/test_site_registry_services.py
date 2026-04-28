@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections.abc import Callable, Iterable
 from dataclasses import replace
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import polib
 import pytest
@@ -18,7 +18,12 @@ from polyglot_site_translator.domain.framework_detection.models import (
     FrameworkDetectionResult,
 )
 from polyglot_site_translator.domain.po_processing.errors import (
+    POProcessingCompilationError,
     POProcessingTranslationError,
+)
+from polyglot_site_translator.domain.po_processing.models import (
+    POFileData,
+    POProcessingProgress,
 )
 from polyglot_site_translator.domain.remote_connections.models import (
     RemoteConnectionConfig,
@@ -365,6 +370,26 @@ def test_management_service_builds_create_state_from_translation_defaults(
     create_state = management.build_create_project_editor()
 
     assert create_state.editor.default_locale == "es_AR,es_ES"
+
+
+def test_management_service_builds_create_state_from_translation_compile_defaults(
+    tmp_path: Path,
+) -> None:
+    settings_service = TomlSettingsService(tmp_path / "settings.toml")
+    settings_service.save_settings(
+        replace(
+            build_default_app_settings(database_directory=str(tmp_path)),
+            default_compile_mo=False,
+        )
+    )
+    management = SiteRegistryPresentationManagementService(
+        service=_build_domain_service(InMemorySiteRegistryRepository()),
+        settings_service=settings_service,
+    )
+
+    create_state = management.build_create_project_editor()
+
+    assert create_state.editor.compile_mo is False
 
 
 def test_management_service_builds_edit_state_for_projects_without_remote_connection(
@@ -829,6 +854,7 @@ def test_workflow_service_builds_po_processing_preview() -> None:
     assert preview.progress_current == 0
     assert preview.progress_total == 0
     assert "Families processed: 0" in preview.summary
+    assert "Compiled MO files: 0" in preview.summary
 
 
 def test_workflow_service_processes_po_variants_from_site_workspace(tmp_path: Path) -> None:
@@ -870,6 +896,7 @@ def test_workflow_service_processes_po_variants_from_site_workspace(tmp_path: Pa
     assert preview.progress_total == 1
     assert "Synchronized entries: 1" in preview.summary
     assert "Translated entries: 0" in preview.summary
+    assert "Compiled MO files: 2" in preview.summary
 
 
 def test_workflow_service_processes_po_variants_from_selected_locales(tmp_path: Path) -> None:
@@ -911,6 +938,7 @@ def test_workflow_service_processes_po_variants_from_selected_locales(tmp_path: 
     assert preview.progress_total == 1
     assert "Synchronized entries: 1" in preview.summary
     assert "Translated entries: 0" in preview.summary
+    assert "Compiled MO files: 2" in preview.summary
 
 
 def test_workflow_service_reports_translated_entries_when_provider_is_used(tmp_path: Path) -> None:
@@ -952,6 +980,7 @@ def test_workflow_service_reports_translated_entries_when_provider_is_used(tmp_p
     assert preview.status == "completed"
     assert "Synchronized entries: 1" in preview.summary
     assert "Translated entries: 1" in preview.summary
+    assert "Compiled MO files: 2" in preview.summary
 
 
 def test_workflow_service_reports_partial_po_translation_failures(tmp_path: Path) -> None:
@@ -992,8 +1021,91 @@ def test_workflow_service_reports_partial_po_translation_failures(tmp_path: Path
     assert preview.status == "completed_with_errors"
     assert "Translated entries: 1" in preview.summary
     assert "Failed entries: 1" in preview.summary
+    assert "Compiled MO files: 1" in preview.summary
     assert "locale/messages-es_ES.po" in preview.summary
     assert "Broken" in preview.summary
+
+
+def test_workflow_service_reports_mo_compilation_failures_as_completed_with_errors(
+    tmp_path: Path,
+) -> None:
+    locale_dir = tmp_path / "locale"
+    locale_dir.mkdir(parents=True, exist_ok=True)
+    _write_po_file(locale_dir / "messages-es_ES.po", [("Hello", "Hola")])
+    _write_po_file(locale_dir / "messages-es_AR.po", [("Hello", "")])
+
+    class _FailingCompileRepository(PolibPOCatalogRepository):
+        def compile_mo_file(self, file_data: POFileData) -> None:
+            if file_data.locale == "es_AR":
+                msg = "MO file compilation failed for es_AR."
+                raise POProcessingCompilationError(msg)
+            super().compile_mo_file(file_data)
+
+    repository = InMemorySiteRegistryRepository()
+    site_service = _build_domain_service(repository)
+    site = site_service.create_site(
+        SiteRegistrationInput(
+            name="Marketing Site",
+            framework_type="wordpress",
+            local_path=str(tmp_path),
+            default_locale="es_ES",
+            remote_connection=RemoteConnectionConfigInput(
+                connection_type="sftp",
+                host="example.com",
+                port=22,
+                username="deploy",
+                password="super-secret",
+                remote_path="/srv/app",
+            ),
+            is_active=True,
+        )
+    )
+    workflow = SiteRegistryPresentationWorkflowService(
+        service=site_service,
+        project_sync_service=SyncStub(),
+        po_processing_service=POProcessingService(repository=_FailingCompileRepository()),
+    )
+
+    preview = workflow.start_po_processing(site.id)
+
+    assert preview.status == "completed_with_errors"
+    assert "Compiled MO files: 1" in preview.summary
+    assert "Failed MO files:" in preview.summary
+
+
+def test_workflow_service_wraps_po_processing_lookup_errors() -> None:
+    workflow = SiteRegistryPresentationWorkflowService(
+        service=_build_domain_service(InMemorySiteRegistryRepository()),
+        project_sync_service=SyncStub(),
+        po_processing_service=POProcessingService(repository=PolibPOCatalogRepository()),
+    )
+
+    with pytest.raises(ControlledServiceError, match="Unknown site id: missing-site"):
+        workflow.start_po_processing("missing-site")
+
+
+def test_workflow_service_wraps_po_processing_service_errors() -> None:
+    class _ExplodingPOService:
+        def process_site(
+            self,
+            site: RegisteredSite,
+            progress_callback: Callable[[POProcessingProgress], None] | None = None,
+        ) -> object:
+            del site, progress_callback
+            msg = "PO workflow exploded."
+            raise POProcessingTranslationError(msg)
+
+    repository = InMemorySiteRegistryRepository()
+    site_service = _build_domain_service(repository)
+    site = site_service.create_site(_build_registration(local_path="/workspace/marketing-site"))
+    workflow = SiteRegistryPresentationWorkflowService(
+        service=site_service,
+        project_sync_service=SyncStub(),
+        po_processing_service=cast(POProcessingService, _ExplodingPOService()),
+    )
+
+    with pytest.raises(ControlledServiceError, match=r"PO workflow exploded\."):
+        workflow.start_po_processing(site.id)
 
 
 def test_workflow_service_trusts_remote_host_key_with_explicit_confirmation() -> None:
@@ -1171,7 +1283,9 @@ def test_build_project_detail_without_remote_connection_is_explicit() -> None:
     )
 
     assert detail.default_locale == "en_US"
-    assert detail.configuration_summary == "Locale: en_US | Remote connection: None"
+    assert detail.configuration_summary == (
+        "Locale: en_US | Compile MO: enabled | Remote connection: None"
+    )
     assert detail.metadata_summary == "Framework: Django | Remote connection: none configured"
 
 

@@ -211,6 +211,18 @@ def step_set_default_project_locale(context: object, default_locale: str) -> Non
     typed_context.shell.set_settings_default_project_locale(default_locale)
 
 
+@when("the operator enables default MO compilation")
+def step_enable_default_mo_compilation(context: object) -> None:
+    typed_context = _context_with_shell(context)
+    typed_context.shell.set_settings_default_compile_mo(True)
+
+
+@when("the operator disables default MO compilation")
+def step_disable_default_mo_compilation(context: object) -> None:
+    typed_context = _context_with_shell(context)
+    typed_context.shell.set_settings_default_compile_mo(False)
+
+
 @when("the operator sets the window size to 1440 by 900")
 def step_set_window_size(context: object) -> None:
     typed_context = _context_with_shell(context)
@@ -594,3 +606,10 @@ def step_assert_saved_default_project_locale(context: object, default_locale: st
     typed_context = _context_with_shell(context)
     assert typed_context.shell.settings_state is not None
     assert typed_context.shell.settings_state.app_settings.default_project_locale == default_locale
+
+
+@then("the saved settings keep default MO compilation enabled")
+def step_assert_saved_default_mo_compilation_enabled(context: object) -> None:
+    typed_context = _context_with_shell(context)
+    assert typed_context.shell.settings_state is not None
+    assert typed_context.shell.settings_state.app_settings.default_compile_mo is True

@@ -55,8 +55,9 @@ class SqliteSiteRegistryRepository:
                 framework_type,
                 local_path,
                 default_locale,
+                compile_mo,
                 is_active
-            ) VALUES (?, ?, ?, ?, ?, ?)
+            ) VALUES (?, ?, ?, ?, ?, ?, ?)
         """
         connection_statement = """
             INSERT INTO site_remote_connections (
@@ -98,6 +99,7 @@ class SqliteSiteRegistryRepository:
                 project.framework_type,
                 project.local_path,
                 project.default_locale,
+                project.compile_mo,
                 project.is_active,
                 remote.id AS remote_id,
                 remote.connection_type,
@@ -139,6 +141,7 @@ class SqliteSiteRegistryRepository:
                 project.framework_type,
                 project.local_path,
                 project.default_locale,
+                project.compile_mo,
                 project.is_active,
                 remote.id AS remote_id,
                 remote.connection_type,
@@ -180,6 +183,7 @@ class SqliteSiteRegistryRepository:
                 framework_type = ?,
                 local_path = ?,
                 default_locale = ?,
+                compile_mo = ?,
                 is_active = ?
             WHERE id = ?
         """
@@ -288,10 +292,19 @@ def _ensure_project_table(connection: sqlite3.Connection) -> None:
             framework_type TEXT NOT NULL,
             local_path TEXT NOT NULL UNIQUE,
             default_locale TEXT NOT NULL,
+            compile_mo INTEGER NOT NULL CHECK (compile_mo IN (0, 1)) DEFAULT 1,
             is_active INTEGER NOT NULL CHECK (is_active IN (0, 1))
         )
         """
     )
+    columns = _get_table_columns(connection, "site_registry")
+    if "compile_mo" not in columns:
+        connection.execute(
+            """
+            ALTER TABLE site_registry
+            ADD COLUMN compile_mo INTEGER NOT NULL DEFAULT 1
+            """
+        )
 
 
 def _ensure_remote_table(connection: sqlite3.Connection) -> None:
@@ -383,6 +396,7 @@ def _migrate_legacy_ftp_schema(connection: sqlite3.Connection) -> None:
             framework_type TEXT NOT NULL,
             local_path TEXT NOT NULL UNIQUE,
             default_locale TEXT NOT NULL,
+            compile_mo INTEGER NOT NULL CHECK (compile_mo IN (0, 1)) DEFAULT 1,
             is_active INTEGER NOT NULL CHECK (is_active IN (0, 1))
         )
         """
@@ -395,6 +409,7 @@ def _migrate_legacy_ftp_schema(connection: sqlite3.Connection) -> None:
             framework_type,
             local_path,
             default_locale,
+            compile_mo,
             is_active
         )
         SELECT
@@ -403,6 +418,7 @@ def _migrate_legacy_ftp_schema(connection: sqlite3.Connection) -> None:
             framework_type,
             local_path,
             default_locale,
+            1 AS compile_mo,
             is_active
         FROM site_registry
         """
@@ -459,6 +475,7 @@ def _project_params(project: SiteProject) -> tuple[object, ...]:
         project.framework_type,
         project.local_path,
         project.default_locale,
+        int(project.compile_mo),
         int(project.is_active),
     )
 
@@ -469,6 +486,7 @@ def _project_update_params(project: SiteProject) -> tuple[object, ...]:
         project.framework_type,
         project.local_path,
         project.default_locale,
+        int(project.compile_mo),
         int(project.is_active),
         project.id,
     )
@@ -584,6 +602,7 @@ def _map_row_to_site(
         framework_type=str(row["framework_type"]),
         local_path=str(row["local_path"]),
         default_locale=str(row["default_locale"]),
+        compile_mo=bool(row["compile_mo"]),
         is_active=bool(row["is_active"]),
     )
     remote_connection: RemoteConnectionConfig | None = None

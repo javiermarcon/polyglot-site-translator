@@ -59,6 +59,7 @@ class ProjectEditorScreen(BaseShellScreen):
         self._framework_spinner: Spinner | None = None
         self._local_path_input: TextInput | None = None
         self._default_locale_input: TextInput | None = None
+        self._compile_mo_switch: Switch | None = None
         self._connection_type_spinner: Spinner | None = None
         self._remote_host_input: TextInput | None = None
         self._remote_port_input: TextInput | None = None
@@ -246,6 +247,7 @@ class ProjectEditorScreen(BaseShellScreen):
         card.bind(minimum_height=card.setter("height"))
         self._default_locale_input = build_site_editor_text_input(state.editor.default_locale)
         card.add_widget(build_site_editor_field_card("Default Locale", self._default_locale_input))
+        card.add_widget(self._build_compile_mo_toggle(state.editor.compile_mo))
         return card
 
     def _build_remote_fields(self, state: ProjectEditorStateViewModel) -> SurfaceBoxLayout:
@@ -307,6 +309,7 @@ class ProjectEditorScreen(BaseShellScreen):
         self._framework_spinner = None
         self._local_path_input = None
         self._default_locale_input = None
+        self._compile_mo_switch = None
         self._connection_type_spinner = None
         self._remote_host_input = None
         self._remote_port_input = None
@@ -335,6 +338,31 @@ class ProjectEditorScreen(BaseShellScreen):
         row.add_widget(WrappedLabel(text="Enable this site in the primary registry listing."))
         self._is_active_switch = Switch(active=is_active, size_hint=(None, None), size=(72, 36))
         row.add_widget(self._is_active_switch)
+        card.add_widget(row)
+        return card
+
+    def _build_compile_mo_toggle(self, is_enabled: bool) -> SurfaceBoxLayout:
+        card = SurfaceBoxLayout(
+            orientation="vertical",
+            spacing=8,
+            padding=14,
+            size_hint_y=None,
+            background_role="card_subtle_background",
+        )
+        card.bind(minimum_height=card.setter("height"))
+        card.add_widget(WrappedLabel(text="Compile MO Files", font_size=16, bold=True))
+        row = BoxLayout(orientation="horizontal", spacing=12, size_hint_y=None, height=40)
+        row.add_widget(
+            WrappedLabel(
+                text="Enable MO compilation after the translation workflow saves updated PO files."
+            )
+        )
+        self._compile_mo_switch = Switch(
+            active=is_enabled,
+            size_hint=(None, None),
+            size=(72, 36),
+        )
+        row.add_widget(self._compile_mo_switch)
         card.add_widget(row)
         return card
 
@@ -683,6 +711,11 @@ class ProjectEditorScreen(BaseShellScreen):
             default_locale=self._text_or_fallback(
                 self._default_locale_input,
                 state.editor.default_locale,
+            ),
+            compile_mo=(
+                self._compile_mo_switch.active
+                if self._compile_mo_switch is not None
+                else state.editor.compile_mo
             ),
             connection_type=self._spinner_value_or_fallback(
                 options=state.connection_type_options,

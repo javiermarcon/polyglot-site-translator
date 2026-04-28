@@ -182,7 +182,8 @@ class SiteRegistryPresentationManagementService(ProjectRegistryManagementService
         settings_state = self._load_settings_state()
         editor = replace(
             build_default_site_editor(
-                default_locale=settings_state.app_settings.default_project_locale
+                default_locale=settings_state.app_settings.default_project_locale,
+                compile_mo=settings_state.app_settings.default_compile_mo,
             ),
             local_path=str(self._default_workspace_root() / "site"),
         )
@@ -456,6 +457,7 @@ class SiteRegistryPresentationWorkflowService(ProjectWorkflowService):
         self,
         project_id: str,
         locales: str | None = None,
+        compile_mo: bool | None = None,
         progress_callback: Callable[[POProcessingProgress], None] | None = None,
     ) -> POProcessingSummaryViewModel:
         """Run PO processing and return a typed workflow summary."""
@@ -477,16 +479,20 @@ class SiteRegistryPresentationWorkflowService(ProjectWorkflowService):
                 summary=(
                     "PO processing service is not configured in this runtime. "
                     "Families processed: 0 | Synchronized entries: 0 | "
-                    "Translated entries: 0 | Failed entries: 0"
+                    "Translated entries: 0 | Failed entries: 0 | Compiled MO files: 0"
                 ),
                 current_file=None,
                 current_entry=None,
             )
         processing_site = site
-        if locales is not None:
+        if locales is not None or compile_mo is not None:
             processing_site = replace(
                 site,
-                project=replace(site.project, default_locale=locales),
+                project=replace(
+                    site.project,
+                    default_locale=site.default_locale if locales is None else locales,
+                    compile_mo=site.compile_mo if compile_mo is None else compile_mo,
+                ),
             )
         try:
             result = self._po_processing_service.process_site(
@@ -501,6 +507,7 @@ class SiteRegistryPresentationWorkflowService(ProjectWorkflowService):
             f"Synchronized entries: {result.entries_synchronized}",
             f"Translated entries: {result.entries_translated}",
             f"Failed entries: {result.entries_failed}",
+            f"Compiled MO files: {result.mo_files_compiled}",
         ]
         if result.failures:
             summary_lines.extend(
@@ -515,8 +522,25 @@ class SiteRegistryPresentationWorkflowService(ProjectWorkflowService):
                     ],
                 ]
             )
+        if result.compilation_failures:
+            summary_lines.extend(
+                [
+                    "Failed MO files:",
+                    *[
+                        (
+                            f"- {failure.relative_path} | locale {failure.locale} | "
+                            f"mo '{failure.mo_path}' | {failure.error_message}"
+                        )
+                        for failure in result.compilation_failures
+                    ],
+                ]
+            )
         return POProcessingSummaryViewModel(
-            status="completed_with_errors" if result.entries_failed > 0 else "completed",
+            status=(
+                "completed_with_errors"
+                if result.entries_failed > 0 or result.compilation_failures
+                else "completed"
+            ),
             processed_families=result.families_processed,
             progress_current=result.entries_synchronized + result.entries_translated,
             progress_total=result.entries_pending,
@@ -592,6 +616,7 @@ def _build_service_payload(editor: SiteEditorViewModel) -> SiteRegistrationInput
         framework_type=editor.framework_type,
         local_path=editor.local_path,
         default_locale=editor.default_locale,
+        compile_mo=editor.compile_mo,
         remote_connection=remote_connection,
         is_active=editor.is_active,
     )
@@ -614,6 +639,7 @@ def _build_project_detail(
     return ProjectDetailViewModel(
         project=_build_project_summary(site),
         default_locale=site.default_locale,
+        compile_mo=site.compile_mo,
         configuration_summary=_build_configuration_summary(site),
         metadata_summary=_build_metadata_summary(site, detection_result),
         actions=[],
@@ -629,6 +655,7 @@ def _build_site_editor(site: RegisteredSite) -> SiteEditorViewModel:
             framework_type=site.framework_type,
             local_path=site.local_path,
             default_locale=site.default_locale,
+            compile_mo=site.compile_mo,
             connection_type=NO_REMOTE_CONNECTION_VALUE,
             remote_host="",
             remote_port="",
@@ -646,6 +673,7 @@ def _build_site_editor(site: RegisteredSite) -> SiteEditorViewModel:
         framework_type=site.framework_type,
         local_path=site.local_path,
         default_locale=site.default_locale,
+        compile_mo=site.compile_mo,
         connection_type=remote_connection.connection_type,
         remote_host=remote_connection.host,
         remote_port=str(remote_connection.port),
@@ -670,10 +698,16 @@ def _format_framework_name(framework_type: str) -> str:
 
 def _build_configuration_summary(site: RegisteredSite) -> str:
     if site.remote_connection is None:
-        return f"Locale: {site.default_locale} | Remote connection: None"
+        compile_summary = "enabled" if site.compile_mo else "disabled"
+        return (
+            f"Locale: {site.default_locale} | Compile MO: {compile_summary} | "
+            "Remote connection: None"
+        )
     sync_mode = "filtered" if site.remote_connection.flags.use_adapter_sync_filters else "full"
+    compile_summary = "enabled" if site.compile_mo else "disabled"
     return (
-        f"Locale: {site.default_locale} | Remote: {site.remote_connection.connection_type} "
+        f"Locale: {site.default_locale} | Compile MO: {compile_summary} | "
+        f"Remote: {site.remote_connection.connection_type} "
         f"{site.remote_connection.host}:{site.remote_connection.port} "
         f"| Path: {site.remote_connection.remote_path} | Sync mode: {sync_mode}"
     )

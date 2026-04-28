@@ -138,10 +138,11 @@ The frontend baseline now also includes:
 - an extensible settings screen
 - a dedicated settings contract for frontend configuration
 - typed App / UI / Kivy settings state
-- typed translation defaults inside the settings flow, including the default locale inherited by new project drafts
+- typed translation defaults inside the settings flow, including the default locale and default `.mo`-compilation preference inherited by new project drafts
 - runtime-level exception routing so uncaught thread/callback failures become visible shell state when recovery is possible
 - typed wrapping of framework-detection, sync-scope, provider-transport, and persisted-secret decoding failures before they reach Kivy callbacks
 - workflow-by-workflow hardening should prefer typed adapter/infrastructure failures over leaked raw transport, decoding, sqlite, or registry exceptions
+- the PO workflow persists `.po` changes first and then compiles sibling `.mo` catalogs, collecting file-level compilation failures into typed workflow results instead of aborting the entire run
 - TOML-backed frontend settings persistence for runtime configuration
 - persisted global sync rules and framework sync rules in general settings
 - explicit `.gitignore` integration for filtered sync resolution
@@ -188,7 +189,8 @@ The frontend baseline now also includes:
 - dynamic adapter discovery from the `adapters/` package at runtime
 - concrete WordPress, Django, and Flask detection adapters
 - project-detail enrichment that shows framework detection evidence or warnings without moving heuristics into Kivy
-- a first real shared PO-processing workflow for discovery, locale-family grouping, and cross-variant synchronization of missing entries
+- a first real shared translation workflow for discovery, locale-family grouping, cross-variant synchronization of missing entries, optional external translation, and optional `.mo` compilation
+- the project detail screen exposes that workflow as a generic `Translate` action, and the pre-run popup can override both locales and `.mo` compilation for the current execution
 - typed PO-processing results surfaced through the presentation workflow service
 - external PO translation providers should distinguish configuration, transport/protocol, and response-shape failures with typed PO translation errors
 - `polib`-backed PO repository wiring in runtime frontend services (instead of fixed preview placeholders)

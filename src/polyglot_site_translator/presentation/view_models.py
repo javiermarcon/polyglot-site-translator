@@ -103,6 +103,7 @@ class AppSettingsViewModel:
     developer_mode: bool = False
     ui_language: str = "en"
     default_project_locale: str = "en_US"
+    default_compile_mo: bool = True
     database_directory: str = ""
     database_filename: str = "site_registry.sqlite3"
     sync_progress_log_limit: int = 200
@@ -140,6 +141,7 @@ class ProjectDetailViewModel:
     configuration_summary: str
     metadata_summary: str
     actions: list[ProjectActionViewModel]
+    compile_mo: bool = True
 
 
 @dataclass(frozen=True)
@@ -182,6 +184,7 @@ class ProjectDetailStateViewModel:
     configuration_summary: str
     metadata_summary: str
     actions: list[ProjectActionViewModel]
+    compile_mo: bool = True
 
 
 @dataclass(frozen=True)
@@ -200,6 +203,7 @@ class SiteEditorViewModel:
     remote_password: str
     remote_path: str
     is_active: bool
+    compile_mo: bool = True
     remote_verify_host: bool = True
     use_adapter_sync_filters: bool = False
     sync_rule_items: tuple[SyncRuleEditorItemViewModel, ...] = ()
@@ -384,8 +388,8 @@ def build_navigation_menu_state(
                     ),
                     NavigationMenuItemViewModel(
                         key="po-processing",
-                        title="PO Processing",
-                        description="Project-scoped PO workflow summary.",
+                        title="Translation",
+                        description="Project-scoped translation workflow summary.",
                         is_enabled=operations_enabled,
                     ),
                 ],
@@ -423,6 +427,7 @@ def build_default_app_settings(
         developer_mode=False,
         ui_language="en",
         default_project_locale="en_US",
+        default_compile_mo=True,
         database_directory=database_directory,
         database_filename=database_filename,
         sync_progress_log_limit=200,
@@ -430,7 +435,11 @@ def build_default_app_settings(
     )
 
 
-def build_default_site_editor(*, default_locale: str = "en_US") -> SiteEditorViewModel:
+def build_default_site_editor(
+    *,
+    default_locale: str = "en_US",
+    compile_mo: bool = True,
+) -> SiteEditorViewModel:
     """Return the default site registry editor draft."""
     return SiteEditorViewModel(
         site_id=None,
@@ -438,6 +447,7 @@ def build_default_site_editor(*, default_locale: str = "en_US") -> SiteEditorVie
         framework_type="unknown",
         local_path="",
         default_locale=default_locale,
+        compile_mo=compile_mo,
         connection_type=NO_REMOTE_CONNECTION_VALUE,
         remote_host="",
         remote_port="",

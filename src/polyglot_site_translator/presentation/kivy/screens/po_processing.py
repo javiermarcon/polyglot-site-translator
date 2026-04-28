@@ -17,8 +17,8 @@ class POProcessingScreen(BaseShellScreen):
     def __init__(self, *, shell: FrontendShell, manager_ref: ScreenManager) -> None:
         super().__init__(
             screen_name="po_processing",
-            title="PO Processing",
-            subtitle="Project-scoped PO workflow summary and prepared locale families.",
+            title="Translation",
+            subtitle="Project-scoped translation workflow summary and prepared locale families.",
             shell=shell,
             manager_ref=manager_ref,
         )
@@ -40,7 +40,7 @@ class POProcessingScreen(BaseShellScreen):
         if state is None:
             self._progress_bar.max = 1
             self._progress_bar.value = 0
-            self._summary_label.text = "No PO processing action started."
+            self._summary_label.text = "No translation action started."
         else:
             progress_max = state.progress_total if state.progress_total > 0 else 1
             progress_value = state.progress_current

@@ -11,6 +11,10 @@ class POProcessingInfrastructureError(POProcessingError):
     """Raised when PO files cannot be loaded or saved from infrastructure."""
 
 
+class POProcessingCompilationError(POProcessingInfrastructureError):
+    """Raised when one PO file cannot be compiled into a MO catalog."""
+
+
 class POProcessingTranslationError(POProcessingError):
     """Raised when an external translation provider fails."""
 

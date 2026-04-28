@@ -56,8 +56,8 @@ def _build_dashboard_state() -> DashboardStateViewModel:
             ),
             DashboardSectionViewModel(
                 key="po-processing",
-                title="PO Processing",
-                description="Prepare PO and MO workflows behind injectable service interfaces.",
+                title="Translation",
+                description="Prepare translation workflows behind injectable service interfaces.",
             ),
             DashboardSectionViewModel(
                 key="settings",
@@ -144,6 +144,7 @@ class FrontendShell:
                 configuration_summary=detail.configuration_summary,
                 metadata_summary=detail.metadata_summary,
                 actions=_build_project_actions(detail.actions),
+                compile_mo=detail.compile_mo,
             )
             self.latest_error = None
         except ControlledServiceError as error:
@@ -271,6 +272,7 @@ class FrontendShell:
             self.po_processing_state = self.services.workflows.start_po_processing(
                 project_id,
                 locales,
+                None,
             )
             self.latest_error = None
         except ControlledServiceError as error:
@@ -287,10 +289,13 @@ class FrontendShell:
             self.latest_error = str(error)
         self._set_route(RouteName.PO_PROCESSING, project_id=project_id)
 
-    def start_po_processing_async(self, locales: str) -> None:
-        """Trigger PO processing in a background thread after locale selection."""
+    def start_po_processing_async(self, locales: str, *, compile_mo: bool | None = None) -> None:
+        """Trigger PO processing in a background thread after translation selection."""
         project_id = self._require_project_id()
         normalized_locales = normalize_default_locale(locales, label="Selected locales")
+        resolved_compile_mo = compile_mo
+        if resolved_compile_mo is None and self.project_detail_state is not None:
+            resolved_compile_mo = self.project_detail_state.compile_mo
         with self._po_processing_lock:
             if (
                 self._active_po_processing_thread is not None
@@ -303,13 +308,13 @@ class FrontendShell:
                 progress_current=0,
                 progress_total=0,
                 progress_is_indeterminate=True,
-                summary=f"Processing PO files for locales: {normalized_locales}",
+                summary=f"Running translation workflow for locales: {normalized_locales}",
                 current_file=None,
                 current_entry=None,
             )
         worker = Thread(
             target=self._run_po_processing_in_background,
-            args=(project_id, normalized_locales),
+            args=(project_id, normalized_locales, resolved_compile_mo),
             daemon=True,
             name=f"po-processing-{project_id}",
         )
@@ -431,6 +436,19 @@ class FrontendShell:
             app_settings=replace(
                 state.app_settings,
                 default_project_locale=default_project_locale,
+            ),
+            status="editing",
+            status_message="Settings draft updated.",
+        )
+
+    def set_settings_default_compile_mo(self, default_compile_mo: bool) -> None:
+        """Update the default MO-compilation preference for new project drafts."""
+        state = self._require_settings_state()
+        self.settings_state = replace(
+            state,
+            app_settings=replace(
+                state.app_settings,
+                default_compile_mo=default_compile_mo,
             ),
             status="editing",
             status_message="Settings draft updated.",
@@ -558,6 +576,7 @@ class FrontendShell:
                 configuration_summary=detail.configuration_summary,
                 metadata_summary=detail.metadata_summary,
                 actions=_build_project_actions(detail.actions),
+                compile_mo=detail.compile_mo,
             )
             self.latest_error = None
         except ControlledServiceError as error:
@@ -583,6 +602,7 @@ class FrontendShell:
                 configuration_summary=detail.configuration_summary,
                 metadata_summary=detail.metadata_summary,
                 actions=_build_project_actions(detail.actions),
+                compile_mo=detail.compile_mo,
             )
             self.latest_error = None
         except ControlledServiceError as error:
@@ -731,11 +751,17 @@ class FrontendShell:
             )
             self._active_sync_thread = None
 
-    def _run_po_processing_in_background(self, project_id: str, locales: str) -> None:
+    def _run_po_processing_in_background(
+        self,
+        project_id: str,
+        locales: str,
+        compile_mo: bool | None,
+    ) -> None:
         try:
             self.po_processing_state = self.services.workflows.start_po_processing(
                 project_id,
                 locales,
+                compile_mo,
                 progress_callback=self._record_po_processing_progress,
             )
             self.latest_error = None

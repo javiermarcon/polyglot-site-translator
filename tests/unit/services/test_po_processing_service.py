@@ -9,16 +9,30 @@ import polib
 import pytest
 
 from polyglot_site_translator.domain.po_processing.errors import (
+    POProcessingCompilationError,
     POProcessingInfrastructureError,
     POProcessingTranslationError,
 )
 from polyglot_site_translator.domain.po_processing.models import (
+    POCompilationFailure,
+    POEntryData,
+    POEntryId,
+    POFileData,
     POProcessingFailure,
     POProcessingProgress,
 )
 from polyglot_site_translator.domain.site_registry.models import RegisteredSite, SiteProject
 from polyglot_site_translator.infrastructure.po_files import PolibPOCatalogRepository
-from polyglot_site_translator.services.po_processing import POProcessingService
+from polyglot_site_translator.services.po_processing import (
+    POProcessingService,
+    _FamilyProcessingRuntime,
+    _find_entry,
+    _group_locales_by_base,
+    _is_effectively_empty_translation,
+    _is_translated,
+    _synchronize_family,
+    _translate_missing_entries,
+)
 
 
 class StubTranslationProvider:
@@ -57,6 +71,23 @@ class PartiallyFailingTranslationProvider:
         return "Guardar"
 
 
+class PartiallyFailingCompileRepository(PolibPOCatalogRepository):
+    """Repository stub that fails MO compilation for one locale and continues."""
+
+    def __init__(self, failing_locale: str) -> None:
+        super().__init__()
+        self.failing_locale = failing_locale
+
+    def compile_mo_file(self, file_data: POFileData) -> None:
+        if file_data.locale == self.failing_locale:
+            msg = (
+                f"MO file '{file_data.source_path}' could not be compiled for locale "
+                f"'{file_data.locale}'."
+            )
+            raise POProcessingCompilationError(msg)
+        super().compile_mo_file(file_data)
+
+
 def test_process_site_syncs_missing_variant_entries(tmp_path: Path) -> None:
     workspace = tmp_path / "workspace"
     locale_dir = workspace / "locale"
@@ -79,11 +110,20 @@ def test_process_site_syncs_missing_variant_entries(tmp_path: Path) -> None:
     result = service.process_site(_build_site(str(workspace), "es_ES"))
 
     synced_po = polib.pofile(str(locale_dir / "messages-es_AR.po"))
+    compiled_es_es = polib.mofile(str(locale_dir / "messages-es_ES.mo"))
+    compiled_es_ar = polib.mofile(str(locale_dir / "messages-es_AR.mo"))
     assert result.families_processed == 1
     assert result.entries_synchronized == 1
+    assert result.mo_files_compiled == 2
     synced_entry = synced_po.find("Hello")
+    compiled_es_es_entry = compiled_es_es.find("Hello")
+    compiled_es_ar_entry = compiled_es_ar.find("Hello")
     assert synced_entry is not None
+    assert compiled_es_es_entry is not None
+    assert compiled_es_ar_entry is not None
     assert synced_entry.msgstr == "Hola"
+    assert compiled_es_es_entry.msgstr == "Hola"
+    assert compiled_es_ar_entry.msgstr == "Hola"
 
 
 def test_process_site_handles_plural_entries_with_same_key(tmp_path: Path) -> None:
@@ -339,6 +379,7 @@ def test_process_site_returns_zero_result_when_no_matching_locale_files(tmp_path
 
     assert result.files_discovered == 0
     assert result.families_processed == 0
+    assert result.mo_files_compiled == 0
     assert result.entries_synchronized == 0
     assert result.entries_translated == 0
 
@@ -477,6 +518,116 @@ def test_process_site_raises_when_every_external_translation_fails_and_no_file_c
     assert result.entries_translated == 0
     assert result.entries_failed == 1
     assert result.failures[0].relative_path == "locale/messages-es_ES.po"
+
+
+def test_process_site_collects_mo_compilation_failures_and_continues(tmp_path: Path) -> None:
+    workspace = tmp_path / "workspace"
+    locale_dir = workspace / "locale"
+    locale_dir.mkdir(parents=True, exist_ok=True)
+    _write_po(locale_dir / "messages-es_ES.po", [("Hello", "Hola")])
+    _write_po(locale_dir / "messages-es_AR.po", [("Hello", "")])
+    service = POProcessingService(repository=PartiallyFailingCompileRepository("es_AR"))
+
+    result = service.process_site(_build_site(str(workspace), "es_ES"))
+
+    assert result.entries_synchronized == 1
+    assert result.mo_files_compiled == 1
+    assert result.compilation_failures == (
+        POCompilationFailure(
+            relative_path="locale/messages-es_AR.po",
+            locale="es_AR",
+            mo_path="locale/messages-es_AR.mo",
+            error_message=(
+                f"MO file '{locale_dir / 'messages-es_AR.po'}' could not be compiled "
+                "for locale 'es_AR'."
+            ),
+        ),
+    )
+    assert (locale_dir / "messages-es_ES.mo").exists()
+    assert not (locale_dir / "messages-es_AR.mo").exists()
+
+
+def test_find_entry_returns_matching_entry_and_none_for_missing() -> None:
+    entry = POEntryData(
+        entry_id=POEntryId(context=None, msgid="Save", msgid_plural=None),
+        msgstr="Guardar",
+        msgstr_plural={},
+    )
+
+    assert _find_entry([entry], entry.entry_id) is entry
+    assert _find_entry([entry], POEntryId(context=None, msgid="Missing", msgid_plural=None)) is None
+
+
+def test_is_effectively_empty_translation_treats_blank_plural_maps_as_empty() -> None:
+    assert _is_effectively_empty_translation({"0": " ", "1": ""}) is True
+    assert _is_effectively_empty_translation({"0": "uno"}) is False
+
+
+def test_is_translated_requires_plural_map_entries_for_plural_po_entries() -> None:
+    untranslated = POEntryData(
+        entry_id=POEntryId(context=None, msgid="day", msgid_plural="days"),
+        msgstr="",
+        msgstr_plural={},
+    )
+    translated = POEntryData(
+        entry_id=POEntryId(context=None, msgid="day", msgid_plural="days"),
+        msgstr="",
+        msgstr_plural={"0": "dia", "1": "dias"},
+    )
+
+    assert _is_translated(untranslated) is False
+    assert _is_translated(translated) is True
+
+
+def test_synchronize_family_does_not_overwrite_existing_target_translation() -> None:
+    entry_id = POEntryId(context=None, msgid="Hello", msgid_plural=None)
+    source_entry = POEntryData(entry_id=entry_id, msgstr="Hola", msgstr_plural={})
+    translated_target = POEntryData(entry_id=entry_id, msgstr="Che hola", msgstr_plural={})
+    family_entries = {
+        "es_ES": [source_entry],
+        "es_AR": [translated_target],
+    }
+
+    synchronized = _synchronize_family(
+        family_entries=family_entries,
+        selected_locales=("es_ES", "es_AR"),
+        locale_groups=_group_locales_by_base(("es_ES", "es_AR")),
+        translation_memory={"es_ES": {entry_id: "Hola"}},
+    )
+
+    assert synchronized == 0
+    assert translated_target.msgstr == "Che hola"
+
+
+def test_translate_missing_entries_skips_selected_locales_without_a_file() -> None:
+    entry = POEntryData(
+        entry_id=POEntryId(context=None, msgid="Save", msgid_plural=None),
+        msgstr="",
+        msgstr_plural={},
+    )
+    family_entries = {"es_ES": [entry]}
+    file_by_locale = {
+        "es_ES": POFileData(
+            source_path="/tmp/messages-es_ES.po",
+            relative_path="locale/messages-es_ES.po",
+            locale="es_ES",
+            family_key="locale/messages",
+            nplurals=2,
+            entries=(entry,),
+        )
+    }
+
+    synchronized, translated, failures = _translate_missing_entries(
+        family_entries=family_entries,
+        selected_locales=("es_ES", "es_AR"),
+        translation_memory={},
+        file_by_locale=file_by_locale,
+        runtime=_FamilyProcessingRuntime(translation_provider=None),
+    )
+
+    assert synchronized == 0
+    assert translated == 0
+    assert failures == ()
 
 
 def _build_site(local_path: str, default_locale: str) -> RegisteredSite:

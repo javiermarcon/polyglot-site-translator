@@ -58,6 +58,7 @@ class SiteRegistryService:
                     ),
                     local_path=_require_text(registration.local_path, "Local path"),
                     default_locale=normalize_default_locale(registration.default_locale),
+                    compile_mo=registration.compile_mo,
                     is_active=registration.is_active,
                 ),
                 remote_connection=_resolve_remote_connection(
@@ -95,6 +96,7 @@ class SiteRegistryService:
                     ),
                     local_path=_require_text(registration.local_path, "Local path"),
                     default_locale=normalize_default_locale(registration.default_locale),
+                    compile_mo=registration.compile_mo,
                     is_active=registration.is_active,
                 ),
                 remote_connection=_resolve_remote_connection(

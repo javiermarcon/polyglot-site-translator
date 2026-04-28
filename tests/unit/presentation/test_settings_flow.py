@@ -61,6 +61,7 @@ def test_update_and_save_settings_persists_fake_state() -> None:
     shell.toggle_developer_mode()
     shell.set_settings_window_size(width=1440, height=900)
     shell.set_settings_default_project_locale("es_ES, es_AR")
+    shell.set_settings_default_compile_mo(False)
     shell.update_settings_draft(
         replace(shell.settings_state.app_settings, sync_progress_log_limit=25)
     )
@@ -78,6 +79,7 @@ def test_update_and_save_settings_persists_fake_state() -> None:
     assert shell.settings_state.app_settings.window_width == 1440
     assert shell.settings_state.app_settings.window_height == 900
     assert shell.settings_state.app_settings.default_project_locale == "es_ES,es_AR"
+    assert shell.settings_state.app_settings.default_compile_mo is False
     assert shell.settings_state.app_settings.sync_progress_log_limit == 25
     assert shell.settings_state.status == "loaded"
 
@@ -104,11 +106,13 @@ def test_saving_settings_preserves_the_selected_section() -> None:
     shell.open_settings()
     shell.select_settings_section("translation")
     shell.set_settings_default_project_locale("es_AR")
+    shell.set_settings_default_compile_mo(False)
     shell.save_settings()
 
     assert shell.settings_state is not None
     assert shell.settings_state.selected_section_key == "translation"
     assert shell.settings_state.app_settings.default_project_locale == "es_AR"
+    assert shell.settings_state.app_settings.default_compile_mo is False
 
 
 def test_settings_load_failure_is_exposed() -> None:

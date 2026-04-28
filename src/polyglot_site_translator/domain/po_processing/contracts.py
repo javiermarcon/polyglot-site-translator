@@ -17,6 +17,9 @@ class POCatalogRepository(Protocol):
     def save_po_files(self, files: tuple[POFileData, ...]) -> None:
         """Persist PO files after synchronization changes."""
 
+    def compile_mo_file(self, file_data: POFileData) -> None:
+        """Compile one persisted PO file into its sibling MO catalog."""
+
 
 class POTranslationProvider(Protocol):
     """External translation provider used for missing PO entries."""

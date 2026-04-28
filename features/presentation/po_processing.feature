@@ -9,6 +9,8 @@ Feature: PO processing workflow
     Then the PO processing result reports completed status
     And the PO processing result reports one processed family
     And the PO processing result reports synchronized entries
+    And the PO processing result reports compiled mo files
+    And the processed locale variants contain compiled mo files
 
   Scenario: Translate missing entries when no variant already contains them
     Given a site project with untranslated PO locale variants in the local workspace
@@ -39,6 +41,14 @@ Feature: PO processing workflow
     Then the PO processing result reports completed status
     And the PO processing result reports one processed family
     And the PO processing result reports synchronized entries
+
+  Scenario: Skip MO compilation when the project disables it
+    Given a site project with untranslated PO locale variants and MO compilation disabled
+    When the operator runs the PO processing workflow for that site
+    Then the PO processing result reports completed status
+    And the PO processing result reports one processed family
+    And the PO processing result reports zero compiled mo files
+    And the processed locale variants do not contain compiled mo files
 
   Scenario: Continue processing when one PO entry fails in external translation
     Given a site project with one failing PO entry and one translatable entry

@@ -48,13 +48,13 @@ El repositorio está en una etapa temprana y hoy incluye principalmente:
 - registry real de adapters/framework detection con resultados tipados
 - detección efectiva de proyectos WordPress, Django y Flask a partir de `local_path`
 - auto-discovery dinámico de adapters al iniciar, sin registro manual en el runtime
-- workflow real de PO processing con descubrimiento `.po`, agrupación por familia, reutilización entre archivos/familias y traducción externa de faltantes
+- workflow real de traducción basado en catálogos PO con descubrimiento `.po`, agrupación por familia, reutilización entre archivos/familias, traducción externa de faltantes y compilado `.mo`
 - proveedor externo de traducción PO reutilizando el mismo loop async por hilo para evitar reiniciar el transporte HTTP en cada entrada
-- acción `Process PO` con popup para elegir locales, precargado con el `default_locale` del proyecto, y ejecución en background para no bloquear la UI
-- barra de progreso en la pantalla de PO processing basada en entradas gettext completadas para saber cuántas líneas faltantes ya se resolvieron
-- la pantalla de PO processing muestra además el archivo `.po` actual y el `msgid` actual para hacer trazable el avance durante ejecuciones largas
+- acción `Translate` con popup para elegir locales y overridear en esa corrida si se compilan `.mo`, precargado con el `default_locale` y `compile_mo` del proyecto, y ejecución en background para no bloquear la UI
+- barra de progreso en la pantalla de traducción basada en entradas gettext completadas para saber cuántas líneas faltantes ya se resolvieron
+- la pantalla de traducción muestra además el archivo `.po` actual y el `msgid` actual para hacer trazable el avance durante ejecuciones largas
 - sincronización PO con identidad gettext (`msgctxt`, `msgid`, `msgid_plural`) y soporte de plurales
-- resumen visible de PO processing con conteos separados de entradas sincronizadas, traducidas y fallidas, incluyendo archivo/msgid cuando un proveedor externo falla
+- resumen visible de PO processing con conteos separados de entradas sincronizadas, traducidas y fallidas, más `.mo` compilados e items fallidos de compilación cuando aplica
 - omisión explícita de tokens tipo hashtag como `#tag1` para no enviar slugs/no-text al traductor externo
 - el adaptador `googletrans` trata errores HTTP/protocolo como fallos controlados de traducción para que el workflow continúe con las demás entradas
 - framework detection y sync scope envuelven fallos de adapters, `.gitignore` y settings persistidos en errores tipados para que los workflows fallen de forma controlada
@@ -78,7 +78,6 @@ Todavía no están implementados en forma real:
 - presets o perfiles más avanzados de sync selectivo por entorno/dirección
 - scanner de auditoría
 - caché persistente de traducciones
-- compilación `.mo`
 - reporting final
 
 ## Objetivos del proyecto
@@ -154,14 +153,14 @@ La base actual del frontend incluye:
 - Home / Dashboard como punto de entrada
 - Projects / Sites List para listar proyectos persistidos en SQLite
 - Project / Site Detail con lectura real del registry persistido y metadata de detección de framework
-- Project Editor con secciones (`General Settings`, `Translation Settings`, `Remote Connection Settings`, `Sync Settings`); la pestaña `General Settings` quedó acotada a metadatos generales (`name`, `framework`, `local_path`, `is_active`), mientras que locale, conexión remota y sync se editan solo en sus pestañas específicas. El editor mantiene el draft al cambiar de sección, usa combo dinámico de framework, combo dinámico de tipo de conexión remota, switch persistido para elegir `Use Adapter Sync Filters`, catálogo visible del scope resuelto y editor de reglas adicionales por proyecto; la contraseña remota incluye un control tipo “ojo” para mostrar u ocultar el texto mientras se edita
+- Project Editor con secciones (`General Settings`, `Translation Settings`, `Remote Connection Settings`, `Sync Settings`); la pestaña `General Settings` quedó acotada a metadatos generales (`name`, `framework`, `local_path`, `is_active`), mientras que locale, preferencia `Compile MO Files`, conexión remota y sync se editan solo en sus pestañas específicas. El editor mantiene el draft al cambiar de sección, usa combo dinámico de framework, combo dinámico de tipo de conexión remota, switch persistido para elegir `Use Adapter Sync Filters`, catálogo visible del scope resuelto y editor de reglas adicionales por proyecto; la contraseña remota incluye un control tipo “ojo” para mostrar u ocultar el texto mientras se edita
 - acción "Test Connection" en el editor, resuelta por servicios y con resultado estructurado en pantalla; si el error es `unknown_ssh_host_key`, se ofrece el mismo popup de confianza de host key que en sync y se puede reintentar el test con TOFU en `known_hosts`
 - Audit Screen con preview basado en la detección real del proyecto en vez de un conteo fijo del runtime
 - Sync Screen con wiring real de `remote -> local` y `local -> remote`, con resumen estructurado del resultado
 - ventana de progreso de sync abierta desde Project Detail para no bloquear el hilo principal de Kivy en ambos sentidos
 - Audit Screen para mostrar resultados fake de auditoría
-- PO Processing Screen con resumen real de archivos detectados, familias procesadas y entradas sincronizadas
-- Settings generales con persistencia TOML, una sección `Translation Settings` para configurar el `default_project_locale` heredado por el create flow, campos para configurar la ubicación/nombre de la base SQLite, ABM de reglas globales de sync, ABM de reglas por framework y toggle para exclusiones derivadas de `.gitignore`
+- Translation Screen con resumen real de archivos detectados, familias procesadas, entradas sincronizadas/traducidas y `.mo` compilados
+- Settings generales con persistencia TOML, una sección `Translation Settings` para configurar el `default_project_locale` y `default_compile_mo` heredados por el create flow, campos para configurar la ubicación/nombre de la base SQLite, ABM de reglas globales de sync, ABM de reglas por framework y toggle para exclusiones derivadas de `.gitignore`
 
 La navegación mantiene el contexto del proyecto seleccionado. El flujo principal de create/list/detail/update, sync bidireccional y PO processing ya usan servicios reales para `site_registry`, subsistema remoto y procesamiento de `.po`; el audit sigue usando servicios fake detrás de los mismos contratos de UI.
 Cuando la preferencia `Use Adapter Sync Filters` está activa en la configuración remota persistida del proyecto, ambos sentidos de sync usan el scope resuelto por `FrameworkSyncScopeService`; cuando está desactivada, el servicio ejecuta full sync. Ese scope ahora compone reglas globales persistidas en settings, reglas persistidas por framework, reglas base del adapter, overrides persistidos por proyecto y exclusiones derivadas de `.gitignore` cuando la opción está habilitada. El Project Editor sigue mostrando el catálogo resuelto por proyecto y permite activar/desactivar reglas individuales y agregar includes/excludes adicionales persistidos por proyecto. La pantalla general de Settings ahora expone el ABM de reglas globales y por framework más el toggle `Use .gitignore Exclusions`. Si el proyecto pide sync filtrado pero no existe un scope utilizable, el sync falla de forma explícita en vez de caer en un fallback silencioso.
@@ -371,7 +370,7 @@ Reglas clave:
 - la detección actual cubre WordPress, Django y Flask con heurísticas explícitas y testeables, no layouts arbitrarios
 - para agregar un framework nuevo, hoy alcanza con sumar un módulo/adaptador discoverable sin tocar el wiring del runtime
 - la UI consume resultados de detección ya resueltos; no expone todavía un flujo dedicado de inspección manual de evidencia
-- FTP, auditoría y procesamiento `.po/.mo` siguen con servicios fake en el runtime principal
+- auditoría sigue con servicios fake en el runtime principal
 
 ## Legacy
 

@@ -59,8 +59,8 @@ def _default_actions() -> list[ProjectActionViewModel]:
         ),
         ProjectActionViewModel(
             key="po-processing",
-            label="Process PO",
-            description="Return a deterministic PO-processing summary from a test double.",
+            label="Translate",
+            description="Return a deterministic translation summary from a test double.",
         ),
     ]
 
@@ -71,6 +71,26 @@ def _default_connection_type_options() -> list[SettingsOptionViewModel]:
     )
     return build_connection_type_options(
         descriptors=remote_connection_service.list_supported_connection_types()
+    )
+
+
+def _build_project_detail_from_editor(
+    project: ProjectSummaryViewModel,
+    editor: SiteEditorViewModel,
+) -> ProjectDetailViewModel:
+    compile_summary = "enabled" if editor.compile_mo else "disabled"
+    return ProjectDetailViewModel(
+        project=project,
+        default_locale=editor.default_locale,
+        configuration_summary=(
+            f"Locale: {editor.default_locale} | Compile MO: {compile_summary} | "
+            f"Remote connection: {editor.connection_type.title()}"
+        ),
+        metadata_summary=(
+            "This screen is prepared for site registry, sync, audit and translation workflows."
+        ),
+        actions=_default_actions(),
+        compile_mo=editor.compile_mo,
     )
 
 
@@ -94,6 +114,7 @@ class InMemoryProjectCatalogService:
                         "This screen is prepared for site registry, sync, audit and PO workflows."
                     ),
                     actions=_default_actions(),
+                    compile_mo=True,
                 )
         msg = f"Unknown project id: {project_id}"
         raise LookupError(msg)
@@ -162,9 +183,10 @@ class StubProjectWorkflowService:
         self,
         project_id: str,
         locales: str | None = None,
+        compile_mo: bool | None = None,
         progress_callback: Callable[[POProcessingProgress], None] | None = None,
     ) -> POProcessingSummaryViewModel:
-        del progress_callback
+        del progress_callback, compile_mo
         return POProcessingSummaryViewModel(
             status="completed",
             processed_families=4,
@@ -265,6 +287,7 @@ class InMemoryProjectRegistryManagementService:
                 remote_password="",
                 remote_path="",
                 is_active=True,
+                compile_mo=True,
             ),
             framework_options=build_framework_type_options_from_descriptors(
                 FrameworkAdapterRegistry.discover_installed().list_framework_descriptors()
@@ -289,7 +312,7 @@ class InMemoryProjectRegistryManagementService:
             status="Active" if editor.is_active else "Inactive",
         )
         self.catalog.projects = [*self.catalog.projects, project]
-        return self.catalog.get_project_detail(project.id)
+        return _build_project_detail_from_editor(project, editor)
 
     def update_project(
         self,
@@ -299,19 +322,18 @@ class InMemoryProjectRegistryManagementService:
         updated_projects: list[ProjectSummaryViewModel] = []
         for project in self.catalog.projects:
             if project.id == project_id:
-                updated_projects.append(
-                    ProjectSummaryViewModel(
-                        id=project.id,
-                        name=editor.name,
-                        framework=editor.framework_type.title(),
-                        local_path=editor.local_path,
-                        status="Active" if editor.is_active else "Inactive",
-                    )
+                updated_project = ProjectSummaryViewModel(
+                    id=project.id,
+                    name=editor.name,
+                    framework=editor.framework_type.title(),
+                    local_path=editor.local_path,
+                    status="Active" if editor.is_active else "Inactive",
                 )
+                updated_projects.append(updated_project)
             else:
                 updated_projects.append(project)
         self.catalog.projects = updated_projects
-        return self.catalog.get_project_detail(project_id)
+        return _build_project_detail_from_editor(updated_project, editor)
 
     def test_remote_connection(
         self,

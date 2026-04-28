@@ -14,14 +14,16 @@ Feature: SQLite-backed site registry management
     Then the settings draft shows the configured database directory
     And the settings draft shows the configured database filename
 
-  Scenario: Use the translation settings default locale when creating a project
+  Scenario: Use the translation settings defaults when creating a project
     Given the frontend shell is wired with SQLite-backed site registry services
     And the operator has opened the settings screen
     When the operator selects the settings section "translation"
     And the operator sets the default project locale to "es_AR, es_ES"
+    And the operator disables default MO compilation
     And the operator applies the settings changes
     And the operator opens the create project workflow
     Then the project editor uses the default locale "es_AR,es_ES"
+    And the project editor uses MO compilation disabled
 
   Scenario: Register the first site in an empty SQLite registry
     Given the frontend shell is wired with SQLite-backed site registry services
@@ -46,6 +48,13 @@ Feature: SQLite-backed site registry management
     And the operator updates the local path and remote connection data
     Then the project detail shows the updated persisted site registry values
     And reopening the persisted site editor shows the updated remote connection values
+
+  Scenario: Persist the project MO compilation preference
+    Given the frontend shell is wired with SQLite-backed site registry services
+    When the operator opens the create project workflow
+    And the operator submits a new site registry entry with MO compilation disabled
+    Then the project detail shows MO compilation disabled
+    And reopening the persisted site editor shows MO compilation disabled
 
   Scenario: Persist the adapter-filter sync preference in the remote configuration
     Given the frontend shell is wired with SQLite-backed site registry services

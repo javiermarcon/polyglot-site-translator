@@ -20,6 +20,7 @@ class SiteRegistrationInput:
     default_locale: str
     remote_connection: RemoteConnectionConfigInput | None
     is_active: bool
+    compile_mo: bool = True
 
 
 @dataclass(frozen=True)
@@ -32,6 +33,7 @@ class SiteProject:
     local_path: str
     default_locale: str
     is_active: bool
+    compile_mo: bool = True
 
 
 @dataclass(frozen=True)
@@ -65,6 +67,11 @@ class RegisteredSite:
     def default_locale(self) -> str:
         """Return the configured default locale."""
         return self.project.default_locale
+
+    @property
+    def compile_mo(self) -> bool:
+        """Return whether MO compilation is enabled for this project."""
+        return self.project.compile_mo
 
     @property
     def is_active(self) -> bool:

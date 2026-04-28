@@ -44,6 +44,7 @@ class _BehavePOContext(Protocol):
     po_result_families: int
     po_result_summary: str
     processed_po_text: str
+    compiled_mo_paths: tuple[Path, ...]
     po_progress_events: list[POProcessingProgress]
     temp_dir: tempfile.TemporaryDirectory[str]
     site_id: str
@@ -197,6 +198,26 @@ def step_given_site_with_untranslated_variants(context: object) -> None:
     )
 
 
+@given("a site project with untranslated PO locale variants and MO compilation disabled")
+def step_given_site_with_untranslated_variants_and_disabled_mo(context: object) -> None:
+    typed = _context(context)
+    typed.temp_dir = tempfile.TemporaryDirectory()
+    workspace = Path(typed.temp_dir.name)
+    locale_dir = workspace / "locale"
+    locale_dir.mkdir(parents=True, exist_ok=True)
+    _write_po(locale_dir / "messages-es_ES.po", [("Save", "")])
+    _write_po(locale_dir / "messages-es_AR.po", [("Save", "")])
+    site = _build_site(workspace, compile_mo=False)
+    typed.site_id = site.id
+    typed.workflow_service = SiteRegistryPresentationWorkflowService(
+        service=_InMemorySiteWorkflowService(site),
+        project_sync_service=_SyncStub(),
+        po_processing_service=POProcessingService(
+            translation_provider=_BehaveTranslationProvider()
+        ),
+    )
+
+
 @given("a site project with several untranslated entries in one PO file")
 def step_given_site_with_multiple_untranslated_entries(context: object) -> None:
     typed = _context(context)
@@ -291,6 +312,7 @@ def step_when_run_po(context: object) -> None:
     typed.po_result_status = result.status
     typed.po_result_families = result.processed_families
     typed.po_result_summary = result.summary
+    typed.compiled_mo_paths = tuple(sorted(Path(typed.temp_dir.name).rglob("*.mo")))
     translated_path = Path(typed.temp_dir.name) / "locale" / "messages-es_ES.po"
     if not translated_path.exists():
         typed.processed_po_text = ""
@@ -311,6 +333,7 @@ def step_when_run_po_with_selected_locale(context: object, locale: str) -> None:
     typed.po_result_status = result.status
     typed.po_result_families = result.processed_families
     typed.po_result_summary = result.summary
+    typed.compiled_mo_paths = tuple(sorted(Path(typed.temp_dir.name).rglob("*.mo")))
 
 
 @then("the PO processing result reports completed status")
@@ -357,6 +380,33 @@ def step_then_failed_entries_for_source_file(context: object) -> None:
     assert "Broken" in typed.po_result_summary
 
 
+@then("the PO processing result reports compiled mo files")
+def step_then_compiled_mo_files(context: object) -> None:
+    typed = _context(context)
+    assert "Compiled MO files: 2" in typed.po_result_summary
+
+
+@then("the processed locale variants contain compiled mo files")
+def step_then_compiled_mo_files_exist(context: object) -> None:
+    typed = _context(context)
+    assert typed.compiled_mo_paths == (
+        Path(typed.temp_dir.name) / "locale" / "messages-es_AR.mo",
+        Path(typed.temp_dir.name) / "locale" / "messages-es_ES.mo",
+    )
+
+
+@then("the PO processing result reports zero compiled mo files")
+def step_then_zero_compiled_mo_files(context: object) -> None:
+    typed = _context(context)
+    assert "Compiled MO files: 0" in typed.po_result_summary
+
+
+@then("the processed locale variants do not contain compiled mo files")
+def step_then_no_compiled_mo_files_exist(context: object) -> None:
+    typed = _context(context)
+    assert typed.compiled_mo_paths == ()
+
+
 @then("the processed PO file contains the translated text")
 def step_then_processed_po_contains_translation(context: object) -> None:
     typed = _context(context)
@@ -390,7 +440,7 @@ def step_then_zero_family(context: object) -> None:
     assert typed.po_result_families == 0
 
 
-def _build_site(workspace: Path) -> RegisteredSite:
+def _build_site(workspace: Path, *, compile_mo: bool = True) -> RegisteredSite:
     return RegisteredSite(
         project=SiteProject(
             id="site-po",
@@ -399,6 +449,7 @@ def _build_site(workspace: Path) -> RegisteredSite:
             local_path=str(workspace),
             default_locale="es_ES",
             is_active=True,
+            compile_mo=compile_mo,
         ),
         remote_connection=None,
     )

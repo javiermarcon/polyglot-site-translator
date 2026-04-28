@@ -86,7 +86,7 @@ def test_project_detail_screen_refresh_and_action_buttons_navigate() -> None:
     root.current = "project_detail"
     detail_screen._start_po_processing()
     assert detail_screen._po_locale_popup is not None
-    detail_screen._confirm_po_processing("en_US")
+    detail_screen._confirm_po_processing("en_US", True)
     assert root.current == "po_processing"
 
     shell.select_project("wp-site")
@@ -128,7 +128,7 @@ def test_workflow_screens_render_empty_and_loaded_states_and_return_to_detail() 
     po_screen = root.get_screen("po_processing")
     shell.po_processing_state = None
     po_screen.refresh()
-    assert po_screen._summary_label.text == "No PO processing action started."
+    assert po_screen._summary_label.text == "No translation action started."
     shell.start_po_processing()
     po_screen.refresh()
     assert "Families: 4" in po_screen._summary_label.text

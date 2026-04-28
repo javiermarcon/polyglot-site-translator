@@ -56,6 +56,16 @@ def test_sqlite_repository_roundtrips_the_filtered_sync_preference(tmp_path: Pat
     assert loaded_site.remote_connection.flags.use_adapter_sync_filters is True
 
 
+def test_sqlite_repository_roundtrips_the_compile_mo_preference(tmp_path: Path) -> None:
+    repository = _build_repository(tmp_path)
+    site = _build_site(compile_mo=False)
+
+    repository.create_site(site)
+    loaded_site = repository.get_site(site.id)
+
+    assert loaded_site.project.compile_mo is False
+
+
 def test_sqlite_repository_roundtrips_project_sync_rule_overrides(tmp_path: Path) -> None:
     repository = _build_repository(tmp_path)
     site = _build_site(
@@ -425,6 +435,7 @@ def _build_site(
     *,
     use_adapter_sync_filters: bool = False,
     sync_rule_overrides: tuple[ProjectSyncRuleOverride, ...] = (),
+    compile_mo: bool = True,
 ) -> RegisteredSite:
     return RegisteredSite(
         project=SiteProject(
@@ -434,6 +445,7 @@ def _build_site(
             local_path="/workspace/marketing-site",
             default_locale="en_US",
             is_active=True,
+            compile_mo=compile_mo,
         ),
         remote_connection=RemoteConnectionConfig(
             id="remote-site-1",

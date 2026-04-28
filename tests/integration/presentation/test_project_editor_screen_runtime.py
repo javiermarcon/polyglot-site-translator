@@ -78,6 +78,7 @@ def test_project_editor_screen_saves_new_projects_and_can_return_to_projects() -
     editor_screen._is_active_switch.active = False
     editor_screen._select_project_editor_section("translation")
     editor_screen._default_locale_input.text = "en_US"
+    editor_screen._compile_mo_switch.active = False
     editor_screen._select_project_editor_section("remote")
     editor_screen._connection_type_spinner.text = "FTP"
     editor_screen._remote_host_input.text = "ftp.example.com"
@@ -92,6 +93,7 @@ def test_project_editor_screen_saves_new_projects_and_can_return_to_projects() -
     assert shell.project_detail_state is not None
     assert shell.project_detail_state.project.name == "New Project"
     assert shell.project_detail_state.project.status == "Inactive"
+    assert "Compile MO: disabled" in shell.project_detail_state.configuration_summary
 
     editor_screen._back_to_projects()
     assert root.current == "projects"
@@ -159,6 +161,7 @@ def test_project_editor_screen_uses_sectioned_layout_and_can_switch_sections() -
         widget.text for widget in editor_screen.walk(restrict=True) if hasattr(widget, "text")
     ]
     assert "Default Locale" in translation_labels
+    assert "Compile MO Files" in translation_labels
     assert "Remote Connection Type" not in translation_labels
 
     editor_screen._select_project_editor_section("sync")

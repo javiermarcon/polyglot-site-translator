@@ -78,6 +78,7 @@ Current frontend-facing service entrypoints:
 - `polyglot_site_translator.services.po_processing.POProcessingService.process_site`
 - `polyglot_site_translator.infrastructure.po_files.PolibPOCatalogRepository.discover_po_files`
 - `polyglot_site_translator.infrastructure.po_files.PolibPOCatalogRepository.save_po_files`
+- `polyglot_site_translator.infrastructure.po_files.PolibPOCatalogRepository.compile_mo_file`
 - `SettingsService.load_settings`
 - `SettingsService.save_settings`
 - `SettingsService.reset_settings`
@@ -154,6 +155,7 @@ Current settings orchestration entrypoints:
 - `FrontendShell.open_application_menu`
 - `FrontendShell.open_route_from_menu`
 - `FrontendShell.set_settings_default_project_locale`
+- `FrontendShell.set_settings_default_compile_mo`
 - `FrontendShell.set_settings_database_directory`
 - `FrontendShell.set_settings_database_filename`
 - `FrontendShell.select_settings_section`
@@ -172,6 +174,7 @@ Current project-registry orchestration entrypoints:
 - `FrontendShell.save_new_project`
 - `FrontendShell.save_project_edits`
 - `FrontendShell.test_project_connection`
+- `FrontendShell.start_po_processing_async`
 - `FrontendShell.start_sync_async`
 - `FrontendShell.start_sync_to_remote_async`
 - `polyglot_site_translator.presentation.site_registry_services.SiteRegistryPresentationWorkflowService.start_sync`

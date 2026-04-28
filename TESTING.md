@@ -142,16 +142,19 @@ Test:
 - family grouping
 - synchronization
 - exact-locale filtering vs single-locale base expansion
+- project-level and run-level overrides for `.mo` compilation
 - translation-memory reuse across files/families
 - external translation provider behavior
 - progress reporting by completed untranslated entries
 - partial translation failures that must be reported per file while processing continues
+- `.mo` compilation after PO persistence
+- partial `.mo` compilation failures that must be reported per file while processing continues
 - provider transport/protocol failures that must be wrapped and reported without aborting the full PO run
 - provider configuration failures and invalid response shapes as typed translation-provider errors
 - token-like entries that should be skipped instead of sent to the external translator
 - plurals
 - fuzzy/untranslated handling
-- output persistence
+- output persistence for both `.po` and `.mo`
 
 ### If changing scanners
 

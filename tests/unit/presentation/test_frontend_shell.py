@@ -94,11 +94,13 @@ class _BlockingWorkflowService:
         self,
         project_id: str,
         locales: str | None = None,
+        compile_mo: bool | None = None,
         progress_callback: Callable[[POProcessingProgress], None] | None = None,
     ) -> POProcessingSummaryViewModel:
         return build_seeded_services().workflows.start_po_processing(
             project_id,
             locales,
+            compile_mo,
             progress_callback,
         )
 
@@ -147,11 +149,13 @@ class _FailingBackgroundWorkflowService:
         self,
         project_id: str,
         locales: str | None = None,
+        compile_mo: bool | None = None,
         progress_callback: Callable[[POProcessingProgress], None] | None = None,
     ) -> POProcessingSummaryViewModel:
         return build_seeded_services().workflows.start_po_processing(
             project_id,
             locales,
+            compile_mo,
             progress_callback,
         )
 
@@ -161,6 +165,7 @@ class _BlockingPOProcessingWorkflowService:
     started: Event
     release: Event
     requested_locales: list[str]
+    requested_compile_mo: list[bool | None]
 
     def start_sync(
         self,
@@ -186,9 +191,11 @@ class _BlockingPOProcessingWorkflowService:
         self,
         project_id: str,
         locales: str | None = None,
+        compile_mo: bool | None = None,
         progress_callback: Callable[[POProcessingProgress], None] | None = None,
     ) -> POProcessingSummaryViewModel:
         self.requested_locales.append("" if locales is None else locales)
+        self.requested_compile_mo.append(compile_mo)
         if progress_callback is not None:
             progress_callback(
                 POProcessingProgress(
@@ -214,7 +221,8 @@ class _BlockingPOProcessingWorkflowService:
             progress_is_indeterminate=False,
             summary=(
                 "Families processed: 2 | PO files discovered: 3 | "
-                "Synchronized entries: 4 | Translated entries: 1 | Failed entries: 0"
+                "Synchronized entries: 4 | Translated entries: 1 | Failed entries: 0 | "
+                "Compiled MO files: 3"
             ),
             current_file=None,
             current_entry=None,
@@ -247,9 +255,10 @@ class _FailingPOProcessingWorkflowService:
         self,
         project_id: str,
         locales: str | None = None,
+        compile_mo: bool | None = None,
         progress_callback: Callable[[POProcessingProgress], None] | None = None,
     ) -> POProcessingSummaryViewModel:
-        msg = f"PO processing failed for locales: {locales}"
+        msg = f"PO processing failed for locales: {locales} and compile_mo: {compile_mo}"
         raise ControlledServiceError(msg)
 
 
@@ -631,6 +640,7 @@ def test_po_processing_can_run_in_background_with_selected_locales() -> None:
         started=Event(),
         release=Event(),
         requested_locales=[],
+        requested_compile_mo=[],
     )
     shell = create_frontend_shell(
         FrontendServices(
@@ -655,6 +665,7 @@ def test_po_processing_can_run_in_background_with_selected_locales() -> None:
     assert shell.po_processing_state.current_file == "locale/messages-es_ES.po"
     assert shell.po_processing_state.current_entry == "Save"
     assert workflow.requested_locales == ["es_ES,es_AR"]
+    assert workflow.requested_compile_mo == [True]
 
     workflow.release.set()
     assert shell._active_po_processing_thread is not None
@@ -687,7 +698,9 @@ def test_background_po_processing_failure_is_exposed_without_crashing() -> None:
 
     assert shell.po_processing_state is not None
     assert shell.po_processing_state.status == "failed"
-    assert shell.po_processing_state.summary == "PO processing failed for locales: es_ES"
+    assert shell.po_processing_state.summary == (
+        "PO processing failed for locales: es_ES and compile_mo: True"
+    )
     assert shell.po_processing_state.current_file is None
     assert shell.po_processing_state.current_entry is None
-    assert shell.latest_error == "PO processing failed for locales: es_ES"
+    assert shell.latest_error == "PO processing failed for locales: es_ES and compile_mo: True"

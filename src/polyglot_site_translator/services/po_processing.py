@@ -12,8 +12,12 @@ from polyglot_site_translator.domain.po_processing.contracts import (
     POCatalogRepository,
     POTranslationProvider,
 )
-from polyglot_site_translator.domain.po_processing.errors import POProcessingTranslationError
+from polyglot_site_translator.domain.po_processing.errors import (
+    POProcessingCompilationError,
+    POProcessingTranslationError,
+)
 from polyglot_site_translator.domain.po_processing.models import (
+    POCompilationFailure,
     POEntryData,
     POEntryId,
     POFileData,
@@ -87,6 +91,7 @@ class POProcessingService:
                 entries_synchronized=0,
                 entries_translated=0,
                 entries_failed=0,
+                mo_files_compiled=0,
                 failures=(),
             )
 
@@ -203,6 +208,22 @@ class POProcessingService:
             )
 
         self._repository.save_po_files(tuple(updated_files))
+        if not site.compile_mo:
+            return POProcessingResult(
+                files_discovered=len(target_files),
+                families_processed=total_families,
+                entries_pending=total_entries,
+                entries_synchronized=entries_synchronized,
+                entries_translated=entries_translated,
+                entries_failed=entries_failed,
+                mo_files_compiled=0,
+                failures=tuple(failures),
+                compilation_failures=(),
+            )
+        mo_files_compiled, compilation_failures = _compile_mo_files(
+            repository=self._repository,
+            files=tuple(updated_files),
+        )
         return POProcessingResult(
             files_discovered=len(target_files),
             families_processed=total_families,
@@ -210,8 +231,34 @@ class POProcessingService:
             entries_synchronized=entries_synchronized,
             entries_translated=entries_translated,
             entries_failed=entries_failed,
+            mo_files_compiled=mo_files_compiled,
             failures=tuple(failures),
+            compilation_failures=tuple(compilation_failures),
         )
+
+
+def _compile_mo_files(
+    *,
+    repository: POCatalogRepository,
+    files: tuple[POFileData, ...],
+) -> tuple[int, list[POCompilationFailure]]:
+    compiled = 0
+    failures: list[POCompilationFailure] = []
+    for file_data in files:
+        try:
+            repository.compile_mo_file(file_data)
+        except POProcessingCompilationError as error:
+            failures.append(
+                POCompilationFailure(
+                    relative_path=file_data.relative_path,
+                    locale=file_data.locale,
+                    mo_path=str(Path(file_data.relative_path).with_suffix(".mo")),
+                    error_message=str(error),
+                )
+            )
+            continue
+        compiled += 1
+    return compiled, failures
 
 
 def _filter_files_by_selected_locales(

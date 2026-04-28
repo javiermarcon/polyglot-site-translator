@@ -36,6 +36,16 @@ class POFileData:
 
 
 @dataclass(frozen=True)
+class POCompilationFailure:
+    """One PO file whose MO compilation could not be completed."""
+
+    relative_path: str
+    locale: str
+    mo_path: str
+    error_message: str
+
+
+@dataclass(frozen=True)
 class POProcessingResult:
     """Observable typed outcome for one PO processing run."""
 
@@ -45,7 +55,9 @@ class POProcessingResult:
     entries_synchronized: int
     entries_translated: int
     entries_failed: int
+    mo_files_compiled: int
     failures: tuple[POProcessingFailure, ...]
+    compilation_failures: tuple[POCompilationFailure, ...] = ()
 
 
 @dataclass(frozen=True)

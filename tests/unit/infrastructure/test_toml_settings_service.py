@@ -53,6 +53,7 @@ def test_save_settings_writes_toml_and_roundtrips_values(tmp_path: Path) -> None
             developer_mode=True,
             ui_language="es",
             default_project_locale="es_ES,es_AR",
+            default_compile_mo=False,
         )
     )
 
@@ -67,6 +68,7 @@ def test_save_settings_writes_toml_and_roundtrips_values(tmp_path: Path) -> None
     assert reloaded_state.app_settings.developer_mode is True
     assert reloaded_state.app_settings.ui_language == "es"
     assert reloaded_state.app_settings.default_project_locale == "es_ES,es_AR"
+    assert reloaded_state.app_settings.default_compile_mo is False
     assert 'theme_mode = "dark"' in settings_path.read_text(encoding="utf-8")
 
 
@@ -182,6 +184,10 @@ def test_load_settings_rejects_invalid_translation_defaults(tmp_path: Path) -> N
             '[app]\nlast_opened_screen = "dashboard"\n[translation]\ndefault_project_locale = 3\n',
             r"The translation setting 'default_project_locale' must be a string\.",
         ),
+        (
+            '[app]\nlast_opened_screen = "dashboard"\n[translation]\ndefault_compile_mo = "yes"\n',
+            r"The translation setting 'default_compile_mo' must be a boolean\.",
+        ),
     ],
 )
 def test_load_settings_rejects_invalid_translation_section_shapes(
@@ -205,6 +211,16 @@ def test_save_settings_normalizes_default_project_locale_spacing(tmp_path: Path)
 
     assert saved_state.app_settings.default_project_locale == "es_ES,es_AR"
     assert 'default_project_locale = "es_ES,es_AR"' in settings_path.read_text(encoding="utf-8")
+
+
+def test_save_settings_persists_default_compile_mo(tmp_path: Path) -> None:
+    settings_path = tmp_path / SETTINGS_FILENAME
+    service = TomlSettingsService(settings_path)
+
+    saved_state = service.save_settings(AppSettingsViewModel(default_compile_mo=False))
+
+    assert saved_state.app_settings.default_compile_mo is False
+    assert "default_compile_mo = false" in settings_path.read_text(encoding="utf-8")
 
 
 def test_save_settings_rejects_invalid_database_configuration(tmp_path: Path) -> None:

@@ -162,6 +162,14 @@ def test_site_registry_service_normalizes_comma_separated_default_locales() -> N
     assert created_site.default_locale == "es_ES,es_AR"
 
 
+def test_site_registry_service_preserves_compile_mo_preference() -> None:
+    service = _build_service()
+
+    created_site = service.create_site(_build_registration(compile_mo=False))
+
+    assert created_site.project.compile_mo is False
+
+
 def test_site_registry_service_lists_and_gets_sites_from_the_repository() -> None:
     service = _build_service()
     created_site = service.create_site(_build_registration())
@@ -406,6 +414,7 @@ def _build_registration(  # noqa: PLR0913
     default_locale: str = "en_US",
     remote_connection: RemoteConnectionConfigInput | object | None = _DEFAULT_REMOTE,
     is_active: bool = True,
+    compile_mo: bool = True,
 ) -> SiteRegistrationInput:
     resolved_remote_connection = remote_connection
     if resolved_remote_connection is _DEFAULT_REMOTE:
@@ -424,4 +433,5 @@ def _build_registration(  # noqa: PLR0913
         default_locale=default_locale,
         remote_connection=cast(RemoteConnectionConfigInput | None, resolved_remote_connection),
         is_active=is_active,
+        compile_mo=compile_mo,
     )

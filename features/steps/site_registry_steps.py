@@ -62,6 +62,7 @@ def step_registered_site(context: object) -> None:
             framework_type="wordpress",
             local_path="/workspace/marketing-site",
             default_locale="en_US",
+            compile_mo=True,
             connection_type="ftp",
             remote_host="ftp.example.com",
             remote_port="21",
@@ -134,6 +135,7 @@ def step_submit_new_site(context: object) -> None:
             framework_type="wordpress",
             local_path="/workspace/marketing-site",
             default_locale="en_US",
+            compile_mo=True,
             connection_type="ftp",
             remote_host="ftp.example.com",
             remote_port="21",
@@ -157,6 +159,7 @@ def step_submit_new_site_with_adapter_sync_filters(context: object) -> None:
             framework_type="wordpress",
             local_path="/workspace/filtered-site",
             default_locale="en_US",
+            compile_mo=True,
             connection_type="ftp",
             remote_host="ftp.example.com",
             remote_port="21",
@@ -181,6 +184,7 @@ def step_submit_new_site_with_spaced_default_locale_list(context: object) -> Non
             framework_type="wordpress",
             local_path="/workspace/marketing-site",
             default_locale="es_ES, es_AR",
+            compile_mo=True,
             connection_type="ftp",
             remote_host="ftp.example.com",
             remote_port="21",
@@ -204,6 +208,7 @@ def step_submit_new_site_with_invalid_default_locale(context: object) -> None:
             framework_type="wordpress",
             local_path="/workspace/marketing-site",
             default_locale="asad@",
+            compile_mo=True,
             connection_type="ftp",
             remote_host="ftp.example.com",
             remote_port="21",
@@ -224,6 +229,7 @@ def step_submit_django_site_with_custom_sync_rule_overrides(context: object) -> 
         framework_type="django",
         local_path="/workspace/django-filtered-site",
         default_locale="en_US",
+        compile_mo=True,
         connection_type="ftp",
         remote_host="ftp.example.com",
         remote_port="21",
@@ -316,6 +322,7 @@ def step_update_site(context: object) -> None:
             framework_type="wordpress",
             local_path="/workspace/marketing-site-v2",
             default_locale="en_US",
+            compile_mo=True,
             connection_type="ftp",
             remote_host="ftp-v2.example.com",
             remote_port="21",
@@ -395,6 +402,13 @@ def step_assert_create_editor_default_locale(context: object, default_locale: st
     assert typed_context.shell.project_editor_state.editor.default_locale == default_locale
 
 
+@then("the project editor uses MO compilation disabled")
+def step_assert_create_editor_compile_mo_disabled(context: object) -> None:
+    typed_context = _context_with_shell(context)
+    assert typed_context.shell.project_editor_state is not None
+    assert typed_context.shell.project_editor_state.editor.compile_mo is False
+
+
 @then('the project detail shows the persisted sync mode "{mode}"')
 def step_assert_persisted_sync_mode(context: object, mode: str) -> None:
     typed_context = _context_with_shell(context)
@@ -408,6 +422,45 @@ def step_assert_persisted_adapter_sync_filters(context: object) -> None:
     typed_context.shell.open_project_editor_edit(typed_context.created_site_id)
     assert typed_context.shell.project_editor_state is not None
     assert typed_context.shell.project_editor_state.editor.use_adapter_sync_filters is True
+
+
+@when("the operator submits a new site registry entry with MO compilation disabled")
+def step_submit_new_site_with_compile_mo_disabled(context: object) -> None:
+    typed_context = _context_with_shell(context)
+    typed_context.shell.save_new_project(
+        SiteEditorViewModel(
+            site_id=None,
+            name="No MO Site",
+            framework_type="wordpress",
+            local_path="/workspace/no-mo-site",
+            default_locale="en_US",
+            compile_mo=False,
+            connection_type="ftp",
+            remote_host="ftp.example.com",
+            remote_port="21",
+            remote_username="deploy",
+            remote_password="super-secret",
+            remote_path="/public_html",
+            is_active=True,
+        )
+    )
+    assert typed_context.shell.project_detail_state is not None
+    typed_context.created_site_id = typed_context.shell.project_detail_state.project.id
+
+
+@then("the project detail shows MO compilation disabled")
+def step_assert_project_detail_compile_mo_disabled(context: object) -> None:
+    typed_context = _context_with_shell(context)
+    assert typed_context.shell.project_detail_state is not None
+    assert "Compile MO: disabled" in typed_context.shell.project_detail_state.configuration_summary
+
+
+@then("reopening the persisted site editor shows MO compilation disabled")
+def step_assert_persisted_compile_mo_disabled(context: object) -> None:
+    typed_context = _context_with_shell(context)
+    typed_context.shell.open_project_editor_edit(typed_context.created_site_id)
+    assert typed_context.shell.project_editor_state is not None
+    assert typed_context.shell.project_editor_state.editor.compile_mo is False
 
 
 @then('reopening the persisted site editor shows the custom sync rule "{relative_path}"')

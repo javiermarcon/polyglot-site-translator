@@ -10,7 +10,10 @@ from typing import Any, cast
 import polib
 
 from polyglot_site_translator.domain.po_processing.contracts import POCatalogRepository
-from polyglot_site_translator.domain.po_processing.errors import POProcessingInfrastructureError
+from polyglot_site_translator.domain.po_processing.errors import (
+    POProcessingCompilationError,
+    POProcessingInfrastructureError,
+)
 from polyglot_site_translator.domain.po_processing.models import (
     POEntryData,
     POEntryId,
@@ -65,6 +68,20 @@ class PolibPOCatalogRepository(POCatalogRepository):
             except OSError as error:
                 msg = f"PO file '{path}' could not be saved."
                 raise POProcessingInfrastructureError(msg) from error
+
+    def compile_mo_file(self, file_data: POFileData) -> None:
+        path = Path(file_data.source_path)
+        mo_path = path.with_suffix(".mo")
+        try:
+            po_file = polib.pofile(str(path))
+        except (OSError, UnicodeDecodeError) as error:
+            msg = f"PO file '{path}' could not be loaded for compile."
+            raise POProcessingCompilationError(msg) from error
+        try:
+            po_file.save_as_mofile(str(mo_path))
+        except OSError as error:
+            msg = f"PO file '{path}' could not be compiled to MO '{mo_path}'."
+            raise POProcessingCompilationError(msg) from error
 
 
 def _domain_msgstr_plural_from_polib(entry: polib.POEntry) -> dict[str, str]:

@@ -31,7 +31,7 @@ class ProjectDetailScreen(BaseShellScreen):
         self.add_nav_button("Sync Remote", self._start_sync)
         self.add_nav_button("Sync Local to Remote", self._start_sync_to_remote)
         self.add_nav_button("Run Audit", self._start_audit)
-        self.add_nav_button("Process PO", self._start_po_processing)
+        self.add_nav_button("Translate", self._start_po_processing)
         self._detail_label = WrappedLabel(font_size=15)
         self._sync_progress_popup: SyncProgressPopup | None = None
         self._po_locale_popup: POLocaleSelectionPopup | None = None
@@ -64,12 +64,13 @@ class ProjectDetailScreen(BaseShellScreen):
             return
         self._po_locale_popup = POLocaleSelectionPopup(
             default_locales=detail.default_locale,
+            default_compile_mo=detail.compile_mo,
             on_confirm=self._confirm_po_processing,
         )
         self._po_locale_popup.open()
 
-    def _confirm_po_processing(self, locales: str) -> None:
-        self._shell.start_po_processing_async(locales)
+    def _confirm_po_processing(self, locales: str, compile_mo: bool) -> None:
+        self._shell.start_po_processing_async(locales, compile_mo=compile_mo)
         self.show_route("po_processing")
 
     def _edit_project(self, *_args: object) -> None:
