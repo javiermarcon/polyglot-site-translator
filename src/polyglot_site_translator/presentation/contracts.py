@@ -60,6 +60,7 @@ class ProjectWorkflowService(Protocol):
         project_id: str,
         locales: str | None = None,
         compile_mo: bool | None = None,
+        use_external_translator: bool | None = None,
         progress_callback: Callable[[POProcessingProgress], None] | None = None,
     ) -> POProcessingSummaryViewModel:
         """Start a PO processing workflow for a project."""

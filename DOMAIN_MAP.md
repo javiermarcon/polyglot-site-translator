@@ -23,6 +23,7 @@ Manage the local record of sites or projects known to the application.
 - encrypted remote password persistence
 - preferred locales
 - persisted per-project `.mo` compilation preference
+- persisted per-project external-translator preference
 - site-specific processing options
 - active/inactive status
 
@@ -96,6 +97,7 @@ Current implemented slice:
 - synchronization of missing singular and plural entries between locale variants
 - translation-memory reuse across files and families for sibling locales
 - optional external translation through the shared provider contract
+- per-run override of external-translator usage from the presentation workflow
 - sibling `.mo` compilation after persisted `.po` updates when enabled by the effective project/run preference
 - typed processing summary for presentation workflows, including per-file MO compilation failures
 

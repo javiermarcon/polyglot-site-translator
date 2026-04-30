@@ -153,7 +153,7 @@ Current UI behavior for sync mode:
 - the resolved scope can include localization-relevant paths and exclude framework-specific artifacts such as virtualenvs or bytecode caches
 - the project editor renders the resolved rule catalog, allows enabling/disabling individual rules, and persists additional project-specific include/exclude overrides without moving scope logic into Kivy
 - shared global sync rules, framework sync rules and the optional `use_gitignore_rules` toggle are persisted in SQLite for runtime sync scope resolution while the UI remains a typed editor of that persisted state
-- general application settings persist both `default_project_locale` and `default_compile_mo` in a dedicated translation section, create-project flows seed their initial translation draft from those persisted values, and the project editor keeps general-only fields separate from translation/remote/sync sections while preserving the draft across tab switches
+- general application settings persist `default_project_locale`, `default_compile_mo`, and `default_use_external_translator` in a dedicated translation section; create-project flows seed their initial translation draft from those persisted values; the project editor keeps general-only fields separate from translation/remote/sync sections while preserving the draft across tab switches; and the pre-run translation popup can override both `.mo` compilation and external-translator usage for the current execution
 
 Not yet implemented in this stage:
 

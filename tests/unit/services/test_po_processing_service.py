@@ -237,6 +237,28 @@ def test_process_site_skips_hashtag_like_tokens_for_external_translation(tmp_pat
     assert cast(polib.POEntry, translated_po.find("Save")).msgstr == "Guardar"
 
 
+def test_process_site_skips_external_translation_when_site_disables_it(tmp_path: Path) -> None:
+    workspace = tmp_path / "workspace"
+    locale_dir = workspace / "locale"
+    locale_dir.mkdir(parents=True, exist_ok=True)
+    _write_po(locale_dir / "messages-es_ES.po", [("Save", "")])
+    provider = StubTranslationProvider({("es_ES", "Save"): "Guardar"})
+
+    service = POProcessingService(
+        repository=PolibPOCatalogRepository(),
+        translation_provider=provider,
+    )
+
+    result = service.process_site(
+        _build_site(str(workspace), "es_ES", use_external_translator=False)
+    )
+
+    translated_po = polib.pofile(str(locale_dir / "messages-es_ES.po"))
+    assert result.entries_translated == 0
+    assert provider.requests == []
+    assert cast(polib.POEntry, translated_po.find("Save")).msgstr == ""
+
+
 def test_process_site_collects_translation_failures_and_continues(tmp_path: Path) -> None:
     workspace = tmp_path / "workspace"
     locale_dir = workspace / "locale"
@@ -630,7 +652,12 @@ def test_translate_missing_entries_skips_selected_locales_without_a_file() -> No
     assert failures == ()
 
 
-def _build_site(local_path: str, default_locale: str) -> RegisteredSite:
+def _build_site(
+    local_path: str,
+    default_locale: str,
+    *,
+    use_external_translator: bool = True,
+) -> RegisteredSite:
     return RegisteredSite(
         project=SiteProject(
             id="site-1",
@@ -639,6 +666,7 @@ def _build_site(local_path: str, default_locale: str) -> RegisteredSite:
             local_path=local_path,
             default_locale=default_locale,
             is_active=True,
+            use_external_translator=use_external_translator,
         ),
         remote_connection=None,
     )

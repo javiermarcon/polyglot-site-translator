@@ -79,11 +79,13 @@ def _build_project_detail_from_editor(
     editor: SiteEditorViewModel,
 ) -> ProjectDetailViewModel:
     compile_summary = "enabled" if editor.compile_mo else "disabled"
+    external_summary = "enabled" if editor.use_external_translator else "disabled"
     return ProjectDetailViewModel(
         project=project,
         default_locale=editor.default_locale,
         configuration_summary=(
             f"Locale: {editor.default_locale} | Compile MO: {compile_summary} | "
+            f"External translator: {external_summary} | "
             f"Remote connection: {editor.connection_type.title()}"
         ),
         metadata_summary=(
@@ -91,6 +93,7 @@ def _build_project_detail_from_editor(
         ),
         actions=_default_actions(),
         compile_mo=editor.compile_mo,
+        use_external_translator=editor.use_external_translator,
     )
 
 
@@ -115,6 +118,7 @@ class InMemoryProjectCatalogService:
                     ),
                     actions=_default_actions(),
                     compile_mo=True,
+                    use_external_translator=True,
                 )
         msg = f"Unknown project id: {project_id}"
         raise LookupError(msg)
@@ -184,9 +188,10 @@ class StubProjectWorkflowService:
         project_id: str,
         locales: str | None = None,
         compile_mo: bool | None = None,
+        use_external_translator: bool | None = None,
         progress_callback: Callable[[POProcessingProgress], None] | None = None,
     ) -> POProcessingSummaryViewModel:
-        del progress_callback, compile_mo
+        del progress_callback, compile_mo, use_external_translator
         return POProcessingSummaryViewModel(
             status="completed",
             processed_families=4,
@@ -279,7 +284,7 @@ class InMemoryProjectRegistryManagementService:
                 name=detail.project.name,
                 framework_type=detail.project.framework.lower(),
                 local_path=detail.project.local_path,
-                default_locale="en_US",
+                default_locale=detail.default_locale,
                 connection_type=NO_REMOTE_CONNECTION_VALUE,
                 remote_host="",
                 remote_port="",
@@ -287,7 +292,8 @@ class InMemoryProjectRegistryManagementService:
                 remote_password="",
                 remote_path="",
                 is_active=True,
-                compile_mo=True,
+                compile_mo=detail.compile_mo,
+                use_external_translator=detail.use_external_translator,
             ),
             framework_options=build_framework_type_options_from_descriptors(
                 FrameworkAdapterRegistry.discover_installed().list_framework_descriptors()

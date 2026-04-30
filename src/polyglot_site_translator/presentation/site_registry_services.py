@@ -184,6 +184,9 @@ class SiteRegistryPresentationManagementService(ProjectRegistryManagementService
             build_default_site_editor(
                 default_locale=settings_state.app_settings.default_project_locale,
                 compile_mo=settings_state.app_settings.default_compile_mo,
+                use_external_translator=(
+                    settings_state.app_settings.default_use_external_translator
+                ),
             ),
             local_path=str(self._default_workspace_root() / "site"),
         )
@@ -458,6 +461,7 @@ class SiteRegistryPresentationWorkflowService(ProjectWorkflowService):
         project_id: str,
         locales: str | None = None,
         compile_mo: bool | None = None,
+        use_external_translator: bool | None = None,
         progress_callback: Callable[[POProcessingProgress], None] | None = None,
     ) -> POProcessingSummaryViewModel:
         """Run PO processing and return a typed workflow summary."""
@@ -485,13 +489,18 @@ class SiteRegistryPresentationWorkflowService(ProjectWorkflowService):
                 current_entry=None,
             )
         processing_site = site
-        if locales is not None or compile_mo is not None:
+        if locales is not None or compile_mo is not None or use_external_translator is not None:
             processing_site = replace(
                 site,
                 project=replace(
                     site.project,
                     default_locale=site.default_locale if locales is None else locales,
                     compile_mo=site.compile_mo if compile_mo is None else compile_mo,
+                    use_external_translator=(
+                        site.use_external_translator
+                        if use_external_translator is None
+                        else use_external_translator
+                    ),
                 ),
             )
         try:
@@ -617,6 +626,7 @@ def _build_service_payload(editor: SiteEditorViewModel) -> SiteRegistrationInput
         local_path=editor.local_path,
         default_locale=editor.default_locale,
         compile_mo=editor.compile_mo,
+        use_external_translator=editor.use_external_translator,
         remote_connection=remote_connection,
         is_active=editor.is_active,
     )
@@ -640,6 +650,7 @@ def _build_project_detail(
         project=_build_project_summary(site),
         default_locale=site.default_locale,
         compile_mo=site.compile_mo,
+        use_external_translator=site.use_external_translator,
         configuration_summary=_build_configuration_summary(site),
         metadata_summary=_build_metadata_summary(site, detection_result),
         actions=[],
@@ -656,6 +667,7 @@ def _build_site_editor(site: RegisteredSite) -> SiteEditorViewModel:
             local_path=site.local_path,
             default_locale=site.default_locale,
             compile_mo=site.compile_mo,
+            use_external_translator=site.use_external_translator,
             connection_type=NO_REMOTE_CONNECTION_VALUE,
             remote_host="",
             remote_port="",
@@ -674,6 +686,7 @@ def _build_site_editor(site: RegisteredSite) -> SiteEditorViewModel:
         local_path=site.local_path,
         default_locale=site.default_locale,
         compile_mo=site.compile_mo,
+        use_external_translator=site.use_external_translator,
         connection_type=remote_connection.connection_type,
         remote_host=remote_connection.host,
         remote_port=str(remote_connection.port),
@@ -699,14 +712,18 @@ def _format_framework_name(framework_type: str) -> str:
 def _build_configuration_summary(site: RegisteredSite) -> str:
     if site.remote_connection is None:
         compile_summary = "enabled" if site.compile_mo else "disabled"
+        translator_summary = "enabled" if site.use_external_translator else "disabled"
         return (
             f"Locale: {site.default_locale} | Compile MO: {compile_summary} | "
+            f"External translator: {translator_summary} | "
             "Remote connection: None"
         )
     sync_mode = "filtered" if site.remote_connection.flags.use_adapter_sync_filters else "full"
     compile_summary = "enabled" if site.compile_mo else "disabled"
+    translator_summary = "enabled" if site.use_external_translator else "disabled"
     return (
         f"Locale: {site.default_locale} | Compile MO: {compile_summary} | "
+        f"External translator: {translator_summary} | "
         f"Remote: {site.remote_connection.connection_type} "
         f"{site.remote_connection.host}:{site.remote_connection.port} "
         f"| Path: {site.remote_connection.remote_path} | Sync mode: {sync_mode}"

@@ -145,6 +145,7 @@ class FrontendShell:
                 metadata_summary=detail.metadata_summary,
                 actions=_build_project_actions(detail.actions),
                 compile_mo=detail.compile_mo,
+                use_external_translator=detail.use_external_translator,
             )
             self.latest_error = None
         except ControlledServiceError as error:
@@ -273,6 +274,7 @@ class FrontendShell:
                 project_id,
                 locales,
                 None,
+                None,
             )
             self.latest_error = None
         except ControlledServiceError as error:
@@ -289,13 +291,22 @@ class FrontendShell:
             self.latest_error = str(error)
         self._set_route(RouteName.PO_PROCESSING, project_id=project_id)
 
-    def start_po_processing_async(self, locales: str, *, compile_mo: bool | None = None) -> None:
+    def start_po_processing_async(
+        self,
+        locales: str,
+        *,
+        compile_mo: bool | None = None,
+        use_external_translator: bool | None = None,
+    ) -> None:
         """Trigger PO processing in a background thread after translation selection."""
         project_id = self._require_project_id()
         normalized_locales = normalize_default_locale(locales, label="Selected locales")
         resolved_compile_mo = compile_mo
         if resolved_compile_mo is None and self.project_detail_state is not None:
             resolved_compile_mo = self.project_detail_state.compile_mo
+        resolved_use_external_translator = use_external_translator
+        if resolved_use_external_translator is None and self.project_detail_state is not None:
+            resolved_use_external_translator = self.project_detail_state.use_external_translator
         with self._po_processing_lock:
             if (
                 self._active_po_processing_thread is not None
@@ -314,7 +325,12 @@ class FrontendShell:
             )
         worker = Thread(
             target=self._run_po_processing_in_background,
-            args=(project_id, normalized_locales, resolved_compile_mo),
+            args=(
+                project_id,
+                normalized_locales,
+                resolved_compile_mo,
+                resolved_use_external_translator,
+            ),
             daemon=True,
             name=f"po-processing-{project_id}",
         )
@@ -454,6 +470,22 @@ class FrontendShell:
             status_message="Settings draft updated.",
         )
 
+    def set_settings_default_use_external_translator(
+        self,
+        default_use_external_translator: bool,
+    ) -> None:
+        """Update the default external-translation preference for new project drafts."""
+        state = self._require_settings_state()
+        self.settings_state = replace(
+            state,
+            app_settings=replace(
+                state.app_settings,
+                default_use_external_translator=default_use_external_translator,
+            ),
+            status="editing",
+            status_message="Settings draft updated.",
+        )
+
     def set_settings_database_directory(self, database_directory: str) -> None:
         """Update the draft SQLite database directory."""
         state = self._require_settings_state()
@@ -577,6 +609,7 @@ class FrontendShell:
                 metadata_summary=detail.metadata_summary,
                 actions=_build_project_actions(detail.actions),
                 compile_mo=detail.compile_mo,
+                use_external_translator=detail.use_external_translator,
             )
             self.latest_error = None
         except ControlledServiceError as error:
@@ -603,6 +636,7 @@ class FrontendShell:
                 metadata_summary=detail.metadata_summary,
                 actions=_build_project_actions(detail.actions),
                 compile_mo=detail.compile_mo,
+                use_external_translator=detail.use_external_translator,
             )
             self.latest_error = None
         except ControlledServiceError as error:
@@ -756,12 +790,14 @@ class FrontendShell:
         project_id: str,
         locales: str,
         compile_mo: bool | None,
+        use_external_translator: bool | None,
     ) -> None:
         try:
             self.po_processing_state = self.services.workflows.start_po_processing(
                 project_id,
                 locales,
                 compile_mo,
+                use_external_translator,
                 progress_callback=self._record_po_processing_progress,
             )
             self.latest_error = None

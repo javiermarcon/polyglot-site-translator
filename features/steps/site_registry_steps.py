@@ -409,6 +409,13 @@ def step_assert_create_editor_compile_mo_disabled(context: object) -> None:
     assert typed_context.shell.project_editor_state.editor.compile_mo is False
 
 
+@then("the project editor uses the external translator disabled")
+def step_assert_create_editor_external_translator_disabled(context: object) -> None:
+    typed_context = _context_with_shell(context)
+    assert typed_context.shell.project_editor_state is not None
+    assert typed_context.shell.project_editor_state.editor.use_external_translator is False
+
+
 @then('the project detail shows the persisted sync mode "{mode}"')
 def step_assert_persisted_sync_mode(context: object, mode: str) -> None:
     typed_context = _context_with_shell(context)
@@ -435,6 +442,32 @@ def step_submit_new_site_with_compile_mo_disabled(context: object) -> None:
             local_path="/workspace/no-mo-site",
             default_locale="en_US",
             compile_mo=False,
+            use_external_translator=True,
+            connection_type="ftp",
+            remote_host="ftp.example.com",
+            remote_port="21",
+            remote_username="deploy",
+            remote_password="super-secret",
+            remote_path="/public_html",
+            is_active=True,
+        )
+    )
+    assert typed_context.shell.project_detail_state is not None
+    typed_context.created_site_id = typed_context.shell.project_detail_state.project.id
+
+
+@when("the operator submits a new site registry entry with external translator disabled")
+def step_submit_new_site_with_external_translator_disabled(context: object) -> None:
+    typed_context = _context_with_shell(context)
+    typed_context.shell.save_new_project(
+        SiteEditorViewModel(
+            site_id=None,
+            name="No External Translator Site",
+            framework_type="wordpress",
+            local_path="/workspace/no-external-translator-site",
+            default_locale="en_US",
+            compile_mo=True,
+            use_external_translator=False,
             connection_type="ftp",
             remote_host="ftp.example.com",
             remote_port="21",
@@ -461,6 +494,24 @@ def step_assert_persisted_compile_mo_disabled(context: object) -> None:
     typed_context.shell.open_project_editor_edit(typed_context.created_site_id)
     assert typed_context.shell.project_editor_state is not None
     assert typed_context.shell.project_editor_state.editor.compile_mo is False
+
+
+@then("the project detail shows the external translator disabled")
+def step_assert_project_detail_external_translator_disabled(context: object) -> None:
+    typed_context = _context_with_shell(context)
+    assert typed_context.shell.project_detail_state is not None
+    assert (
+        "External translator: disabled"
+        in typed_context.shell.project_detail_state.configuration_summary
+    )
+
+
+@then("reopening the persisted site editor shows the external translator disabled")
+def step_assert_persisted_external_translator_disabled(context: object) -> None:
+    typed_context = _context_with_shell(context)
+    typed_context.shell.open_project_editor_edit(typed_context.created_site_id)
+    assert typed_context.shell.project_editor_state is not None
+    assert typed_context.shell.project_editor_state.editor.use_external_translator is False
 
 
 @then('reopening the persisted site editor shows the custom sync rule "{relative_path}"')

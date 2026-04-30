@@ -60,6 +60,7 @@ class ProjectEditorScreen(BaseShellScreen):
         self._local_path_input: TextInput | None = None
         self._default_locale_input: TextInput | None = None
         self._compile_mo_switch: Switch | None = None
+        self._use_external_translator_switch: Switch | None = None
         self._connection_type_spinner: Spinner | None = None
         self._remote_host_input: TextInput | None = None
         self._remote_port_input: TextInput | None = None
@@ -248,6 +249,9 @@ class ProjectEditorScreen(BaseShellScreen):
         self._default_locale_input = build_site_editor_text_input(state.editor.default_locale)
         card.add_widget(build_site_editor_field_card("Default Locale", self._default_locale_input))
         card.add_widget(self._build_compile_mo_toggle(state.editor.compile_mo))
+        card.add_widget(
+            self._build_use_external_translator_toggle(state.editor.use_external_translator)
+        )
         return card
 
     def _build_remote_fields(self, state: ProjectEditorStateViewModel) -> SurfaceBoxLayout:
@@ -310,6 +314,7 @@ class ProjectEditorScreen(BaseShellScreen):
         self._local_path_input = None
         self._default_locale_input = None
         self._compile_mo_switch = None
+        self._use_external_translator_switch = None
         self._connection_type_spinner = None
         self._remote_host_input = None
         self._remote_port_input = None
@@ -363,6 +368,34 @@ class ProjectEditorScreen(BaseShellScreen):
             size=(72, 36),
         )
         row.add_widget(self._compile_mo_switch)
+        card.add_widget(row)
+        return card
+
+    def _build_use_external_translator_toggle(self, is_enabled: bool) -> SurfaceBoxLayout:
+        card = SurfaceBoxLayout(
+            orientation="vertical",
+            spacing=8,
+            padding=14,
+            size_hint_y=None,
+            background_role="card_subtle_background",
+        )
+        card.bind(minimum_height=card.setter("height"))
+        card.add_widget(WrappedLabel(text="Use External Translator", font_size=16, bold=True))
+        row = BoxLayout(orientation="horizontal", spacing=12, size_hint_y=None, height=40)
+        row.add_widget(
+            WrappedLabel(
+                text=(
+                    "Enable the external translator for untranslated entries that cannot be "
+                    "resolved from other PO files in the same family."
+                )
+            )
+        )
+        self._use_external_translator_switch = Switch(
+            active=is_enabled,
+            size_hint=(None, None),
+            size=(72, 36),
+        )
+        row.add_widget(self._use_external_translator_switch)
         card.add_widget(row)
         return card
 
@@ -716,6 +749,11 @@ class ProjectEditorScreen(BaseShellScreen):
                 self._compile_mo_switch.active
                 if self._compile_mo_switch is not None
                 else state.editor.compile_mo
+            ),
+            use_external_translator=(
+                self._use_external_translator_switch.active
+                if self._use_external_translator_switch is not None
+                else state.editor.use_external_translator
             ),
             connection_type=self._spinner_value_or_fallback(
                 options=state.connection_type_options,

@@ -194,6 +194,7 @@ def test_settings_screen_can_edit_translation_defaults() -> None:
     )
     translation_input.text = "es_ES, es_AR"
     settings_screen._default_compile_mo_switch.active = False
+    settings_screen._default_use_external_translator_switch.active = False
 
     save_button = _find_button_by_text(settings_screen, "Save Changes")
     save_button.dispatch("on_release")
@@ -203,6 +204,9 @@ def test_settings_screen_can_edit_translation_defaults() -> None:
         "es_ES,es_AR"
     )
     assert settings_screen._shell.settings_state.app_settings.default_compile_mo is False
+    assert (
+        settings_screen._shell.settings_state.app_settings.default_use_external_translator is False
+    )
 
 
 def test_settings_screen_shows_framework_sync_scope_controls() -> None:

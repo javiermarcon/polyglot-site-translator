@@ -180,7 +180,9 @@ class POProcessingService:
                 locale_groups=locale_groups,
                 translation_memory=translation_memory,
                 runtime=_FamilyProcessingRuntime(
-                    translation_provider=self._translation_provider,
+                    translation_provider=(
+                        self._translation_provider if site.use_external_translator else None
+                    ),
                     progress_callback=report_family_progress,
                 ),
             )

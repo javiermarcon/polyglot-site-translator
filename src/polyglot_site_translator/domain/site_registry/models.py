@@ -21,6 +21,7 @@ class SiteRegistrationInput:
     remote_connection: RemoteConnectionConfigInput | None
     is_active: bool
     compile_mo: bool = True
+    use_external_translator: bool = True
 
 
 @dataclass(frozen=True)
@@ -34,6 +35,7 @@ class SiteProject:
     default_locale: str
     is_active: bool
     compile_mo: bool = True
+    use_external_translator: bool = True
 
 
 @dataclass(frozen=True)
@@ -72,6 +74,11 @@ class RegisteredSite:
     def compile_mo(self) -> bool:
         """Return whether MO compilation is enabled for this project."""
         return self.project.compile_mo
+
+    @property
+    def use_external_translator(self) -> bool:
+        """Return whether external translation is enabled for this project."""
+        return self.project.use_external_translator
 
     @property
     def is_active(self) -> bool:

@@ -50,6 +50,14 @@ Feature: PO processing workflow
     And the PO processing result reports zero compiled mo files
     And the processed locale variants do not contain compiled mo files
 
+  Scenario: Skip external translation when the project disables it
+    Given a site project with untranslated PO locale variants and external translator disabled
+    When the operator runs the PO processing workflow for that site
+    Then the PO processing result reports completed status
+    And the PO processing result reports one processed family
+    And the PO processing result reports zero translated entries
+    And the processed PO file keeps the untranslated text
+
   Scenario: Continue processing when one PO entry fails in external translation
     Given a site project with one failing PO entry and one translatable entry
     When the operator runs the PO processing workflow for that site

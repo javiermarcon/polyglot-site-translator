@@ -156,6 +156,7 @@ Current settings orchestration entrypoints:
 - `FrontendShell.open_route_from_menu`
 - `FrontendShell.set_settings_default_project_locale`
 - `FrontendShell.set_settings_default_compile_mo`
+- `FrontendShell.set_settings_default_use_external_translator`
 - `FrontendShell.set_settings_database_directory`
 - `FrontendShell.set_settings_database_filename`
 - `FrontendShell.select_settings_section`

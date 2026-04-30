@@ -64,10 +64,12 @@ Feature: Frontend settings management
     When the operator selects the settings section "translation"
     And the operator sets the default project locale to "es_ES, es_AR"
     And the operator enables default MO compilation
+    And the operator disables the default external translator
     And the operator applies the settings changes
     Then the settings screen shows the translation settings section
     And the saved settings keep the default project locale "es_ES,es_AR"
     And the saved settings keep default MO compilation enabled
+    And the saved settings keep the default external translator disabled
 
   Scenario: Configure global sync rules and persist them
     Given the frontend shell is wired with TOML-backed settings persistence

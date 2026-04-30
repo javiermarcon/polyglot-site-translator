@@ -223,6 +223,18 @@ def step_disable_default_mo_compilation(context: object) -> None:
     typed_context.shell.set_settings_default_compile_mo(False)
 
 
+@when("the operator enables the default external translator")
+def step_enable_default_external_translator(context: object) -> None:
+    typed_context = _context_with_shell(context)
+    typed_context.shell.set_settings_default_use_external_translator(True)
+
+
+@when("the operator disables the default external translator")
+def step_disable_default_external_translator(context: object) -> None:
+    typed_context = _context_with_shell(context)
+    typed_context.shell.set_settings_default_use_external_translator(False)
+
+
 @when("the operator sets the window size to 1440 by 900")
 def step_set_window_size(context: object) -> None:
     typed_context = _context_with_shell(context)
@@ -613,3 +625,10 @@ def step_assert_saved_default_mo_compilation_enabled(context: object) -> None:
     typed_context = _context_with_shell(context)
     assert typed_context.shell.settings_state is not None
     assert typed_context.shell.settings_state.app_settings.default_compile_mo is True
+
+
+@then("the saved settings keep the default external translator disabled")
+def step_assert_saved_default_external_translator_disabled(context: object) -> None:
+    typed_context = _context_with_shell(context)
+    assert typed_context.shell.settings_state is not None
+    assert typed_context.shell.settings_state.app_settings.default_use_external_translator is False

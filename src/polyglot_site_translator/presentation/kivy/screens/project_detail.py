@@ -65,12 +65,22 @@ class ProjectDetailScreen(BaseShellScreen):
         self._po_locale_popup = POLocaleSelectionPopup(
             default_locales=detail.default_locale,
             default_compile_mo=detail.compile_mo,
+            default_use_external_translator=detail.use_external_translator,
             on_confirm=self._confirm_po_processing,
         )
         self._po_locale_popup.open()
 
-    def _confirm_po_processing(self, locales: str, compile_mo: bool) -> None:
-        self._shell.start_po_processing_async(locales, compile_mo=compile_mo)
+    def _confirm_po_processing(
+        self,
+        locales: str,
+        compile_mo: bool,
+        use_external_translator: bool,
+    ) -> None:
+        self._shell.start_po_processing_async(
+            locales,
+            compile_mo=compile_mo,
+            use_external_translator=use_external_translator,
+        )
         self.show_route("po_processing")
 
     def _edit_project(self, *_args: object) -> None:

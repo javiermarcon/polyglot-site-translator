@@ -56,8 +56,9 @@ class SqliteSiteRegistryRepository:
                 local_path,
                 default_locale,
                 compile_mo,
+                use_external_translator,
                 is_active
-            ) VALUES (?, ?, ?, ?, ?, ?, ?)
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         """
         connection_statement = """
             INSERT INTO site_remote_connections (
@@ -100,6 +101,7 @@ class SqliteSiteRegistryRepository:
                 project.local_path,
                 project.default_locale,
                 project.compile_mo,
+                project.use_external_translator,
                 project.is_active,
                 remote.id AS remote_id,
                 remote.connection_type,
@@ -142,6 +144,7 @@ class SqliteSiteRegistryRepository:
                 project.local_path,
                 project.default_locale,
                 project.compile_mo,
+                project.use_external_translator,
                 project.is_active,
                 remote.id AS remote_id,
                 remote.connection_type,
@@ -184,6 +187,7 @@ class SqliteSiteRegistryRepository:
                 local_path = ?,
                 default_locale = ?,
                 compile_mo = ?,
+                use_external_translator = ?,
                 is_active = ?
             WHERE id = ?
         """
@@ -293,6 +297,9 @@ def _ensure_project_table(connection: sqlite3.Connection) -> None:
             local_path TEXT NOT NULL UNIQUE,
             default_locale TEXT NOT NULL,
             compile_mo INTEGER NOT NULL CHECK (compile_mo IN (0, 1)) DEFAULT 1,
+            use_external_translator INTEGER NOT NULL CHECK (
+                use_external_translator IN (0, 1)
+            ) DEFAULT 1,
             is_active INTEGER NOT NULL CHECK (is_active IN (0, 1))
         )
         """
@@ -303,6 +310,13 @@ def _ensure_project_table(connection: sqlite3.Connection) -> None:
             """
             ALTER TABLE site_registry
             ADD COLUMN compile_mo INTEGER NOT NULL DEFAULT 1
+            """
+        )
+    if "use_external_translator" not in columns:
+        connection.execute(
+            """
+            ALTER TABLE site_registry
+            ADD COLUMN use_external_translator INTEGER NOT NULL DEFAULT 1
             """
         )
 
@@ -397,6 +411,9 @@ def _migrate_legacy_ftp_schema(connection: sqlite3.Connection) -> None:
             local_path TEXT NOT NULL UNIQUE,
             default_locale TEXT NOT NULL,
             compile_mo INTEGER NOT NULL CHECK (compile_mo IN (0, 1)) DEFAULT 1,
+            use_external_translator INTEGER NOT NULL CHECK (
+                use_external_translator IN (0, 1)
+            ) DEFAULT 1,
             is_active INTEGER NOT NULL CHECK (is_active IN (0, 1))
         )
         """
@@ -410,6 +427,7 @@ def _migrate_legacy_ftp_schema(connection: sqlite3.Connection) -> None:
             local_path,
             default_locale,
             compile_mo,
+            use_external_translator,
             is_active
         )
         SELECT
@@ -419,6 +437,7 @@ def _migrate_legacy_ftp_schema(connection: sqlite3.Connection) -> None:
             local_path,
             default_locale,
             1 AS compile_mo,
+            1 AS use_external_translator,
             is_active
         FROM site_registry
         """
@@ -476,6 +495,7 @@ def _project_params(project: SiteProject) -> tuple[object, ...]:
         project.local_path,
         project.default_locale,
         int(project.compile_mo),
+        int(project.use_external_translator),
         int(project.is_active),
     )
 
@@ -487,6 +507,7 @@ def _project_update_params(project: SiteProject) -> tuple[object, ...]:
         project.local_path,
         project.default_locale,
         int(project.compile_mo),
+        int(project.use_external_translator),
         int(project.is_active),
         project.id,
     )
@@ -603,6 +624,7 @@ def _map_row_to_site(
         local_path=str(row["local_path"]),
         default_locale=str(row["default_locale"]),
         compile_mo=bool(row["compile_mo"]),
+        use_external_translator=bool(row["use_external_translator"]),
         is_active=bool(row["is_active"]),
     )
     remote_connection: RemoteConnectionConfig | None = None

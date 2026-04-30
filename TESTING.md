@@ -152,6 +152,7 @@ Test:
 - provider transport/protocol failures that must be wrapped and reported without aborting the full PO run
 - provider configuration failures and invalid response shapes as typed translation-provider errors
 - token-like entries that should be skipped instead of sent to the external translator
+- project-level and per-run disabling of the external translator
 - plurals
 - fuzzy/untranslated handling
 - output persistence for both `.po` and `.mo`

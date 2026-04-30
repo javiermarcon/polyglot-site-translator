@@ -27,7 +27,8 @@ class POLocaleSelectionPopup(Popup):  # type: ignore[misc]
         *,
         default_locales: str,
         default_compile_mo: bool,
-        on_confirm: Callable[[str, bool], None],
+        default_use_external_translator: bool,
+        on_confirm: Callable[[str, bool, bool], None],
     ) -> None:
         super().__init__(
             title="Translate Project",
@@ -38,6 +39,11 @@ class POLocaleSelectionPopup(Popup):  # type: ignore[misc]
         self._locales_input: TextInput = build_site_editor_text_input(default_locales)
         self._compile_mo_switch = Switch(
             active=default_compile_mo,
+            size_hint=(None, None),
+            size=(72, 36),
+        )
+        self._use_external_translator_switch = Switch(
+            active=default_use_external_translator,
             size_hint=(None, None),
             size=(72, 36),
         )
@@ -56,6 +62,15 @@ class POLocaleSelectionPopup(Popup):  # type: ignore[misc]
         compile_row.add_widget(WrappedLabel(text="Compile MO Files"))
         compile_row.add_widget(self._compile_mo_switch)
         container.add_widget(compile_row)
+        translator_row = BoxLayout(
+            orientation="horizontal",
+            spacing=12,
+            size_hint_y=None,
+            height=40,
+        )
+        translator_row.add_widget(WrappedLabel(text="Use External Translator"))
+        translator_row.add_widget(self._use_external_translator_switch)
+        container.add_widget(translator_row)
         container.add_widget(self._error_label)
         actions = BoxLayout(orientation="horizontal", spacing=12, size_hint_y=None, height=48)
         cancel_button = AppButton(text="Cancel", primary=False)
@@ -78,4 +93,8 @@ class POLocaleSelectionPopup(Popup):  # type: ignore[misc]
             return
         self._error_label.text = ""
         self.dismiss()
-        self._on_confirm(normalized_locales, self._compile_mo_switch.active)
+        self._on_confirm(
+            normalized_locales,
+            self._compile_mo_switch.active,
+            self._use_external_translator_switch.active,
+        )

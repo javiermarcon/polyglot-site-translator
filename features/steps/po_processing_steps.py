@@ -218,6 +218,28 @@ def step_given_site_with_untranslated_variants_and_disabled_mo(context: object) 
     )
 
 
+@given("a site project with untranslated PO locale variants and external translator disabled")
+def step_given_site_with_untranslated_variants_and_disabled_external_translator(
+    context: object,
+) -> None:
+    typed = _context(context)
+    typed.temp_dir = tempfile.TemporaryDirectory()
+    workspace = Path(typed.temp_dir.name)
+    locale_dir = workspace / "locale"
+    locale_dir.mkdir(parents=True, exist_ok=True)
+    _write_po(locale_dir / "messages-es_ES.po", [("Save", "")])
+    _write_po(locale_dir / "messages-es_AR.po", [("Save", "")])
+    site = _build_site(workspace, use_external_translator=False)
+    typed.site_id = site.id
+    typed.workflow_service = SiteRegistryPresentationWorkflowService(
+        service=_InMemorySiteWorkflowService(site),
+        project_sync_service=_SyncStub(),
+        po_processing_service=POProcessingService(
+            translation_provider=_BehaveTranslationProvider()
+        ),
+    )
+
+
 @given("a site project with several untranslated entries in one PO file")
 def step_given_site_with_multiple_untranslated_entries(context: object) -> None:
     typed = _context(context)
@@ -366,6 +388,12 @@ def step_then_translated_entries(context: object) -> None:
     assert "Translated entries: 1" in typed.po_result_summary
 
 
+@then("the PO processing result reports zero translated entries")
+def step_then_zero_translated_entries(context: object) -> None:
+    typed = _context(context)
+    assert "Translated entries: 0" in typed.po_result_summary
+
+
 @then("the PO processing result reports three translated entries")
 def step_then_three_translated_entries(context: object) -> None:
     typed = _context(context)
@@ -413,6 +441,13 @@ def step_then_processed_po_contains_translation(context: object) -> None:
     assert "Save=Guardar" in typed.processed_po_text
 
 
+@then("the processed PO file keeps the untranslated text")
+def step_then_processed_po_keeps_untranslated_text(context: object) -> None:
+    typed = _context(context)
+    assert "Save=" in typed.processed_po_text
+    assert "Save=Guardar" not in typed.processed_po_text
+
+
 @then("the processed PO file contains all translated texts")
 def step_then_processed_po_contains_all_translations(context: object) -> None:
     typed = _context(context)
@@ -440,7 +475,12 @@ def step_then_zero_family(context: object) -> None:
     assert typed.po_result_families == 0
 
 
-def _build_site(workspace: Path, *, compile_mo: bool = True) -> RegisteredSite:
+def _build_site(
+    workspace: Path,
+    *,
+    compile_mo: bool = True,
+    use_external_translator: bool = True,
+) -> RegisteredSite:
     return RegisteredSite(
         project=SiteProject(
             id="site-po",
@@ -450,6 +490,7 @@ def _build_site(workspace: Path, *, compile_mo: bool = True) -> RegisteredSite:
             default_locale="es_ES",
             is_active=True,
             compile_mo=compile_mo,
+            use_external_translator=use_external_translator,
         ),
         remote_connection=None,
     )

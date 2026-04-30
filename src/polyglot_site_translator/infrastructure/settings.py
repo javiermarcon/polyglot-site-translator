@@ -181,6 +181,10 @@ class TomlSettingsService:
                 raw_document,
                 default_settings.default_compile_mo,
             ),
+            default_use_external_translator=_read_translation_default_use_external_translator(
+                raw_document,
+                default_settings.default_use_external_translator,
+            ),
             database_directory=_read_string(
                 raw_settings,
                 "database_directory",
@@ -309,6 +313,8 @@ def _serialize_settings_document(app_settings: AppSettingsViewModel) -> str:
         "[translation]\n"
         f"default_project_locale = {_format_toml_string(app_settings.default_project_locale)}\n"
         f"default_compile_mo = {_format_toml_bool(app_settings.default_compile_mo)}\n"
+        "default_use_external_translator = "
+        f"{_format_toml_bool(app_settings.default_use_external_translator)}\n"
     )
     document += _serialize_sync_scope_settings(app_settings.sync_scope_settings)
     return document
@@ -355,6 +361,26 @@ def _read_translation_default_compile_mo(
     if isinstance(raw_value, bool):
         return raw_value
     msg = "The translation setting 'default_compile_mo' must be a boolean."
+    raise ControlledServiceError(msg)
+
+
+def _read_translation_default_use_external_translator(
+    raw_document: dict[str, Any],
+    default_use_external_translator: bool,
+) -> bool:
+    raw_translation = raw_document.get("translation")
+    if raw_translation is None:
+        return default_use_external_translator
+    if not isinstance(raw_translation, dict):
+        msg = "The [translation] settings section must be a TOML table."
+        raise ControlledServiceError(msg)
+    raw_value = raw_translation.get(
+        "default_use_external_translator",
+        default_use_external_translator,
+    )
+    if isinstance(raw_value, bool):
+        return raw_value
+    msg = "The translation setting 'default_use_external_translator' must be a boolean."
     raise ControlledServiceError(msg)
 
 

@@ -170,6 +170,14 @@ def test_site_registry_service_preserves_compile_mo_preference() -> None:
     assert created_site.project.compile_mo is False
 
 
+def test_site_registry_service_preserves_external_translator_preference() -> None:
+    service = _build_service()
+
+    created_site = service.create_site(_build_registration(use_external_translator=False))
+
+    assert created_site.project.use_external_translator is False
+
+
 def test_site_registry_service_lists_and_gets_sites_from_the_repository() -> None:
     service = _build_service()
     created_site = service.create_site(_build_registration())
@@ -415,6 +423,7 @@ def _build_registration(  # noqa: PLR0913
     remote_connection: RemoteConnectionConfigInput | object | None = _DEFAULT_REMOTE,
     is_active: bool = True,
     compile_mo: bool = True,
+    use_external_translator: bool = True,
 ) -> SiteRegistrationInput:
     resolved_remote_connection = remote_connection
     if resolved_remote_connection is _DEFAULT_REMOTE:
@@ -434,4 +443,5 @@ def _build_registration(  # noqa: PLR0913
         remote_connection=cast(RemoteConnectionConfigInput | None, resolved_remote_connection),
         is_active=is_active,
         compile_mo=compile_mo,
+        use_external_translator=use_external_translator,
     )

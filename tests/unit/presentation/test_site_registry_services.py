@@ -392,6 +392,26 @@ def test_management_service_builds_create_state_from_translation_compile_default
     assert create_state.editor.compile_mo is False
 
 
+def test_management_service_builds_create_state_from_translation_external_translator_defaults(
+    tmp_path: Path,
+) -> None:
+    settings_service = TomlSettingsService(tmp_path / "settings.toml")
+    settings_service.save_settings(
+        replace(
+            build_default_app_settings(database_directory=str(tmp_path)),
+            default_use_external_translator=False,
+        )
+    )
+    management = SiteRegistryPresentationManagementService(
+        service=_build_domain_service(InMemorySiteRegistryRepository()),
+        settings_service=settings_service,
+    )
+
+    create_state = management.build_create_project_editor()
+
+    assert create_state.editor.use_external_translator is False
+
+
 def test_management_service_builds_edit_state_for_projects_without_remote_connection(
     tmp_path: Path,
 ) -> None:
@@ -1284,7 +1304,8 @@ def test_build_project_detail_without_remote_connection_is_explicit() -> None:
 
     assert detail.default_locale == "en_US"
     assert detail.configuration_summary == (
-        "Locale: en_US | Compile MO: enabled | Remote connection: None"
+        "Locale: en_US | Compile MO: enabled | External translator: enabled | "
+        "Remote connection: None"
     )
     assert detail.metadata_summary == "Framework: Django | Remote connection: none configured"
 

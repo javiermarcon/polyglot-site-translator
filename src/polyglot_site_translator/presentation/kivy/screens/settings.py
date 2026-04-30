@@ -73,6 +73,7 @@ class SettingsScreen(BaseShellScreen):
         self._height_input: TextInput | None = None
         self._default_project_locale_input: TextInput | None = None
         self._default_compile_mo_switch: Switch | None = None
+        self._default_use_external_translator_switch: Switch | None = None
         self._database_directory_input: TextInput | None = None
         self._database_filename_input: TextInput | None = None
         self._sync_progress_log_limit_input: TextInput | None = None
@@ -109,6 +110,7 @@ class SettingsScreen(BaseShellScreen):
             self._draft_settings = state.app_settings
         self._default_project_locale_input = None
         self._default_compile_mo_switch = None
+        self._default_use_external_translator_switch = None
         self._layout_spec = build_settings_layout_spec(Window.width)
         self._content.add_widget(
             _build_information_card(
@@ -237,6 +239,11 @@ class SettingsScreen(BaseShellScreen):
             )
         )
         form.add_widget(self._build_default_compile_mo_field(value=draft.default_compile_mo))
+        form.add_widget(
+            self._build_default_use_external_translator_field(
+                value=draft.default_use_external_translator
+            )
+        )
         actions = BoxLayout(
             orientation=self._layout_spec.action_orientation,
             spacing=12,
@@ -501,6 +508,25 @@ class SettingsScreen(BaseShellScreen):
             size=(72, 36),
         )
         row.add_widget(self._default_compile_mo_switch)
+        card.add_widget(row)
+        return card
+
+    def _build_default_use_external_translator_field(self, *, value: bool) -> SurfaceBoxLayout:
+        card = _build_field_card(
+            title="Default External Translator",
+            help_text=(
+                "Controls whether new project drafts start with the external translator "
+                "enabled for translation workflows."
+            ),
+        )
+        row = BoxLayout(orientation="horizontal", spacing=12, size_hint_y=None, height=40)
+        row.add_widget(WrappedLabel(text="Use External Translator", font_size=14, bold=True))
+        self._default_use_external_translator_switch = Switch(
+            active=value,
+            size_hint=(None, None),
+            size=(72, 36),
+        )
+        row.add_widget(self._default_use_external_translator_switch)
         card.add_widget(row)
         return card
 
@@ -864,6 +890,13 @@ class SettingsScreen(BaseShellScreen):
                 draft = replace(
                     draft,
                     default_compile_mo=self._default_compile_mo_switch.active,
+                )
+            if self._default_use_external_translator_switch is not None:
+                draft = replace(
+                    draft,
+                    default_use_external_translator=(
+                        self._default_use_external_translator_switch.active
+                    ),
                 )
             if self._sync_progress_log_limit_input is not None:
                 limit_text = self._sync_progress_log_limit_input.text.strip()

@@ -105,9 +105,10 @@ class FailingAuditAndPOWorkflowService(StubProjectWorkflowService):
         project_id: str,
         locales: str | None = None,
         compile_mo: bool | None = None,
+        use_external_translator: bool | None = None,
         progress_callback: Callable[[POProcessingProgress], None] | None = None,
     ) -> POProcessingSummaryViewModel:
-        del locales, compile_mo, progress_callback
+        del locales, compile_mo, use_external_translator, progress_callback
         msg = f"PO processing failed for {project_id}."
         raise ControlledServiceError(msg)
 
