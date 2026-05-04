@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Callable, Iterator
 from dataclasses import dataclass
+from pathlib import Path
 from types import SimpleNamespace
 from typing import Any, cast
 
@@ -12,6 +13,7 @@ import pytest
 from polyglot_site_translator.domain.remote_connections.models import (
     RemoteConnectionConfig,
     RemoteConnectionConfigInput,
+    RemoteConnectionFlags,
     RemoteConnectionSessionState,
     RemoteConnectionTestResult,
     RemoteConnectionTypeDescriptor,
@@ -25,10 +27,12 @@ from polyglot_site_translator.infrastructure.remote_connections.base import (
     BaseRemoteConnectionProvider,
     BaseRemoteConnectionSession,
     RemoteConnectionDependencyError,
+    RemoteConnectionDirectoryError,
     RemoteConnectionDownloadError,
     RemoteConnectionListingError,
     RemoteConnectionOperationError,
     RemoteConnectionTransportError,
+    RemoteConnectionUploadError,
 )
 
 
@@ -1386,3 +1390,348 @@ def test_build_ssh_client_uses_paramiko_factory(monkeypatch: pytest.MonkeyPatch)
     )
 
     assert ssh._build_ssh_client() is sentinel
+
+
+def test_base_remote_provider_short_lived_operations_delegate_and_close_sessions() -> None:
+    @dataclass
+    class _DownloadSession(_ListBackedSession):
+        def download_file(self, remote_path: str, progress_callback: Any = None) -> bytes:
+            return b"payload"
+
+    class _OperationBackedProvider(BaseRemoteConnectionProvider):
+        descriptor = RemoteConnectionTypeDescriptor(
+            connection_type="sftp",
+            display_name="SFTP",
+            default_port=22,
+        )
+
+        def __init__(self) -> None:
+            self.download_session = _DownloadSession(files=[])
+            self.ensure_session = _ListBackedSession(files=[])
+            self.upload_session = _ListBackedSession(files=[])
+            self._opened_sessions = [
+                self.download_session,
+                self.ensure_session,
+                self.upload_session,
+            ]
+
+        def test_connection(
+            self,
+            config: RemoteConnectionConfigInput,
+        ) -> RemoteConnectionTestResult:
+            return RemoteConnectionTestResult(
+                success=True,
+                connection_type=config.connection_type,
+                host=config.host,
+                port=config.port,
+                message="ok",
+                error_code=None,
+            )
+
+        def open_session(self, config: RemoteConnectionConfig) -> _ListBackedSession:
+            return self._opened_sessions.pop(0)
+
+    provider = _OperationBackedProvider()
+
+    payload = provider.download_file(_build_ssh_config(), "/srv/app/messages.po")
+    created_segments = provider.ensure_remote_directory(_build_ssh_config(), "/srv/app/locale")
+    provider.upload_file(_build_ssh_config(), "/srv/app/messages.po", b"hola")
+
+    assert payload == b"payload"
+    assert created_segments == 1
+    assert provider.upload_session.uploaded_files == {"/srv/app/messages.po": b"hola"}
+    assert provider.download_session.close_calls == 1
+    assert provider.ensure_session.close_calls == 1
+    assert provider.upload_session.close_calls == 1
+
+
+def test_ftp_session_wraps_remote_directory_creation_failures(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class _DirectoryFailingFtpClient(_FakeFtpClient):
+        def mkd(self, remote_path: str) -> str:
+            self.actions.append(f"mkd:{remote_path}")
+            msg = f"cannot create {remote_path}"
+            raise OSError(msg)
+
+    fake_client = _DirectoryFailingFtpClient(actions=[], listing={"/srv/app": []}, file_bytes={})
+    provider = ftp.FTPRemoteConnectionProvider()
+    monkeypatch.setattr(provider, "_build_client", lambda: fake_client)
+    session = provider.open_session(_build_ftp_config())
+
+    with pytest.raises(
+        RemoteConnectionOperationError,
+        match="cannot create /srv/app/locale",
+    ) as error:
+        session.ensure_remote_directory("/srv/app/locale")
+
+    assert error.value.error_code == "remote_directory_failed"
+
+
+def test_ftp_provider_wraps_upload_failures_as_os_errors(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class _UploadFailingFtpClient(_FakeFtpClient):
+        def storbinary(self, command: str, payload: Any) -> str:
+            self.actions.append(f"storbinary:{command}")
+            msg = "upload failed for remote file"
+            raise OSError(msg)
+
+    fake_client = _UploadFailingFtpClient(actions=[], listing={"/srv/app": []}, file_bytes={})
+    provider = ftp.FTPRemoteConnectionProvider()
+    monkeypatch.setattr(provider, "_build_client", lambda: fake_client)
+
+    with pytest.raises(
+        RemoteConnectionOperationError,
+        match="upload failed for remote file",
+    ) as error:
+        provider.upload_file(_build_ftp_config(), "/srv/app/messages.po", b"payload")
+
+    assert error.value.error_code == "upload_failed"
+
+
+def test_close_ftp_client_ignores_socket_close_failures_after_quit_os_error() -> None:
+    class _SocketCloseFailingFtpClient:
+        def quit(self) -> None:
+            msg = "network down"
+            raise OSError(msg)
+
+        def close(self) -> None:
+            msg = "socket close failed"
+            raise OSError(msg)
+
+    ftp._close_ftp_client(cast(Any, _SocketCloseFailingFtpClient()))
+
+
+def test_close_ftp_socket_ignores_attribute_errors() -> None:
+    class _AttributeFailingFtpSocket:
+        def close(self) -> None:
+            msg = "close unavailable"
+            raise AttributeError(msg)
+
+    ftp._close_ftp_socket(cast(Any, _AttributeFailingFtpSocket()))
+
+
+def test_ftp_emit_progress_calls_callback() -> None:
+    events: list[object] = []
+
+    ftp._emit_progress(events.append, cast(Any, object()))
+
+    assert len(events) == 1
+
+
+def test_ftp_error_type_helpers_cover_directory_upload_and_default_cases() -> None:
+    assert (
+        ftp._ftp_error_type_for(
+            error_code="remote_directory_failed",
+            default_code="remote_directory_failed",
+        )
+        is RemoteConnectionDirectoryError
+    )
+    assert (
+        ftp._ftp_error_type_for(
+            error_code="upload_failed",
+            default_code="upload_failed",
+        )
+        is RemoteConnectionUploadError
+    )
+    assert (
+        ftp._ftp_error_type_for(
+            error_code="other_failure",
+            default_code="other_failure",
+        )
+        is RemoteConnectionOperationError
+    )
+
+
+def test_sftp_session_wraps_remote_directory_creation_failures(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class _DirectoryFailingSftpClient(_FakeSftpClient):
+        def mkdir(self, remote_path: str) -> None:
+            self.actions.append(f"mkdir:{remote_path}")
+            msg = f"cannot create {remote_path}"
+            raise OSError(msg)
+
+    sftp_client = _DirectoryFailingSftpClient(listing={"/srv/app": []}, file_bytes={})
+    ssh_client = _FakeSshClient(sftp_client)
+    monkeypatch.setattr(ssh, "_connect_ssh_client", lambda config: ssh_client)
+    session = ssh.SFTPRemoteConnectionProvider().open_session(_build_ssh_config())
+
+    with pytest.raises(
+        RemoteConnectionOperationError,
+        match="cannot create /srv/app/locale",
+    ) as error:
+        session.ensure_remote_directory("/srv/app/locale")
+
+    assert error.value.error_code == "remote_directory_failed"
+
+
+def test_sftp_session_wraps_upload_errors(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class _UploadFailingSftpClient(_FakeSftpClient):
+        def file(self, remote_path: str, *, mode: str) -> _FakeRemoteFile:
+            msg = "Broken pipe"
+            raise OSError(msg)
+
+    sftp_client = _UploadFailingSftpClient(listing={}, file_bytes={})
+    ssh_client = _FakeSshClient(sftp_client)
+    monkeypatch.setattr(ssh, "_connect_ssh_client", lambda config: ssh_client)
+    session = ssh.SFTPRemoteConnectionProvider().open_session(_build_ssh_config())
+
+    with pytest.raises(RemoteConnectionOperationError, match="Broken pipe") as error:
+        session.upload_file("/srv/app/messages.po", b"payload")
+
+    assert error.value.error_code == "transport_io_failed"
+
+
+def test_iter_ssh_files_wraps_open_sftp_failures(monkeypatch: pytest.MonkeyPatch) -> None:
+    class _OpenSftpFailingSshClient(_FakeSshClient):
+        def open_sftp(self) -> _FakeSftpClient:
+            self.actions.append("open_sftp")
+            msg = "Broken pipe"
+            raise OSError(msg)
+
+    ssh_client = _OpenSftpFailingSshClient(_FakeSftpClient(listing={}, file_bytes={}))
+    monkeypatch.setattr(ssh, "_connect_ssh_client", lambda config: ssh_client)
+
+    with pytest.raises(RemoteConnectionTransportError, match="Broken pipe") as error:
+        list(ssh._iter_ssh_files(_build_ssh_config()))
+
+    assert error.value.error_code == "transport_io_failed"
+    assert ssh_client.actions == ["open_sftp", "ssh_close"]
+
+
+def test_download_ssh_file_wraps_open_sftp_failures(monkeypatch: pytest.MonkeyPatch) -> None:
+    class _OpenSftpFailingSshClient(_FakeSshClient):
+        def open_sftp(self) -> _FakeSftpClient:
+            self.actions.append("open_sftp")
+            msg = "Broken pipe"
+            raise OSError(msg)
+
+    ssh_client = _OpenSftpFailingSshClient(_FakeSftpClient(listing={}, file_bytes={}))
+    monkeypatch.setattr(ssh, "_connect_ssh_client", lambda config: ssh_client)
+
+    with pytest.raises(RemoteConnectionTransportError, match="Broken pipe") as error:
+        ssh._download_ssh_file(_build_ssh_config(), "/srv/app/messages.po", None, "SFTP")
+
+    assert error.value.error_code == "transport_io_failed"
+    assert ssh_client.actions == ["open_sftp", "ssh_close"]
+
+
+def test_connect_ssh_client_handles_missing_paramiko_module_during_host_key_policy(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    fake_client = _FakeSshClient(_FakeSftpClient(listing={}, file_bytes={}))
+
+    def _missing_paramiko(module_name: str) -> None:
+        msg = "No module named 'paramiko'"
+        raise ModuleNotFoundError(msg)
+
+    config = RemoteConnectionConfigInput(
+        connection_type="sftp",
+        host="example.test",
+        port=22,
+        username="deploy",
+        password="secret",
+        remote_path="/srv/app",
+        flags=RemoteConnectionFlags(verify_host=False),
+    )
+    monkeypatch.setattr(ssh, "_build_ssh_client", lambda: fake_client)
+    monkeypatch.setattr(ssh, "_load_paramiko_module_if_available", lambda: None)
+    monkeypatch.setattr(ssh, "import_module", _missing_paramiko)
+
+    with pytest.raises(RemoteConnectionDependencyError) as error:
+        ssh._connect_ssh_client(config)
+
+    assert error.value.error_code == "missing_dependency"
+    assert fake_client.actions == ["load_system_host_keys", "ssh_close"]
+
+
+def test_load_paramiko_helpers_handle_missing_module(monkeypatch: pytest.MonkeyPatch) -> None:
+    def _missing_paramiko(module_name: str) -> None:
+        msg = "No module named 'paramiko'"
+        raise ModuleNotFoundError(msg)
+
+    monkeypatch.setattr(ssh, "import_module", _missing_paramiko)
+
+    assert ssh._load_paramiko_module_if_available() is None
+    assert ssh._ssh_runtime_error_types() == (OSError, TimeoutError, EOFError)
+
+
+def test_configure_host_key_policy_imports_paramiko_when_needed(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    actions: list[str] = []
+
+    class _FakeAutoAddPolicy:
+        pass
+
+    class _RecordingSshClient:
+        def load_system_host_keys(self) -> None:
+            actions.append("load_system_host_keys")
+
+        def load_host_keys(self, filename: str) -> None:
+            actions.append(f"load_host_keys:{filename}")
+
+        def set_missing_host_key_policy(self, policy: object) -> None:
+            actions.append(f"set_policy:{policy.__class__.__name__}")
+
+    monkeypatch.setattr(Path, "home", lambda: tmp_path)
+    monkeypatch.setattr(
+        ssh,
+        "import_module",
+        lambda module_name: SimpleNamespace(AutoAddPolicy=_FakeAutoAddPolicy),
+    )
+    ssh._configure_host_key_policy(
+        ssh_client=_RecordingSshClient(),
+        config=RemoteConnectionConfigInput(
+            connection_type="sftp",
+            host="example.test",
+            port=22,
+            username="deploy",
+            password="secret",
+            remote_path="/srv/app",
+            flags=RemoteConnectionFlags(verify_host=False),
+        ),
+        paramiko_module=None,
+    )
+
+    assert actions[:3] == [
+        "load_system_host_keys",
+        f"load_host_keys:{tmp_path / '.ssh' / 'known_hosts'}",
+        "set_policy:_FakeAutoAddPolicy",
+    ]
+
+
+def test_ssh_error_type_helpers_cover_remaining_error_categories() -> None:
+    assert (
+        ssh._ssh_error_type_for(
+            error_code="missing_dependency",
+            default_code="ssh_connection_failed",
+        )
+        is RemoteConnectionDependencyError
+    )
+    assert (
+        ssh._ssh_error_type_for(
+            error_code="remote_directory_failed",
+            default_code="remote_directory_failed",
+        )
+        is RemoteConnectionDirectoryError
+    )
+    assert (
+        ssh._ssh_error_type_for(
+            error_code="upload_failed",
+            default_code="upload_failed",
+        )
+        is RemoteConnectionUploadError
+    )
+    assert (
+        ssh._ssh_error_type_for(
+            error_code="other_failure",
+            default_code="other_failure",
+        )
+        is RemoteConnectionOperationError
+    )

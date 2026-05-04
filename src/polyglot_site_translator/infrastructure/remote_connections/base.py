@@ -133,28 +133,22 @@ class BaseRemoteConnectionSession(ABC):
                 error_code="remote_session_failed",
                 message=msg,
             )
-        last_error: RemoteConnectionOperationError | None = None
-        for attempt_number in range(1, self._max_connect_attempts + 1):
+        attempt_number = 1
+        while True:
             try:
                 self._connect(progress_callback)
             except RemoteConnectionOperationError as error:
-                last_error = error
                 self._reset_after_failed_connect()
-                if attempt_number >= self._max_connect_attempts or not self._should_retry_connect(
+                if attempt_number < self._max_connect_attempts and self._should_retry_connect(
                     error
                 ):
-                    break
+                    attempt_number += 1
+                    continue
+                self._state = RemoteConnectionSessionState.FAILED
+                raise
             else:
                 self._state = RemoteConnectionSessionState.OPEN
                 return
-        self._state = RemoteConnectionSessionState.FAILED
-        if last_error is not None:
-            raise last_error
-        msg = "Remote session could not be opened."
-        raise RemoteConnectionOperationError(
-            error_code="remote_session_open_failed",
-            message=msg,
-        )
 
     def _should_retry_connect(self, error: RemoteConnectionOperationError) -> bool:
         return error.error_code in {"connection_timeout", "transport_io_failed"}

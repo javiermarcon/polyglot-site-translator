@@ -39,6 +39,16 @@ def test_load_settings_returns_defaults_when_file_does_not_exist(tmp_path: Path)
     assert settings_state.app_settings.last_opened_screen == "dashboard"
 
 
+def test_load_app_settings_returns_default_persisted_settings_when_file_is_missing(
+    tmp_path: Path,
+) -> None:
+    service = TomlSettingsService(tmp_path / SETTINGS_FILENAME)
+
+    loaded_settings = service._load_app_settings()
+
+    assert loaded_settings.database_directory == str(tmp_path)
+
+
 def test_save_settings_writes_toml_and_roundtrips_values(tmp_path: Path) -> None:
     settings_path = tmp_path / SETTINGS_FILENAME
     service = TomlSettingsService(settings_path)
@@ -549,6 +559,30 @@ def test_resolve_user_config_dir_uses_darwin_location(
     )
 
 
+def test_resolve_user_config_dir_uses_windows_and_posix_branches(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.delenv(settings_module.CONFIG_DIR_ENV_VAR, raising=False)
+    monkeypatch.setattr(SETTINGS_MODULE.os, "name", "nt", raising=False)
+    monkeypatch.setattr(
+        settings_module,
+        "_resolve_windows_config_dir",
+        lambda: Path("/windows/config"),
+    )
+
+    assert resolve_user_config_dir() == Path("/windows/config")
+
+    monkeypatch.setattr(SETTINGS_MODULE.os, "name", "posix", raising=False)
+    monkeypatch.setattr(SETTINGS_MODULE.sys, "platform", "linux", raising=False)
+    monkeypatch.setattr(
+        settings_module,
+        "_resolve_posix_config_dir",
+        lambda: Path("/posix/config"),
+    )
+
+    assert resolve_user_config_dir() == Path("/posix/config")
+
+
 def test_resolve_user_config_dir_uses_xdg_config_home(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -564,6 +598,45 @@ def test_resolve_posix_config_dir_uses_fallback(
     monkeypatch.setattr(SETTINGS_MODULE.Path, "home", lambda: Path("/home/tester"))
 
     assert _resolve_posix_config_dir() == Path("/home/tester/.config/polyglot-site-translator")
+
+
+def test_translation_helpers_reject_non_table_sections_directly() -> None:
+    with pytest.raises(
+        ControlledServiceError,
+        match=r"The \[translation\] settings section must be a TOML table\.",
+    ):
+        SETTINGS_MODULE._read_translation_default_compile_mo({"translation": 3}, True)
+
+    with pytest.raises(
+        ControlledServiceError,
+        match=r"The \[translation\] settings section must be a TOML table\.",
+    ):
+        SETTINGS_MODULE._read_translation_default_use_external_translator({"translation": 3}, True)
+
+
+def test_validate_sync_scope_settings_rejects_blank_framework_types_directly() -> None:
+    with pytest.raises(
+        ControlledServiceError,
+        match=r"Framework sync rules require a non-empty framework type\.",
+    ):
+        SETTINGS_MODULE._validate_sync_scope_settings(
+            AdapterSyncScopeSettings(
+                framework_rule_sets=(
+                    FrameworkSyncRuleSet(
+                        framework_type="   ",
+                        rules=(
+                            ConfiguredSyncRule(
+                                relative_path=".venv",
+                                filter_type=SyncFilterType.DIRECTORY,
+                                behavior=SyncRuleBehavior.EXCLUDE,
+                                description="Ignore virtualenv.",
+                                is_enabled=True,
+                            ),
+                        ),
+                    ),
+                )
+            )
+        )
 
 
 def _custom_settings() -> AppSettingsViewModel:

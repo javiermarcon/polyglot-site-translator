@@ -30,6 +30,7 @@ from polyglot_site_translator.services.po_processing import (
     _group_locales_by_base,
     _is_effectively_empty_translation,
     _is_translated,
+    _resolve_processing_locales,
     _synchronize_family,
     _translate_missing_entries,
 )
@@ -257,6 +258,35 @@ def test_process_site_skips_external_translation_when_site_disables_it(tmp_path:
     assert result.entries_translated == 0
     assert provider.requests == []
     assert cast(polib.POEntry, translated_po.find("Save")).msgstr == ""
+
+
+def test_process_site_returns_before_compiling_mo_when_project_disables_it(
+    tmp_path: Path,
+) -> None:
+    workspace = tmp_path / "workspace"
+    locale_dir = workspace / "locale"
+    locale_dir.mkdir(parents=True, exist_ok=True)
+    _write_po(locale_dir / "messages-es_ES.po", [("Save", "Guardar")])
+    service = POProcessingService(repository=PolibPOCatalogRepository())
+
+    result = service.process_site(
+        RegisteredSite(
+            project=SiteProject(
+                id="site-1",
+                name="Site One",
+                framework_type="wordpress",
+                local_path=str(workspace),
+                default_locale="es_ES",
+                is_active=True,
+                compile_mo=False,
+            ),
+            remote_connection=None,
+        )
+    )
+
+    assert result.mo_files_compiled == 0
+    assert result.compilation_failures == ()
+    assert not (locale_dir / "messages-es_ES.mo").exists()
 
 
 def test_process_site_collects_translation_failures_and_continues(tmp_path: Path) -> None:
@@ -578,6 +608,32 @@ def test_find_entry_returns_matching_entry_and_none_for_missing() -> None:
 
     assert _find_entry([entry], entry.entry_id) is entry
     assert _find_entry([entry], POEntryId(context=None, msgid="Missing", msgid_plural=None)) is None
+
+
+def test_resolve_processing_locales_keeps_first_configured_locale_and_appends_new_ones() -> None:
+    resolved = _resolve_processing_locales(
+        target_files=(
+            POFileData(
+                source_path="/tmp/messages-es_ES.po",
+                relative_path="locale/messages-es_ES.po",
+                locale="es_ES",
+                family_key="messages",
+                nplurals=2,
+                entries=(),
+            ),
+            POFileData(
+                source_path="/tmp/messages-es_AR.po",
+                relative_path="locale/messages-es_AR.po",
+                locale="es_AR",
+                family_key="messages",
+                nplurals=2,
+                entries=(),
+            ),
+        ),
+        configured_locales=("es_ES",),
+    )
+
+    assert resolved == ("es_ES", "es_AR")
 
 
 def test_is_effectively_empty_translation_treats_blank_plural_maps_as_empty() -> None:

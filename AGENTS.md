@@ -276,6 +276,7 @@ All non-trivial functionality must be developed using this sequence:
    - happy path
    - edge cases
    - expected failures and exceptions
+   - end-to-end behavior for every touched user-visible workflow
 4. Add or update unit and integration tests for the same behavior.
 5. Run the tests and confirm they fail before implementation.
 6. Implement the minimum code required to satisfy the tests and scenarios.
@@ -287,6 +288,8 @@ Do not implement a feature first and add tests later.
 For every meaningful feature:
 
 - acceptance behavior must be specified first
+- `.feature` coverage must exist for the externally visible workflow from end to end
+- touched user-visible workflows must not rely only on unit or integration tests
 - test coverage must precede implementation
 - regression tests must be added for bug fixes
 
@@ -308,7 +311,34 @@ For any non-trivial new or modified logic, unit tests must:
 - cover important edge cases
 - cover expected errors and exceptions
 - include regression tests for bug fixes
-- reach at least 95% coverage for the relevant unit-tested logic unless a narrow, explicit exception is justified
+- reach at least 99% coverage for the relevant unit-tested logic unless a narrow, explicit exception is justified
+
+For touched production modules, tests are also expected to cover all relevant:
+
+- functions
+- methods
+- classes with behavior
+- meaningful branches
+
+Coverage work must be intentional, not incidental. Tests must explicitly exercise:
+
+- the normal success path
+- edge and boundary cases
+- invalid or malformed input
+- operational failures
+- explicit exceptions and typed error paths
+
+The repository target is to keep coverage as close as possible to 99% for touched logic and to avoid leaving meaningful branches, methods, or helper behaviors untested. If any relevant branch, function, method, class behavior, or error path remains uncovered, that gap must be called out explicitly in the final report with a concrete reason.
 
 Do not treat “some tests exist” as sufficient completion.
 A task is not done if meaningful branches and failure modes remain untested.
+
+For any non-trivial new or modified user-visible workflow, `.feature` scenarios must also cover all relevant end-to-end:
+
+- happy paths
+- important edge cases
+- invalid input and validation outcomes visible to the operator
+- controlled operational failures
+- expected exceptions or surfaced error states
+
+A task is not done if a touched workflow is only covered at unit level but not through the relevant end-to-end feature scenarios.

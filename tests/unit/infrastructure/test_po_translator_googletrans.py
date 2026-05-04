@@ -18,6 +18,8 @@ from polyglot_site_translator.domain.po_processing.errors import (
 )
 from polyglot_site_translator.infrastructure.po_translator_googletrans import (
     GoogleTransPOTranslationProvider,
+    _base_language,
+    _sanitize_text,
 )
 
 
@@ -81,6 +83,13 @@ class _MisconfiguredTranslator:
         del text, dest
         msg = "translator object has no HTTP client"
         raise AttributeError(msg)
+
+
+@dataclass
+class _UnexpectedResultTranslator:
+    async def translate(self, text: str, dest: str) -> object:
+        del text, dest
+        return {"text": "Hola"}
 
 
 def test_googletrans_provider_translates_to_target_base_language() -> None:
@@ -149,3 +158,47 @@ def test_googletrans_provider_translation_errors_keep_base_type() -> None:
 
     with pytest.raises(POProcessingTranslationError):
         provider.translate_text(text="Hello", target_locale="es_AR")
+
+
+def test_googletrans_provider_rejects_unexpected_result_type() -> None:
+    provider = GoogleTransPOTranslationProvider(translator=_UnexpectedResultTranslator())
+
+    with pytest.raises(POTranslationProviderResponseError, match="unexpected result type"):
+        provider.translate_text(text="Hello", target_locale="es_AR")
+
+
+def test_googletrans_provider_reuses_thread_local_translator_and_recreates_closed_loop(
+    monkeypatch: MonkeyPatch,
+) -> None:
+    provider = GoogleTransPOTranslationProvider(translator=None)
+    created: list[_StubTranslator] = []
+
+    class _TranslatorFactory(_StubTranslator):
+        def __init__(self, *, http2: bool) -> None:
+            assert http2 is False
+            super().__init__(translated_text="Hola")
+            created.append(self)
+
+    monkeypatch.setattr(
+        "polyglot_site_translator.infrastructure.po_translator_googletrans.Translator",
+        _TranslatorFactory,
+    )
+
+    first_translator = provider._translator_for_current_thread()
+    second_translator = provider._translator_for_current_thread()
+
+    assert first_translator is second_translator
+    assert len(created) == 1
+
+    loop = provider._loop()
+    loop.close()
+
+    recreated_loop = provider._loop()
+    assert recreated_loop is not loop
+    recreated_loop.close()
+
+
+def test_googletrans_helpers_cover_locale_and_text_sanitization() -> None:
+    assert _base_language("es_AR") == "es"
+    assert _base_language("PT") == "pt"
+    assert _sanitize_text("Hello {name} % 1 $ s") == "Hello {{name}} %1$s"

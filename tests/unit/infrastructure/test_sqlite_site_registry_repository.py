@@ -152,6 +152,17 @@ def test_sqlite_repository_updates_a_site(tmp_path: Path) -> None:
     assert repository.get_site(site.id) == updated_site
 
 
+def test_sqlite_repository_update_can_remove_a_remote_connection(tmp_path: Path) -> None:
+    repository = _build_repository(tmp_path)
+    site = _build_site()
+    repository.create_site(site)
+    updated_site = RegisteredSite(project=site.project, remote_connection=None)
+
+    repository.update_site(updated_site)
+
+    assert repository.get_site(site.id).remote_connection is None
+
+
 def test_sqlite_repository_returns_an_empty_list_when_no_sites_exist(tmp_path: Path) -> None:
     repository = _build_repository(tmp_path)
 
@@ -173,6 +184,43 @@ def test_sqlite_repository_rejects_duplicate_site_names(tmp_path: Path) -> None:
                     name="Marketing Site",
                     framework_type="wordpress",
                     local_path="/workspace/another",
+                    default_locale="en_US",
+                    is_active=True,
+                ),
+                remote_connection=None,
+            )
+        )
+
+
+def test_sqlite_repository_rejects_duplicate_names_during_update(tmp_path: Path) -> None:
+    repository = _build_repository(tmp_path)
+    original_site = _build_site()
+    repository.create_site(original_site)
+    repository.create_site(
+        RegisteredSite(
+            project=SiteProject(
+                id="site-2",
+                name="Other Site",
+                framework_type="wordpress",
+                local_path="/workspace/other",
+                default_locale="en_US",
+                is_active=True,
+            ),
+            remote_connection=None,
+        )
+    )
+
+    with pytest.raises(
+        ValueError,
+        match=r"A site with the name 'Marketing Site' already exists\.",
+    ):
+        repository.update_site(
+            RegisteredSite(
+                project=SiteProject(
+                    id="site-2",
+                    name="Marketing Site",
+                    framework_type="wordpress",
+                    local_path="/workspace/other",
                     default_locale="en_US",
                     is_active=True,
                 ),
@@ -355,6 +403,22 @@ def test_sqlite_repository_wraps_sqlite_errors_for_read_write_and_delete(
         repository.delete_site("site-1")
 
 
+def test_sqlite_repository_wraps_fetch_encrypted_password_read_errors(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    repository = _build_repository(tmp_path)
+
+    def fail_connect() -> sqlite3.Connection:
+        msg = "boom"
+        raise sqlite3.OperationalError(msg)
+
+    monkeypatch.setattr(repository, "_connect", fail_connect)
+
+    with pytest.raises(SiteRegistryPersistenceError, match=r"SQLite site registry read failed"):
+        repository.fetch_encrypted_password("site-1")
+
+
 def test_sqlite_repository_wraps_schema_preparation_errors(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
@@ -379,6 +443,85 @@ def test_sqlite_repository_wraps_schema_preparation_errors(
             location=location,
             secret_cipher=LocalKeySiteSecretCipher(tmp_path / "site_registry.key"),
         )
+
+
+def test_sqlite_repository_wraps_sqlite_schema_initialization_errors(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    location = SQLiteDatabaseLocation(
+        directory=tmp_path / "nested",
+        filename="registry.sqlite3",
+        database_path=tmp_path / "nested" / "registry.sqlite3",
+    )
+
+    def fail_connect(_self: SqliteSiteRegistryRepository) -> sqlite3.Connection:
+        msg = "boom"
+        raise sqlite3.OperationalError(msg)
+
+    monkeypatch.setattr(SqliteSiteRegistryRepository, "_connect", fail_connect)
+
+    with pytest.raises(
+        SiteRegistryPersistenceError,
+        match=r"SQLite schema initialization failed at",
+    ):
+        SqliteSiteRegistryRepository(
+            location=location,
+            secret_cipher=LocalKeySiteSecretCipher(tmp_path / "site_registry.key"),
+        )
+
+
+def test_sqlite_repository_migrates_remote_filter_flag_column(tmp_path: Path) -> None:
+    database_path = tmp_path / "legacy-remote.sqlite3"
+    with sqlite3.connect(database_path) as connection:
+        connection.execute(
+            """
+            CREATE TABLE site_registry (
+                id TEXT PRIMARY KEY,
+                name TEXT NOT NULL UNIQUE,
+                framework_type TEXT NOT NULL,
+                local_path TEXT NOT NULL UNIQUE,
+                default_locale TEXT NOT NULL,
+                compile_mo INTEGER NOT NULL DEFAULT 1,
+                use_external_translator INTEGER NOT NULL DEFAULT 1,
+                is_active INTEGER NOT NULL CHECK (is_active IN (0, 1))
+            )
+            """
+        )
+        connection.execute(
+            """
+            CREATE TABLE site_remote_connections (
+                id TEXT PRIMARY KEY,
+                site_project_id TEXT NOT NULL UNIQUE,
+                connection_type TEXT NOT NULL,
+                host TEXT NOT NULL,
+                port INTEGER NOT NULL,
+                username TEXT NOT NULL,
+                password_encrypted TEXT NOT NULL,
+                remote_path TEXT NOT NULL,
+                passive_mode INTEGER NOT NULL CHECK (passive_mode IN (0, 1)),
+                verify_host INTEGER NOT NULL CHECK (verify_host IN (0, 1)),
+                FOREIGN KEY (site_project_id) REFERENCES site_registry(id) ON DELETE CASCADE
+            )
+            """
+        )
+
+    repository = SqliteSiteRegistryRepository(
+        location=SQLiteDatabaseLocation(
+            directory=tmp_path,
+            filename="legacy-remote.sqlite3",
+            database_path=database_path,
+        ),
+        secret_cipher=LocalKeySiteSecretCipher(tmp_path / "site_registry.key"),
+    )
+
+    with sqlite3.connect(database_path) as connection:
+        column_names = {
+            str(row[1]) for row in connection.execute("PRAGMA table_info(site_remote_connections)")
+        }
+
+    assert isinstance(repository, SqliteSiteRegistryRepository)
+    assert "use_adapter_sync_filters" in column_names
 
 
 def test_configured_sqlite_repository_resolves_settings_and_wraps_load_failures(

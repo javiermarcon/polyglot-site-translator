@@ -348,6 +348,43 @@ def test_implicit_ftp_tls_wraps_socket_and_reads_server_response(
     ]
 
 
+def test_implicit_ftp_tls_keeps_existing_timeout_when_timeout_is_omitted(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class _FakeRawSocket:
+        family = 123
+
+    class _FakeWrappedSocket:
+        def makefile(self, mode: str, encoding: str) -> str:
+            return "wrapped-file"
+
+    class _FakeContext:
+        def wrap_socket(self, sock: object, *, server_hostname: str) -> _FakeWrappedSocket:
+            assert sock is raw_socket
+            assert server_hostname == "example.test"
+            return wrapped_socket
+
+    raw_socket = _FakeRawSocket()
+    wrapped_socket = _FakeWrappedSocket()
+    monkeypatch.setattr(socket, "create_connection", lambda *args: raw_socket)
+
+    client = cast(Any, object.__new__(ftp.ImplicitFtpTls))
+    client.context = _FakeContext()
+    client.encoding = "utf-8"
+    client.timeout = 30
+    client.getresp = lambda: "220 ready"
+
+    response = ftp.ImplicitFtpTls.connect(
+        client,
+        host="example.test",
+        port=990,
+        timeout=None,
+    )
+
+    assert response == "220 ready"
+    assert client.timeout == 30
+
+
 def test_implicit_ftps_provider_uses_tls_context_and_returns_success(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -424,6 +461,40 @@ def test_implicit_ftps_provider_lists_remote_files(monkeypatch: pytest.MonkeyPat
         "mlsd:/remote/path",
         "quit",
     ]
+
+
+def test_close_ftp_client_uses_oserror_branch_when_library_error_tuple_excludes_it(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    events: list[str] = []
+
+    class _OSErrorFtpClient:
+        def quit(self) -> None:
+            events.append("quit")
+            msg = "network down"
+            raise OSError(msg)
+
+        def close(self) -> None:
+            events.append("close")
+
+    monkeypatch.setattr(ftp, "all_errors", (EOFError,))
+
+    ftp._close_ftp_client(cast(Any, _OSErrorFtpClient()))
+
+    assert events == ["quit", "close"]
+
+
+def test_close_ftp_socket_uses_oserror_branch_when_library_error_tuple_excludes_it(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class _OSErrorSocketClient:
+        def close(self) -> None:
+            msg = "socket close failed"
+            raise OSError(msg)
+
+    monkeypatch.setattr(ftp, "all_errors", (EOFError,))
+
+    ftp._close_ftp_socket(cast(Any, _OSErrorSocketClient()))
 
 
 class _FakeSftpClient:

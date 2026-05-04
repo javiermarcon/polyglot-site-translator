@@ -17,6 +17,7 @@ from polyglot_site_translator.domain.remote_connections.models import (
     RemoteConnectionTestResult,
     RemoteConnectionTypeDescriptor,
 )
+from polyglot_site_translator.domain.site_registry.errors import SiteRegistryValidationError
 from polyglot_site_translator.domain.site_registry.models import (
     RegisteredSite,
     SiteRegistrationInput,
@@ -152,6 +153,16 @@ def test_site_registry_service_allows_projects_without_remote_connections() -> N
     created_site = service.create_site(_build_registration(remote_connection=None))
 
     assert created_site.remote_connection is None
+
+
+def test_site_registry_service_rejects_remote_connection_tests_without_remote_settings() -> None:
+    service = _build_service()
+
+    with pytest.raises(
+        SiteRegistryValidationError,
+        match=r"Remote connection test requires a configured remote connection\.",
+    ):
+        service.test_remote_connection(_build_registration(remote_connection=None))
 
 
 def test_site_registry_service_normalizes_comma_separated_default_locales() -> None:

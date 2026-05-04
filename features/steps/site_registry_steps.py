@@ -334,6 +334,52 @@ def step_update_site(context: object) -> None:
     )
 
 
+@when("the operator updates the persisted site to remove the remote connection")
+def step_remove_remote_connection(context: object) -> None:
+    typed_context = _context_with_shell(context)
+    typed_context.shell.save_project_edits(
+        typed_context.created_site_id,
+        SiteEditorViewModel(
+            site_id=typed_context.created_site_id,
+            name="Marketing Site",
+            framework_type="wordpress",
+            local_path="/workspace/marketing-site-v2",
+            default_locale="en_US",
+            compile_mo=True,
+            connection_type="none",
+            remote_host="",
+            remote_port="",
+            remote_username="",
+            remote_password="",
+            remote_path="",
+            is_active=True,
+        ),
+    )
+
+
+@when("the operator attempts to register another site with the same name")
+def step_attempt_duplicate_site_name(context: object) -> None:
+    typed_context = _context_with_shell(context)
+    typed_context.shell.open_project_editor_create()
+    typed_context.shell.save_new_project(
+        SiteEditorViewModel(
+            site_id=None,
+            name="Marketing Site",
+            framework_type="wordpress",
+            local_path="/workspace/marketing-site-copy",
+            default_locale="en_US",
+            compile_mo=True,
+            connection_type="ftp",
+            remote_host="ftp-copy.example.com",
+            remote_port="21",
+            remote_username="deploy",
+            remote_password="super-secret",
+            remote_path="/public_html-copy",
+            is_active=True,
+        )
+    )
+
+
 @then("the project detail route is active for the created site")
 def step_assert_created_project_route(context: object) -> None:
     typed_context = _context_with_shell(context)
@@ -558,6 +604,29 @@ def step_assert_database_filename(context: object) -> None:
 def step_assert_registry_error(context: object) -> None:
     typed_context = _context_with_shell(context)
     assert typed_context.shell.latest_error is not None
+
+
+@then("reopening the persisted site editor shows that no remote connection is configured")
+def step_assert_reopened_editor_without_remote_connection(context: object) -> None:
+    typed_context = _context_with_shell(context)
+    typed_context.shell.open_project_editor_edit(typed_context.created_site_id)
+    assert typed_context.shell.project_editor_state is not None
+    editor = typed_context.shell.project_editor_state.editor
+    assert editor.connection_type == "none"
+    assert editor.remote_host == ""
+    assert editor.remote_port == ""
+    assert editor.remote_username == ""
+    assert editor.remote_password == ""
+    assert editor.remote_path == ""
+
+
+@then("the project editor shows the duplicate site-name validation error")
+def step_assert_duplicate_site_name_validation_error(context: object) -> None:
+    typed_context = _context_with_shell(context)
+    assert typed_context.shell.project_editor_state is not None
+    assert typed_context.shell.project_editor_state.status == "failed"
+    assert typed_context.shell.project_editor_state.status_message is not None
+    assert "already exists" in typed_context.shell.project_editor_state.status_message
     assert typed_context.shell.latest_error != ""
 
 

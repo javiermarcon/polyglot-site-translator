@@ -25,3 +25,17 @@ Feature: Discoverable remote connection workflows
     And the operator fills a valid "ftp" remote connection draft
     And the operator runs the remote connection test from the editor
     Then the project editor shows a failed remote connection test result
+
+  Scenario: Reject a remote connection test without configured remote settings
+    Given the frontend shell is wired with SQLite-backed remote connection services
+    When the operator opens the create project workflow
+    And the operator fills a draft without remote connection
+    And the operator runs the remote connection test from the editor
+    Then the project editor shows the missing remote connection validation error
+
+  Scenario: Reject a remote connection test with an invalid remote port
+    Given the frontend shell is wired with SQLite-backed remote connection services
+    When the operator opens the create project workflow
+    And the operator fills an invalid "sftp" remote connection draft
+    And the operator runs the remote connection test from the editor
+    Then the project editor shows the invalid remote port validation error

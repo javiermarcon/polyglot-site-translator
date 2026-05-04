@@ -64,3 +64,10 @@ Feature: PO processing workflow
     Then the PO processing result reports completed with errors status
     And the PO processing result reports translated entries
     And the PO processing result reports failed entries for the source file
+
+  Scenario: Continue processing when one MO file fails during compilation
+    Given a site project with one MO compilation failure and one compilable locale variant
+    When the operator runs the PO processing workflow for that site
+    Then the PO processing result reports completed with errors status
+    And the PO processing result reports one processed family
+    And the PO processing result reports failed mo files for the source file

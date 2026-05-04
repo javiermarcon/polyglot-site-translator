@@ -51,6 +51,14 @@ Feature: SQLite-backed site registry management
     Then the project detail shows the updated persisted site registry values
     And reopening the persisted site editor shows the updated remote connection values
 
+  Scenario: Remove the persisted remote connection from an existing site
+    Given the frontend shell is wired with SQLite-backed site registry services
+    And a site has been registered in the SQLite registry
+    When the operator opens the edit project workflow for the persisted site
+    And the operator updates the persisted site to remove the remote connection
+    Then the project detail shows that no remote connection is configured
+    And reopening the persisted site editor shows that no remote connection is configured
+
   Scenario: Persist the project MO compilation preference
     Given the frontend shell is wired with SQLite-backed site registry services
     When the operator opens the create project workflow
@@ -91,6 +99,12 @@ Feature: SQLite-backed site registry management
     When the operator opens the create project workflow
     And the operator submits a new site registry entry with an invalid default locale
     Then the project editor shows the default locale validation error
+
+  Scenario: Reject a duplicate site name in the SQLite registry
+    Given the frontend shell is wired with SQLite-backed site registry services
+    And a site has been registered in the SQLite registry
+    When the operator attempts to register another site with the same name
+    Then the project editor shows the duplicate site-name validation error
 
   Scenario: Surface an invalid SQLite configuration through the projects flow
     Given the frontend shell is wired with SQLite-backed services and invalid database settings

@@ -4,16 +4,19 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import replace
-from typing import cast
+from typing import Any, cast
 
 import pytest
 
 from polyglot_site_translator.bootstrap import create_frontend_shell
 from polyglot_site_translator.domain.po_processing.models import POProcessingProgress
+from polyglot_site_translator.domain.sync.models import SyncProgressEvent, SyncProgressStage
+from polyglot_site_translator.presentation import frontend_shell as frontend_shell_module
 from polyglot_site_translator.presentation.contracts import FrontendServices
 from polyglot_site_translator.presentation.errors import ControlledServiceError
 from polyglot_site_translator.presentation.router import RouteName
 from polyglot_site_translator.presentation.view_models import (
+    AppSettingsViewModel,
     AuditSummaryViewModel,
     POProcessingSummaryViewModel,
     ProjectDetailViewModel,
@@ -22,6 +25,8 @@ from polyglot_site_translator.presentation.view_models import (
     RemoteConnectionTestResultViewModel,
     SettingsStateViewModel,
     SiteEditorViewModel,
+    SyncProgressStateViewModel,
+    SyncStatusViewModel,
     build_default_app_settings,
 )
 from tests.support.frontend_doubles import (
@@ -111,6 +116,33 @@ class FailingAuditAndPOWorkflowService(StubProjectWorkflowService):
         del locales, compile_mo, use_external_translator, progress_callback
         msg = f"PO processing failed for {project_id}."
         raise ControlledServiceError(msg)
+
+
+class FailingSaveSettingsService(InMemorySettingsService):
+    """Settings fake that fails on save for route-persistence coverage."""
+
+    def save_settings(self, app_settings: AppSettingsViewModel) -> SettingsStateViewModel:
+        del app_settings
+        msg = "Last opened screen could not be persisted."
+        raise ControlledServiceError(msg)
+
+
+class _AliveThread:
+    def is_alive(self) -> bool:
+        return True
+
+
+class _CapturedThread:
+    def __init__(self, *args: object, name: str, **kwargs: object) -> None:
+        del args, kwargs
+        self.name = name
+        self.started = False
+
+    def is_alive(self) -> bool:
+        return False
+
+    def start(self) -> None:
+        self.started = True
 
 
 def test_open_application_menu_marks_navigation_state_as_open() -> None:
@@ -402,3 +434,282 @@ def test_shell_previews_project_editor_drafts_and_surfaces_failures() -> None:
     assert "Project editor preview unavailable" in str(
         failing_shell.project_editor_state.status_message
     )
+
+
+def test_frontend_shell_covers_runtime_helper_and_error_branches() -> None:
+    shell = create_frontend_shell(build_seeded_services())
+
+    shell.surface_unhandled_runtime_error(RuntimeError("general boom"), context="callback")
+    assert shell.latest_error is not None
+
+    shell.open_projects()
+    shell.select_project("wp-site")
+    shell.start_audit()
+    shell._set_route(RouteName.AUDIT, project_id="wp-site")
+    shell.surface_unhandled_runtime_error(RuntimeError("audit boom"), context="audit")
+    assert shell.audit_state is not None
+    assert shell.audit_state.status == "failed"
+
+    shell.open_settings()
+    shell.surface_unhandled_runtime_error(RuntimeError("settings boom"), context="settings")
+    assert shell.settings_state is not None
+    assert shell.settings_state.status == "failed"
+
+    shell.open_project_editor_create()
+    shell.surface_unhandled_runtime_error(RuntimeError("editor boom"), context="editor")
+    assert shell.project_editor_state is not None
+    assert shell.project_editor_state.status == "failed"
+
+
+def test_frontend_shell_sync_progress_helpers_cover_completed_failed_and_runtime_fallbacks(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    shell = create_frontend_shell(build_seeded_services())
+    shell.open_projects()
+    shell.select_project("wp-site")
+
+    shell.sync_progress_state = None
+    shell._record_sync_progress_event(
+        SyncProgressEvent(stage=SyncProgressStage.COMPLETED, message="ignored")
+    )
+
+    shell.sync_progress_state = SyncProgressStateViewModel(
+        project_id="wp-site",
+        project_name="Marketing Site",
+        status="running",
+        message="Running",
+        progress_current=0,
+        progress_total=0,
+        progress_is_indeterminate=True,
+        command_log_limit=2,
+        command_log=[],
+    )
+    shell._record_sync_progress_event(
+        SyncProgressEvent(
+            stage=SyncProgressStage.COMPLETED,
+            message="done",
+            total_files=3,
+            files_downloaded=3,
+        )
+    )
+    assert shell.sync_progress_state is not None
+    assert shell.sync_progress_state.status == "completed"
+
+    shell._record_sync_progress_event(
+        SyncProgressEvent(stage=SyncProgressStage.FAILED, message="failed")
+    )
+    assert shell.sync_progress_state.status == "failed"
+
+    shell._surface_background_sync_failure(RuntimeError("broken transport"))
+    assert shell.sync_state is not None
+    assert shell.sync_state.error_code == "sync_runtime_failure"
+
+    shell.sync_progress_state = SyncProgressStateViewModel(
+        project_id="wp-site",
+        project_name="Marketing Site",
+        status="running",
+        message="Running",
+        progress_current=1,
+        progress_total=1,
+        progress_is_indeterminate=False,
+        command_log_limit=2,
+        command_log=[],
+    )
+    shell.sync_state = None
+    monkeypatch.setattr(shell, "_run_sync", lambda **_kwargs: None)
+
+    def _unused_workflow(
+        _project_id: str,
+        _progress_callback: Callable[[SyncProgressEvent], None] | None = None,
+    ) -> SyncStatusViewModel:
+        msg = "This workflow should not be used directly."
+        raise AssertionError(msg)
+
+    shell._run_sync_in_background("wp-site", _unused_workflow)
+    assert shell._active_sync_thread is None
+
+
+def test_frontend_shell_requirement_and_persist_helpers_cover_remaining_branches() -> None:
+    shell = create_frontend_shell(build_seeded_services())
+
+    with pytest.raises(ValueError, match="Settings must be loaded before editing them"):
+        shell._require_settings_state()
+    with pytest.raises(ValueError, match="Project editor state must be loaded before editing"):
+        shell._require_project_editor_state()
+    with pytest.raises(ValueError, match="A project must be selected before running workflows"):
+        shell._require_project_id()
+
+    shell.settings_state = None
+    shell._persist_last_opened_screen(RouteName.DASHBOARD)
+
+    shell.open_settings()
+    state = cast(SettingsStateViewModel, shell.settings_state)
+    shell.settings_state = replace(state, status="failed")
+    shell._persist_last_opened_screen(RouteName.DASHBOARD)
+    failed_state = shell.settings_state
+    shell.settings_state = replace(
+        failed_state,
+        status="loaded",
+        app_settings=replace(failed_state.app_settings, remember_last_screen=False),
+    )
+    shell._persist_last_opened_screen(RouteName.DASHBOARD)
+
+
+def test_frontend_shell_covers_remaining_po_route_and_settings_update_branches() -> None:
+    seeded_services = build_seeded_services()
+    services = FrontendServices(
+        catalog=seeded_services.catalog,
+        workflows=seeded_services.workflows,
+        settings=FailingSaveSettingsService(_saved_settings=build_default_app_settings()),
+        registry=seeded_services.registry,
+    )
+    shell = create_frontend_shell(services)
+    shell.open_settings()
+    assert shell.settings_state is not None
+
+    shell.set_settings_database_directory("/tmp/polyglot")
+    shell.set_settings_database_filename("app.sqlite3")
+    shell.set_settings_ui_language("es")
+    assert shell.settings_state.app_settings.database_directory == "/tmp/polyglot"
+    assert shell.settings_state.app_settings.database_filename == "app.sqlite3"
+    assert shell.settings_state.app_settings.ui_language == "es"
+
+    shell.select_settings_section("ftp-reporting")
+    assert shell.settings_state.selected_section_key == "ftp-reporting"
+    assert (
+        shell.settings_state.status_message == "FTP / Reporting Settings will be available later."
+    )
+
+    shell.settings_state = replace(
+        shell.settings_state,
+        app_settings=replace(shell.settings_state.app_settings, remember_last_screen=True),
+    )
+    shell._persist_last_opened_screen(RouteName.DASHBOARD)
+    assert shell.latest_error == "Last opened screen could not be persisted."
+
+    shell.po_processing_state = None
+    shell._record_po_processing_progress(
+        POProcessingProgress(
+            processed_families=1,
+            completed_entries=1,
+            total_entries=1,
+            files_discovered=1,
+            entries_synchronized=0,
+            entries_translated=1,
+            entries_failed=0,
+            message="done",
+            current_file="file.po",
+            current_entry="Save",
+        )
+    )
+
+    shell.surface_unhandled_runtime_error(
+        RuntimeError("po thread boom"),
+        context="worker",
+        thread_name="po-processing-wp-site",
+    )
+    po_state = cast(POProcessingSummaryViewModel, shell.po_processing_state)
+    assert po_state.status == "failed"
+
+    shell.sync_progress_state = None
+    shell.surface_unhandled_runtime_error(
+        RuntimeError("sync thread boom"),
+        context="worker",
+        thread_name="sync-wp-site",
+    )
+    sync_state = cast(SyncStatusViewModel, shell.sync_state)
+    assert sync_state.status == "failed"
+
+    shell.router.go_to(RouteName.PO_PROCESSING, project_id="wp-site")
+    shell.po_processing_state = None
+    assert shell._surface_unhandled_route_error("route po boom") is True
+    route_po_state = cast(POProcessingSummaryViewModel, shell.po_processing_state)
+    assert route_po_state.summary == "route po boom"
+
+    shell.router.go_to(RouteName.SYNC, project_id="wp-site")
+    shell.sync_progress_state = None
+    shell.surface_unhandled_runtime_error(RuntimeError("sync route boom"), context="sync")
+    sync_route_state = cast(SyncStatusViewModel, shell.sync_state)
+    assert sync_route_state.summary.endswith("sync route boom")
+
+
+def test_frontend_shell_covers_thread_short_circuits_and_success_branches(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    shell = create_frontend_shell(build_seeded_services())
+    shell.open_projects()
+    shell.select_project("wp-site")
+
+    shell._active_po_processing_thread = cast(Any, _AliveThread())
+    shell.start_po_processing_async("es_ES")
+    assert shell.po_processing_state is None
+
+    shell.project_detail_state = None
+    shell.router.go_to(RouteName.PROJECT_DETAIL, project_id="wp-site")
+    monkeypatch.setattr(frontend_shell_module, "Thread", _CapturedThread)
+
+    def _unused_sync_workflow(
+        _project_id: str,
+        _progress_callback: Callable[[SyncProgressEvent], None] | None = None,
+    ) -> SyncStatusViewModel:
+        return SyncStatusViewModel(
+            status="completed",
+            files_synced=0,
+            summary="unused",
+            error_code=None,
+        )
+
+    shell._start_sync_async_with_message(
+        run_workflow=_unused_sync_workflow,
+        initial_message="Starting remote sync.",
+    )
+    sync_progress_state = cast(SyncProgressStateViewModel, shell.sync_progress_state)
+    assert sync_progress_state.project_name == "wp-site"
+
+    shell.open_project_editor_edit("wp-site")
+    project_editor_state = cast(ProjectEditorStateViewModel, shell.project_editor_state)
+    shell.project_editor_state = replace(project_editor_state, selected_section_key="remote")
+    editor = replace(project_editor_state.editor, remote_host="ftp.example.com")
+    shell.latest_error = "stale error"
+    shell.test_project_connection(editor)
+    assert shell.latest_error is None
+
+
+def test_frontend_shell_updates_existing_progress_states_for_runtime_errors() -> None:
+    shell = create_frontend_shell(build_seeded_services())
+
+    shell.po_processing_state = POProcessingSummaryViewModel(
+        status="running",
+        processed_families=1,
+        progress_current=1,
+        progress_total=2,
+        progress_is_indeterminate=True,
+        summary="running",
+        current_file="file.po",
+        current_entry="Save",
+    )
+    shell.surface_unhandled_runtime_error(
+        RuntimeError("po replace boom"),
+        context="worker",
+        thread_name="po-processing-wp-site",
+    )
+    assert shell.po_processing_state.summary.endswith("po replace boom")
+
+    shell.sync_progress_state = SyncProgressStateViewModel(
+        project_id="wp-site",
+        project_name="Marketing Site",
+        status="running",
+        message="Running",
+        progress_current=0,
+        progress_total=0,
+        progress_is_indeterminate=True,
+        command_log_limit=2,
+        command_log=[],
+    )
+    shell.surface_unhandled_runtime_error(
+        RuntimeError("sync replace boom"),
+        context="worker",
+        thread_name="sync-wp-site",
+    )
+    updated_sync_progress_state = shell.sync_progress_state
+    assert updated_sync_progress_state.status == "failed"

@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
+from types import SimpleNamespace
+from typing import cast
 
 import pytest
 
@@ -13,7 +15,10 @@ from polyglot_site_translator.domain.framework_detection.models import (
     FrameworkDetectionResult,
 )
 from polyglot_site_translator.domain.site_registry.models import RegisteredSite, SiteProject
-from polyglot_site_translator.domain.sync.errors import SyncConfigurationError
+from polyglot_site_translator.domain.sync.errors import (
+    SyncConfigurationError,
+    SyncScopePersistenceError,
+)
 from polyglot_site_translator.domain.sync.scope import (
     AdapterSyncScope,
     AdapterSyncScopeSettings,
@@ -23,11 +28,15 @@ from polyglot_site_translator.domain.sync.scope import (
     SyncFilterSpec,
     SyncFilterType,
     SyncRuleBehavior,
+    SyncRuleSource,
     SyncScopeStatus,
     build_sync_rule_key,
 )
 from polyglot_site_translator.services.framework_sync_scope import (
     FrameworkSyncScopeService,
+    _build_configured_rule_key,
+    _is_gitignore_override_key,
+    _resolve_scope_rules,
 )
 
 
@@ -334,6 +343,173 @@ def test_framework_sync_scope_service_wraps_adapter_scope_resolution_failures(
             framework_type="broken",
             project_path=tmp_path / "broken-project",
         )
+
+
+def test_framework_sync_scope_service_wraps_settings_and_gitignore_loading_failures(
+    tmp_path: Path,
+) -> None:
+    def _raise_settings_error() -> AdapterSyncScopeSettings:
+        msg = "settings boom"
+        raise OSError(msg)
+
+    settings_service = FrameworkSyncScopeService(
+        registry=FrameworkAdapterRegistry.discover_installed(),
+        sync_scope_settings_provider=_raise_settings_error,
+    )
+
+    with pytest.raises(
+        SyncConfigurationError,
+        match=r"Shared sync scope settings could not be loaded",
+    ):
+        settings_service.resolve_for_framework(
+            framework_type="wordpress",
+            project_path=tmp_path / "wp-settings",
+        )
+
+    def _raise_gitignore_error(_path: Path) -> tuple[ConfiguredSyncRule, ...]:
+        msg = "gitignore boom"
+        raise OSError(msg)
+
+    gitignore_service = FrameworkSyncScopeService(
+        registry=FrameworkAdapterRegistry.discover_installed(),
+        sync_scope_settings_provider=lambda: AdapterSyncScopeSettings(
+            global_rules=(),
+            framework_rule_sets=(),
+            use_gitignore_rules=True,
+        ),
+        gitignore_rule_loader=_raise_gitignore_error,
+    )
+
+    with pytest.raises(
+        SyncConfigurationError,
+        match=r"Project gitignore sync rules could not be resolved",
+    ):
+        gitignore_service.resolve_for_framework(
+            framework_type="wordpress",
+            project_path=tmp_path / "wp-gitignore",
+        )
+
+
+def test_framework_sync_scope_service_reraises_sync_scope_persistence_failures(
+    tmp_path: Path,
+) -> None:
+    def _raise_settings_persistence() -> AdapterSyncScopeSettings:
+        msg = "settings persistence"
+        raise SyncScopePersistenceError(msg)
+
+    settings_service = FrameworkSyncScopeService(
+        registry=FrameworkAdapterRegistry.discover_installed(),
+        sync_scope_settings_provider=_raise_settings_persistence,
+    )
+
+    with pytest.raises(SyncScopePersistenceError, match="settings persistence"):
+        settings_service.resolve_for_framework(
+            framework_type="wordpress",
+            project_path=tmp_path / "wp-settings-persistence",
+        )
+
+    def _raise_gitignore_persistence(_path: Path) -> tuple[ConfiguredSyncRule, ...]:
+        msg = "gitignore persistence"
+        raise SyncScopePersistenceError(msg)
+
+    gitignore_service = FrameworkSyncScopeService(
+        registry=FrameworkAdapterRegistry.discover_installed(),
+        sync_scope_settings_provider=lambda: AdapterSyncScopeSettings(
+            global_rules=(),
+            framework_rule_sets=(),
+            use_gitignore_rules=True,
+        ),
+        gitignore_rule_loader=_raise_gitignore_persistence,
+    )
+
+    with pytest.raises(SyncScopePersistenceError, match="gitignore persistence"):
+        gitignore_service.resolve_for_framework(
+            framework_type="wordpress",
+            project_path=tmp_path / "wp-gitignore-persistence",
+        )
+
+
+def test_framework_sync_scope_service_private_adapter_scope_errors_and_rule_key_validation(
+    tmp_path: Path,
+) -> None:
+    service = FrameworkSyncScopeService(registry=FrameworkAdapterRegistry.discover_installed())
+
+    with pytest.raises(
+        SyncConfigurationError,
+        match=r"No installed framework adapter can provide sync filters",
+    ):
+        service._load_adapter_scope(
+            framework_type="customapp",
+            adapter_name="missing_adapter",
+            project_path=tmp_path / "custom",
+        )
+
+    configured_rule = ConfiguredSyncRule(
+        relative_path="locale",
+        filter_type=SyncFilterType.DIRECTORY,
+        behavior=SyncRuleBehavior.INCLUDE,
+        description="Locale rule",
+        is_enabled=True,
+    )
+
+    with pytest.raises(ValueError, match=r"Framework-configured rules require a framework type"):
+        _build_configured_rule_key(
+            configured_rule,
+            source=SyncRuleSource.FRAMEWORK,
+        )
+
+    with pytest.raises(ValueError, match=r"Unsupported configured sync rule source"):
+        _build_configured_rule_key(
+            configured_rule,
+            source=cast(SyncRuleSource, SimpleNamespace(value="unsupported")),
+        )
+
+
+def test_framework_sync_scope_helpers_cover_override_skip_and_gitignore_key_detection() -> None:
+    overrides = (
+        ProjectSyncRuleOverride(
+            rule_key="project:disabled-adapter",
+            target_rule_key="adapter:locale",
+            relative_path="locale",
+            filter_type=SyncFilterType.DIRECTORY,
+            behavior=SyncRuleBehavior.INCLUDE,
+            is_enabled=False,
+            description="Disable adapter rule",
+        ),
+        ProjectSyncRuleOverride(
+            rule_key="project:gitignore-derived",
+            target_rule_key="gitignore:keep",
+            relative_path="keep",
+            filter_type=SyncFilterType.DIRECTORY,
+            behavior=SyncRuleBehavior.INCLUDE,
+            is_enabled=True,
+            description="Should be skipped as override target",
+        ),
+        ProjectSyncRuleOverride(
+            rule_key="project:standalone",
+            target_rule_key=None,
+            relative_path="locale_custom",
+            filter_type=SyncFilterType.DIRECTORY,
+            behavior=SyncRuleBehavior.INCLUDE,
+            is_enabled=True,
+            description="Project standalone rule",
+        ),
+    )
+
+    resolved = _resolve_scope_rules(
+        framework_type="wordpress",
+        adapter_scope=AdapterSyncScope(),
+        global_rules=(),
+        framework_rules=(),
+        project_rule_overrides=overrides,
+        gitignore_rules=(),
+    )
+
+    assert len(resolved) == 1
+    assert resolved[0].is_enabled is True
+    assert resolved[0].rule_key == "project:standalone"
+    assert _is_gitignore_override_key("gitignore:keep") is True
+    assert _is_gitignore_override_key("project:keep") is False
 
 
 def _build_site(tmp_path: Path, *, framework_type: str) -> RegisteredSite:

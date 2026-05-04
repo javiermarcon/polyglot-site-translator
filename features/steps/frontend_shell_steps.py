@@ -22,6 +22,8 @@ from polyglot_site_translator.presentation.frontend_shell import FrontendShell
 from polyglot_site_translator.presentation.router import RouteName
 from tests.support.frontend_doubles import (
     build_empty_services,
+    build_failing_audit_services,
+    build_failing_po_processing_services,
     build_failing_settings_load_services,
     build_failing_settings_save_services,
     build_failing_sync_services,
@@ -84,6 +86,18 @@ def step_empty_shell(context: object) -> None:
 def step_failing_sync_shell(context: object) -> None:
     typed_context = _context_with_shell(context)
     typed_context.shell = create_frontend_shell(build_failing_sync_services())
+
+
+@given("the frontend shell is wired with a failing audit test double")
+def step_failing_audit_shell(context: object) -> None:
+    typed_context = _context_with_shell(context)
+    typed_context.shell = create_frontend_shell(build_failing_audit_services())
+
+
+@given("the frontend shell is wired with a failing translation test double")
+def step_failing_po_shell(context: object) -> None:
+    typed_context = _context_with_shell(context)
+    typed_context.shell = create_frontend_shell(build_failing_po_processing_services())
 
 
 @given("the frontend shell is wired with a failing settings-load test double")
@@ -457,6 +471,13 @@ def step_assert_audit_summary(context: object) -> None:
     )
 
 
+@then("the audit panel shows a failed status")
+def step_assert_audit_failed(context: object) -> None:
+    typed_context = _context_with_shell(context)
+    assert typed_context.shell.audit_state is not None
+    assert typed_context.shell.audit_state.status == "failed"
+
+
 @then("the po processing panel shows a completed status")
 def step_assert_po_completed(context: object) -> None:
     typed_context = _context_with_shell(context)
@@ -469,6 +490,13 @@ def step_assert_po_family_count(context: object) -> None:
     typed_context = _context_with_shell(context)
     assert typed_context.shell.po_processing_state is not None
     assert typed_context.shell.po_processing_state.processed_families == PROCESSED_FAMILIES
+
+
+@then("the po processing panel shows a failed status")
+def step_assert_po_failed(context: object) -> None:
+    typed_context = _context_with_shell(context)
+    assert typed_context.shell.po_processing_state is not None
+    assert typed_context.shell.po_processing_state.status == "failed"
 
 
 @then("the projects list is empty")
@@ -494,6 +522,20 @@ def step_assert_sync_failed(context: object) -> None:
 def step_assert_error_message(context: object) -> None:
     typed_context = _context_with_shell(context)
     assert typed_context.shell.latest_error == "Sync preview is unavailable for this project."
+
+
+@then("the frontend shell shows the controlled audit error message")
+def step_assert_audit_error_message(context: object) -> None:
+    typed_context = _context_with_shell(context)
+    assert typed_context.shell.latest_error == "Audit preview is unavailable for this project."
+
+
+@then("the frontend shell shows the controlled translation error message")
+def step_assert_translation_error_message(context: object) -> None:
+    typed_context = _context_with_shell(context)
+    assert (
+        typed_context.shell.latest_error == "Translation workflow is unavailable for this project."
+    )
 
 
 @then("the settings route is active")

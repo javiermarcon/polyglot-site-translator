@@ -141,6 +141,8 @@ class StubProjectWorkflowService:
     """Deterministic workflow double for implemented presentation flows."""
 
     fail_sync: bool = False
+    fail_audit: bool = False
+    fail_po_processing: bool = False
 
     def start_sync(
         self,
@@ -177,6 +179,9 @@ class StubProjectWorkflowService:
         )
 
     def start_audit(self, project_id: str) -> AuditSummaryViewModel:
+        if self.fail_audit and project_id == "wp-site":
+            msg = "Audit preview is unavailable for this project."
+            raise ControlledServiceError(msg)
         return AuditSummaryViewModel(
             status="completed",
             findings_count=0,
@@ -192,6 +197,9 @@ class StubProjectWorkflowService:
         progress_callback: Callable[[POProcessingProgress], None] | None = None,
     ) -> POProcessingSummaryViewModel:
         del progress_callback, compile_mo, use_external_translator
+        if self.fail_po_processing and project_id == "wp-site":
+            msg = "Translation workflow is unavailable for this project."
+            raise ControlledServiceError(msg)
         return POProcessingSummaryViewModel(
             status="completed",
             processed_families=4,
@@ -426,6 +434,26 @@ def build_failing_sync_services() -> FrontendServices:
     return FrontendServices(
         catalog=services.catalog,
         workflows=StubProjectWorkflowService(fail_sync=True),
+        settings=services.settings,
+        registry=services.registry,
+    )
+
+
+def build_failing_audit_services() -> FrontendServices:
+    services = build_seeded_services()
+    return FrontendServices(
+        catalog=services.catalog,
+        workflows=StubProjectWorkflowService(fail_audit=True),
+        settings=services.settings,
+        registry=services.registry,
+    )
+
+
+def build_failing_po_processing_services() -> FrontendServices:
+    services = build_seeded_services()
+    return FrontendServices(
+        catalog=services.catalog,
+        workflows=StubProjectWorkflowService(fail_po_processing=True),
         settings=services.settings,
         registry=services.registry,
     )

@@ -131,6 +131,16 @@ def test_sync_progress_popup_open_and_dismiss_manage_refresh_loop(
     assert popup._refresh_event is None
 
 
+def test_sync_progress_popup_on_dismiss_without_refresh_event_is_a_noop() -> None:
+    shell = create_frontend_shell(build_seeded_services())
+    popup = SyncProgressPopup(shell=shell)
+
+    popup._refresh_event = None
+    popup.on_dismiss()
+
+    assert popup._refresh_event is None
+
+
 def test_sync_progress_popup_offers_host_key_trust_only_for_unknown_ssh_hosts() -> None:
     shell = create_frontend_shell(build_seeded_services())
     popup = SyncProgressPopup(shell=shell)

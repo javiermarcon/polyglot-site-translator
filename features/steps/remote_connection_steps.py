@@ -255,6 +255,44 @@ def step_fill_valid_remote_draft(context: object, connection_type: str) -> None:
     )
 
 
+@when("the operator fills a draft without remote connection")
+def step_fill_no_remote_draft(context: object) -> None:
+    typed_context = _context(context)
+    typed_context.editor_draft = SiteEditorViewModel(
+        site_id=None,
+        name="Local Project",
+        framework_type="unknown",
+        local_path="/workspace/local-project",
+        default_locale="en_US",
+        connection_type="none",
+        remote_host="",
+        remote_port="",
+        remote_username="",
+        remote_password="",
+        remote_path="",
+        is_active=True,
+    )
+
+
+@when('the operator fills an invalid "{connection_type}" remote connection draft')
+def step_fill_invalid_remote_draft(context: object, connection_type: str) -> None:
+    typed_context = _context(context)
+    typed_context.editor_draft = SiteEditorViewModel(
+        site_id=None,
+        name="Remote Project",
+        framework_type="unknown",
+        local_path="/workspace/remote-project",
+        default_locale="en_US",
+        connection_type=connection_type,
+        remote_host="example.com",
+        remote_port="twenty-two" if connection_type in {"sftp", "scp"} else "twenty-one",
+        remote_username="deploy",
+        remote_password="super-secret",
+        remote_path="/srv/app",
+        is_active=True,
+    )
+
+
 @when("the operator runs the remote connection test from the editor")
 def step_run_remote_connection_test(context: object) -> None:
     typed_context = _context(context)
@@ -276,3 +314,23 @@ def step_assert_failed_remote_test(context: object) -> None:
     assert typed_context.shell.project_editor_state is not None
     assert typed_context.shell.project_editor_state.connection_test_result is not None
     assert typed_context.shell.project_editor_state.connection_test_result.success is False
+
+
+@then("the project editor shows the missing remote connection validation error")
+def step_assert_missing_remote_validation_error(context: object) -> None:
+    typed_context = _context(context)
+    assert typed_context.shell.project_editor_state is not None
+    assert typed_context.shell.project_editor_state.status == "failed"
+    assert (
+        typed_context.shell.project_editor_state.status_message
+        == "Remote connection test requires a configured remote connection."
+    )
+
+
+@then("the project editor shows the invalid remote port validation error")
+def step_assert_invalid_remote_port_validation_error(context: object) -> None:
+    typed_context = _context(context)
+    assert typed_context.shell.project_editor_state is not None
+    assert typed_context.shell.project_editor_state.status == "failed"
+    assert typed_context.shell.project_editor_state.status_message is not None
+    assert "invalid literal for int()" in typed_context.shell.project_editor_state.status_message

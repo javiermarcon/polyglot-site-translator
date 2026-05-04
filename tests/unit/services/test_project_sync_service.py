@@ -20,6 +20,7 @@ from polyglot_site_translator.domain.remote_connections.models import (
 from polyglot_site_translator.domain.site_registry.models import RegisteredSite, SiteProject
 from polyglot_site_translator.domain.sync.errors import SyncConfigurationError
 from polyglot_site_translator.domain.sync.models import (
+    LocalSyncFile,
     RemoteSyncFile,
     SyncDirection,
     SyncProgressEvent,
@@ -28,9 +29,12 @@ from polyglot_site_translator.domain.sync.models import (
     SyncSummary,
 )
 from polyglot_site_translator.domain.sync.scope import (
+    ResolvedSyncRule,
     ResolvedSyncScope,
     SyncFilterSpec,
     SyncFilterType,
+    SyncRuleBehavior,
+    SyncRuleSource,
     SyncScopeStatus,
 )
 from polyglot_site_translator.infrastructure.remote_connections.base import (
@@ -40,7 +44,11 @@ from polyglot_site_translator.infrastructure.remote_connections.registry import 
     RemoteConnectionRegistry,
 )
 from polyglot_site_translator.infrastructure.sync_local import LocalSyncWorkspace
-from polyglot_site_translator.services.project_sync import ProjectSyncService
+import polyglot_site_translator.services.project_sync as project_sync_module
+from polyglot_site_translator.services.project_sync import (
+    ProjectSyncService,
+    _join_remote_sync_path,
+)
 
 
 @dataclass
@@ -1335,6 +1343,64 @@ def test_project_sync_service_returns_controlled_error_when_session_open_fails(
     assert result.error.code == "connection_timeout"
 
 
+def test_project_sync_service_emits_failure_when_local_to_remote_scope_resolution_fails(
+    tmp_path: Path,
+) -> None:
+    local_root = tmp_path / "workspace" / "site"
+    local_root.mkdir(parents=True)
+    service = ProjectSyncService(
+        registry=RemoteConnectionRegistry.default_registry(providers=[StubSyncProvider()]),
+        framework_sync_scope_service=None,
+    )
+    events: list[SyncProgressEvent] = []
+
+    result = service.sync_local_to_remote(
+        _build_site(
+            local_root=local_root,
+            remote_connection=RemoteConnectionConfig(
+                id="remote-site-123",
+                site_project_id="site-123",
+                connection_type="sftp",
+                host="example.test",
+                port=22,
+                username="deploy",
+                password="secret",
+                remote_path="/srv/app",
+                flags=RemoteConnectionFlags(use_adapter_sync_filters=True),
+            ),
+        ),
+        progress_callback=events.append,
+    )
+
+    assert result.success is False
+    assert result.error is not None
+    assert result.error.code == "sync_scope_resolution_not_configured"
+    expected_message = (
+        "Adapter-filtered sync is enabled for project 'Marketing Site', "
+        "but framework sync scope resolution is not configured."
+    )
+    assert any(event.message == expected_message for event in events)
+
+
+def test_project_sync_service_emits_provider_failure_for_local_to_remote_sync(
+    tmp_path: Path,
+) -> None:
+    local_root = tmp_path / "workspace" / "site"
+    local_root.mkdir(parents=True)
+    service = ProjectSyncService(registry=RemoteConnectionRegistry.default_registry(providers=[]))
+    events: list[SyncProgressEvent] = []
+
+    result = service.sync_local_to_remote(
+        _build_site(local_root=local_root),
+        progress_callback=events.append,
+    )
+
+    assert result.success is False
+    assert result.error is not None
+    assert result.error.code == "unsupported_connection_type"
+    assert events[-1].stage is SyncProgressStage.FAILED
+
+
 def test_project_sync_service_handles_incremental_remote_listing_operation_errors(
     tmp_path: Path,
 ) -> None:
@@ -1428,6 +1494,26 @@ def test_project_sync_service_raises_if_provider_resolution_returns_none(
         match=(r"Remote sync provider resolution unexpectedly returned None\."),
     ):
         service.sync_remote_to_local(_build_site(local_root=tmp_path))
+
+
+def test_project_sync_service_raises_if_local_upload_provider_resolution_returns_none(
+    tmp_path: Path,
+) -> None:
+    local_root = tmp_path / "workspace" / "site"
+    (local_root / "locale").mkdir(parents=True)
+    (local_root / "locale" / "es.po").write_bytes(b"a")
+    service = ProjectSyncService(
+        registry=RemoteConnectionRegistry.default_registry(providers=[StubSyncProvider()])
+    )
+    service._resolve_provider = (  # type: ignore[method-assign]
+        lambda **_: (None, None)
+    )
+
+    with pytest.raises(
+        AssertionError,
+        match=r"Remote sync provider resolution unexpectedly returned None\.",
+    ):
+        service.sync_local_to_remote(_build_site(local_root=local_root))
 
 
 def test_project_sync_service_uploads_local_files_into_the_remote_workspace(
@@ -1675,6 +1761,114 @@ def test_project_sync_service_returns_a_controlled_result_when_remote_directory_
     assert result.success is False
     assert result.error is not None
     assert result.error.code == "remote_directory_failed"
+
+
+def test_project_sync_service_skips_local_uploads_excluded_by_scope(
+    tmp_path: Path,
+) -> None:
+    local_root = tmp_path / "workspace" / "site"
+    (local_root / "locale").mkdir(parents=True)
+    (local_root / "templates").mkdir(parents=True)
+    (local_root / "locale" / "es.po").write_bytes(b"a")
+    (local_root / "templates" / "home.html").write_bytes(b"b")
+    provider = StubSyncProvider()
+    service = ProjectSyncService(
+        registry=RemoteConnectionRegistry.default_registry(providers=[provider])
+    )
+
+    result = service.sync_local_to_remote(
+        _build_site(local_root=local_root),
+        resolved_scope=ResolvedSyncScope(
+            framework_type="wordpress",
+            adapter_name="WordPress",
+            status=SyncScopeStatus.FILTERED,
+            filters=(
+                ResolvedSyncRule(
+                    rule_key="include-locale",
+                    source=SyncRuleSource.PROJECT,
+                    relative_path="locale",
+                    filter_type=SyncFilterType.DIRECTORY,
+                    behavior=SyncRuleBehavior.INCLUDE,
+                    is_enabled=True,
+                    description="Include locale only.",
+                ).as_filter_spec(),
+            ),
+            message="Only locale files included.",
+            catalog_rules=(
+                ResolvedSyncRule(
+                    rule_key="include-locale",
+                    source=SyncRuleSource.PROJECT,
+                    relative_path="locale",
+                    filter_type=SyncFilterType.DIRECTORY,
+                    behavior=SyncRuleBehavior.INCLUDE,
+                    is_enabled=True,
+                    description="Include locale only.",
+                ),
+            ),
+        ),
+    )
+
+    assert result.success is True
+    assert result.summary.files_discovered == 1
+    assert provider.uploaded_bytes == {"/srv/app/locale/es.po": b"a"}
+
+
+def test_project_sync_service_continues_when_scope_excludes_a_local_file(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    local_root = tmp_path / "workspace" / "site"
+    local_root.mkdir(parents=True)
+    (local_root / "skip.txt").write_bytes(b"a")
+    (local_root / "keep.txt").write_bytes(b"b")
+    provider = StubSyncProvider()
+    service = ProjectSyncService(
+        registry=RemoteConnectionRegistry.default_registry(providers=[provider])
+    )
+    scope_calls: list[str] = []
+
+    monkeypatch.setattr(
+        service,
+        "_list_local_files",
+        lambda **_kwargs: (
+            LocalSyncFile(
+                local_path=local_root / "skip.txt",
+                relative_path="skip.txt",
+                size_bytes=1,
+            ),
+            LocalSyncFile(
+                local_path=local_root / "keep.txt",
+                relative_path="keep.txt",
+                size_bytes=1,
+            ),
+        ),
+    )
+
+    def _scope_includes(scope: ResolvedSyncScope | None, relative_path: str) -> bool:
+        del scope
+        scope_calls.append(relative_path)
+        return relative_path == "keep.txt"
+
+    monkeypatch.setattr(project_sync_module, "_scope_includes", _scope_includes)
+
+    result = service.sync_local_to_remote(
+        _build_site(local_root=local_root),
+        resolved_scope=ResolvedSyncScope(
+            framework_type="wordpress",
+            adapter_name="WordPress",
+            status=SyncScopeStatus.FILTERED,
+            filters=(),
+            message="Skip one file.",
+        ),
+    )
+
+    assert result.success is True
+    assert result.summary.files_discovered == 1
+    assert scope_calls == ["skip.txt", "keep.txt"]
+
+
+def test_project_sync_service_joins_remote_sync_path_at_root() -> None:
+    assert _join_remote_sync_path("/", "locale/es.po") == "/locale/es.po"
 
 
 def _build_site(

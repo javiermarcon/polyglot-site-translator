@@ -36,6 +36,15 @@ class _AdapterWithDefaultSyncScope(BaseFrameworkAdapter):
         )
 
 
+class _AdapterWithNoCustomFilters(BaseFrameworkAdapter):
+    framework_type = "empty"
+    adapter_name = "empty_adapter"
+    display_name = "Empty"
+
+    def detect(self, project_path: Path) -> FrameworkDetectionResult:
+        return FrameworkDetectionResult.unmatched(project_path=str(project_path))
+
+
 def test_find_first_level_file_prefers_root_and_nested_matches(tmp_path: Path) -> None:
     root_file = tmp_path / "settings.py"
     root_file.write_text("ROOT = True\n", encoding="utf-8")
@@ -94,3 +103,9 @@ def test_base_framework_adapter_default_scope_delegates_to_sync_filters() -> Non
 
     assert [sync_filter.relative_path for sync_filter in scope.filters] == ["locale"]
     assert scope.excludes == ()
+
+
+def test_base_framework_adapter_default_filters_are_empty_when_not_overridden() -> None:
+    adapter = _AdapterWithNoCustomFilters()
+
+    assert adapter.get_sync_filters(Path("/workspace/project")) == ()

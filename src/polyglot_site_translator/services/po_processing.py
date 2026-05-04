@@ -293,10 +293,7 @@ def _resolve_processing_locales(
 ) -> tuple[str, ...]:
     if len(configured_locales) > 1:
         return configured_locales
-    ordered_locales: list[str] = []
-    configured_locale = configured_locales[0]
-    if configured_locale not in ordered_locales:
-        ordered_locales.append(configured_locale)
+    ordered_locales: list[str] = [configured_locales[0]]
     for file_data in target_files:
         if file_data.locale in ordered_locales:
             continue

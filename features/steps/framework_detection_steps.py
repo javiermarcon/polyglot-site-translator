@@ -21,6 +21,8 @@ given = cast(Callable[[str], Callable[[StepFunction], StepFunction]], behave_mod
 when = cast(Callable[[str], Callable[[StepFunction], StepFunction]], behave_module.when)
 then = cast(Callable[[str], Callable[[StepFunction], StepFunction]], behave_module.then)
 
+MIN_MATCHED_FRAMEWORK_FINDINGS = 2
+
 
 class BehaveFrameworkDetectionContext(Protocol):
     """Typed subset of behave context used by framework detection feature."""
@@ -188,6 +190,22 @@ def step_assert_no_framework_detected_in_audit(context: object) -> None:
     typed_context = _context_with_shell(context)
     assert typed_context.shell.audit_state is not None
     assert "No supported framework was detected" in typed_context.shell.audit_state.findings_summary
+
+
+@then("the audit preview shows matched framework findings")
+def step_assert_matched_framework_findings(context: object) -> None:
+    typed_context = _context_with_shell(context)
+    assert typed_context.shell.audit_state is not None
+    assert typed_context.shell.audit_state.findings_count >= MIN_MATCHED_FRAMEWORK_FINDINGS
+
+
+@then("the audit preview lists framework evidence")
+def step_assert_framework_evidence_in_audit(context: object) -> None:
+    typed_context = _context_with_shell(context)
+    assert typed_context.shell.audit_state is not None
+    summary = typed_context.shell.audit_state.findings_summary
+    assert "wp-config.php" in summary
+    assert "wp-content/" in summary
 
 
 @then("the framework combo shows the auto-discovered supported options")

@@ -14,6 +14,8 @@ from kivy.uix.widget import Widget
 import pytest
 
 from polyglot_site_translator.app import create_kivy_app
+from polyglot_site_translator.presentation.contracts import FrontendServices
+from polyglot_site_translator.presentation.errors import ControlledServiceError
 from polyglot_site_translator.presentation.kivy.site_editor_form import (
     find_option_label,
     find_option_value,
@@ -24,7 +26,14 @@ from polyglot_site_translator.presentation.kivy.theme import (
     set_active_theme_mode,
 )
 from polyglot_site_translator.presentation.kivy.widgets.common import WrappedLabel
-from polyglot_site_translator.presentation.view_models import SettingsOptionViewModel
+from polyglot_site_translator.presentation.view_models import (
+    SettingsOptionViewModel,
+    SettingsStateViewModel,
+)
+from tests.support.frontend_doubles import (
+    InMemorySettingsService,
+    build_seeded_services,
+)
 
 
 @pytest.fixture(autouse=True)
@@ -36,6 +45,14 @@ def restore_runtime_settings() -> object:
     set_active_theme_mode(previous_theme_mode)
 
 
+class FailingResetSettingsService(InMemorySettingsService):
+    """Settings double that fails during reset to cover runtime-skip branches."""
+
+    def reset_settings(self) -> SettingsStateViewModel:
+        msg = "Settings defaults are temporarily unavailable."
+        raise ControlledServiceError(msg)
+
+
 def test_settings_screen_can_refresh_without_button_keyword_conflicts() -> None:
     app = cast(Any, create_kivy_app())
     root = app.build()
@@ -45,6 +62,19 @@ def test_settings_screen_can_refresh_without_button_keyword_conflicts() -> None:
     settings_screen.refresh()
 
     assert root.has_screen("settings")
+
+
+def test_settings_screen_refresh_without_loaded_state_shows_information_card() -> None:
+    app = cast(Any, create_kivy_app())
+    root = app.build()
+    settings_screen = root.get_screen("settings")
+
+    settings_screen._shell.settings_state = None
+    settings_screen.refresh()
+
+    assert "Open the settings workflow to load the current configuration." in (
+        _collect_label_texts(settings_screen)
+    )
 
 
 def test_save_changes_button_refreshes_the_visible_status_message() -> None:
@@ -178,6 +208,20 @@ def test_settings_screen_keeps_the_sections_menu_top_aligned() -> None:
     assert len(sections_column.children) == 2
     assert isinstance(sections_column.children[0], Widget)
     assert isinstance(sections_column.children[1], BoxLayout)
+
+
+def test_settings_screen_shows_planned_section_placeholder_for_unavailable_categories() -> None:
+    app = cast(Any, create_kivy_app())
+    root = app.build()
+    settings_screen = root.get_screen("settings")
+
+    settings_screen._shell.open_settings()
+    root.current = "settings"
+    settings_screen._select_settings_section("ftp-reporting")
+
+    texts = _collect_label_texts(settings_screen)
+    assert "Planned Section" in texts
+    assert "FTP / Reporting Settings will be available later." in texts
 
 
 def test_settings_screen_can_edit_translation_defaults() -> None:
@@ -410,6 +454,156 @@ def test_settings_screen_can_toggle_and_save_gitignore_exclusions() -> None:
         settings_screen._shell.settings_state.app_settings.sync_scope_settings.use_gitignore_rules
         is True
     )
+
+
+def test_settings_screen_database_hint_and_runtime_callbacks_cover_remaining_paths() -> None:
+    applied_settings: list[object] = []
+    app = cast(Any, create_kivy_app())
+    root = app.build()
+    settings_screen = root.get_screen("settings")
+
+    def _capture_runtime_settings(settings: object) -> None:
+        applied_settings.append(settings)
+
+    settings_screen._apply_runtime_settings = _capture_runtime_settings
+
+    settings_screen._shell.open_settings()
+    root.current = "settings"
+    settings_screen._select_settings_section("app-ui-kivy")
+
+    settings_screen._database_directory_input = None
+    settings_screen._database_filename_input = None
+    assert settings_screen._database_file_browse_hint() == ""
+
+    settings_screen.refresh()
+    settings_screen._select_settings_section("app-ui-kivy")
+    directory_input = settings_screen._require_text_input(settings_screen._database_directory_input)
+    filename_input = settings_screen._require_text_input(settings_screen._database_filename_input)
+
+    directory_input.text = "/tmp/polyglot"
+    filename_input.text = ""
+    assert settings_screen._database_file_browse_hint() == "/tmp/polyglot"
+
+    filename_input.text = "app.sqlite3"
+    assert settings_screen._database_file_browse_hint().endswith("/tmp/polyglot/app.sqlite3")
+
+    directory_input.text = ""
+    assert settings_screen._database_file_browse_hint() == "app.sqlite3"
+
+    settings_screen._require_text_input(settings_screen._width_input).text = "1200"
+    settings_screen._require_text_input(settings_screen._height_input).text = "800"
+    settings_screen._require_text_input(settings_screen._sync_progress_log_limit_input).text = "75"
+
+    settings_screen._apply_settings()
+    settings_screen._restore_defaults()
+
+    assert len(applied_settings) == 2
+
+
+def test_settings_screen_apply_and_restore_cover_optional_skip_paths() -> None:
+    app = cast(Any, create_kivy_app())
+    root = app.build()
+    settings_screen = root.get_screen("settings")
+
+    settings_screen._shell.open_settings()
+    root.current = "settings"
+    settings_screen._select_settings_section("app-ui-kivy")
+
+    settings_screen._require_text_input(settings_screen._width_input).text = ""
+    settings_screen._require_text_input(settings_screen._height_input).text = "700"
+    settings_screen._require_text_input(settings_screen._sync_progress_log_limit_input).text = ""
+    settings_screen._database_directory_input = None
+    settings_screen._database_filename_input = None
+
+    settings_screen._apply_settings()
+    settings_screen._restore_defaults()
+
+    assert settings_screen._shell.settings_state is not None
+    assert settings_screen._shell.settings_state.status == "defaults-restored"
+
+
+def test_settings_screen_apply_skips_missing_numeric_inputs() -> None:
+    app = cast(Any, create_kivy_app())
+    root = app.build()
+    settings_screen = root.get_screen("settings")
+
+    settings_screen._shell.open_settings()
+    root.current = "settings"
+    settings_screen._select_settings_section("app-ui-kivy")
+
+    original_width = settings_screen._require_state().app_settings.window_width
+    original_limit = settings_screen._require_state().app_settings.sync_progress_log_limit
+    settings_screen._width_input = None
+    settings_screen._height_input = None
+    settings_screen._sync_progress_log_limit_input = None
+
+    settings_screen._apply_settings()
+
+    assert settings_screen._shell.settings_state is not None
+    assert settings_screen._shell.settings_state.app_settings.window_width == original_width
+    assert (
+        settings_screen._shell.settings_state.app_settings.sync_progress_log_limit == original_limit
+    )
+
+
+def test_settings_screen_skips_runtime_callback_when_save_or_reset_fail() -> None:
+    applied_settings: list[object] = []
+    seeded_services = build_seeded_services()
+    failing_save_services = FrontendServices(
+        catalog=seeded_services.catalog,
+        workflows=seeded_services.workflows,
+        settings=InMemorySettingsService(
+            _saved_settings=seeded_services.settings.load_settings().app_settings,
+            fail_save=True,
+        ),
+        registry=seeded_services.registry,
+    )
+    save_app = cast(Any, create_kivy_app(services=failing_save_services))
+    save_root = save_app.build()
+    save_screen = save_root.get_screen("settings")
+
+    def _capture_failed_save_runtime_settings(settings: object) -> None:
+        applied_settings.append(settings)
+
+    save_screen._apply_runtime_settings = _capture_failed_save_runtime_settings
+    save_screen._shell.open_settings()
+    save_root.current = "settings"
+    save_screen._select_settings_section("app-ui-kivy")
+    save_screen._require_text_input(save_screen._width_input).text = ""
+    save_screen._require_text_input(save_screen._height_input).text = "720"
+    save_screen._require_text_input(save_screen._sync_progress_log_limit_input).text = ""
+
+    save_screen._apply_settings()
+
+    assert save_screen._shell.settings_state is not None
+    assert save_screen._shell.settings_state.status == "failed"
+    assert applied_settings == []
+
+    failing_reset_services = FrontendServices(
+        catalog=seeded_services.catalog,
+        workflows=seeded_services.workflows,
+        settings=FailingResetSettingsService(
+            _saved_settings=seeded_services.settings.load_settings().app_settings,
+        ),
+        registry=seeded_services.registry,
+    )
+    reset_app = cast(Any, create_kivy_app(services=failing_reset_services))
+    reset_root = reset_app.build()
+    reset_screen = reset_root.get_screen("settings")
+
+    def _capture_failed_reset_runtime_settings(settings: object) -> None:
+        applied_settings.append(settings)
+
+    reset_screen._apply_runtime_settings = _capture_failed_reset_runtime_settings
+    reset_screen._shell.open_settings()
+    reset_root.current = "settings"
+    reset_screen._select_settings_section("app-ui-kivy")
+
+    reset_screen._restore_defaults()
+
+    assert reset_screen._shell.settings_state is not None
+    assert reset_screen._shell.settings_state.status == "failed"
+    assert applied_settings == []
 
 
 def test_settings_screen_raises_for_missing_state_or_draft_and_option_lookup_failures() -> None:

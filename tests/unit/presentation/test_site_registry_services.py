@@ -45,6 +45,7 @@ from polyglot_site_translator.domain.sync.errors import SyncConfigurationError
 from polyglot_site_translator.domain.sync.models import (
     RemoteSyncFile,
     SyncDirection,
+    SyncError,
     SyncProgressEvent,
     SyncResult,
     SyncSummary,
@@ -59,12 +60,14 @@ from polyglot_site_translator.infrastructure.remote_connections.registry import 
     RemoteConnectionRegistry,
 )
 from polyglot_site_translator.infrastructure.settings import TomlSettingsService
+from polyglot_site_translator.presentation import site_registry_services
 from polyglot_site_translator.presentation.errors import ControlledServiceError
 from polyglot_site_translator.presentation.site_registry_services import (
     SiteRegistryPresentationCatalogService,
     SiteRegistryPresentationManagementService,
     SiteRegistryPresentationWorkflowService,
     _build_project_detail,
+    _build_project_rule_overrides,
     _build_sync_status,
 )
 from polyglot_site_translator.presentation.view_models import (
@@ -472,6 +475,23 @@ def test_management_service_wraps_build_create_configuration_errors(tmp_path: Pa
     )
 
     with pytest.raises(ControlledServiceError, match=r"Database filename must not be empty\."):
+        management.build_create_project_editor()
+
+
+def test_management_service_wraps_settings_load_errors_for_create_editor(
+    tmp_path: Path,
+) -> None:
+    class FailingSettingsService(TomlSettingsService):
+        def load_settings(self) -> SettingsStateViewModel:
+            msg = "SQLite settings read failed."
+            raise SiteRegistryPersistenceError(msg)
+
+    management = SiteRegistryPresentationManagementService(
+        service=_build_domain_service(InMemorySiteRegistryRepository()),
+        settings_service=FailingSettingsService(tmp_path / "settings.toml"),
+    )
+
+    with pytest.raises(ControlledServiceError, match=r"SQLite settings read failed\."):
         management.build_create_project_editor()
 
 
@@ -1104,6 +1124,51 @@ def test_workflow_service_wraps_po_processing_lookup_errors() -> None:
         workflow.start_po_processing("missing-site")
 
 
+def test_workflow_service_reports_unconfigured_po_processing_service() -> None:
+    repository = InMemorySiteRegistryRepository()
+    site_service = _build_domain_service(repository)
+    site = site_service.create_site(_build_registration(local_path="/workspace/marketing-site"))
+    workflow = SiteRegistryPresentationWorkflowService(
+        service=site_service,
+        project_sync_service=SyncStub(),
+        po_processing_service=None,
+    )
+
+    preview = workflow.start_po_processing(site.id)
+
+    assert preview.status == "completed"
+    assert "PO processing service is not configured in this runtime." in preview.summary
+
+
+def test_workflow_service_runs_sync_in_both_directions() -> None:
+    repository = InMemorySiteRegistryRepository()
+    site_service = _build_domain_service(repository)
+    site = site_service.create_site(_build_registration())
+    workflow = SiteRegistryPresentationWorkflowService(
+        service=site_service,
+        project_sync_service=SyncStub(),
+    )
+
+    remote_to_local = workflow.start_sync(site.id)
+    local_to_remote = workflow.start_sync_to_remote(site.id)
+
+    assert remote_to_local.status == "completed"
+    assert local_to_remote.status == "completed"
+
+
+def test_workflow_service_wraps_sync_lookup_errors_for_both_directions() -> None:
+    workflow = SiteRegistryPresentationWorkflowService(
+        service=_build_domain_service(InMemorySiteRegistryRepository()),
+        project_sync_service=SyncStub(),
+    )
+
+    with pytest.raises(ControlledServiceError, match="Unknown site id: missing-site"):
+        workflow.start_sync("missing-site")
+
+    with pytest.raises(ControlledServiceError, match="Unknown site id: missing-site"):
+        workflow.start_sync_to_remote("missing-site")
+
+
 def test_workflow_service_wraps_po_processing_service_errors() -> None:
     class _ExplodingPOService:
         def process_site(
@@ -1164,6 +1229,34 @@ def test_workflow_service_wraps_host_key_trust_without_remote_connection() -> No
     with pytest.raises(
         ControlledServiceError,
         match=r"Remote host-key trust requires a configured remote connection\.",
+    ):
+        workflow.trust_remote_host_key(created.id)
+
+
+def test_workflow_service_raises_if_remote_connection_disappears_after_host_key_validation(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    repository = InMemorySiteRegistryRepository()
+    service = _build_domain_service(repository)
+    created = service.create_site(_build_registration())
+    workflow = SiteRegistryPresentationWorkflowService(
+        service=service,
+        project_sync_service=SyncStub(),
+    )
+    original_get_site = service.get_site
+
+    def _site_without_remote(site_id: str) -> RegisteredSite:
+        return replace(original_get_site(site_id), remote_connection=None)
+
+    monkeypatch.setattr(service, "get_site", _site_without_remote)
+    monkeypatch.setattr(
+        site_registry_services,
+        "_require_remote_connection_for_host_key_trust",
+        lambda site: None,
+    )
+    with pytest.raises(
+        AssertionError,
+        match=r"Remote connection unexpectedly missing after validation\.",
     ):
         workflow.trust_remote_host_key(created.id)
 
@@ -1257,6 +1350,89 @@ def test_build_sync_status_covers_empty_upload_and_download_summaries() -> None:
     assert download_status.summary == "Downloaded 1 files into /workspace/site-1."
 
 
+def test_build_sync_status_covers_non_empty_upload_empty_download_and_failed_fallback() -> None:
+    upload_status = _build_sync_status(
+        SyncResult(
+            direction=SyncDirection.LOCAL_TO_REMOTE,
+            success=True,
+            project_id="site-1",
+            connection_type="sftp",
+            local_path="/workspace/site-1",
+            summary=SyncSummary(
+                files_discovered=2,
+                files_downloaded=0,
+                directories_created=1,
+                bytes_downloaded=0,
+                files_uploaded=2,
+                bytes_uploaded=12,
+            ),
+            error=None,
+        )
+    )
+    empty_download_status = _build_sync_status(
+        SyncResult(
+            direction=SyncDirection.REMOTE_TO_LOCAL,
+            success=True,
+            project_id="site-1",
+            connection_type="sftp",
+            local_path="/workspace/site-1",
+            summary=SyncSummary(
+                files_discovered=0,
+                files_downloaded=0,
+                directories_created=0,
+                bytes_downloaded=0,
+            ),
+            error=None,
+        )
+    )
+    failed_status = _build_sync_status(
+        SyncResult(
+            direction=SyncDirection.REMOTE_TO_LOCAL,
+            success=False,
+            project_id="site-1",
+            connection_type="sftp",
+            local_path="/workspace/site-1",
+            summary=SyncSummary(
+                files_discovered=0,
+                files_downloaded=0,
+                directories_created=0,
+                bytes_downloaded=0,
+            ),
+            error=None,
+        )
+    )
+
+    assert (
+        upload_status.summary
+        == "Uploaded 2 files from /workspace/site-1 into the remote workspace."
+    )
+    assert empty_download_status.summary == "Remote workspace is empty. No files were downloaded."
+    assert failed_status.error_code == "sync_failed"
+    assert "but no detailed sync error was provided" in failed_status.summary
+
+
+def test_build_sync_status_uses_explicit_error_details_when_present() -> None:
+    failed_status = _build_sync_status(
+        SyncResult(
+            direction=SyncDirection.REMOTE_TO_LOCAL,
+            success=False,
+            project_id="site-1",
+            connection_type="sftp",
+            local_path="/workspace/site-1",
+            summary=SyncSummary(
+                files_discovered=0,
+                files_downloaded=0,
+                directories_created=0,
+                bytes_downloaded=0,
+            ),
+            error=SyncError(code="transport_failed", message="Transport failed."),
+        )
+    )
+
+    assert failed_status.error_code == "transport_failed"
+    assert failed_status.summary == "Transport failed."
+
+
 def test_build_project_detail_without_detection_keeps_base_metadata_only() -> None:
     detail = _build_project_detail(
         RegisteredSite(
@@ -1308,6 +1484,64 @@ def test_build_project_detail_without_remote_connection_is_explicit() -> None:
         "Remote connection: None"
     )
     assert detail.metadata_summary == "Framework: Django | Remote connection: none configured"
+
+
+def test_build_project_detail_includes_matched_framework_evidence() -> None:
+    detail = _build_project_detail(
+        RegisteredSite(
+            project=SiteProject(
+                id="site-1",
+                name="Marketing Site",
+                framework_type="wordpress",
+                local_path="/workspace/marketing-site",
+                default_locale="en_US",
+                is_active=True,
+            ),
+            remote_connection=RemoteConnectionConfig(
+                id="remote-site-1",
+                site_project_id="site-1",
+                connection_type="ftp",
+                host="ftp.example.com",
+                port=21,
+                username="deploy",
+                password="secret",
+                remote_path="/public_html",
+            ),
+        ),
+        FrameworkDetectionResult(
+            matched=True,
+            framework_type="wordpress",
+            adapter_name="WordPress",
+            confidence=100,
+            evidence=["wp-config.php", "wp-content/languages"],
+            relevant_paths=["/workspace/marketing-site"],
+            config_files=["wp-config.php"],
+            warnings=[],
+        ),
+    )
+
+    assert "Framework detection: WordPress via WordPress" in detail.metadata_summary
+    assert "wp-config.php; wp-content/languages" in detail.metadata_summary
+
+
+def test_build_project_rule_overrides_backfills_missing_target_rule_key() -> None:
+    overrides = _build_project_rule_overrides(
+        (
+            SyncRuleEditorItemViewModel(
+                rule_key="framework:locale|directory|include",
+                target_rule_key=None,
+                relative_path="locale",
+                filter_type="directory",
+                behavior="include",
+                description="Keep framework locale sync.",
+                source="framework",
+                is_enabled=True,
+                is_removable=False,
+            ),
+        )
+    )
+
+    assert overrides[0].target_rule_key == "framework:locale|directory|include"
 
 
 def test_catalog_service_wraps_framework_detection_ambiguity() -> None:

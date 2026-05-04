@@ -274,6 +274,55 @@ class _FailingPOProcessingWorkflowService:
         raise ControlledServiceError(msg)
 
 
+@dataclass
+class _TrustHostKeyWorkflowService:
+    succeed: bool = True
+    raise_error: bool = False
+
+    def start_sync(
+        self,
+        project_id: str,
+        progress_callback: Callable[[SyncProgressEvent], None] | None = None,
+    ) -> SyncStatusViewModel:
+        return build_seeded_services().workflows.start_sync(project_id, progress_callback)
+
+    def trust_remote_host_key(self, project_id: str) -> RemoteConnectionTestResultViewModel:
+        if self.raise_error:
+            msg = f"Unable to trust host key for {project_id}."
+            raise ControlledServiceError(msg)
+        return RemoteConnectionTestResultViewModel(
+            success=self.succeed,
+            message="Trusted." if self.succeed else "Rejected.",
+            error_code=None if self.succeed else "trust_failed",
+        )
+
+    def start_sync_to_remote(
+        self,
+        project_id: str,
+        progress_callback: Callable[[SyncProgressEvent], None] | None = None,
+    ) -> SyncStatusViewModel:
+        return build_seeded_services().workflows.start_sync_to_remote(project_id, progress_callback)
+
+    def start_audit(self, project_id: str) -> AuditSummaryViewModel:
+        return build_seeded_services().workflows.start_audit(project_id)
+
+    def start_po_processing(
+        self,
+        project_id: str,
+        locales: str | None = None,
+        compile_mo: bool | None = None,
+        use_external_translator: bool | None = None,
+        progress_callback: Callable[[POProcessingProgress], None] | None = None,
+    ) -> POProcessingSummaryViewModel:
+        return build_seeded_services().workflows.start_po_processing(
+            project_id,
+            locales,
+            compile_mo,
+            use_external_translator,
+            progress_callback,
+        )
+
+
 class _FailingConnectionTestRegistry(InMemoryProjectRegistryManagementService):
     def test_remote_connection(
         self,
@@ -547,6 +596,53 @@ def test_background_sync_progress_keeps_only_the_last_configured_operations() ->
         "SFTP GET /srv/app/locale/es.po",
         "LOCAL WRITE /workspace/wp-site/locale/es.po",
     ]
+
+
+def test_trust_selected_project_remote_host_key_covers_success_failure_and_service_error() -> None:
+    seeded_services = build_seeded_services()
+    shell = create_frontend_shell(
+        FrontendServices(
+            catalog=seeded_services.catalog,
+            workflows=_TrustHostKeyWorkflowService(succeed=False),
+            settings=seeded_services.settings,
+            registry=seeded_services.registry,
+        )
+    )
+    shell.open_projects()
+    shell.select_project("wp-site")
+    shell.sync_progress_state = SyncProgressStateViewModel(
+        project_id="wp-site",
+        project_name="Marketing Site",
+        status="running",
+        message="Running",
+        progress_current=0,
+        progress_total=0,
+        progress_is_indeterminate=True,
+        command_log_limit=2,
+        command_log=[],
+    )
+
+    shell.trust_selected_project_remote_host_key()
+
+    assert shell.latest_error == "Rejected."
+
+    shell.services = FrontendServices(
+        catalog=seeded_services.catalog,
+        workflows=_TrustHostKeyWorkflowService(raise_error=True),
+        settings=seeded_services.settings,
+        registry=seeded_services.registry,
+    )
+    shell.trust_selected_project_remote_host_key()
+    assert shell.latest_error == "Unable to trust host key for wp-site."
+
+    shell.services = FrontendServices(
+        catalog=seeded_services.catalog,
+        workflows=_TrustHostKeyWorkflowService(succeed=True),
+        settings=seeded_services.settings,
+        registry=seeded_services.registry,
+    )
+    shell.trust_selected_project_remote_host_key()
+    assert shell.latest_error is None
 
 
 def test_sync_progress_event_is_ignored_when_no_progress_state_exists() -> None:

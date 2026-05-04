@@ -52,6 +52,24 @@ Unit tests must cover, at minimum:
 - expected exceptions
 - regression scenarios for known bugs
 
+For touched production modules, tests should also explicitly aim to cover:
+
+- every public function
+- every public method
+- every class with behavior
+- meaningful private helpers when they contain branching, validation, mapping, or error-handling logic
+- all relevant success, edge, and failure branches
+
+Coverage should be treated as a design requirement, not just a reporting metric. When implementing or modifying functionality, contributors are expected to add tests that intentionally exercise:
+
+- the main successful path
+- boundary and edge cases
+- malformed, missing, or invalid input
+- expected infrastructure, persistence, transport, or adapter failures
+- typed exceptions and explicit error paths
+
+The repository target is to keep coverage near 99% for the touched logic. If a function, method, class branch, or error path is not covered, the omission must be narrow, justified, and documented in the work report.
+
 They must not only verify “success cases”.
 They must also prove that the code behaves correctly under failure and boundary conditions.
 
@@ -345,7 +363,7 @@ High-value targets:
 - CLI
 - report generation
 
-For non-trivial new or modified logic in this repository, the expected target remains at least 95% coverage for each relevant file unless a narrow documented exception is justified.
+For non-trivial new or modified logic in this repository, the expected target remains at least 99% coverage for each relevant file unless a narrow documented exception is justified.
 
 Widget rendering internals are a lower priority than domain correctness and orchestration boundaries.
 
@@ -357,7 +375,7 @@ Unit test coverage is a mandatory quality gate.
 
 ### Minimum required coverage
 
-As a rule, unit tests must achieve **at least 95% coverage** for the code they are responsible for validating.
+As a rule, unit tests must achieve **at least 99% coverage** for the code they are responsible for validating.
 
 This applies especially to:
 
@@ -369,7 +387,7 @@ This applies especially to:
 - CLI behavior
 - presentation orchestration / view-model logic
 
-### What “95% coverage” means in practice
+### What “99% coverage” means in practice
 
 Coverage is not just about line execution.
 Tests must also exercise meaningful behavioral branches, including:
@@ -389,7 +407,7 @@ Coverage must reflect real behavioral verification, not artificial execution.
 
 ### Exceptions
 
-If a specific area cannot reasonably reach 95% due to platform/runtime/UI constraints, that exception must be explicitly justified in the task output and should be limited to narrow UI/platform glue, not core logic.
+If a specific area cannot reasonably reach 99% due to platform/runtime/UI constraints, that exception must be explicitly justified in the task output and should be limited to narrow UI/platform glue, not core logic.
 
 ---
 
@@ -426,6 +444,14 @@ For every non-trivial feature or behavior change:
 
 This order is mandatory.
 
+For user-visible workflows, “BDD scenarios first” means updating the relevant `.feature` coverage before implementation so that the end-to-end contract is explicit for:
+
+- happy path behavior
+- edge cases
+- surfaced validation failures
+- controlled operational failures
+- expected visible error states
+
 ---
 
 ## BDD expectations
@@ -439,6 +465,18 @@ Each meaningful feature should include scenarios for:
 - invalid input
 - operational failures
 - expected exceptions or error outcomes
+
+For user-visible workflows, BDD coverage is mandatory from end to end.
+Do not treat `.feature` files as smoke tests only.
+If a workflow is visible through the shell, screen navigation, project editor, settings, sync, audit, remote-connection, or translation flows, the expectation is that the affected workflow has `.feature` scenarios covering:
+
+- the main successful path
+- important edge and boundary behavior
+- validation outcomes visible to the operator
+- controlled service, adapter, or infrastructure failures as surfaced by the system
+- fallback or degraded states where the product is designed to continue
+
+If a behavior is intentionally only unit-tested and not covered through `behave`, that exception must be narrow, justified, and limited to internals that are not directly user-visible end to end.
 
 BDD should focus on system behavior and use cases, not brittle visual assertions.
 
@@ -467,7 +505,7 @@ At minimum, tests must cover:
 - expected domain exceptions
 - regression cases for known bugs
 
-For unit-tested logic, the test suite must be sufficiently complete to support the repository’s minimum unit-test coverage target of **95%**.
+For unit-tested logic, the test suite must be sufficiently complete to support the repository’s minimum unit-test coverage target of **99%**.
 
 Do not add implementation first and “backfill” tests afterward except for purely mechanical refactors that do not change behavior
 ---

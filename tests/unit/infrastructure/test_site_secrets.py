@@ -2,12 +2,18 @@
 
 from __future__ import annotations
 
+from base64 import urlsafe_b64encode
+import hashlib
+import hmac
 from pathlib import Path
 
 import pytest
 
 from polyglot_site_translator.domain.site_registry.errors import SiteRegistryPersistenceError
-from polyglot_site_translator.infrastructure.site_secrets import LocalKeySiteSecretCipher
+from polyglot_site_translator.infrastructure.site_secrets import (
+    _NONCE_SIZE,
+    LocalKeySiteSecretCipher,
+)
 
 
 def test_secret_cipher_roundtrips_plaintext_and_reuses_the_generated_key(tmp_path: Path) -> None:
@@ -58,3 +64,37 @@ def test_secret_cipher_rejects_invalid_encoded_payloads(tmp_path: Path) -> None:
         match=r"Stored site secret failed integrity validation\.",
     ):
         cipher.decrypt("not-valid-base64***")
+
+
+def test_secret_cipher_rejects_non_ascii_ciphertext(tmp_path: Path) -> None:
+    cipher = LocalKeySiteSecretCipher(tmp_path / "site_registry.key")
+
+    with pytest.raises(
+        SiteRegistryPersistenceError,
+        match=r"Stored site secret could not be decoded\.",
+    ):
+        cipher.decrypt("secreto-ñ")
+
+
+def test_secret_cipher_rejects_invalid_utf8_plaintext(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    cipher = LocalKeySiteSecretCipher(tmp_path / "site_registry.key")
+    key = b"k" * 32
+    nonce = b"n" * _NONCE_SIZE
+    encrypted = b"x"
+    mac = hmac.new(key, nonce + encrypted, hashlib.sha256).digest()
+    payload = urlsafe_b64encode(nonce + mac + encrypted).decode("ascii")
+
+    monkeypatch.setattr(cipher, "_load_or_create_key", lambda: key)
+    monkeypatch.setattr(
+        "polyglot_site_translator.infrastructure.site_secrets._xor_bytes",
+        lambda _left, _right: b"\xff",
+    )
+
+    with pytest.raises(
+        SiteRegistryPersistenceError,
+        match=r"Stored site secret could not be decoded\.",
+    ):
+        cipher.decrypt(payload)

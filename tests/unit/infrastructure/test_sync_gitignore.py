@@ -27,3 +27,17 @@ def test_load_gitignore_sync_rules_supports_directory_and_glob_patterns(
 
     assert [rule.relative_path for rule in rules] == ["__pycache__", "*.pyc", ".env"]
     assert [rule.filter_type.value for rule in rules] == ["glob", "glob", "glob"]
+
+
+def test_load_gitignore_sync_rules_supports_nested_directories_and_files(
+    tmp_path: Path,
+) -> None:
+    (tmp_path / ".gitignore").write_text(
+        "/cache/tmp/\nconfig/settings.local.py\n",
+        encoding="utf-8",
+    )
+
+    rules = load_gitignore_sync_rules(tmp_path)
+
+    assert [rule.relative_path for rule in rules] == ["cache/tmp", "config/settings.local.py"]
+    assert [rule.filter_type.value for rule in rules] == ["directory", "file"]

@@ -12,9 +12,13 @@ import polib
 
 from polyglot_site_translator.domain.framework_detection.models import FrameworkDetectionResult
 from polyglot_site_translator.domain.po_processing.errors import (
+    POProcessingCompilationError,
     POProcessingTranslationError,
 )
-from polyglot_site_translator.domain.po_processing.models import POProcessingProgress
+from polyglot_site_translator.domain.po_processing.models import (
+    POFileData,
+    POProcessingProgress,
+)
 from polyglot_site_translator.domain.remote_connections.models import (
     RemoteConnectionTestResult,
 )
@@ -26,6 +30,7 @@ from polyglot_site_translator.domain.sync.models import (
     SyncResult,
     SyncSummary,
 )
+from polyglot_site_translator.infrastructure.po_files import PolibPOCatalogRepository
 from polyglot_site_translator.presentation.site_registry_services import (
     SiteRegistryPresentationWorkflowService,
 )
@@ -144,6 +149,23 @@ class _BehavePartiallyFailingTranslationProvider:
             ("es_ES", "Save"): "Guardar",
         }
         return translations[(target_locale, text)]
+
+
+class _CompileFailingRepository:
+    def __init__(self) -> None:
+        self._repository = PolibPOCatalogRepository()
+
+    def discover_po_files(self, workspace_root: Path) -> tuple[POFileData, ...]:
+        return self._repository.discover_po_files(workspace_root)
+
+    def save_po_files(self, files: tuple[POFileData, ...]) -> None:
+        self._repository.save_po_files(files)
+
+    def compile_mo_file(self, file_data: POFileData) -> None:
+        if file_data.locale == "es_ES":
+            msg = f"PO file '{file_data.source_path}' could not be compiled in the BDD stub."
+            raise POProcessingCompilationError(msg)
+        self._repository.compile_mo_file(file_data)
 
 
 def _context(context: object) -> _BehavePOContext:
@@ -323,6 +345,24 @@ def step_given_site_with_partial_translation_failure(context: object) -> None:
     )
 
 
+@given("a site project with one MO compilation failure and one compilable locale variant")
+def step_given_site_with_partial_mo_compilation_failure(context: object) -> None:
+    typed = _context(context)
+    typed.temp_dir = tempfile.TemporaryDirectory()
+    workspace = Path(typed.temp_dir.name)
+    locale_dir = workspace / "locale"
+    locale_dir.mkdir(parents=True, exist_ok=True)
+    _write_po(locale_dir / "messages-es_ES.po", [("Hello", "Hola")])
+    _write_po(locale_dir / "messages-es_AR.po", [("Hello", "Hola")])
+    site = _build_site(workspace)
+    typed.site_id = site.id
+    typed.workflow_service = SiteRegistryPresentationWorkflowService(
+        service=_InMemorySiteWorkflowService(site),
+        project_sync_service=_SyncStub(),
+        po_processing_service=POProcessingService(repository=_CompileFailingRepository()),
+    )
+
+
 @when("the operator runs the PO processing workflow for that site")
 def step_when_run_po(context: object) -> None:
     typed = _context(context)
@@ -406,6 +446,14 @@ def step_then_failed_entries_for_source_file(context: object) -> None:
     assert "Failed entries: 1" in typed.po_result_summary
     assert "locale/messages-es_ES.po" in typed.po_result_summary
     assert "Broken" in typed.po_result_summary
+
+
+@then("the PO processing result reports failed mo files for the source file")
+def step_then_failed_mo_files_for_source_file(context: object) -> None:
+    typed = _context(context)
+    assert "Failed MO files:" in typed.po_result_summary
+    assert "locale/messages-es_ES.po" in typed.po_result_summary
+    assert "messages-es_ES.mo" in typed.po_result_summary
 
 
 @then("the PO processing result reports compiled mo files")
