@@ -65,6 +65,9 @@ def test_save_settings_writes_toml_and_roundtrips_values(tmp_path: Path) -> None
             default_project_locale="es_ES,es_AR",
             default_compile_mo=False,
             default_use_external_translator=False,
+            default_dry_run=True,
+            default_stats_only=True,
+            default_report_inconsistencies=True,
         )
     )
 
@@ -81,6 +84,9 @@ def test_save_settings_writes_toml_and_roundtrips_values(tmp_path: Path) -> None
     assert reloaded_state.app_settings.default_project_locale == "es_ES,es_AR"
     assert reloaded_state.app_settings.default_compile_mo is False
     assert reloaded_state.app_settings.default_use_external_translator is False
+    assert reloaded_state.app_settings.default_dry_run is True
+    assert reloaded_state.app_settings.default_stats_only is True
+    assert reloaded_state.app_settings.default_report_inconsistencies is True
     assert 'theme_mode = "dark"' in settings_path.read_text(encoding="utf-8")
 
 
@@ -205,6 +211,19 @@ def test_load_settings_rejects_invalid_translation_defaults(tmp_path: Path) -> N
             '[translation]\ndefault_use_external_translator = "yes"\n',
             r"The translation setting 'default_use_external_translator' must be a boolean\.",
         ),
+        (
+            '[app]\nlast_opened_screen = "dashboard"\n[translation]\ndefault_dry_run = "yes"\n',
+            r"The translation setting 'default_dry_run' must be a boolean\.",
+        ),
+        (
+            '[app]\nlast_opened_screen = "dashboard"\n[translation]\ndefault_stats_only = "yes"\n',
+            r"The translation setting 'default_stats_only' must be a boolean\.",
+        ),
+        (
+            '[app]\nlast_opened_screen = "dashboard"\n'
+            '[translation]\ndefault_report_inconsistencies = "yes"\n',
+            r"The translation setting 'default_report_inconsistencies' must be a boolean\.",
+        ),
     ],
 )
 def test_load_settings_rejects_invalid_translation_section_shapes(
@@ -248,6 +267,27 @@ def test_save_settings_persists_default_use_external_translator(tmp_path: Path) 
 
     assert saved_state.app_settings.default_use_external_translator is False
     assert "default_use_external_translator = false" in settings_path.read_text(encoding="utf-8")
+
+
+def test_save_settings_persists_default_translation_preview_flags(tmp_path: Path) -> None:
+    settings_path = tmp_path / SETTINGS_FILENAME
+    service = TomlSettingsService(settings_path)
+
+    saved_state = service.save_settings(
+        AppSettingsViewModel(
+            default_dry_run=True,
+            default_stats_only=True,
+            default_report_inconsistencies=True,
+        )
+    )
+
+    assert saved_state.app_settings.default_dry_run is True
+    assert saved_state.app_settings.default_stats_only is True
+    assert saved_state.app_settings.default_report_inconsistencies is True
+    saved_text = settings_path.read_text(encoding="utf-8")
+    assert "default_dry_run = true" in saved_text
+    assert "default_stats_only = true" in saved_text
+    assert "default_report_inconsistencies = true" in saved_text
 
 
 def test_save_settings_rejects_invalid_database_configuration(tmp_path: Path) -> None:

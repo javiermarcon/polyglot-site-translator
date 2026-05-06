@@ -19,6 +19,7 @@ from polyglot_site_translator.presentation.view_models import (
     SettingsStateViewModel,
     SiteEditorViewModel,
     SyncStatusViewModel,
+    TranslationWorkflowRequestViewModel,
 )
 
 
@@ -58,9 +59,7 @@ class ProjectWorkflowService(Protocol):
     def start_po_processing(
         self,
         project_id: str,
-        locales: str | None = None,
-        compile_mo: bool | None = None,
-        use_external_translator: bool | None = None,
+        request: TranslationWorkflowRequestViewModel | None = None,
         progress_callback: Callable[[POProcessingProgress], None] | None = None,
     ) -> POProcessingSummaryViewModel:
         """Start a PO processing workflow for a project."""

@@ -74,6 +74,8 @@ from polyglot_site_translator.presentation.view_models import (
     SettingsStateViewModel,
     SiteEditorViewModel,
     SyncRuleEditorItemViewModel,
+    TranslationOptionsViewModel,
+    TranslationWorkflowRequestViewModel,
     build_default_app_settings,
     build_settings_state,
 )
@@ -97,6 +99,21 @@ class _PartiallyFailingPOTranslationProvider:
             raise POProcessingTranslationError(msg)
         translations = {("es_ES", "Save"): "Guardar"}
         return translations[(target_locale, text)]
+
+
+def _request(locales: str, **modes: bool) -> TranslationWorkflowRequestViewModel:
+    resolved_modes = {
+        "compile_mo": True,
+        "use_external_translator": True,
+        "dry_run": False,
+        "stats_only": False,
+        "report_inconsistencies": False,
+    }
+    resolved_modes.update(modes)
+    return TranslationWorkflowRequestViewModel(
+        locales=locales,
+        options=TranslationOptionsViewModel(**resolved_modes),
+    )
 
 
 class InMemorySiteRegistryRepository:
@@ -970,7 +987,7 @@ def test_workflow_service_processes_po_variants_from_selected_locales(tmp_path: 
         po_processing_service=POProcessingService(repository=PolibPOCatalogRepository()),
     )
 
-    preview = workflow.start_po_processing(site.id, "pt_BR")
+    preview = workflow.start_po_processing(site.id, _request("pt_BR"))
 
     assert preview.status == "completed"
     assert preview.processed_families == 1
@@ -1111,6 +1128,134 @@ def test_workflow_service_reports_mo_compilation_failures_as_completed_with_erro
     assert preview.status == "completed_with_errors"
     assert "Compiled MO files: 1" in preview.summary
     assert "Failed MO files:" in preview.summary
+
+
+def test_workflow_service_summarizes_dry_run_and_stats_only(tmp_path: Path) -> None:
+    locale_dir = tmp_path / "locale"
+    locale_dir.mkdir(parents=True, exist_ok=True)
+    _write_po_file(locale_dir / "messages-es_ES.po", [("Save", "")])
+    repository = InMemorySiteRegistryRepository()
+    site_service = _build_domain_service(repository)
+    site = site_service.create_site(
+        SiteRegistrationInput(
+            name="Marketing Site",
+            framework_type="wordpress",
+            local_path=str(tmp_path),
+            default_locale="es_ES",
+            remote_connection=RemoteConnectionConfigInput(
+                connection_type="sftp",
+                host="example.com",
+                port=22,
+                username="deploy",
+                password="super-secret",
+                remote_path="/srv/app",
+            ),
+            is_active=True,
+        )
+    )
+    workflow = SiteRegistryPresentationWorkflowService(
+        service=site_service,
+        project_sync_service=SyncStub(),
+        po_processing_service=POProcessingService(
+            repository=PolibPOCatalogRepository(),
+            translation_provider=_StubPOTranslationProvider(),
+        ),
+    )
+
+    preview = workflow.start_po_processing(
+        site.id,
+        _request(
+            site.default_locale,
+            compile_mo=False,
+            dry_run=True,
+            stats_only=True,
+        ),
+    )
+
+    assert "Dry-run: enabled" in preview.summary
+    assert "Stats only: enabled" in preview.summary
+    assert "Written PO files: 0" in preview.summary
+
+
+def test_workflow_service_summarizes_translation_inconsistencies(tmp_path: Path) -> None:
+    locale_dir = tmp_path / "locale"
+    locale_dir.mkdir(parents=True, exist_ok=True)
+    _write_po_file(locale_dir / "messages-es_ES.po", [("Hello", "Hola")])
+    _write_po_file(locale_dir / "messages-es_AR.po", [("Hello", "Che hola")])
+    repository = InMemorySiteRegistryRepository()
+    site_service = _build_domain_service(repository)
+    site = site_service.create_site(
+        SiteRegistrationInput(
+            name="Marketing Site",
+            framework_type="wordpress",
+            local_path=str(tmp_path),
+            default_locale="es_ES",
+            remote_connection=RemoteConnectionConfigInput(
+                connection_type="sftp",
+                host="example.com",
+                port=22,
+                username="deploy",
+                password="super-secret",
+                remote_path="/srv/app",
+            ),
+            is_active=True,
+        )
+    )
+    workflow = SiteRegistryPresentationWorkflowService(
+        service=site_service,
+        project_sync_service=SyncStub(),
+        po_processing_service=POProcessingService(repository=PolibPOCatalogRepository()),
+    )
+
+    preview = workflow.start_po_processing(
+        site.id,
+        _request(site.default_locale, report_inconsistencies=True),
+    )
+
+    assert "Translation inconsistencies: 1" in preview.summary
+    assert "msgid='Hello'" in preview.summary
+
+
+def test_workflow_service_reports_zero_translation_inconsistencies_when_enabled(
+    tmp_path: Path,
+) -> None:
+    locale_dir = tmp_path / "locale"
+    locale_dir.mkdir(parents=True, exist_ok=True)
+    _write_po_file(locale_dir / "messages-es_ES.po", [("Hello", "Hola")])
+    _write_po_file(locale_dir / "messages-es_AR.po", [("Hello", "Hola")])
+    repository = InMemorySiteRegistryRepository()
+    site_service = _build_domain_service(repository)
+    site = site_service.create_site(
+        SiteRegistrationInput(
+            name="Marketing Site",
+            framework_type="wordpress",
+            local_path=str(tmp_path),
+            default_locale="es_ES",
+            remote_connection=RemoteConnectionConfigInput(
+                connection_type="sftp",
+                host="example.com",
+                port=22,
+                username="deploy",
+                password="super-secret",
+                remote_path="/srv/app",
+            ),
+            is_active=True,
+        )
+    )
+    workflow = SiteRegistryPresentationWorkflowService(
+        service=site_service,
+        project_sync_service=SyncStub(),
+        po_processing_service=POProcessingService(repository=PolibPOCatalogRepository()),
+    )
+
+    preview = workflow.start_po_processing(
+        site.id,
+        _request(site.default_locale, report_inconsistencies=True),
+    )
+
+    assert "Report inconsistencies: enabled" in preview.summary
+    assert "Translation inconsistencies: 0" in preview.summary
+    assert "Inconsistency details:" not in preview.summary
 
 
 def test_workflow_service_wraps_po_processing_lookup_errors() -> None:
@@ -1481,6 +1626,8 @@ def test_build_project_detail_without_remote_connection_is_explicit() -> None:
     assert detail.default_locale == "en_US"
     assert detail.configuration_summary == (
         "Locale: en_US | Compile MO: enabled | External translator: enabled | "
+        "Dry-run: disabled | Stats only: disabled | "
+        "Report inconsistencies: disabled | "
         "Remote connection: None"
     )
     assert detail.metadata_summary == "Framework: Django | Remote connection: none configured"

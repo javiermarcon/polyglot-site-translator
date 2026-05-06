@@ -251,13 +251,85 @@ def test_process_site_skips_external_translation_when_site_disables_it(tmp_path:
     )
 
     result = service.process_site(
-        _build_site(str(workspace), "es_ES", use_external_translator=False)
+        _build_site(
+            str(workspace),
+            "es_ES",
+            modes={"use_external_translator": False},
+        )
     )
 
     translated_po = polib.pofile(str(locale_dir / "messages-es_ES.po"))
     assert result.entries_translated == 0
     assert provider.requests == []
     assert cast(polib.POEntry, translated_po.find("Save")).msgstr == ""
+
+
+def test_process_site_dry_run_reports_changes_without_writing_files(tmp_path: Path) -> None:
+    workspace = tmp_path / "workspace"
+    locale_dir = workspace / "locale"
+    locale_dir.mkdir(parents=True, exist_ok=True)
+    _write_po(locale_dir / "messages-es_ES.po", [("Save", "")])
+    provider = StubTranslationProvider({("es_ES", "Save"): "Guardar"})
+
+    service = POProcessingService(
+        repository=PolibPOCatalogRepository(),
+        translation_provider=provider,
+    )
+
+    result = service.process_site(_build_site(str(workspace), "es_ES", modes={"dry_run": True}))
+
+    translated_po = polib.pofile(str(locale_dir / "messages-es_ES.po"))
+    assert result.entries_translated == 1
+    assert result.files_written == 0
+    assert result.mo_files_compiled == 0
+    assert result.dry_run is True
+    assert result.stats_only is False
+    assert cast(polib.POEntry, translated_po.find("Save")).msgstr == ""
+
+
+def test_process_site_stats_only_reports_changes_without_writing_files(tmp_path: Path) -> None:
+    workspace = tmp_path / "workspace"
+    locale_dir = workspace / "locale"
+    locale_dir.mkdir(parents=True, exist_ok=True)
+    _write_po(locale_dir / "messages-es_ES.po", [("Save", "")])
+    provider = StubTranslationProvider({("es_ES", "Save"): "Guardar"})
+
+    service = POProcessingService(
+        repository=PolibPOCatalogRepository(),
+        translation_provider=provider,
+    )
+
+    result = service.process_site(_build_site(str(workspace), "es_ES", modes={"stats_only": True}))
+
+    translated_po = polib.pofile(str(locale_dir / "messages-es_ES.po"))
+    assert result.entries_translated == 1
+    assert result.files_written == 0
+    assert result.mo_files_compiled == 0
+    assert result.stats_only is True
+    assert cast(polib.POEntry, translated_po.find("Save")).msgstr == ""
+
+
+def test_process_site_reports_variant_inconsistencies(tmp_path: Path) -> None:
+    workspace = tmp_path / "workspace"
+    locale_dir = workspace / "locale"
+    locale_dir.mkdir(parents=True, exist_ok=True)
+    _write_po(locale_dir / "messages-es_ES.po", [("Hello", "Hola")])
+    _write_po(locale_dir / "messages-es_AR.po", [("Hello", "Che hola")])
+
+    service = POProcessingService(repository=PolibPOCatalogRepository())
+
+    result = service.process_site(
+        _build_site(
+            str(workspace),
+            "es_ES",
+            modes={"report_inconsistencies": True},
+        )
+    )
+
+    assert result.variant_inconsistencies_found == 1
+    assert len(result.variant_inconsistency_details) == 1
+    assert "msgid='Hello'" in result.variant_inconsistency_details[0]
+    assert "es_AR, es_ES" in result.variant_inconsistency_details[0]
 
 
 def test_process_site_returns_before_compiling_mo_when_project_disables_it(
@@ -712,8 +784,17 @@ def _build_site(
     local_path: str,
     default_locale: str,
     *,
-    use_external_translator: bool = True,
+    modes: dict[str, bool] | None = None,
 ) -> RegisteredSite:
+    resolved_modes = {
+        "compile_mo": True,
+        "use_external_translator": True,
+        "dry_run": False,
+        "stats_only": False,
+        "report_inconsistencies": False,
+    }
+    if modes is not None:
+        resolved_modes.update(modes)
     return RegisteredSite(
         project=SiteProject(
             id="site-1",
@@ -722,7 +803,11 @@ def _build_site(
             local_path=local_path,
             default_locale=default_locale,
             is_active=True,
-            use_external_translator=use_external_translator,
+            compile_mo=resolved_modes["compile_mo"],
+            use_external_translator=resolved_modes["use_external_translator"],
+            dry_run=resolved_modes["dry_run"],
+            stats_only=resolved_modes["stats_only"],
+            report_inconsistencies=resolved_modes["report_inconsistencies"],
         ),
         remote_connection=None,
     )

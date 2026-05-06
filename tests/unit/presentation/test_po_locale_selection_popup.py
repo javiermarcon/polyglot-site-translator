@@ -7,20 +7,40 @@ from pytest import MonkeyPatch
 from polyglot_site_translator.presentation.kivy.widgets.po_locale_selection_popup import (
     POLocaleSelectionPopup,
 )
+from polyglot_site_translator.presentation.view_models import (
+    TranslationOptionsViewModel,
+    TranslationWorkflowRequestViewModel,
+)
+
+
+def _build_options() -> TranslationOptionsViewModel:
+    return TranslationOptionsViewModel(
+        compile_mo=True,
+        use_external_translator=False,
+        dry_run=True,
+        stats_only=False,
+        report_inconsistencies=True,
+    )
 
 
 def test_po_locale_selection_popup_preloads_default_locales() -> None:
     popup = POLocaleSelectionPopup(
         default_locales="es_ES,es_AR",
-        default_compile_mo=True,
-        default_use_external_translator=False,
-        on_confirm=lambda _locales, _compile_mo, _use_external_translator: None,
+        default_options=_build_options(),
+        on_confirm=lambda _request: None,
     )
 
     assert popup.title == "Translate Project"
     assert popup._locales_input.text == "es_ES,es_AR"
     assert popup._compile_mo_switch.active is True
     assert popup._use_external_translator_switch.active is False
+    assert popup._dry_run_switch.active is True
+    assert popup._stats_only_switch.active is False
+    assert popup._report_inconsistencies_switch.active is True
+    assert tuple(popup.size_hint) == (0.84, 0.84)
+    assert len(popup._toggle_rows) == 5
+    assert popup._toggle_rows[0].height == 72
+    assert popup._toggle_rows[0].children[-1].children[-1].text == "Compile MO Files"
 
 
 def test_po_locale_selection_popup_normalizes_and_confirms_locales(
@@ -28,34 +48,52 @@ def test_po_locale_selection_popup_normalizes_and_confirms_locales(
 ) -> None:
     popup = POLocaleSelectionPopup(
         default_locales="es_ES",
-        default_compile_mo=False,
-        default_use_external_translator=False,
-        on_confirm=lambda _locales, _compile_mo, _use_external_translator: None,
+        default_options=TranslationOptionsViewModel(
+            compile_mo=False,
+            use_external_translator=False,
+            dry_run=False,
+            stats_only=False,
+            report_inconsistencies=False,
+        ),
+        on_confirm=lambda _request: None,
     )
-    confirmed: list[tuple[str, bool, bool]] = []
+    confirmed: list[TranslationWorkflowRequestViewModel] = []
     dismiss_calls: list[str] = []
 
-    def record_confirm(locales: str, compile_mo: bool, use_external_translator: bool) -> None:
-        confirmed.append((locales, compile_mo, use_external_translator))
+    def record_confirm(request: TranslationWorkflowRequestViewModel) -> None:
+        confirmed.append(request)
 
     monkeypatch.setattr(popup, "_on_confirm", record_confirm)
     monkeypatch.setattr(popup, "dismiss", lambda: dismiss_calls.append("dismiss"))
     popup._locales_input.text = "es_ES, es_AR"
     popup._compile_mo_switch.active = True
     popup._use_external_translator_switch.active = True
+    popup._dry_run_switch.active = True
+    popup._stats_only_switch.active = True
+    popup._report_inconsistencies_switch.active = True
 
     popup._submit()
 
-    assert confirmed == [("es_ES,es_AR", True, True)]
+    assert confirmed == [
+        TranslationWorkflowRequestViewModel(
+            locales="es_ES,es_AR",
+            options=TranslationOptionsViewModel(
+                compile_mo=True,
+                use_external_translator=True,
+                dry_run=True,
+                stats_only=True,
+                report_inconsistencies=True,
+            ),
+        )
+    ]
     assert dismiss_calls == ["dismiss"]
 
 
 def test_po_locale_selection_popup_keeps_open_when_locales_are_invalid() -> None:
     popup = POLocaleSelectionPopup(
         default_locales="es_ES",
-        default_compile_mo=True,
-        default_use_external_translator=True,
-        on_confirm=lambda _locales, _compile_mo, _use_external_translator: None,
+        default_options=TranslationOptionsViewModel(),
+        on_confirm=lambda _request: None,
     )
     popup._locales_input.text = "asad@"
 
@@ -65,3 +103,22 @@ def test_po_locale_selection_popup_keeps_open_when_locales_are_invalid() -> None
         "Selected locales must be a valid locale or a comma-separated list of valid "
         "locales. Invalid values: asad@."
     )
+
+
+def test_po_locale_selection_popup_builds_consistent_toggle_row_copy() -> None:
+    popup = POLocaleSelectionPopup(
+        default_locales="es_ES",
+        default_options=TranslationOptionsViewModel(),
+        on_confirm=lambda _request: None,
+    )
+
+    titles = [row.children[-1].children[-1].text for row in popup._toggle_rows]
+
+    assert titles == [
+        "Compile MO Files",
+        "Use External Translator",
+        "Dry-run",
+        "Stats Only",
+        "Report Inconsistencies",
+    ]
+    assert popup.content.children[-1] is popup._options_container

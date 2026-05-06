@@ -13,6 +13,9 @@ from polyglot_site_translator.presentation.kivy.widgets.po_locale_selection_popu
 from polyglot_site_translator.presentation.kivy.widgets.sync_progress_popup import (
     SyncProgressPopup,
 )
+from polyglot_site_translator.presentation.view_models import (
+    TranslationWorkflowRequestViewModel,
+)
 
 
 class ProjectDetailScreen(BaseShellScreen):
@@ -64,22 +67,18 @@ class ProjectDetailScreen(BaseShellScreen):
             return
         self._po_locale_popup = POLocaleSelectionPopup(
             default_locales=detail.default_locale,
-            default_compile_mo=detail.compile_mo,
-            default_use_external_translator=detail.use_external_translator,
+            default_options=detail.translation_options,
             on_confirm=self._confirm_po_processing,
         )
         self._po_locale_popup.open()
 
     def _confirm_po_processing(
         self,
-        locales: str,
-        compile_mo: bool,
-        use_external_translator: bool,
+        request: TranslationWorkflowRequestViewModel,
     ) -> None:
         self._shell.start_po_processing_async(
-            locales,
-            compile_mo=compile_mo,
-            use_external_translator=use_external_translator,
+            request.locales,
+            options=request.options,
         )
         self.show_route("po_processing")
 

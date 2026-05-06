@@ -6,7 +6,6 @@ import asyncio
 from dataclasses import dataclass
 from typing import Any
 
-import httpx
 import pytest
 from pytest import MonkeyPatch
 
@@ -74,7 +73,7 @@ class _ProtocolFailingTranslator:
     async def translate(self, text: str, dest: str) -> Any:
         del text, dest
         msg = "protocol closed"
-        raise httpx.LocalProtocolError(msg)
+        raise RuntimeError(msg)
 
 
 @dataclass
@@ -180,8 +179,9 @@ def test_googletrans_provider_reuses_thread_local_translator_and_recreates_close
             created.append(self)
 
     monkeypatch.setattr(
-        "polyglot_site_translator.infrastructure.po_translator_googletrans.Translator",
-        _TranslatorFactory,
+        "polyglot_site_translator.infrastructure.po_translator_googletrans."
+        "_load_googletrans_translator_class",
+        lambda: _TranslatorFactory,
     )
 
     first_translator = provider._translator_for_current_thread()

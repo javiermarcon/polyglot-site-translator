@@ -105,12 +105,34 @@ class AppSettingsViewModel:
     default_project_locale: str = "en_US"
     default_compile_mo: bool = True
     default_use_external_translator: bool = True
+    default_dry_run: bool = False
+    default_stats_only: bool = False
+    default_report_inconsistencies: bool = False
     database_directory: str = ""
     database_filename: str = "site_registry.sqlite3"
     sync_progress_log_limit: int = 200
     sync_scope_settings: AdapterSyncScopeSettings = field(
         default_factory=build_default_sync_scope_settings
     )
+
+
+@dataclass(frozen=True)
+class TranslationOptionsViewModel:
+    """Translation workflow toggles shared by settings, projects and run popups."""
+
+    compile_mo: bool = True
+    use_external_translator: bool = True
+    dry_run: bool = False
+    stats_only: bool = False
+    report_inconsistencies: bool = False
+
+
+@dataclass(frozen=True)
+class TranslationWorkflowRequestViewModel:
+    """Per-run translation request selected from the popup."""
+
+    locales: str
+    options: TranslationOptionsViewModel
 
 
 @dataclass(frozen=True)
@@ -144,6 +166,20 @@ class ProjectDetailViewModel:
     actions: list[ProjectActionViewModel]
     compile_mo: bool = True
     use_external_translator: bool = True
+    dry_run: bool = False
+    stats_only: bool = False
+    report_inconsistencies: bool = False
+
+    @property
+    def translation_options(self) -> TranslationOptionsViewModel:
+        """Return translation toggles associated with this project detail."""
+        return build_translation_options(
+            compile_mo=self.compile_mo,
+            use_external_translator=self.use_external_translator,
+            dry_run=self.dry_run,
+            stats_only=self.stats_only,
+            report_inconsistencies=self.report_inconsistencies,
+        )
 
 
 @dataclass(frozen=True)
@@ -188,6 +224,20 @@ class ProjectDetailStateViewModel:
     actions: list[ProjectActionViewModel]
     compile_mo: bool = True
     use_external_translator: bool = True
+    dry_run: bool = False
+    stats_only: bool = False
+    report_inconsistencies: bool = False
+
+    @property
+    def translation_options(self) -> TranslationOptionsViewModel:
+        """Return translation toggles associated with this project detail state."""
+        return build_translation_options(
+            compile_mo=self.compile_mo,
+            use_external_translator=self.use_external_translator,
+            dry_run=self.dry_run,
+            stats_only=self.stats_only,
+            report_inconsistencies=self.report_inconsistencies,
+        )
 
 
 @dataclass(frozen=True)
@@ -208,9 +258,23 @@ class SiteEditorViewModel:
     is_active: bool
     compile_mo: bool = True
     use_external_translator: bool = True
+    dry_run: bool = False
+    stats_only: bool = False
+    report_inconsistencies: bool = False
     remote_verify_host: bool = True
     use_adapter_sync_filters: bool = False
     sync_rule_items: tuple[SyncRuleEditorItemViewModel, ...] = ()
+
+    @property
+    def translation_options(self) -> TranslationOptionsViewModel:
+        """Return translation toggles associated with this editor draft."""
+        return build_translation_options(
+            compile_mo=self.compile_mo,
+            use_external_translator=self.use_external_translator,
+            dry_run=self.dry_run,
+            stats_only=self.stats_only,
+            report_inconsistencies=self.report_inconsistencies,
+        )
 
 
 @dataclass(frozen=True)
@@ -433,6 +497,9 @@ def build_default_app_settings(
         default_project_locale="en_US",
         default_compile_mo=True,
         default_use_external_translator=True,
+        default_dry_run=False,
+        default_stats_only=False,
+        default_report_inconsistencies=False,
         database_directory=database_directory,
         database_filename=database_filename,
         sync_progress_log_limit=200,
@@ -440,21 +507,42 @@ def build_default_app_settings(
     )
 
 
+def build_translation_options(
+    *,
+    compile_mo: bool = True,
+    use_external_translator: bool = True,
+    dry_run: bool = False,
+    stats_only: bool = False,
+    report_inconsistencies: bool = False,
+) -> TranslationOptionsViewModel:
+    """Return translation workflow toggles for settings, projects and popups."""
+    return TranslationOptionsViewModel(
+        compile_mo=compile_mo,
+        use_external_translator=use_external_translator,
+        dry_run=dry_run,
+        stats_only=stats_only,
+        report_inconsistencies=report_inconsistencies,
+    )
+
+
 def build_default_site_editor(
     *,
     default_locale: str = "en_US",
-    compile_mo: bool = True,
-    use_external_translator: bool = True,
+    translation_options: TranslationOptionsViewModel | None = None,
 ) -> SiteEditorViewModel:
     """Return the default site registry editor draft."""
+    options = build_translation_options() if translation_options is None else translation_options
     return SiteEditorViewModel(
         site_id=None,
         name="",
         framework_type="unknown",
         local_path="",
         default_locale=default_locale,
-        compile_mo=compile_mo,
-        use_external_translator=use_external_translator,
+        compile_mo=options.compile_mo,
+        use_external_translator=options.use_external_translator,
+        dry_run=options.dry_run,
+        stats_only=options.stats_only,
+        report_inconsistencies=options.report_inconsistencies,
         connection_type=NO_REMOTE_CONNECTION_VALUE,
         remote_host="",
         remote_port="",

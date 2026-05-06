@@ -23,6 +23,7 @@ from polyglot_site_translator.presentation.view_models import (
     SiteEditorViewModel,
     SyncProgressStateViewModel,
     SyncStatusViewModel,
+    TranslationWorkflowRequestViewModel,
     build_default_app_settings,
 )
 from tests.support.frontend_doubles import (
@@ -93,16 +94,12 @@ class _BlockingWorkflowService:
     def start_po_processing(
         self,
         project_id: str,
-        locales: str | None = None,
-        compile_mo: bool | None = None,
-        use_external_translator: bool | None = None,
+        request: TranslationWorkflowRequestViewModel | None = None,
         progress_callback: Callable[[POProcessingProgress], None] | None = None,
     ) -> POProcessingSummaryViewModel:
         return build_seeded_services().workflows.start_po_processing(
             project_id,
-            locales,
-            compile_mo,
-            use_external_translator,
+            request,
             progress_callback,
         )
 
@@ -150,16 +147,12 @@ class _FailingBackgroundWorkflowService:
     def start_po_processing(
         self,
         project_id: str,
-        locales: str | None = None,
-        compile_mo: bool | None = None,
-        use_external_translator: bool | None = None,
+        request: TranslationWorkflowRequestViewModel | None = None,
         progress_callback: Callable[[POProcessingProgress], None] | None = None,
     ) -> POProcessingSummaryViewModel:
         return build_seeded_services().workflows.start_po_processing(
             project_id,
-            locales,
-            compile_mo,
-            use_external_translator,
+            request,
             progress_callback,
         )
 
@@ -171,6 +164,9 @@ class _BlockingPOProcessingWorkflowService:
     requested_locales: list[str]
     requested_compile_mo: list[bool | None]
     requested_use_external_translator: list[bool | None]
+    requested_dry_run: list[bool | None]
+    requested_stats_only: list[bool | None]
+    requested_report_inconsistencies: list[bool | None]
 
     def start_sync(
         self,
@@ -195,14 +191,19 @@ class _BlockingPOProcessingWorkflowService:
     def start_po_processing(
         self,
         project_id: str,
-        locales: str | None = None,
-        compile_mo: bool | None = None,
-        use_external_translator: bool | None = None,
+        request: TranslationWorkflowRequestViewModel | None = None,
         progress_callback: Callable[[POProcessingProgress], None] | None = None,
     ) -> POProcessingSummaryViewModel:
-        self.requested_locales.append("" if locales is None else locales)
-        self.requested_compile_mo.append(compile_mo)
-        self.requested_use_external_translator.append(use_external_translator)
+        self.requested_locales.append("" if request is None else request.locales)
+        self.requested_compile_mo.append(None if request is None else request.options.compile_mo)
+        self.requested_use_external_translator.append(
+            None if request is None else request.options.use_external_translator
+        )
+        self.requested_dry_run.append(None if request is None else request.options.dry_run)
+        self.requested_stats_only.append(None if request is None else request.options.stats_only)
+        self.requested_report_inconsistencies.append(
+            None if request is None else request.options.report_inconsistencies
+        )
         if progress_callback is not None:
             progress_callback(
                 POProcessingProgress(
@@ -261,15 +262,20 @@ class _FailingPOProcessingWorkflowService:
     def start_po_processing(
         self,
         project_id: str,
-        locales: str | None = None,
-        compile_mo: bool | None = None,
-        use_external_translator: bool | None = None,
+        request: TranslationWorkflowRequestViewModel | None = None,
         progress_callback: Callable[[POProcessingProgress], None] | None = None,
     ) -> POProcessingSummaryViewModel:
+        options = None if request is None else request.options
         msg = (
             "PO processing failed for locales: "
-            f"{locales} and compile_mo: {compile_mo} and "
-            f"use_external_translator: {use_external_translator}"
+            f"{None if request is None else request.locales} and compile_mo: "
+            f"{None if options is None else options.compile_mo} and "
+            f"use_external_translator: "
+            f"{None if options is None else options.use_external_translator} and "
+            f"dry_run: {None if options is None else options.dry_run} and "
+            f"stats_only: {None if options is None else options.stats_only} and "
+            "report_inconsistencies: "
+            f"{None if options is None else options.report_inconsistencies}"
         )
         raise ControlledServiceError(msg)
 
@@ -309,16 +315,12 @@ class _TrustHostKeyWorkflowService:
     def start_po_processing(
         self,
         project_id: str,
-        locales: str | None = None,
-        compile_mo: bool | None = None,
-        use_external_translator: bool | None = None,
+        request: TranslationWorkflowRequestViewModel | None = None,
         progress_callback: Callable[[POProcessingProgress], None] | None = None,
     ) -> POProcessingSummaryViewModel:
         return build_seeded_services().workflows.start_po_processing(
             project_id,
-            locales,
-            compile_mo,
-            use_external_translator,
+            request,
             progress_callback,
         )
 
@@ -750,6 +752,9 @@ def test_po_processing_can_run_in_background_with_selected_locales() -> None:
         requested_locales=[],
         requested_compile_mo=[],
         requested_use_external_translator=[],
+        requested_dry_run=[],
+        requested_stats_only=[],
+        requested_report_inconsistencies=[],
     )
     shell = create_frontend_shell(
         FrontendServices(
@@ -810,11 +815,13 @@ def test_background_po_processing_failure_is_exposed_without_crashing() -> None:
     assert shell.po_processing_state.status == "failed"
     assert shell.po_processing_state.summary == (
         "PO processing failed for locales: es_ES and compile_mo: True and "
-        "use_external_translator: True"
+        "use_external_translator: True and dry_run: False and "
+        "stats_only: False and report_inconsistencies: False"
     )
     assert shell.po_processing_state.current_file is None
     assert shell.po_processing_state.current_entry is None
     assert shell.latest_error == (
         "PO processing failed for locales: es_ES and compile_mo: True and "
-        "use_external_translator: True"
+        "use_external_translator: True and dry_run: False and "
+        "stats_only: False and report_inconsistencies: False"
     )

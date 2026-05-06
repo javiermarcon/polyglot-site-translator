@@ -74,6 +74,9 @@ class SettingsScreen(BaseShellScreen):
         self._default_project_locale_input: TextInput | None = None
         self._default_compile_mo_switch: Switch | None = None
         self._default_use_external_translator_switch: Switch | None = None
+        self._default_dry_run_switch: Switch | None = None
+        self._default_stats_only_switch: Switch | None = None
+        self._default_report_inconsistencies_switch: Switch | None = None
         self._database_directory_input: TextInput | None = None
         self._database_filename_input: TextInput | None = None
         self._sync_progress_log_limit_input: TextInput | None = None
@@ -111,6 +114,9 @@ class SettingsScreen(BaseShellScreen):
         self._default_project_locale_input = None
         self._default_compile_mo_switch = None
         self._default_use_external_translator_switch = None
+        self._default_dry_run_switch = None
+        self._default_stats_only_switch = None
+        self._default_report_inconsistencies_switch = None
         self._layout_spec = build_settings_layout_spec(Window.width)
         self._content.add_widget(
             _build_information_card(
@@ -242,6 +248,13 @@ class SettingsScreen(BaseShellScreen):
         form.add_widget(
             self._build_default_use_external_translator_field(
                 value=draft.default_use_external_translator
+            )
+        )
+        form.add_widget(self._build_default_dry_run_field(value=draft.default_dry_run))
+        form.add_widget(self._build_default_stats_only_field(value=draft.default_stats_only))
+        form.add_widget(
+            self._build_default_report_inconsistencies_field(
+                value=draft.default_report_inconsistencies
             )
         )
         actions = BoxLayout(
@@ -527,6 +540,56 @@ class SettingsScreen(BaseShellScreen):
             size=(72, 36),
         )
         row.add_widget(self._default_use_external_translator_switch)
+        card.add_widget(row)
+        return card
+
+    def _build_default_dry_run_field(self, *, value: bool) -> SurfaceBoxLayout:
+        card = _build_field_card(
+            title="Default Dry-run Mode",
+            help_text=(
+                "Enable preview translation runs that compute changes without "
+                "writing PO or MO files."
+            ),
+        )
+        row = BoxLayout(orientation="horizontal", spacing=12, size_hint_y=None, height=40)
+        row.add_widget(WrappedLabel(text="Enable default dry-run mode for new projects."))
+        self._default_dry_run_switch = Switch(active=value, size_hint=(None, None), size=(72, 36))
+        row.add_widget(self._default_dry_run_switch)
+        card.add_widget(row)
+        return card
+
+    def _build_default_stats_only_field(self, *, value: bool) -> SurfaceBoxLayout:
+        card = _build_field_card(
+            title="Default Stats-only Mode",
+            help_text=(
+                "Enable translation runs that collect workflow statistics without "
+                "writing PO or MO files."
+            ),
+        )
+        row = BoxLayout(orientation="horizontal", spacing=12, size_hint_y=None, height=40)
+        row.add_widget(WrappedLabel(text="Enable default stats-only mode for new projects."))
+        self._default_stats_only_switch = Switch(
+            active=value,
+            size_hint=(None, None),
+            size=(72, 36),
+        )
+        row.add_widget(self._default_stats_only_switch)
+        card.add_widget(row)
+        return card
+
+    def _build_default_report_inconsistencies_field(self, *, value: bool) -> SurfaceBoxLayout:
+        card = _build_field_card(
+            title="Default Inconsistency Reporting",
+            help_text="Enable variant inconsistency reporting across translated locale families.",
+        )
+        row = BoxLayout(orientation="horizontal", spacing=12, size_hint_y=None, height=40)
+        row.add_widget(WrappedLabel(text="Enable inconsistency reporting for new projects."))
+        self._default_report_inconsistencies_switch = Switch(
+            active=value,
+            size_hint=(None, None),
+            size=(72, 36),
+        )
+        row.add_widget(self._default_report_inconsistencies_switch)
         card.add_widget(row)
         return card
 
@@ -863,45 +926,10 @@ class SettingsScreen(BaseShellScreen):
         self._clear_form_error()
         draft = self._require_draft()
         try:
-            if self._width_input is not None and self._height_input is not None:
-                width_text = self._width_input.text.strip()
-                height_text = self._height_input.text.strip()
-                if width_text and height_text:
-                    draft = replace(
-                        draft,
-                        window_width=int(width_text),
-                        window_height=int(height_text),
-                    )
-            if (
-                self._database_directory_input is not None
-                and self._database_filename_input is not None
-            ):
-                draft = replace(
-                    draft,
-                    database_directory=self._database_directory_input.text.strip(),
-                    database_filename=self._database_filename_input.text.strip(),
-                )
-            if self._default_project_locale_input is not None:
-                draft = replace(
-                    draft,
-                    default_project_locale=self._default_project_locale_input.text.strip(),
-                )
-            if self._default_compile_mo_switch is not None:
-                draft = replace(
-                    draft,
-                    default_compile_mo=self._default_compile_mo_switch.active,
-                )
-            if self._default_use_external_translator_switch is not None:
-                draft = replace(
-                    draft,
-                    default_use_external_translator=(
-                        self._default_use_external_translator_switch.active
-                    ),
-                )
-            if self._sync_progress_log_limit_input is not None:
-                limit_text = self._sync_progress_log_limit_input.text.strip()
-                if limit_text:
-                    draft = replace(draft, sync_progress_log_limit=int(limit_text))
+            draft = self._apply_window_size_settings(draft)
+            draft = self._apply_database_settings(draft)
+            draft = self._apply_translation_settings(draft)
+            draft = self._apply_sync_progress_settings(draft)
         except ValueError:
             self._show_form_error(ValueError("Numeric settings must be whole numbers."))
             return
@@ -913,6 +941,72 @@ class SettingsScreen(BaseShellScreen):
         if self._apply_runtime_settings is not None and self._require_state().status != "failed":
             self._apply_runtime_settings(self._require_state().app_settings)
         self.show_route("settings")
+
+    def _apply_window_size_settings(self, draft: AppSettingsViewModel) -> AppSettingsViewModel:
+        if self._width_input is None or self._height_input is None:
+            return draft
+        width_text = self._width_input.text.strip()
+        height_text = self._height_input.text.strip()
+        if not width_text or not height_text:
+            return draft
+        return replace(
+            draft,
+            window_width=int(width_text),
+            window_height=int(height_text),
+        )
+
+    def _apply_database_settings(self, draft: AppSettingsViewModel) -> AppSettingsViewModel:
+        if self._database_directory_input is None or self._database_filename_input is None:
+            return draft
+        return replace(
+            draft,
+            database_directory=self._database_directory_input.text.strip(),
+            database_filename=self._database_filename_input.text.strip(),
+        )
+
+    def _apply_translation_settings(self, draft: AppSettingsViewModel) -> AppSettingsViewModel:
+        updated_draft = draft
+        if self._default_project_locale_input is not None:
+            updated_draft = replace(
+                updated_draft,
+                default_project_locale=self._default_project_locale_input.text.strip(),
+            )
+        if self._default_compile_mo_switch is not None:
+            updated_draft = replace(
+                updated_draft,
+                default_compile_mo=self._default_compile_mo_switch.active,
+            )
+        if self._default_use_external_translator_switch is not None:
+            updated_draft = replace(
+                updated_draft,
+                default_use_external_translator=(
+                    self._default_use_external_translator_switch.active
+                ),
+            )
+        if self._default_dry_run_switch is not None:
+            updated_draft = replace(
+                updated_draft,
+                default_dry_run=self._default_dry_run_switch.active,
+            )
+        if self._default_stats_only_switch is not None:
+            updated_draft = replace(
+                updated_draft,
+                default_stats_only=self._default_stats_only_switch.active,
+            )
+        if self._default_report_inconsistencies_switch is not None:
+            updated_draft = replace(
+                updated_draft,
+                default_report_inconsistencies=(self._default_report_inconsistencies_switch.active),
+            )
+        return updated_draft
+
+    def _apply_sync_progress_settings(self, draft: AppSettingsViewModel) -> AppSettingsViewModel:
+        if self._sync_progress_log_limit_input is None:
+            return draft
+        limit_text = self._sync_progress_log_limit_input.text.strip()
+        if not limit_text:
+            return draft
+        return replace(draft, sync_progress_log_limit=int(limit_text))
 
     def _restore_defaults(self, *_args: object) -> None:
         self._shell.restore_default_settings()

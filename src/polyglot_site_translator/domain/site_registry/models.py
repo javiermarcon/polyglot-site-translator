@@ -22,6 +22,9 @@ class SiteRegistrationInput:
     is_active: bool
     compile_mo: bool = True
     use_external_translator: bool = True
+    dry_run: bool = False
+    stats_only: bool = False
+    report_inconsistencies: bool = False
 
 
 @dataclass(frozen=True)
@@ -36,6 +39,9 @@ class SiteProject:
     is_active: bool
     compile_mo: bool = True
     use_external_translator: bool = True
+    dry_run: bool = False
+    stats_only: bool = False
+    report_inconsistencies: bool = False
 
 
 @dataclass(frozen=True)
@@ -79,6 +85,21 @@ class RegisteredSite:
     def use_external_translator(self) -> bool:
         """Return whether external translation is enabled for this project."""
         return self.project.use_external_translator
+
+    @property
+    def dry_run(self) -> bool:
+        """Return whether translation runs in dry-run mode for this project."""
+        return self.project.dry_run
+
+    @property
+    def stats_only(self) -> bool:
+        """Return whether translation runs in stats-only mode for this project."""
+        return self.project.stats_only
+
+    @property
+    def report_inconsistencies(self) -> bool:
+        """Return whether variant inconsistencies are reported for this project."""
+        return self.project.report_inconsistencies
 
     @property
     def is_active(self) -> bool:

@@ -71,3 +71,38 @@ Feature: PO processing workflow
     Then the PO processing result reports completed with errors status
     And the PO processing result reports one processed family
     And the PO processing result reports failed mo files for the source file
+
+  Scenario: Run the PO workflow in dry-run mode without writing files
+    Given a site project with untranslated PO locale variants and dry-run enabled
+    When the operator runs the PO processing workflow for that site
+    Then the PO processing result reports completed status
+    And the PO processing result reports one processed family
+    And the PO processing result reports translated entries
+    And the PO processing result reports zero written PO files
+    And the PO processing result reports zero compiled mo files
+    And the processed PO file keeps the untranslated text
+
+  Scenario: Run the PO workflow in stats-only mode without writing files
+    Given a site project with untranslated PO locale variants and stats-only enabled
+    When the operator runs the PO processing workflow for that site
+    Then the PO processing result reports completed status
+    And the PO processing result reports one processed family
+    And the PO processing result reports translated entries
+    And the PO processing result reports zero written PO files
+    And the PO processing result reports zero compiled mo files
+    And the processed PO file keeps the untranslated text
+
+  Scenario: Report translation inconsistencies across locale variants
+    Given a site project with inconsistent translated PO locale variants
+    When the operator runs the PO processing workflow for that site
+    Then the PO processing result reports completed status
+    And the PO processing result reports one processed family
+    And the PO processing result reports one translation inconsistency
+    And the PO processing result reports the inconsistency detail for "Hello"
+
+  Scenario: Report zero translation inconsistencies when the variants match
+    Given a site project with PO locale variants in the local workspace
+    When the operator runs the PO processing workflow with inconsistency reporting enabled
+    Then the PO processing result reports completed status
+    And the PO processing result reports one processed family
+    And the PO processing result reports zero translation inconsistencies

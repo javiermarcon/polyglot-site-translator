@@ -61,6 +61,9 @@ class ProjectEditorScreen(BaseShellScreen):
         self._default_locale_input: TextInput | None = None
         self._compile_mo_switch: Switch | None = None
         self._use_external_translator_switch: Switch | None = None
+        self._dry_run_switch: Switch | None = None
+        self._stats_only_switch: Switch | None = None
+        self._report_inconsistencies_switch: Switch | None = None
         self._connection_type_spinner: Spinner | None = None
         self._remote_host_input: TextInput | None = None
         self._remote_port_input: TextInput | None = None
@@ -252,6 +255,11 @@ class ProjectEditorScreen(BaseShellScreen):
         card.add_widget(
             self._build_use_external_translator_toggle(state.editor.use_external_translator)
         )
+        card.add_widget(self._build_dry_run_toggle(state.editor.dry_run))
+        card.add_widget(self._build_stats_only_toggle(state.editor.stats_only))
+        card.add_widget(
+            self._build_report_inconsistencies_toggle(state.editor.report_inconsistencies)
+        )
         return card
 
     def _build_remote_fields(self, state: ProjectEditorStateViewModel) -> SurfaceBoxLayout:
@@ -315,6 +323,9 @@ class ProjectEditorScreen(BaseShellScreen):
         self._default_locale_input = None
         self._compile_mo_switch = None
         self._use_external_translator_switch = None
+        self._dry_run_switch = None
+        self._stats_only_switch = None
+        self._report_inconsistencies_switch = None
         self._connection_type_spinner = None
         self._remote_host_input = None
         self._remote_port_input = None
@@ -396,6 +407,71 @@ class ProjectEditorScreen(BaseShellScreen):
             size=(72, 36),
         )
         row.add_widget(self._use_external_translator_switch)
+        card.add_widget(row)
+        return card
+
+    def _build_dry_run_toggle(self, is_enabled: bool) -> SurfaceBoxLayout:
+        card = SurfaceBoxLayout(
+            orientation="vertical",
+            spacing=8,
+            padding=14,
+            size_hint_y=None,
+            background_role="card_subtle_background",
+        )
+        card.bind(minimum_height=card.setter("height"))
+        card.add_widget(WrappedLabel(text="Dry-run", font_size=16, bold=True))
+        row = BoxLayout(orientation="horizontal", spacing=12, size_hint_y=None, height=40)
+        row.add_widget(
+            WrappedLabel(text="Compute translation changes without writing PO or MO files.")
+        )
+        self._dry_run_switch = Switch(active=is_enabled, size_hint=(None, None), size=(72, 36))
+        row.add_widget(self._dry_run_switch)
+        card.add_widget(row)
+        return card
+
+    def _build_stats_only_toggle(self, is_enabled: bool) -> SurfaceBoxLayout:
+        card = SurfaceBoxLayout(
+            orientation="vertical",
+            spacing=8,
+            padding=14,
+            size_hint_y=None,
+            background_role="card_subtle_background",
+        )
+        card.bind(minimum_height=card.setter("height"))
+        card.add_widget(WrappedLabel(text="Stats Only", font_size=16, bold=True))
+        row = BoxLayout(orientation="horizontal", spacing=12, size_hint_y=None, height=40)
+        row.add_widget(
+            WrappedLabel(text="Collect translation workflow statistics without writing files.")
+        )
+        self._stats_only_switch = Switch(
+            active=is_enabled,
+            size_hint=(None, None),
+            size=(72, 36),
+        )
+        row.add_widget(self._stats_only_switch)
+        card.add_widget(row)
+        return card
+
+    def _build_report_inconsistencies_toggle(self, is_enabled: bool) -> SurfaceBoxLayout:
+        card = SurfaceBoxLayout(
+            orientation="vertical",
+            spacing=8,
+            padding=14,
+            size_hint_y=None,
+            background_role="card_subtle_background",
+        )
+        card.bind(minimum_height=card.setter("height"))
+        card.add_widget(WrappedLabel(text="Report Inconsistencies", font_size=16, bold=True))
+        row = BoxLayout(orientation="horizontal", spacing=12, size_hint_y=None, height=40)
+        row.add_widget(
+            WrappedLabel(text="Report differing translated values across locale variants.")
+        )
+        self._report_inconsistencies_switch = Switch(
+            active=is_enabled,
+            size_hint=(None, None),
+            size=(72, 36),
+        )
+        row.add_widget(self._report_inconsistencies_switch)
         card.add_widget(row)
         return card
 
@@ -754,6 +830,21 @@ class ProjectEditorScreen(BaseShellScreen):
                 self._use_external_translator_switch.active
                 if self._use_external_translator_switch is not None
                 else state.editor.use_external_translator
+            ),
+            dry_run=(
+                self._dry_run_switch.active
+                if self._dry_run_switch is not None
+                else state.editor.dry_run
+            ),
+            stats_only=(
+                self._stats_only_switch.active
+                if self._stats_only_switch is not None
+                else state.editor.stats_only
+            ),
+            report_inconsistencies=(
+                self._report_inconsistencies_switch.active
+                if self._report_inconsistencies_switch is not None
+                else state.editor.report_inconsistencies
             ),
             connection_type=self._spinner_value_or_fallback(
                 options=state.connection_type_options,

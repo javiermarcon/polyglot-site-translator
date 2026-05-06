@@ -75,12 +75,14 @@ from polyglot_site_translator.presentation.view_models import (
     SiteEditorViewModel,
     SyncRuleEditorItemViewModel,
     SyncStatusViewModel,
+    TranslationWorkflowRequestViewModel,
     build_connection_type_options,
     build_default_site_editor,
     build_framework_type_options_from_descriptors,
     build_project_editor_state,
     build_sync_rule_behavior_options,
     build_sync_rule_filter_type_options,
+    build_translation_options,
 )
 from polyglot_site_translator.services.framework_sync_scope import FrameworkSyncScopeService
 from polyglot_site_translator.services.site_registry import SiteRegistryService
@@ -183,9 +185,16 @@ class SiteRegistryPresentationManagementService(ProjectRegistryManagementService
         editor = replace(
             build_default_site_editor(
                 default_locale=settings_state.app_settings.default_project_locale,
-                compile_mo=settings_state.app_settings.default_compile_mo,
-                use_external_translator=(
-                    settings_state.app_settings.default_use_external_translator
+                translation_options=build_translation_options(
+                    compile_mo=settings_state.app_settings.default_compile_mo,
+                    use_external_translator=(
+                        settings_state.app_settings.default_use_external_translator
+                    ),
+                    dry_run=settings_state.app_settings.default_dry_run,
+                    stats_only=settings_state.app_settings.default_stats_only,
+                    report_inconsistencies=(
+                        settings_state.app_settings.default_report_inconsistencies
+                    ),
                 ),
             ),
             local_path=str(self._default_workspace_root() / "site"),
@@ -459,9 +468,7 @@ class SiteRegistryPresentationWorkflowService(ProjectWorkflowService):
     def start_po_processing(
         self,
         project_id: str,
-        locales: str | None = None,
-        compile_mo: bool | None = None,
-        use_external_translator: bool | None = None,
+        request: TranslationWorkflowRequestViewModel | None = None,
         progress_callback: Callable[[POProcessingProgress], None] | None = None,
     ) -> POProcessingSummaryViewModel:
         """Run PO processing and return a typed workflow summary."""
@@ -489,18 +496,17 @@ class SiteRegistryPresentationWorkflowService(ProjectWorkflowService):
                 current_entry=None,
             )
         processing_site = site
-        if locales is not None or compile_mo is not None or use_external_translator is not None:
+        if request is not None:
             processing_site = replace(
                 site,
                 project=replace(
                     site.project,
-                    default_locale=site.default_locale if locales is None else locales,
-                    compile_mo=site.compile_mo if compile_mo is None else compile_mo,
-                    use_external_translator=(
-                        site.use_external_translator
-                        if use_external_translator is None
-                        else use_external_translator
-                    ),
+                    default_locale=request.locales,
+                    compile_mo=request.options.compile_mo,
+                    use_external_translator=request.options.use_external_translator,
+                    dry_run=request.options.dry_run,
+                    stats_only=request.options.stats_only,
+                    report_inconsistencies=request.options.report_inconsistencies,
                 ),
             )
         try:
@@ -516,8 +522,20 @@ class SiteRegistryPresentationWorkflowService(ProjectWorkflowService):
             f"Synchronized entries: {result.entries_synchronized}",
             f"Translated entries: {result.entries_translated}",
             f"Failed entries: {result.entries_failed}",
+            f"Written PO files: {result.files_written}",
             f"Compiled MO files: {result.mo_files_compiled}",
+            f"Dry-run: {'enabled' if processing_site.dry_run else 'disabled'}",
+            f"Stats only: {'enabled' if processing_site.stats_only else 'disabled'}",
+            "Report inconsistencies: "
+            f"{'enabled' if processing_site.report_inconsistencies else 'disabled'}",
         ]
+        if processing_site.report_inconsistencies:
+            summary_lines.append(
+                f"Translation inconsistencies: {result.variant_inconsistencies_found}"
+            )
+        if result.variant_inconsistencies_found > 0:
+            summary_lines.append("Inconsistency details:")
+            summary_lines.extend(result.variant_inconsistency_details)
         if result.failures:
             summary_lines.extend(
                 [
@@ -627,6 +645,9 @@ def _build_service_payload(editor: SiteEditorViewModel) -> SiteRegistrationInput
         default_locale=editor.default_locale,
         compile_mo=editor.compile_mo,
         use_external_translator=editor.use_external_translator,
+        dry_run=editor.dry_run,
+        stats_only=editor.stats_only,
+        report_inconsistencies=editor.report_inconsistencies,
         remote_connection=remote_connection,
         is_active=editor.is_active,
     )
@@ -651,6 +672,9 @@ def _build_project_detail(
         default_locale=site.default_locale,
         compile_mo=site.compile_mo,
         use_external_translator=site.use_external_translator,
+        dry_run=site.dry_run,
+        stats_only=site.stats_only,
+        report_inconsistencies=site.report_inconsistencies,
         configuration_summary=_build_configuration_summary(site),
         metadata_summary=_build_metadata_summary(site, detection_result),
         actions=[],
@@ -668,6 +692,9 @@ def _build_site_editor(site: RegisteredSite) -> SiteEditorViewModel:
             default_locale=site.default_locale,
             compile_mo=site.compile_mo,
             use_external_translator=site.use_external_translator,
+            dry_run=site.dry_run,
+            stats_only=site.stats_only,
+            report_inconsistencies=site.report_inconsistencies,
             connection_type=NO_REMOTE_CONNECTION_VALUE,
             remote_host="",
             remote_port="",
@@ -687,6 +714,9 @@ def _build_site_editor(site: RegisteredSite) -> SiteEditorViewModel:
         default_locale=site.default_locale,
         compile_mo=site.compile_mo,
         use_external_translator=site.use_external_translator,
+        dry_run=site.dry_run,
+        stats_only=site.stats_only,
+        report_inconsistencies=site.report_inconsistencies,
         connection_type=remote_connection.connection_type,
         remote_host=remote_connection.host,
         remote_port=str(remote_connection.port),
@@ -713,17 +743,27 @@ def _build_configuration_summary(site: RegisteredSite) -> str:
     if site.remote_connection is None:
         compile_summary = "enabled" if site.compile_mo else "disabled"
         translator_summary = "enabled" if site.use_external_translator else "disabled"
+        dry_run_summary = "enabled" if site.dry_run else "disabled"
+        stats_only_summary = "enabled" if site.stats_only else "disabled"
+        inconsistency_summary = "enabled" if site.report_inconsistencies else "disabled"
         return (
             f"Locale: {site.default_locale} | Compile MO: {compile_summary} | "
             f"External translator: {translator_summary} | "
+            f"Dry-run: {dry_run_summary} | Stats only: {stats_only_summary} | "
+            f"Report inconsistencies: {inconsistency_summary} | "
             "Remote connection: None"
         )
     sync_mode = "filtered" if site.remote_connection.flags.use_adapter_sync_filters else "full"
     compile_summary = "enabled" if site.compile_mo else "disabled"
     translator_summary = "enabled" if site.use_external_translator else "disabled"
+    dry_run_summary = "enabled" if site.dry_run else "disabled"
+    stats_only_summary = "enabled" if site.stats_only else "disabled"
+    inconsistency_summary = "enabled" if site.report_inconsistencies else "disabled"
     return (
         f"Locale: {site.default_locale} | Compile MO: {compile_summary} | "
         f"External translator: {translator_summary} | "
+        f"Dry-run: {dry_run_summary} | Stats only: {stats_only_summary} | "
+        f"Report inconsistencies: {inconsistency_summary} | "
         f"Remote: {site.remote_connection.connection_type} "
         f"{site.remote_connection.host}:{site.remote_connection.port} "
         f"| Path: {site.remote_connection.remote_path} | Sync mode: {sync_mode}"

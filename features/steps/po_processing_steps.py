@@ -34,6 +34,10 @@ from polyglot_site_translator.infrastructure.po_files import PolibPOCatalogRepos
 from polyglot_site_translator.presentation.site_registry_services import (
     SiteRegistryPresentationWorkflowService,
 )
+from polyglot_site_translator.presentation.view_models import (
+    TranslationOptionsViewModel,
+    TranslationWorkflowRequestViewModel,
+)
 from polyglot_site_translator.services.po_processing import POProcessingService
 
 StepFunction = TypeVar("StepFunction", bound=Callable[..., object])
@@ -53,6 +57,7 @@ class _BehavePOContext(Protocol):
     po_progress_events: list[POProcessingProgress]
     temp_dir: tempfile.TemporaryDirectory[str]
     site_id: str
+    site: RegisteredSite
 
 
 class _InMemorySiteWorkflowService:
@@ -192,6 +197,7 @@ def step_given_site_with_variants(context: object) -> None:
         ],
     )
     site = _build_site(workspace)
+    typed.site = site
     typed.site_id = site.id
     typed.workflow_service = SiteRegistryPresentationWorkflowService(
         service=_InMemorySiteWorkflowService(site),
@@ -210,6 +216,7 @@ def step_given_site_with_untranslated_variants(context: object) -> None:
     _write_po(locale_dir / "messages-es_ES.po", [("Save", "")])
     _write_po(locale_dir / "messages-es_AR.po", [("Save", "")])
     site = _build_site(workspace)
+    typed.site = site
     typed.site_id = site.id
     typed.workflow_service = SiteRegistryPresentationWorkflowService(
         service=_InMemorySiteWorkflowService(site),
@@ -229,7 +236,8 @@ def step_given_site_with_untranslated_variants_and_disabled_mo(context: object) 
     locale_dir.mkdir(parents=True, exist_ok=True)
     _write_po(locale_dir / "messages-es_ES.po", [("Save", "")])
     _write_po(locale_dir / "messages-es_AR.po", [("Save", "")])
-    site = _build_site(workspace, compile_mo=False)
+    site = _build_site(workspace, modes={"compile_mo": False})
+    typed.site = site
     typed.site_id = site.id
     typed.workflow_service = SiteRegistryPresentationWorkflowService(
         service=_InMemorySiteWorkflowService(site),
@@ -251,7 +259,8 @@ def step_given_site_with_untranslated_variants_and_disabled_external_translator(
     locale_dir.mkdir(parents=True, exist_ok=True)
     _write_po(locale_dir / "messages-es_ES.po", [("Save", "")])
     _write_po(locale_dir / "messages-es_AR.po", [("Save", "")])
-    site = _build_site(workspace, use_external_translator=False)
+    site = _build_site(workspace, modes={"use_external_translator": False})
+    typed.site = site
     typed.site_id = site.id
     typed.workflow_service = SiteRegistryPresentationWorkflowService(
         service=_InMemorySiteWorkflowService(site),
@@ -259,6 +268,67 @@ def step_given_site_with_untranslated_variants_and_disabled_external_translator(
         po_processing_service=POProcessingService(
             translation_provider=_BehaveTranslationProvider()
         ),
+    )
+
+
+@given("a site project with untranslated PO locale variants and dry-run enabled")
+def step_given_site_with_untranslated_variants_and_dry_run(context: object) -> None:
+    typed = _context(context)
+    typed.temp_dir = tempfile.TemporaryDirectory()
+    workspace = Path(typed.temp_dir.name)
+    locale_dir = workspace / "locale"
+    locale_dir.mkdir(parents=True, exist_ok=True)
+    _write_po(locale_dir / "messages-es_ES.po", [("Save", "")])
+    _write_po(locale_dir / "messages-es_AR.po", [("Save", "")])
+    site = _build_site(workspace, modes={"dry_run": True})
+    typed.site = site
+    typed.site_id = site.id
+    typed.workflow_service = SiteRegistryPresentationWorkflowService(
+        service=_InMemorySiteWorkflowService(site),
+        project_sync_service=_SyncStub(),
+        po_processing_service=POProcessingService(
+            translation_provider=_BehaveTranslationProvider()
+        ),
+    )
+
+
+@given("a site project with untranslated PO locale variants and stats-only enabled")
+def step_given_site_with_untranslated_variants_and_stats_only(context: object) -> None:
+    typed = _context(context)
+    typed.temp_dir = tempfile.TemporaryDirectory()
+    workspace = Path(typed.temp_dir.name)
+    locale_dir = workspace / "locale"
+    locale_dir.mkdir(parents=True, exist_ok=True)
+    _write_po(locale_dir / "messages-es_ES.po", [("Save", "")])
+    _write_po(locale_dir / "messages-es_AR.po", [("Save", "")])
+    site = _build_site(workspace, modes={"stats_only": True})
+    typed.site = site
+    typed.site_id = site.id
+    typed.workflow_service = SiteRegistryPresentationWorkflowService(
+        service=_InMemorySiteWorkflowService(site),
+        project_sync_service=_SyncStub(),
+        po_processing_service=POProcessingService(
+            translation_provider=_BehaveTranslationProvider()
+        ),
+    )
+
+
+@given("a site project with inconsistent translated PO locale variants")
+def step_given_site_with_inconsistent_translated_variants(context: object) -> None:
+    typed = _context(context)
+    typed.temp_dir = tempfile.TemporaryDirectory()
+    workspace = Path(typed.temp_dir.name)
+    locale_dir = workspace / "locale"
+    locale_dir.mkdir(parents=True, exist_ok=True)
+    _write_po(locale_dir / "messages-es_ES.po", [("Hello", "Hola")])
+    _write_po(locale_dir / "messages-es_AR.po", [("Hello", "Che hola")])
+    site = _build_site(workspace, modes={"report_inconsistencies": True})
+    typed.site = site
+    typed.site_id = site.id
+    typed.workflow_service = SiteRegistryPresentationWorkflowService(
+        service=_InMemorySiteWorkflowService(site),
+        project_sync_service=_SyncStub(),
+        po_processing_service=POProcessingService(),
     )
 
 
@@ -274,6 +344,7 @@ def step_given_site_with_multiple_untranslated_entries(context: object) -> None:
         [("Save", ""), ("Title", ""), ("Price", "")],
     )
     site = _build_site(workspace)
+    typed.site = site
     typed.site_id = site.id
     typed.workflow_service = SiteRegistryPresentationWorkflowService(
         service=_InMemorySiteWorkflowService(site),
@@ -290,6 +361,7 @@ def step_given_site_without_variants(context: object) -> None:
     typed.temp_dir = tempfile.TemporaryDirectory()
     workspace = Path(typed.temp_dir.name)
     site = _build_site(workspace)
+    typed.site = site
     typed.site_id = site.id
     typed.workflow_service = SiteRegistryPresentationWorkflowService(
         service=_InMemorySiteWorkflowService(site),
@@ -318,6 +390,7 @@ def step_given_site_with_portuguese_variants(context: object) -> None:
         ],
     )
     site = _build_site(workspace)
+    typed.site = site
     typed.site_id = site.id
     typed.workflow_service = SiteRegistryPresentationWorkflowService(
         service=_InMemorySiteWorkflowService(site),
@@ -335,6 +408,7 @@ def step_given_site_with_partial_translation_failure(context: object) -> None:
     locale_dir.mkdir(parents=True, exist_ok=True)
     _write_po(locale_dir / "messages-es_ES.po", [("Broken", ""), ("Save", "")])
     site = _build_site(workspace)
+    typed.site = site
     typed.site_id = site.id
     typed.workflow_service = SiteRegistryPresentationWorkflowService(
         service=_InMemorySiteWorkflowService(site),
@@ -355,6 +429,7 @@ def step_given_site_with_partial_mo_compilation_failure(context: object) -> None
     _write_po(locale_dir / "messages-es_ES.po", [("Hello", "Hola")])
     _write_po(locale_dir / "messages-es_AR.po", [("Hello", "Hola")])
     site = _build_site(workspace)
+    typed.site = site
     typed.site_id = site.id
     typed.workflow_service = SiteRegistryPresentationWorkflowService(
         service=_InMemorySiteWorkflowService(site),
@@ -369,6 +444,16 @@ def step_when_run_po(context: object) -> None:
     typed.po_progress_events = []
     result = typed.workflow_service.start_po_processing(
         typed.site_id,
+        TranslationWorkflowRequestViewModel(
+            locales=typed.site.default_locale,
+            options=TranslationOptionsViewModel(
+                compile_mo=typed.site.compile_mo,
+                use_external_translator=typed.site.use_external_translator,
+                dry_run=typed.site.dry_run,
+                stats_only=typed.site.stats_only,
+                report_inconsistencies=typed.site.report_inconsistencies,
+            ),
+        ),
         progress_callback=typed.po_progress_events.append,
     )
     typed.po_result_status = result.status
@@ -389,7 +474,40 @@ def step_when_run_po_with_selected_locale(context: object, locale: str) -> None:
     typed.po_progress_events = []
     result = typed.workflow_service.start_po_processing(
         typed.site_id,
-        locale,
+        TranslationWorkflowRequestViewModel(
+            locales=locale,
+            options=TranslationOptionsViewModel(
+                compile_mo=typed.site.compile_mo,
+                use_external_translator=typed.site.use_external_translator,
+                dry_run=typed.site.dry_run,
+                stats_only=typed.site.stats_only,
+                report_inconsistencies=typed.site.report_inconsistencies,
+            ),
+        ),
+        progress_callback=typed.po_progress_events.append,
+    )
+    typed.po_result_status = result.status
+    typed.po_result_families = result.processed_families
+    typed.po_result_summary = result.summary
+    typed.compiled_mo_paths = tuple(sorted(Path(typed.temp_dir.name).rglob("*.mo")))
+
+
+@when("the operator runs the PO processing workflow with inconsistency reporting enabled")
+def step_when_run_po_with_inconsistency_reporting_enabled(context: object) -> None:
+    typed = _context(context)
+    typed.po_progress_events = []
+    result = typed.workflow_service.start_po_processing(
+        typed.site_id,
+        TranslationWorkflowRequestViewModel(
+            locales=typed.site.default_locale,
+            options=TranslationOptionsViewModel(
+                compile_mo=typed.site.compile_mo,
+                use_external_translator=typed.site.use_external_translator,
+                dry_run=typed.site.dry_run,
+                stats_only=typed.site.stats_only,
+                report_inconsistencies=True,
+            ),
+        ),
         progress_callback=typed.po_progress_events.append,
     )
     typed.po_result_status = result.status
@@ -477,6 +595,12 @@ def step_then_zero_compiled_mo_files(context: object) -> None:
     assert "Compiled MO files: 0" in typed.po_result_summary
 
 
+@then("the PO processing result reports zero written PO files")
+def step_then_zero_written_po_files(context: object) -> None:
+    typed = _context(context)
+    assert "Written PO files: 0" in typed.po_result_summary
+
+
 @then("the processed locale variants do not contain compiled mo files")
 def step_then_no_compiled_mo_files_exist(context: object) -> None:
     typed = _context(context)
@@ -523,12 +647,39 @@ def step_then_zero_family(context: object) -> None:
     assert typed.po_result_families == 0
 
 
+@then("the PO processing result reports one translation inconsistency")
+def step_then_one_translation_inconsistency(context: object) -> None:
+    typed = _context(context)
+    assert "Translation inconsistencies: 1" in typed.po_result_summary
+
+
+@then("the PO processing result reports zero translation inconsistencies")
+def step_then_zero_translation_inconsistencies(context: object) -> None:
+    typed = _context(context)
+    assert "Translation inconsistencies: 0" in typed.po_result_summary
+
+
+@then('the PO processing result reports the inconsistency detail for "{msgid}"')
+def step_then_inconsistency_detail(context: object, msgid: str) -> None:
+    typed = _context(context)
+    assert f"msgid='{msgid}'" in typed.po_result_summary
+
+
 def _build_site(
     workspace: Path,
     *,
-    compile_mo: bool = True,
-    use_external_translator: bool = True,
+    modes: dict[str, bool] | None = None,
 ) -> RegisteredSite:
+    resolved_modes = {
+        "compile_mo": True,
+        "use_external_translator": True,
+        "dry_run": False,
+        "stats_only": False,
+        "report_inconsistencies": False,
+    }
+    if modes is not None:
+        resolved_modes.update(modes)
+    options = TranslationOptionsViewModel(**resolved_modes)
     return RegisteredSite(
         project=SiteProject(
             id="site-po",
@@ -537,8 +688,11 @@ def _build_site(
             local_path=str(workspace),
             default_locale="es_ES",
             is_active=True,
-            compile_mo=compile_mo,
-            use_external_translator=use_external_translator,
+            compile_mo=options.compile_mo,
+            use_external_translator=options.use_external_translator,
+            dry_run=options.dry_run,
+            stats_only=options.stats_only,
+            report_inconsistencies=options.report_inconsistencies,
         ),
         remote_connection=None,
     )

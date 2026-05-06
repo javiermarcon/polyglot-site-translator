@@ -31,7 +31,8 @@ from polyglot_site_translator.domain.site_registry.locales import (
 from polyglot_site_translator.domain.site_registry.models import RegisteredSite
 from polyglot_site_translator.infrastructure.po_files import PolibPOCatalogRepository
 
-type TranslationValue = str | dict[str, str]
+TranslationValue = str | dict[str, str]
+_MIN_TRANSLATED_VARIANTS_FOR_INCONSISTENCY = 2
 
 
 @dataclass(frozen=True)
@@ -91,8 +92,11 @@ class POProcessingService:
                 entries_synchronized=0,
                 entries_translated=0,
                 entries_failed=0,
+                files_written=0,
                 mo_files_compiled=0,
                 failures=(),
+                dry_run=site.dry_run,
+                stats_only=site.stats_only,
             )
 
         selected_locales = _resolve_processing_locales(
@@ -209,7 +213,29 @@ class POProcessingService:
                 )
             )
 
+        inconsistency_details = _detect_variant_inconsistencies(
+            grouped_files=tuple(updated_files),
+            enabled=site.report_inconsistencies,
+        )
+        if site.stats_only or site.dry_run:
+            return POProcessingResult(
+                files_discovered=len(target_files),
+                families_processed=total_families,
+                entries_pending=total_entries,
+                entries_synchronized=entries_synchronized,
+                entries_translated=entries_translated,
+                entries_failed=entries_failed,
+                files_written=0,
+                mo_files_compiled=0,
+                failures=tuple(failures),
+                dry_run=site.dry_run,
+                stats_only=site.stats_only,
+                variant_inconsistencies_found=len(inconsistency_details),
+                variant_inconsistency_details=tuple(inconsistency_details),
+                compilation_failures=(),
+            )
         self._repository.save_po_files(tuple(updated_files))
+        files_written = len(updated_files)
         if not site.compile_mo:
             return POProcessingResult(
                 files_discovered=len(target_files),
@@ -218,8 +244,13 @@ class POProcessingService:
                 entries_synchronized=entries_synchronized,
                 entries_translated=entries_translated,
                 entries_failed=entries_failed,
+                files_written=files_written,
                 mo_files_compiled=0,
                 failures=tuple(failures),
+                dry_run=site.dry_run,
+                stats_only=site.stats_only,
+                variant_inconsistencies_found=len(inconsistency_details),
+                variant_inconsistency_details=tuple(inconsistency_details),
                 compilation_failures=(),
             )
         mo_files_compiled, compilation_failures = _compile_mo_files(
@@ -233,8 +264,13 @@ class POProcessingService:
             entries_synchronized=entries_synchronized,
             entries_translated=entries_translated,
             entries_failed=entries_failed,
+            files_written=files_written,
             mo_files_compiled=mo_files_compiled,
             failures=tuple(failures),
+            dry_run=site.dry_run,
+            stats_only=site.stats_only,
+            variant_inconsistencies_found=len(inconsistency_details),
+            variant_inconsistency_details=tuple(inconsistency_details),
             compilation_failures=tuple(compilation_failures),
         )
 
@@ -261,6 +297,41 @@ def _compile_mo_files(
             continue
         compiled += 1
     return compiled, failures
+
+
+def _detect_variant_inconsistencies(
+    *,
+    grouped_files: tuple[POFileData, ...],
+    enabled: bool,
+) -> list[str]:
+    if not enabled:
+        return []
+    family_entries = {file_data.locale: list(file_data.entries) for file_data in grouped_files}
+    entry_map = _entries_by_key(family_entries)
+    details: list[str] = []
+    for entry_id, entries_by_locale in entry_map.items():
+        translated_values = {
+            locale: _canonical_translation_value(_translation_from_entry(entry))
+            for locale, entry in entries_by_locale.items()
+            if _is_translated(entry)
+        }
+        if len(translated_values) < _MIN_TRANSLATED_VARIANTS_FOR_INCONSISTENCY:
+            continue
+        if len(set(translated_values.values())) <= 1:
+            continue
+        context_label = entry_id.context if entry_id.context is not None else "<none>"
+        details.append(
+            "Variant inconsistency: "
+            f"{grouped_files[0].family_key} | msgctxt='{context_label}' | "
+            f"msgid='{entry_id.msgid}' | locales={', '.join(sorted(translated_values))}"
+        )
+    return details
+
+
+def _canonical_translation_value(value: TranslationValue) -> str:
+    if isinstance(value, dict):
+        return "\x1f".join(f"{key}={value[key]}" for key in sorted(value))
+    return value
 
 
 def _filter_files_by_selected_locales(

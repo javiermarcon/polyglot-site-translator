@@ -60,6 +60,9 @@ class SiteRegistryService:
                     default_locale=normalize_default_locale(registration.default_locale),
                     compile_mo=registration.compile_mo,
                     use_external_translator=registration.use_external_translator,
+                    dry_run=registration.dry_run,
+                    stats_only=registration.stats_only,
+                    report_inconsistencies=registration.report_inconsistencies,
                     is_active=registration.is_active,
                 ),
                 remote_connection=_resolve_remote_connection(
@@ -99,6 +102,9 @@ class SiteRegistryService:
                     default_locale=normalize_default_locale(registration.default_locale),
                     compile_mo=registration.compile_mo,
                     use_external_translator=registration.use_external_translator,
+                    dry_run=registration.dry_run,
+                    stats_only=registration.stats_only,
+                    report_inconsistencies=registration.report_inconsistencies,
                     is_active=registration.is_active,
                 ),
                 remote_connection=_resolve_remote_connection(

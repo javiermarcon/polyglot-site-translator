@@ -77,7 +77,7 @@ Current frontend base:
   Presentation-shell wiring and injectable service bundle assembly.
 
 - `polyglot_site_translator/infrastructure/settings.py`
-  TOML-backed settings persistence, validation, per-user config-path resolution, and persistence of general app settings such as the SQLite location plus translation defaults (`default_project_locale`, `default_compile_mo`, `default_use_external_translator`) for new projects.
+  TOML-backed settings persistence, validation, per-user config-path resolution, and persistence of general app settings such as the SQLite location plus translation defaults (`default_project_locale`, `default_compile_mo`, `default_use_external_translator`, `default_dry_run`, `default_stats_only`, `default_report_inconsistencies`) for new projects.
 
 - `polyglot_site_translator/infrastructure/sync_scope_sqlite.py`
   SQLite-backed persistence for shared global/framework sync rules and the `use_gitignore_rules` toggle used by sync scope resolution.
@@ -134,7 +134,7 @@ Current frontend base:
   Typed PO processing models, contracts, and explicit domain/infrastructure errors.
 
 - `polyglot_site_translator/services/po_processing.py`
-  Shared PO workflow orchestration for discovery, locale-family grouping, translation-memory reuse across families, cross-variant synchronization, optional external translation, and controlled `.mo` compilation with per-file failure collection.
+  Shared PO workflow orchestration for discovery, locale-family grouping, translation-memory reuse across families, cross-variant synchronization, optional external translation, optional `dry-run` / `stats-only` execution, optional inconsistency reporting, and controlled `.mo` compilation with per-file failure collection.
 
 - `polyglot_site_translator/infrastructure/po_files.py`
   Real PO repository based on `polib` for reading/writing project PO catalogs and compiling sibling `.mo` files.
@@ -152,7 +152,7 @@ Current frontend base:
   UI-facing service protocols, including frontend settings operations and project-registry create/edit flows.
 
 - `polyglot_site_translator/presentation/view_models.py`
-  Typed dataclasses for dashboard, project list/detail, sync, audit, translation workflow state, settings, translation defaults, and project-editor section/sync-rule state.
+  Typed dataclasses for dashboard, project list/detail, sync, audit, translation workflow state, settings, translation defaults, translation-run option payloads, and project-editor section/sync-rule state.
 
 - `polyglot_site_translator/presentation/frontend_shell.py`
   Navigation menu state, settings editing, project editor orchestration, project-editor preview refreshes, sync background execution state, route-safe CRUD wiring, and visible surfacing of recoverable unhandled runtime failures independent from Kivy rendering.
@@ -176,10 +176,10 @@ Current frontend base:
   Responsive layout rules for the settings screen so compact windows switch to a usable stacked layout.
 
 - `polyglot_site_translator/presentation/kivy/screens/settings.py`
-  Extensible settings screen with editable App / UI / Kivy settings, a real `Translation Settings` section for default locale plus default `.mo`-compilation and external-translator inheritance, and general sync-rule administration for global rules, framework rules, and `.gitignore` integration.
+  Extensible settings screen with editable App / UI / Kivy settings, a real `Translation Settings` section for default locale plus default `.mo` compilation, external-translator usage, `dry-run`, `stats-only`, and inconsistency reporting inheritance, and general sync-rule administration for global rules, framework rules, and `.gitignore` integration.
 
 - `polyglot_site_translator/presentation/kivy/screens/project_editor.py`
-  Thin create/edit screen for site registry records driven entirely by typed presentation state, including sectioned project settings where `General` only owns non-translation/non-remote/non-sync fields, inherited translation defaults for create flows, the persisted per-project `Compile MO Files` and `Use External Translator` preferences, draft preservation while switching sections, the discoverable remote connection selector, the persisted "Use Adapter Sync Filters" switch, the visible sync-scope catalog, per-rule toggles, project-level rule editing, and the "Test Connection" action. Labeled inputs, spinners, and the remote password row are built via `site_editor_form.py` so create and edit stay aligned.
+  Thin create/edit screen for site registry records driven entirely by typed presentation state, including sectioned project settings where `General` only owns non-translation/non-remote/non-sync fields, inherited translation defaults for create flows, the persisted per-project `Compile MO Files`, `Use External Translator`, `Dry-run`, `Stats Only`, and `Report Inconsistencies` preferences, draft preservation while switching sections, the discoverable remote connection selector, the persisted "Use Adapter Sync Filters" switch, the visible sync-scope catalog, per-rule toggles, project-level rule editing, and the "Test Connection" action. Labeled inputs, spinners, and the remote password row are built via `site_editor_form.py` so create and edit stay aligned.
 
 - `polyglot_site_translator/presentation/kivy/site_editor_form.py`
   Shared Kivy helpers for the project editor form (create and edit use the same screen): text inputs, spinners, field cards, remote password with visibility toggle, and `find_option_label` / `find_option_value` for spinner option lists (also used by the settings screen).

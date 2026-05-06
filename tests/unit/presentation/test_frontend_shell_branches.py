@@ -27,6 +27,7 @@ from polyglot_site_translator.presentation.view_models import (
     SiteEditorViewModel,
     SyncProgressStateViewModel,
     SyncStatusViewModel,
+    TranslationWorkflowRequestViewModel,
     build_default_app_settings,
 )
 from tests.support.frontend_doubles import (
@@ -108,12 +109,10 @@ class FailingAuditAndPOWorkflowService(StubProjectWorkflowService):
     def start_po_processing(
         self,
         project_id: str,
-        locales: str | None = None,
-        compile_mo: bool | None = None,
-        use_external_translator: bool | None = None,
+        request: TranslationWorkflowRequestViewModel | None = None,
         progress_callback: Callable[[POProcessingProgress], None] | None = None,
     ) -> POProcessingSummaryViewModel:
-        del locales, compile_mo, use_external_translator, progress_callback
+        del request, progress_callback
         msg = f"PO processing failed for {project_id}."
         raise ControlledServiceError(msg)
 

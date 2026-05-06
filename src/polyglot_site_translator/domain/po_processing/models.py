@@ -55,8 +55,13 @@ class POProcessingResult:
     entries_synchronized: int
     entries_translated: int
     entries_failed: int
+    files_written: int
     mo_files_compiled: int
     failures: tuple[POProcessingFailure, ...]
+    dry_run: bool = False
+    stats_only: bool = False
+    variant_inconsistencies_found: int = 0
+    variant_inconsistency_details: tuple[str, ...] = ()
     compilation_failures: tuple[POCompilationFailure, ...] = ()
 
 

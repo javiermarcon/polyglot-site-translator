@@ -11,6 +11,8 @@ from polyglot_site_translator.presentation.kivy.screens.base import _route_to_sc
 from polyglot_site_translator.presentation.view_models import (
     POProcessingSummaryViewModel,
     SyncStatusViewModel,
+    TranslationOptionsViewModel,
+    TranslationWorkflowRequestViewModel,
 )
 from tests.support.frontend_doubles import build_seeded_services
 
@@ -121,7 +123,17 @@ def test_project_detail_screen_po_processing_and_back_navigation() -> None:
     root.current = "project_detail"
     detail_screen._start_po_processing()
     assert detail_screen._po_locale_popup is not None
-    detail_screen._confirm_po_processing("en_US", True, True)
+    assert len(detail_screen._po_locale_popup._toggle_rows) == 5
+    assert tuple(detail_screen._po_locale_popup.size_hint) == (0.84, 0.84)
+    detail_screen._confirm_po_processing(
+        TranslationWorkflowRequestViewModel(
+            locales="en_US",
+            options=TranslationOptionsViewModel(
+                compile_mo=True,
+                use_external_translator=True,
+            ),
+        )
+    )
     assert root.current == "po_processing"
 
     shell.project_detail_state = None
@@ -297,6 +309,12 @@ def test_po_processing_screen_refresh_loop_and_back_navigation_branches(
     po_screen.on_leave()
     assert po_screen._refresh_event is None
 
+
+def test_po_processing_screen_on_leave_cancels_manual_refresh_event() -> None:
+    app = cast(Any, create_kivy_app(services=build_seeded_services()))
+    root = app.build()
+    po_screen = root.get_screen("po_processing")
+
     class _ManualEvent:
         def __init__(self) -> None:
             self.cancelled = False
@@ -309,10 +327,6 @@ def test_po_processing_screen_refresh_loop_and_back_navigation_branches(
     po_screen.on_leave()
     assert manual_event.cancelled is True
     assert po_screen._refresh_event is None
-    po_screen.on_leave()
-
-    po_screen._back_to_project()
-    assert root.current == "project_detail"
 
 
 def test_base_screen_helpers_cover_menu_building_copy_updates_and_route_mapping(

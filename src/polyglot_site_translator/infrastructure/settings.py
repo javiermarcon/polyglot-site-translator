@@ -185,6 +185,20 @@ class TomlSettingsService:
                 raw_document,
                 default_settings.default_use_external_translator,
             ),
+            default_dry_run=_read_translation_default_dry_run(
+                raw_document,
+                default_settings.default_dry_run,
+            ),
+            default_stats_only=_read_translation_default_stats_only(
+                raw_document,
+                default_settings.default_stats_only,
+            ),
+            default_report_inconsistencies=(
+                _read_translation_default_report_inconsistencies(
+                    raw_document,
+                    default_settings.default_report_inconsistencies,
+                )
+            ),
             database_directory=_read_string(
                 raw_settings,
                 "database_directory",
@@ -315,6 +329,10 @@ def _serialize_settings_document(app_settings: AppSettingsViewModel) -> str:
         f"default_compile_mo = {_format_toml_bool(app_settings.default_compile_mo)}\n"
         "default_use_external_translator = "
         f"{_format_toml_bool(app_settings.default_use_external_translator)}\n"
+        f"default_dry_run = {_format_toml_bool(app_settings.default_dry_run)}\n"
+        f"default_stats_only = {_format_toml_bool(app_settings.default_stats_only)}\n"
+        "default_report_inconsistencies = "
+        f"{_format_toml_bool(app_settings.default_report_inconsistencies)}\n"
     )
     document += _serialize_sync_scope_settings(app_settings.sync_scope_settings)
     return document
@@ -381,6 +399,60 @@ def _read_translation_default_use_external_translator(
     if isinstance(raw_value, bool):
         return raw_value
     msg = "The translation setting 'default_use_external_translator' must be a boolean."
+    raise ControlledServiceError(msg)
+
+
+def _read_translation_default_dry_run(
+    raw_document: dict[str, Any],
+    default_dry_run: bool,
+) -> bool:
+    raw_translation = raw_document.get("translation")
+    if raw_translation is None:
+        return default_dry_run
+    if not isinstance(raw_translation, dict):
+        msg = "The [translation] settings section must be a TOML table."
+        raise ControlledServiceError(msg)
+    raw_value = raw_translation.get("default_dry_run", default_dry_run)
+    if isinstance(raw_value, bool):
+        return raw_value
+    msg = "The translation setting 'default_dry_run' must be a boolean."
+    raise ControlledServiceError(msg)
+
+
+def _read_translation_default_stats_only(
+    raw_document: dict[str, Any],
+    default_stats_only: bool,
+) -> bool:
+    raw_translation = raw_document.get("translation")
+    if raw_translation is None:
+        return default_stats_only
+    if not isinstance(raw_translation, dict):
+        msg = "The [translation] settings section must be a TOML table."
+        raise ControlledServiceError(msg)
+    raw_value = raw_translation.get("default_stats_only", default_stats_only)
+    if isinstance(raw_value, bool):
+        return raw_value
+    msg = "The translation setting 'default_stats_only' must be a boolean."
+    raise ControlledServiceError(msg)
+
+
+def _read_translation_default_report_inconsistencies(
+    raw_document: dict[str, Any],
+    default_report_inconsistencies: bool,
+) -> bool:
+    raw_translation = raw_document.get("translation")
+    if raw_translation is None:
+        return default_report_inconsistencies
+    if not isinstance(raw_translation, dict):
+        msg = "The [translation] settings section must be a TOML table."
+        raise ControlledServiceError(msg)
+    raw_value = raw_translation.get(
+        "default_report_inconsistencies",
+        default_report_inconsistencies,
+    )
+    if isinstance(raw_value, bool):
+        return raw_value
+    msg = "The translation setting 'default_report_inconsistencies' must be a boolean."
     raise ControlledServiceError(msg)
 
 

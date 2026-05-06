@@ -462,6 +462,27 @@ def step_assert_create_editor_external_translator_disabled(context: object) -> N
     assert typed_context.shell.project_editor_state.editor.use_external_translator is False
 
 
+@then("the project editor uses dry-run mode enabled")
+def step_assert_create_editor_dry_run_enabled(context: object) -> None:
+    typed_context = _context_with_shell(context)
+    assert typed_context.shell.project_editor_state is not None
+    assert typed_context.shell.project_editor_state.editor.dry_run is True
+
+
+@then("the project editor uses stats-only mode enabled")
+def step_assert_create_editor_stats_only_enabled(context: object) -> None:
+    typed_context = _context_with_shell(context)
+    assert typed_context.shell.project_editor_state is not None
+    assert typed_context.shell.project_editor_state.editor.stats_only is True
+
+
+@then("the project editor uses inconsistency reporting enabled")
+def step_assert_create_editor_inconsistency_reporting_enabled(context: object) -> None:
+    typed_context = _context_with_shell(context)
+    assert typed_context.shell.project_editor_state is not None
+    assert typed_context.shell.project_editor_state.editor.report_inconsistencies is True
+
+
 @then('the project detail shows the persisted sync mode "{mode}"')
 def step_assert_persisted_sync_mode(context: object, mode: str) -> None:
     typed_context = _context_with_shell(context)
@@ -527,6 +548,34 @@ def step_submit_new_site_with_external_translator_disabled(context: object) -> N
     typed_context.created_site_id = typed_context.shell.project_detail_state.project.id
 
 
+@when("the operator submits a new site registry entry with translation preview settings enabled")
+def step_submit_new_site_with_translation_preview_settings(context: object) -> None:
+    typed_context = _context_with_shell(context)
+    typed_context.shell.save_new_project(
+        SiteEditorViewModel(
+            site_id=None,
+            name="Preview Site",
+            framework_type="wordpress",
+            local_path="/workspace/preview-site",
+            default_locale="en_US",
+            compile_mo=True,
+            use_external_translator=True,
+            dry_run=True,
+            stats_only=True,
+            report_inconsistencies=True,
+            connection_type="ftp",
+            remote_host="ftp.example.com",
+            remote_port="21",
+            remote_username="deploy",
+            remote_password="super-secret",
+            remote_path="/public_html",
+            is_active=True,
+        )
+    )
+    assert typed_context.shell.project_detail_state is not None
+    typed_context.created_site_id = typed_context.shell.project_detail_state.project.id
+
+
 @then("the project detail shows MO compilation disabled")
 def step_assert_project_detail_compile_mo_disabled(context: object) -> None:
     typed_context = _context_with_shell(context)
@@ -552,12 +601,59 @@ def step_assert_project_detail_external_translator_disabled(context: object) -> 
     )
 
 
+@then("the project detail shows dry-run mode enabled")
+def step_assert_project_detail_dry_run_enabled(context: object) -> None:
+    typed_context = _context_with_shell(context)
+    assert typed_context.shell.project_detail_state is not None
+    assert "Dry-run: enabled" in typed_context.shell.project_detail_state.configuration_summary
+
+
+@then("the project detail shows stats-only mode enabled")
+def step_assert_project_detail_stats_only_enabled(context: object) -> None:
+    typed_context = _context_with_shell(context)
+    assert typed_context.shell.project_detail_state is not None
+    assert "Stats only: enabled" in typed_context.shell.project_detail_state.configuration_summary
+
+
+@then("the project detail shows inconsistency reporting enabled")
+def step_assert_project_detail_inconsistency_reporting_enabled(context: object) -> None:
+    typed_context = _context_with_shell(context)
+    assert typed_context.shell.project_detail_state is not None
+    assert "Report inconsistencies: enabled" in (
+        typed_context.shell.project_detail_state.configuration_summary
+    )
+
+
 @then("reopening the persisted site editor shows the external translator disabled")
 def step_assert_persisted_external_translator_disabled(context: object) -> None:
     typed_context = _context_with_shell(context)
     typed_context.shell.open_project_editor_edit(typed_context.created_site_id)
     assert typed_context.shell.project_editor_state is not None
     assert typed_context.shell.project_editor_state.editor.use_external_translator is False
+
+
+@then("reopening the persisted site editor shows dry-run mode enabled")
+def step_assert_persisted_dry_run_enabled(context: object) -> None:
+    typed_context = _context_with_shell(context)
+    typed_context.shell.open_project_editor_edit(typed_context.created_site_id)
+    assert typed_context.shell.project_editor_state is not None
+    assert typed_context.shell.project_editor_state.editor.dry_run is True
+
+
+@then("reopening the persisted site editor shows stats-only mode enabled")
+def step_assert_persisted_stats_only_enabled(context: object) -> None:
+    typed_context = _context_with_shell(context)
+    typed_context.shell.open_project_editor_edit(typed_context.created_site_id)
+    assert typed_context.shell.project_editor_state is not None
+    assert typed_context.shell.project_editor_state.editor.stats_only is True
+
+
+@then("reopening the persisted site editor shows inconsistency reporting enabled")
+def step_assert_persisted_inconsistency_reporting_enabled(context: object) -> None:
+    typed_context = _context_with_shell(context)
+    typed_context.shell.open_project_editor_edit(typed_context.created_site_id)
+    assert typed_context.shell.project_editor_state is not None
+    assert typed_context.shell.project_editor_state.editor.report_inconsistencies is True
 
 
 @then('reopening the persisted site editor shows the custom sync rule "{relative_path}"')

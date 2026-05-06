@@ -157,6 +157,9 @@ Current settings orchestration entrypoints:
 - `FrontendShell.set_settings_default_project_locale`
 - `FrontendShell.set_settings_default_compile_mo`
 - `FrontendShell.set_settings_default_use_external_translator`
+- `FrontendShell.set_settings_default_dry_run`
+- `FrontendShell.set_settings_default_stats_only`
+- `FrontendShell.set_settings_default_report_inconsistencies`
 - `FrontendShell.set_settings_database_directory`
 - `FrontendShell.set_settings_database_filename`
 - `FrontendShell.select_settings_section`
@@ -176,6 +179,7 @@ Current project-registry orchestration entrypoints:
 - `FrontendShell.save_project_edits`
 - `FrontendShell.test_project_connection`
 - `FrontendShell.start_po_processing_async`
+- `polyglot_site_translator.presentation.view_models.TranslationWorkflowRequestViewModel`
 - `FrontendShell.start_sync_async`
 - `FrontendShell.start_sync_to_remote_async`
 - `polyglot_site_translator.presentation.site_registry_services.SiteRegistryPresentationWorkflowService.start_sync`

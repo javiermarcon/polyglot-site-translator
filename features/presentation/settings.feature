@@ -65,11 +65,17 @@ Feature: Frontend settings management
     And the operator sets the default project locale to "es_ES, es_AR"
     And the operator enables default MO compilation
     And the operator disables the default external translator
+    And the operator enables default dry-run mode
+    And the operator disables default stats-only mode
+    And the operator enables default inconsistency reporting
     And the operator applies the settings changes
     Then the settings screen shows the translation settings section
     And the saved settings keep the default project locale "es_ES,es_AR"
     And the saved settings keep default MO compilation enabled
     And the saved settings keep the default external translator disabled
+    And the saved settings keep default dry-run mode enabled
+    And the saved settings keep default stats-only mode disabled
+    And the saved settings keep default inconsistency reporting enabled
 
   Scenario: Configure global sync rules and persist them
     Given the frontend shell is wired with TOML-backed settings persistence

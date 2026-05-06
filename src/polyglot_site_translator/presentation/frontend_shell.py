@@ -29,9 +29,12 @@ from polyglot_site_translator.presentation.view_models import (
     SyncCommandLogEntryViewModel,
     SyncProgressStateViewModel,
     SyncStatusViewModel,
+    TranslationOptionsViewModel,
+    TranslationWorkflowRequestViewModel,
     build_default_app_settings,
     build_navigation_menu_state,
     build_settings_state,
+    build_translation_options,
     select_project_editor_section,
 )
 
@@ -146,6 +149,9 @@ class FrontendShell:
                 actions=_build_project_actions(detail.actions),
                 compile_mo=detail.compile_mo,
                 use_external_translator=detail.use_external_translator,
+                dry_run=detail.dry_run,
+                stats_only=detail.stats_only,
+                report_inconsistencies=detail.report_inconsistencies,
             )
             self.latest_error = None
         except ControlledServiceError as error:
@@ -269,12 +275,11 @@ class FrontendShell:
     def start_po_processing(self, locales: str | None = None) -> None:
         """Trigger PO processing through the workflow contract."""
         project_id = self._require_project_id()
+        request = None if locales is None else self._build_translation_request(locales)
         try:
             self.po_processing_state = self.services.workflows.start_po_processing(
                 project_id,
-                locales,
-                None,
-                None,
+                request,
             )
             self.latest_error = None
         except ControlledServiceError as error:
@@ -295,18 +300,11 @@ class FrontendShell:
         self,
         locales: str,
         *,
-        compile_mo: bool | None = None,
-        use_external_translator: bool | None = None,
+        options: TranslationOptionsViewModel | None = None,
     ) -> None:
         """Trigger PO processing in a background thread after translation selection."""
         project_id = self._require_project_id()
-        normalized_locales = normalize_default_locale(locales, label="Selected locales")
-        resolved_compile_mo = compile_mo
-        if resolved_compile_mo is None and self.project_detail_state is not None:
-            resolved_compile_mo = self.project_detail_state.compile_mo
-        resolved_use_external_translator = use_external_translator
-        if resolved_use_external_translator is None and self.project_detail_state is not None:
-            resolved_use_external_translator = self.project_detail_state.use_external_translator
+        request = self._build_translation_request(locales, options=options)
         with self._po_processing_lock:
             if (
                 self._active_po_processing_thread is not None
@@ -319,18 +317,13 @@ class FrontendShell:
                 progress_current=0,
                 progress_total=0,
                 progress_is_indeterminate=True,
-                summary=f"Running translation workflow for locales: {normalized_locales}",
+                summary=f"Running translation workflow for locales: {request.locales}",
                 current_file=None,
                 current_entry=None,
             )
         worker = Thread(
             target=self._run_po_processing_in_background,
-            args=(
-                project_id,
-                normalized_locales,
-                resolved_compile_mo,
-                resolved_use_external_translator,
-            ),
+            args=(project_id, request),
             daemon=True,
             name=f"po-processing-{project_id}",
         )
@@ -486,6 +479,42 @@ class FrontendShell:
             status_message="Settings draft updated.",
         )
 
+    def set_settings_default_dry_run(self, default_dry_run: bool) -> None:
+        """Update the default dry-run preference for new project drafts."""
+        state = self._require_settings_state()
+        self.settings_state = replace(
+            state,
+            app_settings=replace(state.app_settings, default_dry_run=default_dry_run),
+            status="editing",
+            status_message="Settings draft updated.",
+        )
+
+    def set_settings_default_stats_only(self, default_stats_only: bool) -> None:
+        """Update the default stats-only preference for new project drafts."""
+        state = self._require_settings_state()
+        self.settings_state = replace(
+            state,
+            app_settings=replace(state.app_settings, default_stats_only=default_stats_only),
+            status="editing",
+            status_message="Settings draft updated.",
+        )
+
+    def set_settings_default_report_inconsistencies(
+        self,
+        default_report_inconsistencies: bool,
+    ) -> None:
+        """Update the default inconsistency-reporting preference for new project drafts."""
+        state = self._require_settings_state()
+        self.settings_state = replace(
+            state,
+            app_settings=replace(
+                state.app_settings,
+                default_report_inconsistencies=default_report_inconsistencies,
+            ),
+            status="editing",
+            status_message="Settings draft updated.",
+        )
+
     def set_settings_database_directory(self, database_directory: str) -> None:
         """Update the draft SQLite database directory."""
         state = self._require_settings_state()
@@ -610,6 +639,9 @@ class FrontendShell:
                 actions=_build_project_actions(detail.actions),
                 compile_mo=detail.compile_mo,
                 use_external_translator=detail.use_external_translator,
+                dry_run=detail.dry_run,
+                stats_only=detail.stats_only,
+                report_inconsistencies=detail.report_inconsistencies,
             )
             self.latest_error = None
         except ControlledServiceError as error:
@@ -637,6 +669,9 @@ class FrontendShell:
                 actions=_build_project_actions(detail.actions),
                 compile_mo=detail.compile_mo,
                 use_external_translator=detail.use_external_translator,
+                dry_run=detail.dry_run,
+                stats_only=detail.stats_only,
+                report_inconsistencies=detail.report_inconsistencies,
             )
             self.latest_error = None
         except ControlledServiceError as error:
@@ -788,16 +823,12 @@ class FrontendShell:
     def _run_po_processing_in_background(
         self,
         project_id: str,
-        locales: str,
-        compile_mo: bool | None,
-        use_external_translator: bool | None,
+        request: TranslationWorkflowRequestViewModel,
     ) -> None:
         try:
             self.po_processing_state = self.services.workflows.start_po_processing(
                 project_id,
-                locales,
-                compile_mo,
-                use_external_translator,
+                request,
                 progress_callback=self._record_po_processing_progress,
             )
             self.latest_error = None
@@ -816,6 +847,28 @@ class FrontendShell:
         finally:
             with self._po_processing_lock:
                 self._active_po_processing_thread = None
+
+    def _build_translation_request(
+        self,
+        locales: str,
+        *,
+        options: TranslationOptionsViewModel | None = None,
+    ) -> TranslationWorkflowRequestViewModel:
+        normalized_locales = normalize_default_locale(locales, label="Selected locales")
+        detail = self.project_detail_state
+        if options is None and detail is not None:
+            options = build_translation_options(
+                compile_mo=detail.compile_mo,
+                use_external_translator=detail.use_external_translator,
+                dry_run=detail.dry_run,
+                stats_only=detail.stats_only,
+                report_inconsistencies=detail.report_inconsistencies,
+            )
+        resolved_options = build_translation_options() if options is None else options
+        return TranslationWorkflowRequestViewModel(
+            locales=normalized_locales,
+            options=resolved_options,
+        )
 
     def _record_po_processing_progress(self, event: POProcessingProgress) -> None:
         current_state = self.po_processing_state

@@ -204,16 +204,19 @@ Current implemented PO stage:
 - hashtag-like slug tokens are skipped before external translation to avoid sending non-linguistic values such as `#tag1`
 - persisted write-back to the same PO files after synchronization
 - sibling `.mo` compilation after each persisted `.po` only when the effective project/run preference enables it
+- optional `dry-run` mode that computes translation results without writing `.po` or `.mo`
+- optional `stats-only` mode that computes workflow statistics without writing `.po` or `.mo`
+- optional inconsistency reporting across locale variants during the same family run
 - per-file MO compilation failures are collected with file/locale attribution so the workflow can finish without dropping the rest of the compiled catalogs
 - typed service result with discovered files, processed families, synchronized entry count, translated entry count, compiled MO count, failed-entry details, and failed-compilation details
 - progress events expose completed-vs-total untranslated entries so the UI progress bar reflects resolved gettext lines instead of processed families
 - UI workflow wiring through `ProjectWorkflowService.start_po_processing` without embedding PO logic in Kivy screens
-- the visible Kivy action is now a generic `Translate` flow; the pre-run popup can override both the selected locales and whether `.mo` files should be compiled for that execution
+- the visible Kivy action is now a generic `Translate` flow; the pre-run popup can override the selected locales and all effective translation toggles for that execution
+- translation behavior is configured at three levels: general settings defaults, persisted project settings, and per-run popup overrides
 
 Not yet implemented in this stage:
 
 - translation cache persistence
-- inconsistency reporting workflow
 
 ### 4. Framework adapters / plugins
 

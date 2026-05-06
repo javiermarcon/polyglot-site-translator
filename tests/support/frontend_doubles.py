@@ -33,6 +33,7 @@ from polyglot_site_translator.presentation.view_models import (
     SettingsStateViewModel,
     SiteEditorViewModel,
     SyncStatusViewModel,
+    TranslationWorkflowRequestViewModel,
     build_connection_type_options,
     build_default_app_settings,
     build_default_site_editor,
@@ -80,12 +81,17 @@ def _build_project_detail_from_editor(
 ) -> ProjectDetailViewModel:
     compile_summary = "enabled" if editor.compile_mo else "disabled"
     external_summary = "enabled" if editor.use_external_translator else "disabled"
+    dry_run_summary = "enabled" if editor.dry_run else "disabled"
+    stats_only_summary = "enabled" if editor.stats_only else "disabled"
+    inconsistency_summary = "enabled" if editor.report_inconsistencies else "disabled"
     return ProjectDetailViewModel(
         project=project,
         default_locale=editor.default_locale,
         configuration_summary=(
             f"Locale: {editor.default_locale} | Compile MO: {compile_summary} | "
-            f"External translator: {external_summary} | "
+            f"External translator: {external_summary} | Dry-run: {dry_run_summary} | "
+            f"Stats only: {stats_only_summary} | "
+            f"Report inconsistencies: {inconsistency_summary} | "
             f"Remote connection: {editor.connection_type.title()}"
         ),
         metadata_summary=(
@@ -94,6 +100,9 @@ def _build_project_detail_from_editor(
         actions=_default_actions(),
         compile_mo=editor.compile_mo,
         use_external_translator=editor.use_external_translator,
+        dry_run=editor.dry_run,
+        stats_only=editor.stats_only,
+        report_inconsistencies=editor.report_inconsistencies,
     )
 
 
@@ -119,6 +128,9 @@ class InMemoryProjectCatalogService:
                     actions=_default_actions(),
                     compile_mo=True,
                     use_external_translator=True,
+                    dry_run=False,
+                    stats_only=False,
+                    report_inconsistencies=False,
                 )
         msg = f"Unknown project id: {project_id}"
         raise LookupError(msg)
@@ -191,15 +203,14 @@ class StubProjectWorkflowService:
     def start_po_processing(
         self,
         project_id: str,
-        locales: str | None = None,
-        compile_mo: bool | None = None,
-        use_external_translator: bool | None = None,
+        request: TranslationWorkflowRequestViewModel | None = None,
         progress_callback: Callable[[POProcessingProgress], None] | None = None,
     ) -> POProcessingSummaryViewModel:
-        del progress_callback, compile_mo, use_external_translator
+        del progress_callback
         if self.fail_po_processing and project_id == "wp-site":
             msg = "Translation workflow is unavailable for this project."
             raise ControlledServiceError(msg)
+        del request
         return POProcessingSummaryViewModel(
             status="completed",
             processed_families=4,
@@ -208,7 +219,8 @@ class StubProjectWorkflowService:
             progress_is_indeterminate=False,
             summary=(
                 "Families processed: 4 | PO files discovered: 4 | "
-                "Synchronized entries: 0 | Translated entries: 0 | Failed entries: 0"
+                "Synchronized entries: 0 | Translated entries: 0 | Failed entries: 0 | "
+                "Written PO files: 0 | Compiled MO files: 0"
             ),
             current_file=None,
             current_entry=None,
@@ -302,6 +314,9 @@ class InMemoryProjectRegistryManagementService:
                 is_active=True,
                 compile_mo=detail.compile_mo,
                 use_external_translator=detail.use_external_translator,
+                dry_run=detail.dry_run,
+                stats_only=detail.stats_only,
+                report_inconsistencies=detail.report_inconsistencies,
             ),
             framework_options=build_framework_type_options_from_descriptors(
                 FrameworkAdapterRegistry.discover_installed().list_framework_descriptors()

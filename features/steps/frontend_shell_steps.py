@@ -249,6 +249,30 @@ def step_disable_default_external_translator(context: object) -> None:
     typed_context.shell.set_settings_default_use_external_translator(False)
 
 
+@when("the operator enables default dry-run mode")
+def step_enable_default_dry_run(context: object) -> None:
+    typed_context = _context_with_shell(context)
+    typed_context.shell.set_settings_default_dry_run(True)
+
+
+@when("the operator disables default stats-only mode")
+def step_disable_default_stats_only(context: object) -> None:
+    typed_context = _context_with_shell(context)
+    typed_context.shell.set_settings_default_stats_only(False)
+
+
+@when("the operator enables default stats-only mode")
+def step_enable_default_stats_only(context: object) -> None:
+    typed_context = _context_with_shell(context)
+    typed_context.shell.set_settings_default_stats_only(True)
+
+
+@when("the operator enables default inconsistency reporting")
+def step_enable_default_inconsistency_reporting(context: object) -> None:
+    typed_context = _context_with_shell(context)
+    typed_context.shell.set_settings_default_report_inconsistencies(True)
+
+
 @when("the operator sets the window size to 1440 by 900")
 def step_set_window_size(context: object) -> None:
     typed_context = _context_with_shell(context)
@@ -674,3 +698,24 @@ def step_assert_saved_default_external_translator_disabled(context: object) -> N
     typed_context = _context_with_shell(context)
     assert typed_context.shell.settings_state is not None
     assert typed_context.shell.settings_state.app_settings.default_use_external_translator is False
+
+
+@then("the saved settings keep default dry-run mode enabled")
+def step_assert_saved_default_dry_run_enabled(context: object) -> None:
+    typed_context = _context_with_shell(context)
+    assert typed_context.shell.settings_state is not None
+    assert typed_context.shell.settings_state.app_settings.default_dry_run is True
+
+
+@then("the saved settings keep default stats-only mode disabled")
+def step_assert_saved_default_stats_only_disabled(context: object) -> None:
+    typed_context = _context_with_shell(context)
+    assert typed_context.shell.settings_state is not None
+    assert typed_context.shell.settings_state.app_settings.default_stats_only is False
+
+
+@then("the saved settings keep default inconsistency reporting enabled")
+def step_assert_saved_default_inconsistency_reporting_enabled(context: object) -> None:
+    typed_context = _context_with_shell(context)
+    assert typed_context.shell.settings_state is not None
+    assert typed_context.shell.settings_state.app_settings.default_report_inconsistencies is True

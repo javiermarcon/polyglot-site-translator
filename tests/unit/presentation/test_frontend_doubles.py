@@ -8,7 +8,11 @@ from typing import cast
 import pytest
 
 from polyglot_site_translator.presentation.errors import ControlledServiceError
-from polyglot_site_translator.presentation.view_models import SiteEditorViewModel
+from polyglot_site_translator.presentation.view_models import (
+    SiteEditorViewModel,
+    TranslationOptionsViewModel,
+    TranslationWorkflowRequestViewModel,
+)
 from tests.support.frontend_doubles import (
     FailingSiteRegistryCatalogService,
     InMemorySettingsService,
@@ -59,9 +63,13 @@ def test_stub_workflow_double_covers_success_and_fail_sync_branches() -> None:
     assert (
         workflow.start_po_processing(
             "dj-admin",
-            locales="es_ES",
-            compile_mo=False,
-            use_external_translator=False,
+            TranslationWorkflowRequestViewModel(
+                locales="es_ES",
+                options=TranslationOptionsViewModel(
+                    compile_mo=False,
+                    use_external_translator=False,
+                ),
+            ),
         ).status
         == "completed"
     )
