@@ -22,7 +22,7 @@ El repositorio está en una etapa temprana y hoy incluye principalmente:
 - pantallas base para dashboard, proyectos, detalle, editor de proyectos, sync, audit y PO processing
 - contratos de servicios para la UI
 - persistencia real en TOML para settings generales de la app
-- persistencia real en TOML para `Translation Settings`, incluyendo el `default_project_locale`, `default_compile_mo` y `default_use_external_translator` usados por nuevos proyectos
+- persistencia real en TOML para `Translation Settings`, incluyendo `default_project_locale`, `default_compile_mo`, `default_use_external_translator`, `default_use_translation_cache`, `translation_cache_path`, `default_dry_run`, `default_stats_only` y `default_report_inconsistencies` usados por nuevos proyectos
 - persistencia real en SQLite para `site_registry`
 - persistencia real en SQLite para reglas compartidas de sync (`global`/`framework` + `use_gitignore_rules`)
 - configuración general de la app para definir `database_directory` y `database_filename`
@@ -48,7 +48,7 @@ El repositorio está en una etapa temprana y hoy incluye principalmente:
 - registry real de adapters/framework detection con resultados tipados
 - detección efectiva de proyectos WordPress, Django y Flask a partir de `local_path`
 - auto-discovery dinámico de adapters al iniciar, sin registro manual en el runtime
-- workflow real de traducción basado en catálogos PO con descubrimiento `.po`, agrupación por familia, reutilización entre archivos/familias, traducción externa de faltantes y compilado `.mo`
+- workflow real de traducción basado en catálogos PO con descubrimiento `.po`, agrupación por familia, reutilización entre archivos/familias, caché persistente opcional de traducciones, traducción externa de faltantes y compilado `.mo`
 - proveedor externo de traducción PO reutilizando el mismo loop async por hilo para evitar reiniciar el transporte HTTP en cada entrada
 - acción `Translate` con popup para elegir locales y overridear en esa corrida `Compile MO Files`, `Use External Translator`, `Dry-run`, `Stats Only` y `Report Inconsistencies`, precargado con la configuración persistida del proyecto y ejecución en background para no bloquear la UI
 - barra de progreso en la pantalla de traducción basada en entradas gettext completadas para saber cuántas líneas faltantes ya se resolvieron
@@ -77,7 +77,6 @@ Todavía no están implementados en forma real:
 
 - presets o perfiles más avanzados de sync selectivo por entorno/dirección
 - scanner de auditoría
-- caché persistente de traducciones
 - reporting final
 
 ## Objetivos del proyecto
@@ -159,8 +158,8 @@ La base actual del frontend incluye:
 - Sync Screen con wiring real de `remote -> local` y `local -> remote`, con resumen estructurado del resultado
 - ventana de progreso de sync abierta desde Project Detail para no bloquear el hilo principal de Kivy en ambos sentidos
 - Audit Screen para mostrar resultados fake de auditoría
-- Translation Screen con resumen real de archivos detectados, familias procesadas, entradas sincronizadas/traducidas, archivos `.po` escritos, inconsistencias detectadas y `.mo` compilados; la acción `Translate` abre un popup previo que permite overridear locales, `Compile MO Files`, `Use External Translator`, `Dry-run`, `Stats Only` y `Report Inconsistencies` para esa corrida
-- Settings generales con persistencia TOML, una sección `Translation Settings` para configurar `default_project_locale`, `default_compile_mo`, `default_use_external_translator`, `default_dry_run`, `default_stats_only` y `default_report_inconsistencies`; esos defaults se heredan al crear un proyecto nuevo y luego pueden overridearse por proyecto y por corrida desde el popup de `Translate`
+- Translation Screen con resumen real de archivos detectados, familias procesadas, entradas sincronizadas/traducidas, entradas resueltas desde caché, entradas resueltas vía proveedor, archivos `.po` escritos, inconsistencias detectadas y `.mo` compilados; la acción `Translate` abre un popup previo que permite overridear locales, `Compile MO Files`, `Use External Translator`, `Use Translation Cache`, `Dry-run`, `Stats Only` y `Report Inconsistencies` para esa corrida
+- Settings generales con persistencia TOML, una sección `Translation Settings` para configurar `default_project_locale`, `default_compile_mo`, `default_use_external_translator`, `default_use_translation_cache`, `translation_cache_path`, `default_dry_run`, `default_stats_only` y `default_report_inconsistencies`; esos defaults se heredan al crear un proyecto nuevo y luego pueden overridearse por proyecto y por corrida desde el popup de `Translate`
 
 La navegación mantiene el contexto del proyecto seleccionado. El flujo principal de create/list/detail/update, sync bidireccional y PO processing ya usan servicios reales para `site_registry`, subsistema remoto y procesamiento de `.po`; el audit sigue usando servicios fake detrás de los mismos contratos de UI.
 Cuando la preferencia `Use Adapter Sync Filters` está activa en la configuración remota persistida del proyecto, ambos sentidos de sync usan el scope resuelto por `FrameworkSyncScopeService`; cuando está desactivada, el servicio ejecuta full sync. Ese scope ahora compone reglas globales persistidas en settings, reglas persistidas por framework, reglas base del adapter, overrides persistidos por proyecto y exclusiones derivadas de `.gitignore` cuando la opción está habilitada. El Project Editor sigue mostrando el catálogo resuelto por proyecto y permite activar/desactivar reglas individuales y agregar includes/excludes adicionales persistidos por proyecto. La pantalla general de Settings ahora expone el ABM de reglas globales y por framework más el toggle `Use .gitignore Exclusions`. Si el proyecto pide sync filtrado pero no existe un scope utilizable, el sync falla de forma explícita en vez de caer en un fallback silencioso.
@@ -281,9 +280,10 @@ Si querés ejecutar la app local sin instalación editable, usá el launcher del
 
 Los settings generales se guardan en `settings.toml` dentro del directorio de configuración del usuario.
 Para desarrollo o pruebas locales, podés overridear la ubicación con `POLYGLOT_SITE_TRANSLATOR_CONFIG_DIR`.
-Dentro de esos settings también se persisten `default_project_locale`, `database_directory`, `database_filename` y `sync_progress_log_limit`.
+Dentro de esos settings también se persisten `default_project_locale`, `default_compile_mo`, `default_use_external_translator`, `default_use_translation_cache`, `translation_cache_path`, `default_dry_run`, `default_stats_only`, `default_report_inconsistencies`, `database_directory`, `database_filename` y `sync_progress_log_limit`.
 Las reglas globales de sync, las reglas por framework y el toggle `use_gitignore_rules` ahora pueden vivir en SQLite para el runtime de sync mientras la configuración general sigue registrada en TOML.
 Ese último valor define cuántas operaciones recientes conserva en memoria y muestra la ventana de progreso del sync.
+Cuando la caché de traducción está habilitada, el runtime guarda entradas reutilizables en un almacén `shelve` persistente bajo `translation_cache_path`; el proyecto puede deshabilitar su uso y el popup `Translate` puede overridearlo por corrida sin cambiar la preferencia persistida.
 
 La contraseña remota no se guarda en texto plano en SQLite.
 Se persiste cifrada con una key local almacenada junto al config dir de la app.

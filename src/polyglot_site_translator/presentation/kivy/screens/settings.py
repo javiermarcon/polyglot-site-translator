@@ -74,6 +74,8 @@ class SettingsScreen(BaseShellScreen):
         self._default_project_locale_input: TextInput | None = None
         self._default_compile_mo_switch: Switch | None = None
         self._default_use_external_translator_switch: Switch | None = None
+        self._default_use_translation_cache_switch: Switch | None = None
+        self._translation_cache_path_input: TextInput | None = None
         self._default_dry_run_switch: Switch | None = None
         self._default_stats_only_switch: Switch | None = None
         self._default_report_inconsistencies_switch: Switch | None = None
@@ -114,6 +116,8 @@ class SettingsScreen(BaseShellScreen):
         self._default_project_locale_input = None
         self._default_compile_mo_switch = None
         self._default_use_external_translator_switch = None
+        self._default_use_translation_cache_switch = None
+        self._translation_cache_path_input = None
         self._default_dry_run_switch = None
         self._default_stats_only_switch = None
         self._default_report_inconsistencies_switch = None
@@ -248,6 +252,16 @@ class SettingsScreen(BaseShellScreen):
         form.add_widget(
             self._build_default_use_external_translator_field(
                 value=draft.default_use_external_translator
+            )
+        )
+        form.add_widget(
+            self._build_default_use_translation_cache_field(
+                value=draft.default_use_translation_cache
+            )
+        )
+        form.add_widget(
+            self._build_translation_cache_path_field(
+                value=draft.translation_cache_path,
             )
         )
         form.add_widget(self._build_default_dry_run_field(value=draft.default_dry_run))
@@ -556,6 +570,61 @@ class SettingsScreen(BaseShellScreen):
         self._default_dry_run_switch = Switch(active=value, size_hint=(None, None), size=(72, 36))
         row.add_widget(self._default_dry_run_switch)
         card.add_widget(row)
+        return card
+
+    def _build_default_use_translation_cache_field(self, *, value: bool) -> SurfaceBoxLayout:
+        card = _build_field_card(
+            title="Default Translation Cache",
+            help_text=(
+                "Controls whether new project drafts start with persistent translation cache "
+                "reuse enabled for external translations."
+            ),
+        )
+        row = BoxLayout(orientation="horizontal", spacing=12, size_hint_y=None, height=40)
+        row.add_widget(WrappedLabel(text="Enable translation cache for new projects."))
+        self._default_use_translation_cache_switch = Switch(
+            active=value,
+            size_hint=(None, None),
+            size=(72, 36),
+        )
+        row.add_widget(self._default_use_translation_cache_switch)
+        card.add_widget(row)
+        return card
+
+    def _translation_cache_browse_hint(self) -> str:
+        if self._translation_cache_path_input is None:
+            return ""
+        return str(self._translation_cache_path_input.text).strip()
+
+    def _build_translation_cache_path_field(self, *, value: str) -> SurfaceBoxLayout:
+        palette = get_active_theme()
+        card = _build_field_card(
+            title="Translation Cache Path",
+            help_text=(
+                "Choose the persistent shelve cache location used for external translation "
+                "reuse across runs."
+            ),
+        )
+        self._translation_cache_path_input = TextInput(
+            text=value,
+            multiline=False,
+            size_hint_y=None,
+            height=44,
+            background_color=palette.card_subtle_background,
+            foreground_color=palette.text_primary,
+            cursor_color=palette.text_primary,
+        )
+        card.add_widget(WrappedLabel(text="Translation Cache Path", font_size=14, bold=True))
+        card.add_widget(
+            build_path_input_row(
+                self._translation_cache_path_input,
+                PathFieldPicker(
+                    pick_mode="file",
+                    title="Choose translation cache file",
+                    path_hint=self._translation_cache_browse_hint,
+                ),
+            )
+        )
         return card
 
     def _build_default_stats_only_field(self, *, value: bool) -> SurfaceBoxLayout:
@@ -982,6 +1051,16 @@ class SettingsScreen(BaseShellScreen):
                 default_use_external_translator=(
                     self._default_use_external_translator_switch.active
                 ),
+            )
+        if self._default_use_translation_cache_switch is not None:
+            updated_draft = replace(
+                updated_draft,
+                default_use_translation_cache=self._default_use_translation_cache_switch.active,
+            )
+        if self._translation_cache_path_input is not None:
+            updated_draft = replace(
+                updated_draft,
+                translation_cache_path=self._translation_cache_path_input.text.strip(),
             )
         if self._default_dry_run_switch is not None:
             updated_draft = replace(

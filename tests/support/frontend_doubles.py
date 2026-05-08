@@ -81,6 +81,7 @@ def _build_project_detail_from_editor(
 ) -> ProjectDetailViewModel:
     compile_summary = "enabled" if editor.compile_mo else "disabled"
     external_summary = "enabled" if editor.use_external_translator else "disabled"
+    cache_summary = "enabled" if editor.use_translation_cache else "disabled"
     dry_run_summary = "enabled" if editor.dry_run else "disabled"
     stats_only_summary = "enabled" if editor.stats_only else "disabled"
     inconsistency_summary = "enabled" if editor.report_inconsistencies else "disabled"
@@ -89,7 +90,8 @@ def _build_project_detail_from_editor(
         default_locale=editor.default_locale,
         configuration_summary=(
             f"Locale: {editor.default_locale} | Compile MO: {compile_summary} | "
-            f"External translator: {external_summary} | Dry-run: {dry_run_summary} | "
+            f"External translator: {external_summary} | Translation cache: {cache_summary} | "
+            f"Dry-run: {dry_run_summary} | "
             f"Stats only: {stats_only_summary} | "
             f"Report inconsistencies: {inconsistency_summary} | "
             f"Remote connection: {editor.connection_type.title()}"
@@ -100,6 +102,7 @@ def _build_project_detail_from_editor(
         actions=_default_actions(),
         compile_mo=editor.compile_mo,
         use_external_translator=editor.use_external_translator,
+        use_translation_cache=editor.use_translation_cache,
         dry_run=editor.dry_run,
         stats_only=editor.stats_only,
         report_inconsistencies=editor.report_inconsistencies,
@@ -314,6 +317,7 @@ class InMemoryProjectRegistryManagementService:
                 is_active=True,
                 compile_mo=detail.compile_mo,
                 use_external_translator=detail.use_external_translator,
+                use_translation_cache=detail.use_translation_cache,
                 dry_run=detail.dry_run,
                 stats_only=detail.stats_only,
                 report_inconsistencies=detail.report_inconsistencies,

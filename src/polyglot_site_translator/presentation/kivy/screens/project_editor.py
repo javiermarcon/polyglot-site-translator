@@ -61,6 +61,7 @@ class ProjectEditorScreen(BaseShellScreen):
         self._default_locale_input: TextInput | None = None
         self._compile_mo_switch: Switch | None = None
         self._use_external_translator_switch: Switch | None = None
+        self._use_translation_cache_switch: Switch | None = None
         self._dry_run_switch: Switch | None = None
         self._stats_only_switch: Switch | None = None
         self._report_inconsistencies_switch: Switch | None = None
@@ -255,6 +256,9 @@ class ProjectEditorScreen(BaseShellScreen):
         card.add_widget(
             self._build_use_external_translator_toggle(state.editor.use_external_translator)
         )
+        card.add_widget(
+            self._build_use_translation_cache_toggle(state.editor.use_translation_cache)
+        )
         card.add_widget(self._build_dry_run_toggle(state.editor.dry_run))
         card.add_widget(self._build_stats_only_toggle(state.editor.stats_only))
         card.add_widget(
@@ -323,6 +327,7 @@ class ProjectEditorScreen(BaseShellScreen):
         self._default_locale_input = None
         self._compile_mo_switch = None
         self._use_external_translator_switch = None
+        self._use_translation_cache_switch = None
         self._dry_run_switch = None
         self._stats_only_switch = None
         self._report_inconsistencies_switch = None
@@ -426,6 +431,34 @@ class ProjectEditorScreen(BaseShellScreen):
         )
         self._dry_run_switch = Switch(active=is_enabled, size_hint=(None, None), size=(72, 36))
         row.add_widget(self._dry_run_switch)
+        card.add_widget(row)
+        return card
+
+    def _build_use_translation_cache_toggle(self, is_enabled: bool) -> SurfaceBoxLayout:
+        card = SurfaceBoxLayout(
+            orientation="vertical",
+            spacing=8,
+            padding=14,
+            size_hint_y=None,
+            background_role="card_subtle_background",
+        )
+        card.bind(minimum_height=card.setter("height"))
+        card.add_widget(WrappedLabel(text="Use Translation Cache", font_size=16, bold=True))
+        row = BoxLayout(orientation="horizontal", spacing=12, size_hint_y=None, height=40)
+        row.add_widget(
+            WrappedLabel(
+                text=(
+                    "Reuse cached external-translation results before calling the provider "
+                    "again for the same base-language text."
+                )
+            )
+        )
+        self._use_translation_cache_switch = Switch(
+            active=is_enabled,
+            size_hint=(None, None),
+            size=(72, 36),
+        )
+        row.add_widget(self._use_translation_cache_switch)
         card.add_widget(row)
         return card
 
@@ -830,6 +863,11 @@ class ProjectEditorScreen(BaseShellScreen):
                 self._use_external_translator_switch.active
                 if self._use_external_translator_switch is not None
                 else state.editor.use_external_translator
+            ),
+            use_translation_cache=(
+                self._use_translation_cache_switch.active
+                if self._use_translation_cache_switch is not None
+                else state.editor.use_translation_cache
             ),
             dry_run=(
                 self._dry_run_switch.active

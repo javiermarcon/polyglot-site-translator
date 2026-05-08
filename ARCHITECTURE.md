@@ -153,7 +153,7 @@ Current UI behavior for sync mode:
 - the resolved scope can include localization-relevant paths and exclude framework-specific artifacts such as virtualenvs or bytecode caches
 - the project editor renders the resolved rule catalog, allows enabling/disabling individual rules, and persists additional project-specific include/exclude overrides without moving scope logic into Kivy
 - shared global sync rules, framework sync rules and the optional `use_gitignore_rules` toggle are persisted in SQLite for runtime sync scope resolution while the UI remains a typed editor of that persisted state
-- general application settings persist `default_project_locale`, `default_compile_mo`, and `default_use_external_translator` in a dedicated translation section; create-project flows seed their initial translation draft from those persisted values; the project editor keeps general-only fields separate from translation/remote/sync sections while preserving the draft across tab switches; and the pre-run translation popup can override both `.mo` compilation and external-translator usage for the current execution
+- general application settings persist `default_project_locale`, `default_compile_mo`, `default_use_external_translator`, `default_use_translation_cache`, `translation_cache_path`, `default_dry_run`, `default_stats_only`, and `default_report_inconsistencies` in a dedicated translation section; create-project flows seed their initial translation draft from those persisted values; the project editor keeps general-only fields separate from translation/remote/sync sections while preserving the draft across tab switches; and the pre-run translation popup can override `.mo` compilation, external-translator usage, translation-cache usage, and execution-mode flags for the current execution
 
 Not yet implemented in this stage:
 
@@ -195,7 +195,9 @@ Current implemented PO stage:
 - synchronization of missing entries between locale variants
 - translation memory reuse across families for sibling variants of the same base language
 - external translation provider integration through an infrastructure adapter
+- optional persistent translation cache integration through an infrastructure adapter backed by `shelve`
 - per-entry external-translation failures are collected with file/msgid attribution so processing can continue for the remaining PO entries
+- cache open/read/write failures are wrapped into typed PO-processing cache errors before they reach the shared service boundary
 - provider-level transport/protocol failures are wrapped into controlled PO translation errors before they reach the shared service
 - provider configuration, transport/protocol, and invalid response failures use specific `POProcessingTranslationError` subtypes while remaining compatible with the shared PO workflow
 - synchronization supports gettext identity by `msgctxt + msgid + msgid_plural`
@@ -207,16 +209,13 @@ Current implemented PO stage:
 - optional `dry-run` mode that computes translation results without writing `.po` or `.mo`
 - optional `stats-only` mode that computes workflow statistics without writing `.po` or `.mo`
 - optional inconsistency reporting across locale variants during the same family run
+- cache-hit versus provider-translation counters in the typed result so presentation can report where translations came from
 - per-file MO compilation failures are collected with file/locale attribution so the workflow can finish without dropping the rest of the compiled catalogs
 - typed service result with discovered files, processed families, synchronized entry count, translated entry count, compiled MO count, failed-entry details, and failed-compilation details
 - progress events expose completed-vs-total untranslated entries so the UI progress bar reflects resolved gettext lines instead of processed families
 - UI workflow wiring through `ProjectWorkflowService.start_po_processing` without embedding PO logic in Kivy screens
 - the visible Kivy action is now a generic `Translate` flow; the pre-run popup can override the selected locales and all effective translation toggles for that execution
 - translation behavior is configured at three levels: general settings defaults, persisted project settings, and per-run popup overrides
-
-Not yet implemented in this stage:
-
-- translation cache persistence
 
 ### 4. Framework adapters / plugins
 

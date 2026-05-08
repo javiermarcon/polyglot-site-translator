@@ -10,9 +10,12 @@ import re
 
 from polyglot_site_translator.domain.po_processing.contracts import (
     POCatalogRepository,
+    POTranslationCache,
+    POTranslationCacheFactory,
     POTranslationProvider,
 )
 from polyglot_site_translator.domain.po_processing.errors import (
+    POProcessingCacheError,
     POProcessingCompilationError,
     POProcessingTranslationError,
 )
@@ -21,6 +24,7 @@ from polyglot_site_translator.domain.po_processing.models import (
     POEntryData,
     POEntryId,
     POFileData,
+    POProcessingCacheSettings,
     POProcessingFailure,
     POProcessingProgress,
     POProcessingResult,
@@ -30,6 +34,9 @@ from polyglot_site_translator.domain.site_registry.locales import (
 )
 from polyglot_site_translator.domain.site_registry.models import RegisteredSite
 from polyglot_site_translator.infrastructure.po_files import PolibPOCatalogRepository
+from polyglot_site_translator.infrastructure.po_translation_cache_shelve import (
+    build_shelve_translation_cache,
+)
 
 TranslationValue = str | dict[str, str]
 _MIN_TRANSLATED_VARIANTS_FOR_INCONSISTENCY = 2
@@ -47,6 +54,7 @@ class _FamilyProgressUpdate:
 @dataclass(frozen=True)
 class _FamilyProcessingRuntime:
     translation_provider: POTranslationProvider | None
+    translation_cache: POTranslationCache | None = None
     progress_callback: Callable[[_FamilyProgressUpdate], None] | None = None
 
 
@@ -68,14 +76,43 @@ class POProcessingService:
         self,
         repository: POCatalogRepository | None = None,
         translation_provider: POTranslationProvider | None = None,
+        translation_cache_factory: POTranslationCacheFactory | None = None,
     ) -> None:
         self._repository = repository or PolibPOCatalogRepository()
         self._translation_provider = translation_provider
+        self._translation_cache_factory = (
+            translation_cache_factory or build_shelve_translation_cache
+        )
 
     def process_site(
         self,
         site: RegisteredSite,
+        cache_settings: POProcessingCacheSettings | None = None,
         progress_callback: Callable[[POProcessingProgress], None] | None = None,
+    ) -> POProcessingResult:
+        resolved_cache_settings = _resolve_cache_settings(site=site, cache_settings=cache_settings)
+        cache = self._translation_cache_factory(
+            cache_path=Path(resolved_cache_settings.cache_path),
+            enabled=resolved_cache_settings.enabled,
+        )
+        cache.open()
+        try:
+            return self._process_site_with_cache(
+                site=site,
+                cache=cache,
+                cache_settings=resolved_cache_settings,
+                progress_callback=progress_callback,
+            )
+        finally:
+            cache.close()
+
+    def _process_site_with_cache(
+        self,
+        *,
+        site: RegisteredSite,
+        cache: POTranslationCache,
+        cache_settings: POProcessingCacheSettings,
+        progress_callback: Callable[[POProcessingProgress], None] | None,
     ) -> POProcessingResult:
         configured_locales = parse_default_locale_list(site.default_locale)
         workspace_root = Path(site.local_path)
@@ -95,6 +132,9 @@ class POProcessingService:
                 files_written=0,
                 mo_files_compiled=0,
                 failures=(),
+                entries_translated_from_cache=0,
+                entries_translated_from_provider=0,
+                cache_enabled=cache_settings.enabled,
                 dry_run=site.dry_run,
                 stats_only=site.stats_only,
             )
@@ -110,6 +150,8 @@ class POProcessingService:
         total_entries = _count_untranslated_entries(target_files)
         entries_synchronized = 0
         entries_translated = 0
+        entries_translated_from_cache = 0
+        entries_translated_from_provider = 0
         entries_failed = 0
         failures: list[POProcessingFailure] = []
         current_file: str | None = None
@@ -177,6 +219,8 @@ class POProcessingService:
                 updated_family_files,
                 family_synced,
                 family_translated,
+                family_translated_from_cache,
+                family_translated_from_provider,
                 family_failures,
             ) = _process_family(
                 family_files=family_files,
@@ -187,12 +231,15 @@ class POProcessingService:
                     translation_provider=(
                         self._translation_provider if site.use_external_translator else None
                     ),
+                    translation_cache=cache,
                     progress_callback=report_family_progress,
                 ),
             )
             updated_files.extend(updated_family_files)
             entries_synchronized += family_synced
             entries_translated += family_translated
+            entries_translated_from_cache += family_translated_from_cache
+            entries_translated_from_provider += family_translated_from_provider
             entries_failed += len(family_failures)
             failures.extend(family_failures)
             if family_failures:
@@ -228,6 +275,9 @@ class POProcessingService:
                 files_written=0,
                 mo_files_compiled=0,
                 failures=tuple(failures),
+                entries_translated_from_cache=entries_translated_from_cache,
+                entries_translated_from_provider=entries_translated_from_provider,
+                cache_enabled=cache_settings.enabled,
                 dry_run=site.dry_run,
                 stats_only=site.stats_only,
                 variant_inconsistencies_found=len(inconsistency_details),
@@ -247,6 +297,9 @@ class POProcessingService:
                 files_written=files_written,
                 mo_files_compiled=0,
                 failures=tuple(failures),
+                entries_translated_from_cache=entries_translated_from_cache,
+                entries_translated_from_provider=entries_translated_from_provider,
+                cache_enabled=cache_settings.enabled,
                 dry_run=site.dry_run,
                 stats_only=site.stats_only,
                 variant_inconsistencies_found=len(inconsistency_details),
@@ -267,6 +320,9 @@ class POProcessingService:
             files_written=files_written,
             mo_files_compiled=mo_files_compiled,
             failures=tuple(failures),
+            entries_translated_from_cache=entries_translated_from_cache,
+            entries_translated_from_provider=entries_translated_from_provider,
+            cache_enabled=cache_settings.enabled,
             dry_run=site.dry_run,
             stats_only=site.stats_only,
             variant_inconsistencies_found=len(inconsistency_details),
@@ -415,7 +471,7 @@ def _process_family(
     locale_groups: dict[str, tuple[str, ...]],
     translation_memory: dict[str, dict[POEntryId, TranslationValue]],
     runtime: _FamilyProcessingRuntime,
-) -> tuple[tuple[POFileData, ...], int, int, tuple[POProcessingFailure, ...]]:
+) -> tuple[tuple[POFileData, ...], int, int, int, int, tuple[POProcessingFailure, ...]]:
     file_by_locale = {file_data.locale: file_data for file_data in family_files}
     family_entries: dict[str, list[POEntryData]] = {
         file_data.locale: list(file_data.entries) for file_data in family_files
@@ -449,6 +505,8 @@ def _process_family(
         synchronized_entries + translated_entries[0],
         translated_entries[1],
         translated_entries[2],
+        translated_entries[3],
+        translated_entries[4],
     )
 
 
@@ -488,9 +546,11 @@ def _translate_missing_entries(
     translation_memory: dict[str, dict[POEntryId, TranslationValue]],
     file_by_locale: dict[str, POFileData],
     runtime: _FamilyProcessingRuntime,
-) -> tuple[int, int, tuple[POProcessingFailure, ...]]:
+) -> tuple[int, int, int, int, tuple[POProcessingFailure, ...]]:
     synchronized_entries = 0
     translated_entries = 0
+    translated_from_cache = 0
+    translated_from_provider = 0
     failures: list[POProcessingFailure] = []
     locale_groups = _group_locales_by_base(selected_locales)
     nplurals_by_locale = {
@@ -541,8 +601,9 @@ def _translate_missing_entries(
                     locale=locale,
                     nplurals=nplurals_by_locale.get(locale, 2),
                     translation_provider=runtime.translation_provider,
+                    translation_cache=runtime.translation_cache,
                 )
-            except POProcessingTranslationError as error:
+            except (POProcessingTranslationError, POProcessingCacheError) as error:
                 file_data = file_by_locale[locale]
                 failures.append(
                     POProcessingFailure(
@@ -553,17 +614,27 @@ def _translate_missing_entries(
                     )
                 )
                 continue
-            _apply_translation(entry, translation)
-            translation_memory.setdefault(locale, {})[entry.entry_id] = translation
+            _apply_translation(entry, translation[0])
+            translation_memory.setdefault(locale, {})[entry.entry_id] = translation[0]
             translated_entries += 1
+            if translation[1] == "cache":
+                translated_from_cache += 1
+            else:
+                translated_from_provider += 1
             synchronized_entries += _propagate_translation_to_family(
                 family_entries=family_entries,
                 source_locale=locale,
                 entry_id=entry.entry_id,
-                translation=translation,
+                translation=translation[0],
                 translation_memory=translation_memory,
             )
-    return synchronized_entries, translated_entries, tuple(failures)
+    return (
+        synchronized_entries,
+        translated_entries,
+        translated_from_cache,
+        translated_from_provider,
+        tuple(failures),
+    )
 
 
 def _entries_by_key(
@@ -597,24 +668,71 @@ def _translate_entry(
     locale: str,
     nplurals: int,
     translation_provider: POTranslationProvider,
-) -> TranslationValue:
+    translation_cache: POTranslationCache | None,
+) -> tuple[TranslationValue, str]:
     if entry.entry_id.msgid_plural is None:
-        return translation_provider.translate_text(
+        translated_text, source = _translate_text(
             text=entry.entry_id.msgid,
-            target_locale=locale,
+            locale=locale,
+            translation_provider=translation_provider,
+            translation_cache=translation_cache,
         )
-    singular = translation_provider.translate_text(
+        return translated_text, source
+    singular, singular_source = _translate_text(
         text=entry.entry_id.msgid,
-        target_locale=locale,
+        locale=locale,
+        translation_provider=translation_provider,
+        translation_cache=translation_cache,
     )
-    plural = translation_provider.translate_text(
+    plural, plural_source = _translate_text(
         text=entry.entry_id.msgid_plural,
-        target_locale=locale,
+        locale=locale,
+        translation_provider=translation_provider,
+        translation_cache=translation_cache,
     )
     plural_map = {"0": singular}
     for index in range(1, nplurals):
         plural_map[str(index)] = plural
-    return plural_map
+    source = "cache" if singular_source == "cache" and plural_source == "cache" else "provider"
+    return plural_map, source
+
+
+def _translate_text(
+    *,
+    text: str,
+    locale: str,
+    translation_provider: POTranslationProvider,
+    translation_cache: POTranslationCache | None,
+) -> tuple[str, str]:
+    base_language = _base_language(locale)
+    if translation_cache is not None:
+        cached = translation_cache.get(base_language=base_language, text=text)
+        if cached is not None:
+            return cached, "cache"
+    translated_text = translation_provider.translate_text(
+        text=text,
+        target_locale=locale,
+    )
+    if translation_cache is not None:
+        translation_cache.set(
+            base_language=base_language,
+            text=text,
+            translated_text=translated_text,
+        )
+    return translated_text, "provider"
+
+
+def _resolve_cache_settings(
+    *,
+    site: RegisteredSite,
+    cache_settings: POProcessingCacheSettings | None,
+) -> POProcessingCacheSettings:
+    if cache_settings is not None:
+        return cache_settings
+    return POProcessingCacheSettings(
+        enabled=site.use_translation_cache,
+        cache_path=str(Path(site.local_path) / ".po_translation_cache"),
+    )
 
 
 def _propagate_translation_to_family(

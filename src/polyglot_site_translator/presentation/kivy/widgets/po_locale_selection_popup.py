@@ -41,7 +41,7 @@ class POLocaleSelectionPopup(Popup):  # type: ignore[misc]
     ) -> None:
         super().__init__(
             title="Translate Project",
-            size_hint=(0.84, 0.84),
+            size_hint=(0.86, 0.9),
             auto_dismiss=False,
         )
         self._on_confirm = on_confirm
@@ -53,6 +53,11 @@ class POLocaleSelectionPopup(Popup):  # type: ignore[misc]
         )
         self._use_external_translator_switch = Switch(
             active=default_options.use_external_translator,
+            size_hint=(None, None),
+            size=(72, 36),
+        )
+        self._use_translation_cache_switch = Switch(
+            active=default_options.use_translation_cache,
             size_hint=(None, None),
             size=(72, 36),
         )
@@ -80,9 +85,9 @@ class POLocaleSelectionPopup(Popup):  # type: ignore[misc]
         )
         self._options_container = BoxLayout(
             orientation="vertical",
-            spacing=10,
+            spacing=8,
             size_hint_y=None,
-            padding=(0, 0, 0, 2),
+            padding=(0, 0, 0, 4),
         )
         self._options_container.bind(minimum_height=self._options_container.setter("height"))
         self._options_container.add_widget(
@@ -107,6 +112,11 @@ class POLocaleSelectionPopup(Popup):  # type: ignore[misc]
                 title="Use External Translator",
                 description="Call the configured external translator for missing strings.",
                 toggle=self._use_external_translator_switch,
+            ),
+            self._build_toggle_row(
+                title="Use Translation Cache",
+                description="Reuse cached external translations before calling the provider.",
+                toggle=self._use_translation_cache_switch,
             ),
             self._build_toggle_row(
                 title="Dry-run",
@@ -150,13 +160,13 @@ class POLocaleSelectionPopup(Popup):  # type: ignore[misc]
             spacing=12,
             padding=14,
             size_hint_y=None,
-            height=72,
+            height=58,
             background_role="card_subtle_background",
         )
-        copy_column = BoxLayout(orientation="vertical", spacing=4)
-        copy_column.add_widget(WrappedLabel(text=title, font_size=16, bold=True))
+        copy_column = BoxLayout(orientation="vertical", spacing=2)
+        copy_column.add_widget(WrappedLabel(text=title, font_size=15, bold=True))
         copy_column.add_widget(
-            WrappedLabel(text=description, font_size=14, color_role="text_muted")
+            WrappedLabel(text=description, font_size=13, color_role="text_muted")
         )
         row.add_widget(copy_column)
         row.add_widget(Widget(size_hint_x=None, width=8))
@@ -180,6 +190,7 @@ class POLocaleSelectionPopup(Popup):  # type: ignore[misc]
                 options=TranslationOptionsViewModel(
                     compile_mo=self._compile_mo_switch.active,
                     use_external_translator=self._use_external_translator_switch.active,
+                    use_translation_cache=self._use_translation_cache_switch.active,
                     dry_run=self._dry_run_switch.active,
                     stats_only=self._stats_only_switch.active,
                     report_inconsistencies=self._report_inconsistencies_switch.active,

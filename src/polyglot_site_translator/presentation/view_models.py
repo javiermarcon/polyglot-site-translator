@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 from dataclasses import dataclass, field
+from pathlib import Path
 
 from polyglot_site_translator.domain.framework_detection.models import FrameworkDescriptor
 from polyglot_site_translator.domain.remote_connections.models import (
@@ -105,6 +106,8 @@ class AppSettingsViewModel:
     default_project_locale: str = "en_US"
     default_compile_mo: bool = True
     default_use_external_translator: bool = True
+    default_use_translation_cache: bool = True
+    translation_cache_path: str = ""
     default_dry_run: bool = False
     default_stats_only: bool = False
     default_report_inconsistencies: bool = False
@@ -122,6 +125,7 @@ class TranslationOptionsViewModel:
 
     compile_mo: bool = True
     use_external_translator: bool = True
+    use_translation_cache: bool = True
     dry_run: bool = False
     stats_only: bool = False
     report_inconsistencies: bool = False
@@ -166,6 +170,7 @@ class ProjectDetailViewModel:
     actions: list[ProjectActionViewModel]
     compile_mo: bool = True
     use_external_translator: bool = True
+    use_translation_cache: bool = True
     dry_run: bool = False
     stats_only: bool = False
     report_inconsistencies: bool = False
@@ -176,6 +181,7 @@ class ProjectDetailViewModel:
         return build_translation_options(
             compile_mo=self.compile_mo,
             use_external_translator=self.use_external_translator,
+            use_translation_cache=self.use_translation_cache,
             dry_run=self.dry_run,
             stats_only=self.stats_only,
             report_inconsistencies=self.report_inconsistencies,
@@ -224,6 +230,7 @@ class ProjectDetailStateViewModel:
     actions: list[ProjectActionViewModel]
     compile_mo: bool = True
     use_external_translator: bool = True
+    use_translation_cache: bool = True
     dry_run: bool = False
     stats_only: bool = False
     report_inconsistencies: bool = False
@@ -234,6 +241,7 @@ class ProjectDetailStateViewModel:
         return build_translation_options(
             compile_mo=self.compile_mo,
             use_external_translator=self.use_external_translator,
+            use_translation_cache=self.use_translation_cache,
             dry_run=self.dry_run,
             stats_only=self.stats_only,
             report_inconsistencies=self.report_inconsistencies,
@@ -258,6 +266,7 @@ class SiteEditorViewModel:
     is_active: bool
     compile_mo: bool = True
     use_external_translator: bool = True
+    use_translation_cache: bool = True
     dry_run: bool = False
     stats_only: bool = False
     report_inconsistencies: bool = False
@@ -271,6 +280,7 @@ class SiteEditorViewModel:
         return build_translation_options(
             compile_mo=self.compile_mo,
             use_external_translator=self.use_external_translator,
+            use_translation_cache=self.use_translation_cache,
             dry_run=self.dry_run,
             stats_only=self.stats_only,
             report_inconsistencies=self.report_inconsistencies,
@@ -486,6 +496,11 @@ def build_default_app_settings(
     database_filename: str = "site_registry.sqlite3",
 ) -> AppSettingsViewModel:
     """Return the default frontend settings."""
+    translation_cache_path = (
+        str(Path(database_directory) / ".po_translation_cache")
+        if database_directory != ""
+        else ".po_translation_cache"
+    )
     return AppSettingsViewModel(
         theme_mode="system",
         window_width=1280,
@@ -497,6 +512,8 @@ def build_default_app_settings(
         default_project_locale="en_US",
         default_compile_mo=True,
         default_use_external_translator=True,
+        default_use_translation_cache=True,
+        translation_cache_path=translation_cache_path,
         default_dry_run=False,
         default_stats_only=False,
         default_report_inconsistencies=False,
@@ -507,10 +524,11 @@ def build_default_app_settings(
     )
 
 
-def build_translation_options(
+def build_translation_options(  # noqa: PLR0913
     *,
     compile_mo: bool = True,
     use_external_translator: bool = True,
+    use_translation_cache: bool = True,
     dry_run: bool = False,
     stats_only: bool = False,
     report_inconsistencies: bool = False,
@@ -519,6 +537,7 @@ def build_translation_options(
     return TranslationOptionsViewModel(
         compile_mo=compile_mo,
         use_external_translator=use_external_translator,
+        use_translation_cache=use_translation_cache,
         dry_run=dry_run,
         stats_only=stats_only,
         report_inconsistencies=report_inconsistencies,
@@ -540,6 +559,7 @@ def build_default_site_editor(
         default_locale=default_locale,
         compile_mo=options.compile_mo,
         use_external_translator=options.use_external_translator,
+        use_translation_cache=options.use_translation_cache,
         dry_run=options.dry_run,
         stats_only=options.stats_only,
         report_inconsistencies=options.report_inconsistencies,

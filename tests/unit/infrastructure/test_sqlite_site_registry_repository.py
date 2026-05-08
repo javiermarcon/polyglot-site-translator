@@ -78,6 +78,18 @@ def test_sqlite_repository_roundtrips_the_external_translator_preference(
     assert loaded_site.project.use_external_translator is False
 
 
+def test_sqlite_repository_roundtrips_the_translation_cache_preference(
+    tmp_path: Path,
+) -> None:
+    repository = _build_repository(tmp_path)
+    site = _build_site(use_translation_cache=False)
+
+    repository.create_site(site)
+    loaded_site = repository.get_site(site.id)
+
+    assert loaded_site.project.use_translation_cache is False
+
+
 def test_sqlite_repository_roundtrips_project_sync_rule_overrides(tmp_path: Path) -> None:
     repository = _build_repository(tmp_path)
     site = _build_site(
@@ -592,6 +604,7 @@ def _build_site(
     sync_rule_overrides: tuple[ProjectSyncRuleOverride, ...] = (),
     compile_mo: bool = True,
     use_external_translator: bool = True,
+    use_translation_cache: bool = True,
 ) -> RegisteredSite:
     return RegisteredSite(
         project=SiteProject(
@@ -603,6 +616,7 @@ def _build_site(
             is_active=True,
             compile_mo=compile_mo,
             use_external_translator=use_external_translator,
+            use_translation_cache=use_translation_cache,
         ),
         remote_connection=RemoteConnectionConfig(
             id="remote-site-1",

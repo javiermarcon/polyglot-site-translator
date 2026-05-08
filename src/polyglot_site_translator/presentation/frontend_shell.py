@@ -149,6 +149,7 @@ class FrontendShell:
                 actions=_build_project_actions(detail.actions),
                 compile_mo=detail.compile_mo,
                 use_external_translator=detail.use_external_translator,
+                use_translation_cache=detail.use_translation_cache,
                 dry_run=detail.dry_run,
                 stats_only=detail.stats_only,
                 report_inconsistencies=detail.report_inconsistencies,
@@ -479,6 +480,35 @@ class FrontendShell:
             status_message="Settings draft updated.",
         )
 
+    def set_settings_default_use_translation_cache(
+        self,
+        default_use_translation_cache: bool,
+    ) -> None:
+        """Update the default translation-cache preference for new project drafts."""
+        state = self._require_settings_state()
+        self.settings_state = replace(
+            state,
+            app_settings=replace(
+                state.app_settings,
+                default_use_translation_cache=default_use_translation_cache,
+            ),
+            status="editing",
+            status_message="Settings draft updated.",
+        )
+
+    def set_settings_translation_cache_path(self, translation_cache_path: str) -> None:
+        """Update the draft translation cache path."""
+        state = self._require_settings_state()
+        self.settings_state = replace(
+            state,
+            app_settings=replace(
+                state.app_settings,
+                translation_cache_path=translation_cache_path,
+            ),
+            status="editing",
+            status_message="Settings draft updated.",
+        )
+
     def set_settings_default_dry_run(self, default_dry_run: bool) -> None:
         """Update the default dry-run preference for new project drafts."""
         state = self._require_settings_state()
@@ -639,6 +669,7 @@ class FrontendShell:
                 actions=_build_project_actions(detail.actions),
                 compile_mo=detail.compile_mo,
                 use_external_translator=detail.use_external_translator,
+                use_translation_cache=detail.use_translation_cache,
                 dry_run=detail.dry_run,
                 stats_only=detail.stats_only,
                 report_inconsistencies=detail.report_inconsistencies,
@@ -669,6 +700,7 @@ class FrontendShell:
                 actions=_build_project_actions(detail.actions),
                 compile_mo=detail.compile_mo,
                 use_external_translator=detail.use_external_translator,
+                use_translation_cache=detail.use_translation_cache,
                 dry_run=detail.dry_run,
                 stats_only=detail.stats_only,
                 report_inconsistencies=detail.report_inconsistencies,
@@ -860,6 +892,7 @@ class FrontendShell:
             options = build_translation_options(
                 compile_mo=detail.compile_mo,
                 use_external_translator=detail.use_external_translator,
+                use_translation_cache=detail.use_translation_cache,
                 dry_run=detail.dry_run,
                 stats_only=detail.stats_only,
                 report_inconsistencies=detail.report_inconsistencies,

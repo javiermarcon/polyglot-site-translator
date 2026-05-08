@@ -190,8 +190,8 @@ The frontend baseline now also includes:
 - concrete WordPress, Django, and Flask detection adapters
 - project-detail enrichment that shows framework detection evidence or warnings without moving heuristics into Kivy
 - a first real shared translation workflow for discovery, locale-family grouping, cross-variant synchronization of missing entries, optional external translation, and optional `.mo` compilation
-- the project detail screen exposes that workflow as a generic `Translate` action, and the pre-run popup can override locales, `.mo` compilation, external-translator usage, `dry-run`, `stats-only`, and inconsistency reporting for the current execution
-- those translation toggles now exist at three levels: general defaults, persisted project settings, and per-run popup overrides
+- the project detail screen exposes that workflow as a generic `Translate` action, and the pre-run popup can override locales, `.mo` compilation, external-translator usage, translation-cache usage, `dry-run`, `stats-only`, and inconsistency reporting for the current execution
+- those translation toggles now exist at three levels: general defaults, persisted project settings, and per-run popup overrides; the cache storage path itself is defined globally in settings TOML
 - typed PO-processing results surfaced through the presentation workflow service
 - external PO translation providers should distinguish configuration, transport/protocol, and response-shape failures with typed PO translation errors
 - `polib`-backed PO repository wiring in runtime frontend services (instead of fixed preview placeholders)

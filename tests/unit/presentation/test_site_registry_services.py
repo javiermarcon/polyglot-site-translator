@@ -23,6 +23,7 @@ from polyglot_site_translator.domain.po_processing.errors import (
 )
 from polyglot_site_translator.domain.po_processing.models import (
     POFileData,
+    POProcessingCacheSettings,
     POProcessingProgress,
 )
 from polyglot_site_translator.domain.remote_connections.models import (
@@ -105,6 +106,7 @@ def _request(locales: str, **modes: bool) -> TranslationWorkflowRequestViewModel
     resolved_modes = {
         "compile_mo": True,
         "use_external_translator": True,
+        "use_translation_cache": True,
         "dry_run": False,
         "stats_only": False,
         "report_inconsistencies": False,
@@ -894,10 +896,10 @@ def test_framework_aware_workflow_service_builds_audit_preview_from_detection() 
     assert "No supported framework was detected" in audit.findings_summary
 
 
-def test_workflow_service_builds_po_processing_preview() -> None:
+def test_workflow_service_builds_po_processing_preview(tmp_path: Path) -> None:
     repository = InMemorySiteRegistryRepository()
     site_service = _build_domain_service(repository)
-    site = site_service.create_site(_build_registration(local_path="/workspace/marketing-site"))
+    site = site_service.create_site(_build_registration(local_path=str(tmp_path)))
     workflow = SiteRegistryPresentationWorkflowService(
         service=site_service,
         project_sync_service=SyncStub(),
@@ -912,6 +914,8 @@ def test_workflow_service_builds_po_processing_preview() -> None:
     assert preview.progress_total == 0
     assert "Families processed: 0" in preview.summary
     assert "Compiled MO files: 0" in preview.summary
+    assert "Translated from cache: 0" in preview.summary
+    assert "Translation cache: enabled" in preview.summary
 
 
 def test_workflow_service_processes_po_variants_from_site_workspace(tmp_path: Path) -> None:
@@ -1319,9 +1323,10 @@ def test_workflow_service_wraps_po_processing_service_errors() -> None:
         def process_site(
             self,
             site: RegisteredSite,
+            cache_settings: POProcessingCacheSettings | None = None,
             progress_callback: Callable[[POProcessingProgress], None] | None = None,
         ) -> object:
-            del site, progress_callback
+            del site, cache_settings, progress_callback
             msg = "PO workflow exploded."
             raise POProcessingTranslationError(msg)
 
@@ -1336,6 +1341,26 @@ def test_workflow_service_wraps_po_processing_service_errors() -> None:
 
     with pytest.raises(ControlledServiceError, match=r"PO workflow exploded\."):
         workflow.start_po_processing(site.id)
+
+
+def test_workflow_service_wraps_cache_settings_load_errors() -> None:
+    class FailingSettingsService:
+        def load_settings(self) -> SettingsStateViewModel:
+            msg = "Settings load failed."
+            raise ControlledServiceError(msg)
+
+    repository = InMemorySiteRegistryRepository()
+    site_service = _build_domain_service(repository)
+    site = site_service.create_site(_build_registration(local_path="/workspace/marketing-site"))
+    workflow = SiteRegistryPresentationWorkflowService(
+        service=site_service,
+        project_sync_service=SyncStub(),
+        po_processing_service=cast(POProcessingService, object()),
+        settings_service=cast(TomlSettingsService, FailingSettingsService()),
+    )
+
+    with pytest.raises(ControlledServiceError, match=r"Settings load failed\."):
+        workflow._build_po_processing_cache_settings(site)
 
 
 def test_workflow_service_trusts_remote_host_key_with_explicit_confirmation() -> None:
@@ -1626,6 +1651,7 @@ def test_build_project_detail_without_remote_connection_is_explicit() -> None:
     assert detail.default_locale == "en_US"
     assert detail.configuration_summary == (
         "Locale: en_US | Compile MO: enabled | External translator: enabled | "
+        "Translation cache: enabled | "
         "Dry-run: disabled | Stats only: disabled | "
         "Report inconsistencies: disabled | "
         "Remote connection: None"

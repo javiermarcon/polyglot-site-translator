@@ -46,6 +46,14 @@ class POCompilationFailure:
 
 
 @dataclass(frozen=True)
+class POProcessingCacheSettings:
+    """Per-run cache configuration resolved before PO processing starts."""
+
+    enabled: bool
+    cache_path: str
+
+
+@dataclass(frozen=True)
 class POProcessingResult:
     """Observable typed outcome for one PO processing run."""
 
@@ -58,6 +66,9 @@ class POProcessingResult:
     files_written: int
     mo_files_compiled: int
     failures: tuple[POProcessingFailure, ...]
+    entries_translated_from_cache: int = 0
+    entries_translated_from_provider: int = 0
+    cache_enabled: bool = False
     dry_run: bool = False
     stats_only: bool = False
     variant_inconsistencies_found: int = 0

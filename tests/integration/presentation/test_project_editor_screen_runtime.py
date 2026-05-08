@@ -80,6 +80,7 @@ def test_project_editor_screen_saves_new_projects_and_can_return_to_projects() -
     editor_screen._default_locale_input.text = "en_US"
     editor_screen._compile_mo_switch.active = False
     editor_screen._use_external_translator_switch.active = False
+    editor_screen._use_translation_cache_switch.active = False
     editor_screen._dry_run_switch.active = True
     editor_screen._stats_only_switch.active = True
     editor_screen._report_inconsistencies_switch.active = True
@@ -99,6 +100,7 @@ def test_project_editor_screen_saves_new_projects_and_can_return_to_projects() -
     assert shell.project_detail_state.project.status == "Inactive"
     assert "Compile MO: disabled" in shell.project_detail_state.configuration_summary
     assert "External translator: disabled" in shell.project_detail_state.configuration_summary
+    assert "Translation cache: disabled" in shell.project_detail_state.configuration_summary
     assert "Dry-run: enabled" in shell.project_detail_state.configuration_summary
     assert "Stats only: enabled" in shell.project_detail_state.configuration_summary
     assert "Report inconsistencies: enabled" in shell.project_detail_state.configuration_summary
@@ -171,6 +173,7 @@ def test_project_editor_screen_uses_sectioned_layout_and_can_switch_sections() -
     assert "Default Locale" in translation_labels
     assert "Compile MO Files" in translation_labels
     assert "Use External Translator" in translation_labels
+    assert "Use Translation Cache" in translation_labels
     assert "Remote Connection Type" not in translation_labels
 
     editor_screen._select_project_editor_section("sync")

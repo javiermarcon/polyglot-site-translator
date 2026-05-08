@@ -15,6 +15,10 @@ class POProcessingCompilationError(POProcessingInfrastructureError):
     """Raised when one PO file cannot be compiled into a MO catalog."""
 
 
+class POProcessingCacheError(POProcessingInfrastructureError):
+    """Raised when the translation cache cannot be loaded or updated."""
+
+
 class POProcessingTranslationError(POProcessingError):
     """Raised when an external translation provider fails."""
 

@@ -79,6 +79,7 @@ Current frontend-facing service entrypoints:
 - `polyglot_site_translator.infrastructure.po_files.PolibPOCatalogRepository.discover_po_files`
 - `polyglot_site_translator.infrastructure.po_files.PolibPOCatalogRepository.save_po_files`
 - `polyglot_site_translator.infrastructure.po_files.PolibPOCatalogRepository.compile_mo_file`
+- `polyglot_site_translator.infrastructure.po_translation_cache_shelve.build_shelve_translation_cache`
 - `SettingsService.load_settings`
 - `SettingsService.save_settings`
 - `SettingsService.reset_settings`
@@ -157,6 +158,8 @@ Current settings orchestration entrypoints:
 - `FrontendShell.set_settings_default_project_locale`
 - `FrontendShell.set_settings_default_compile_mo`
 - `FrontendShell.set_settings_default_use_external_translator`
+- `FrontendShell.set_settings_default_use_translation_cache`
+- `FrontendShell.set_settings_translation_cache_path`
 - `FrontendShell.set_settings_default_dry_run`
 - `FrontendShell.set_settings_default_stats_only`
 - `FrontendShell.set_settings_default_report_inconsistencies`

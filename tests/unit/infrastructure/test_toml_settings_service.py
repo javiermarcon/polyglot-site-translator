@@ -65,6 +65,8 @@ def test_save_settings_writes_toml_and_roundtrips_values(tmp_path: Path) -> None
             default_project_locale="es_ES,es_AR",
             default_compile_mo=False,
             default_use_external_translator=False,
+            default_use_translation_cache=False,
+            translation_cache_path="/tmp/polyglot-cache/translation-cache",
             default_dry_run=True,
             default_stats_only=True,
             default_report_inconsistencies=True,
@@ -84,6 +86,11 @@ def test_save_settings_writes_toml_and_roundtrips_values(tmp_path: Path) -> None
     assert reloaded_state.app_settings.default_project_locale == "es_ES,es_AR"
     assert reloaded_state.app_settings.default_compile_mo is False
     assert reloaded_state.app_settings.default_use_external_translator is False
+    assert reloaded_state.app_settings.default_use_translation_cache is False
+    assert (
+        reloaded_state.app_settings.translation_cache_path
+        == "/tmp/polyglot-cache/translation-cache"
+    )
     assert reloaded_state.app_settings.default_dry_run is True
     assert reloaded_state.app_settings.default_stats_only is True
     assert reloaded_state.app_settings.default_report_inconsistencies is True
@@ -210,6 +217,15 @@ def test_load_settings_rejects_invalid_translation_defaults(tmp_path: Path) -> N
             '[app]\nlast_opened_screen = "dashboard"\n'
             '[translation]\ndefault_use_external_translator = "yes"\n',
             r"The translation setting 'default_use_external_translator' must be a boolean\.",
+        ),
+        (
+            '[app]\nlast_opened_screen = "dashboard"\n'
+            '[translation]\ndefault_use_translation_cache = "yes"\n',
+            r"The translation setting 'default_use_translation_cache' must be a boolean\.",
+        ),
+        (
+            '[app]\nlast_opened_screen = "dashboard"\n[translation]\ntranslation_cache_path = 3\n',
+            r"The translation setting 'translation_cache_path' must be a string\.",
         ),
         (
             '[app]\nlast_opened_screen = "dashboard"\n[translation]\ndefault_dry_run = "yes"\n',
@@ -652,6 +668,51 @@ def test_translation_helpers_reject_non_table_sections_directly() -> None:
         match=r"The \[translation\] settings section must be a TOML table\.",
     ):
         SETTINGS_MODULE._read_translation_default_use_external_translator({"translation": 3}, True)
+
+    with pytest.raises(
+        ControlledServiceError,
+        match=r"The \[translation\] settings section must be a TOML table\.",
+    ):
+        SETTINGS_MODULE._read_translation_default_dry_run({"translation": 3}, True)
+
+    with pytest.raises(
+        ControlledServiceError,
+        match=r"The \[translation\] settings section must be a TOML table\.",
+    ):
+        SETTINGS_MODULE._read_translation_default_use_translation_cache(
+            {"translation": 3},
+            True,
+        )
+
+    with pytest.raises(
+        ControlledServiceError,
+        match=r"The \[translation\] settings section must be a TOML table\.",
+    ):
+        SETTINGS_MODULE._read_translation_cache_path({"translation": 3}, "/tmp/cache")
+
+    with pytest.raises(
+        ControlledServiceError,
+        match=r"The \[translation\] settings section must be a TOML table\.",
+    ):
+        SETTINGS_MODULE._read_translation_default_stats_only({"translation": 3}, False)
+
+    with pytest.raises(
+        ControlledServiceError,
+        match=r"The \[translation\] settings section must be a TOML table\.",
+    ):
+        SETTINGS_MODULE._read_translation_default_report_inconsistencies(
+            {"translation": 3},
+            False,
+        )
+
+
+def test_normalize_translation_cache_path_resolves_relative_paths() -> None:
+    normalized = SETTINGS_MODULE._normalize_translation_cache_path(
+        "cache/translations",
+        default_directory=Path("/tmp/app-config"),
+    )
+
+    assert normalized == "/tmp/app-config/cache/translations"
 
 
 def test_validate_sync_scope_settings_rejects_blank_framework_types_directly() -> None:

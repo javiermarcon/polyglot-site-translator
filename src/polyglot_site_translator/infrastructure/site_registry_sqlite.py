@@ -57,11 +57,12 @@ class SqliteSiteRegistryRepository:
                 default_locale,
                 compile_mo,
                 use_external_translator,
+                use_translation_cache,
                 dry_run,
                 stats_only,
                 report_inconsistencies,
                 is_active
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """
         connection_statement = """
             INSERT INTO site_remote_connections (
@@ -105,6 +106,7 @@ class SqliteSiteRegistryRepository:
                 project.default_locale,
                 project.compile_mo,
                 project.use_external_translator,
+                project.use_translation_cache,
                 project.dry_run,
                 project.stats_only,
                 project.report_inconsistencies,
@@ -151,6 +153,7 @@ class SqliteSiteRegistryRepository:
                 project.default_locale,
                 project.compile_mo,
                 project.use_external_translator,
+                project.use_translation_cache,
                 project.dry_run,
                 project.stats_only,
                 project.report_inconsistencies,
@@ -197,6 +200,7 @@ class SqliteSiteRegistryRepository:
                 default_locale = ?,
                 compile_mo = ?,
                 use_external_translator = ?,
+                use_translation_cache = ?,
                 dry_run = ?,
                 stats_only = ?,
                 report_inconsistencies = ?,
@@ -312,6 +316,9 @@ def _ensure_project_table(connection: sqlite3.Connection) -> None:
             use_external_translator INTEGER NOT NULL CHECK (
                 use_external_translator IN (0, 1)
             ) DEFAULT 1,
+            use_translation_cache INTEGER NOT NULL CHECK (
+                use_translation_cache IN (0, 1)
+            ) DEFAULT 1,
             dry_run INTEGER NOT NULL CHECK (dry_run IN (0, 1)) DEFAULT 0,
             stats_only INTEGER NOT NULL CHECK (stats_only IN (0, 1)) DEFAULT 0,
             report_inconsistencies INTEGER NOT NULL CHECK (
@@ -334,6 +341,13 @@ def _ensure_project_table(connection: sqlite3.Connection) -> None:
             """
             ALTER TABLE site_registry
             ADD COLUMN use_external_translator INTEGER NOT NULL DEFAULT 1
+            """
+        )
+    if "use_translation_cache" not in columns:
+        connection.execute(
+            """
+            ALTER TABLE site_registry
+            ADD COLUMN use_translation_cache INTEGER NOT NULL DEFAULT 1
             """
         )
     if "dry_run" not in columns:
@@ -452,6 +466,9 @@ def _migrate_legacy_ftp_schema(connection: sqlite3.Connection) -> None:
             use_external_translator INTEGER NOT NULL CHECK (
                 use_external_translator IN (0, 1)
             ) DEFAULT 1,
+            use_translation_cache INTEGER NOT NULL CHECK (
+                use_translation_cache IN (0, 1)
+            ) DEFAULT 1,
             dry_run INTEGER NOT NULL CHECK (dry_run IN (0, 1)) DEFAULT 0,
             stats_only INTEGER NOT NULL CHECK (stats_only IN (0, 1)) DEFAULT 0,
             report_inconsistencies INTEGER NOT NULL CHECK (
@@ -471,6 +488,7 @@ def _migrate_legacy_ftp_schema(connection: sqlite3.Connection) -> None:
             default_locale,
             compile_mo,
             use_external_translator,
+            use_translation_cache,
             dry_run,
             stats_only,
             report_inconsistencies,
@@ -484,6 +502,7 @@ def _migrate_legacy_ftp_schema(connection: sqlite3.Connection) -> None:
             default_locale,
             1 AS compile_mo,
             1 AS use_external_translator,
+            1 AS use_translation_cache,
             0 AS dry_run,
             0 AS stats_only,
             0 AS report_inconsistencies,
@@ -545,6 +564,7 @@ def _project_params(project: SiteProject) -> tuple[object, ...]:
         project.default_locale,
         int(project.compile_mo),
         int(project.use_external_translator),
+        int(project.use_translation_cache),
         int(project.dry_run),
         int(project.stats_only),
         int(project.report_inconsistencies),
@@ -560,6 +580,7 @@ def _project_update_params(project: SiteProject) -> tuple[object, ...]:
         project.default_locale,
         int(project.compile_mo),
         int(project.use_external_translator),
+        int(project.use_translation_cache),
         int(project.dry_run),
         int(project.stats_only),
         int(project.report_inconsistencies),
@@ -680,6 +701,7 @@ def _map_row_to_site(
         default_locale=str(row["default_locale"]),
         compile_mo=bool(row["compile_mo"]),
         use_external_translator=bool(row["use_external_translator"]),
+        use_translation_cache=bool(row["use_translation_cache"]),
         dry_run=bool(row["dry_run"]),
         stats_only=bool(row["stats_only"]),
         report_inconsistencies=bool(row["report_inconsistencies"]),

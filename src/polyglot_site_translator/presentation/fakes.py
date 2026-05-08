@@ -74,6 +74,7 @@ def build_default_frontend_services(
                 repository=PolibPOCatalogRepository(),
                 translation_provider=GoogleTransPOTranslationProvider(),
             ),
+            settings_service=settings_service,
         ),
         settings=settings_service,
         registry=SiteRegistryPresentationManagementService(

@@ -249,6 +249,18 @@ def step_disable_default_external_translator(context: object) -> None:
     typed_context.shell.set_settings_default_use_external_translator(False)
 
 
+@when("the operator disables the default translation cache")
+def step_disable_default_translation_cache(context: object) -> None:
+    typed_context = _context_with_shell(context)
+    typed_context.shell.set_settings_default_use_translation_cache(False)
+
+
+@when('the operator sets the translation cache path to "{cache_path}"')
+def step_set_translation_cache_path(context: object, cache_path: str) -> None:
+    typed_context = _context_with_shell(context)
+    typed_context.shell.set_settings_translation_cache_path(cache_path)
+
+
 @when("the operator enables default dry-run mode")
 def step_enable_default_dry_run(context: object) -> None:
     typed_context = _context_with_shell(context)
@@ -698,6 +710,20 @@ def step_assert_saved_default_external_translator_disabled(context: object) -> N
     typed_context = _context_with_shell(context)
     assert typed_context.shell.settings_state is not None
     assert typed_context.shell.settings_state.app_settings.default_use_external_translator is False
+
+
+@then("the saved settings keep the default translation cache disabled")
+def step_assert_saved_default_translation_cache_disabled(context: object) -> None:
+    typed_context = _context_with_shell(context)
+    assert typed_context.shell.settings_state is not None
+    assert typed_context.shell.settings_state.app_settings.default_use_translation_cache is False
+
+
+@then('the saved settings keep the translation cache path "{cache_path}"')
+def step_assert_saved_translation_cache_path(context: object, cache_path: str) -> None:
+    typed_context = _context_with_shell(context)
+    assert typed_context.shell.settings_state is not None
+    assert typed_context.shell.settings_state.app_settings.translation_cache_path == cache_path
 
 
 @then("the saved settings keep default dry-run mode enabled")

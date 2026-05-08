@@ -65,6 +65,8 @@ Feature: Frontend settings management
     And the operator sets the default project locale to "es_ES, es_AR"
     And the operator enables default MO compilation
     And the operator disables the default external translator
+    And the operator disables the default translation cache
+    And the operator sets the translation cache path to "/tmp/polyglot-cache/settings-cache"
     And the operator enables default dry-run mode
     And the operator disables default stats-only mode
     And the operator enables default inconsistency reporting
@@ -73,6 +75,8 @@ Feature: Frontend settings management
     And the saved settings keep the default project locale "es_ES,es_AR"
     And the saved settings keep default MO compilation enabled
     And the saved settings keep the default external translator disabled
+    And the saved settings keep the default translation cache disabled
+    And the saved settings keep the translation cache path "/tmp/polyglot-cache/settings-cache"
     And the saved settings keep default dry-run mode enabled
     And the saved settings keep default stats-only mode disabled
     And the saved settings keep default inconsistency reporting enabled

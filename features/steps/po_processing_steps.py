@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from pathlib import Path
+import shelve
 import tempfile
 from typing import Protocol, TypeVar, cast
 
@@ -173,6 +174,13 @@ class _CompileFailingRepository:
         self._repository.compile_mo_file(file_data)
 
 
+def _seed_translation_cache(workspace: Path, *, text: str, translated_text: str) -> None:
+    cache_path = workspace / ".po_translation_cache"
+    cache_path.parent.mkdir(parents=True, exist_ok=True)
+    with shelve.open(str(cache_path), writeback=False) as cache:
+        cache[f"es\x1f{text}"] = translated_text
+
+
 def _context(context: object) -> _BehavePOContext:
     return cast(_BehavePOContext, context)
 
@@ -302,6 +310,28 @@ def step_given_site_with_untranslated_variants_and_stats_only(context: object) -
     _write_po(locale_dir / "messages-es_ES.po", [("Save", "")])
     _write_po(locale_dir / "messages-es_AR.po", [("Save", "")])
     site = _build_site(workspace, modes={"stats_only": True})
+    typed.site = site
+    typed.site_id = site.id
+    typed.workflow_service = SiteRegistryPresentationWorkflowService(
+        service=_InMemorySiteWorkflowService(site),
+        project_sync_service=_SyncStub(),
+        po_processing_service=POProcessingService(
+            translation_provider=_BehaveTranslationProvider()
+        ),
+    )
+
+
+@given("a site project with untranslated PO locale variants and a preseeded translation cache")
+def step_given_site_with_untranslated_variants_and_cache(context: object) -> None:
+    typed = _context(context)
+    typed.temp_dir = tempfile.TemporaryDirectory()
+    workspace = Path(typed.temp_dir.name)
+    locale_dir = workspace / "locale"
+    locale_dir.mkdir(parents=True, exist_ok=True)
+    _write_po(locale_dir / "messages-es_ES.po", [("Save", "")])
+    _write_po(locale_dir / "messages-es_AR.po", [("Save", "")])
+    _seed_translation_cache(workspace, text="Save", translated_text="Guardar")
+    site = _build_site(workspace)
     typed.site = site
     typed.site_id = site.id
     typed.workflow_service = SiteRegistryPresentationWorkflowService(
@@ -449,6 +479,7 @@ def step_when_run_po(context: object) -> None:
             options=TranslationOptionsViewModel(
                 compile_mo=typed.site.compile_mo,
                 use_external_translator=typed.site.use_external_translator,
+                use_translation_cache=typed.site.use_translation_cache,
                 dry_run=typed.site.dry_run,
                 stats_only=typed.site.stats_only,
                 report_inconsistencies=typed.site.report_inconsistencies,
@@ -479,6 +510,7 @@ def step_when_run_po_with_selected_locale(context: object, locale: str) -> None:
             options=TranslationOptionsViewModel(
                 compile_mo=typed.site.compile_mo,
                 use_external_translator=typed.site.use_external_translator,
+                use_translation_cache=typed.site.use_translation_cache,
                 dry_run=typed.site.dry_run,
                 stats_only=typed.site.stats_only,
                 report_inconsistencies=typed.site.report_inconsistencies,
@@ -503,6 +535,7 @@ def step_when_run_po_with_inconsistency_reporting_enabled(context: object) -> No
             options=TranslationOptionsViewModel(
                 compile_mo=typed.site.compile_mo,
                 use_external_translator=typed.site.use_external_translator,
+                use_translation_cache=typed.site.use_translation_cache,
                 dry_run=typed.site.dry_run,
                 stats_only=typed.site.stats_only,
                 report_inconsistencies=True,
@@ -514,6 +547,37 @@ def step_when_run_po_with_inconsistency_reporting_enabled(context: object) -> No
     typed.po_result_families = result.processed_families
     typed.po_result_summary = result.summary
     typed.compiled_mo_paths = tuple(sorted(Path(typed.temp_dir.name).rglob("*.mo")))
+
+
+@when("the operator runs the PO processing workflow with translation cache disabled")
+def step_when_run_po_with_translation_cache_disabled(context: object) -> None:
+    typed = _context(context)
+    typed.po_progress_events = []
+    result = typed.workflow_service.start_po_processing(
+        typed.site_id,
+        TranslationWorkflowRequestViewModel(
+            locales=typed.site.default_locale,
+            options=TranslationOptionsViewModel(
+                compile_mo=typed.site.compile_mo,
+                use_external_translator=typed.site.use_external_translator,
+                use_translation_cache=False,
+                dry_run=typed.site.dry_run,
+                stats_only=typed.site.stats_only,
+                report_inconsistencies=typed.site.report_inconsistencies,
+            ),
+        ),
+        progress_callback=typed.po_progress_events.append,
+    )
+    typed.po_result_status = result.status
+    typed.po_result_families = result.processed_families
+    typed.po_result_summary = result.summary
+    typed.compiled_mo_paths = tuple(sorted(Path(typed.temp_dir.name).rglob("*.mo")))
+    translated_path = Path(typed.temp_dir.name) / "locale" / "messages-es_ES.po"
+    if not translated_path.exists():
+        typed.processed_po_text = ""
+        return
+    translated_po = polib.pofile(str(translated_path))
+    typed.processed_po_text = "\n".join(f"{entry.msgid}={entry.msgstr}" for entry in translated_po)
 
 
 @then("the PO processing result reports completed status")
@@ -659,6 +723,30 @@ def step_then_zero_translation_inconsistencies(context: object) -> None:
     assert "Translation inconsistencies: 0" in typed.po_result_summary
 
 
+@then("the PO processing result reports one cached translation")
+def step_then_one_cached_translation(context: object) -> None:
+    typed = _context(context)
+    assert "Translated from cache: 1" in typed.po_result_summary
+
+
+@then("the PO processing result reports zero cached translations")
+def step_then_zero_cached_translations(context: object) -> None:
+    typed = _context(context)
+    assert "Translated from cache: 0" in typed.po_result_summary
+
+
+@then("the PO processing result reports one provider translation")
+def step_then_one_provider_translation(context: object) -> None:
+    typed = _context(context)
+    assert "Translated via provider: 1" in typed.po_result_summary
+
+
+@then("the PO processing result reports zero provider translations")
+def step_then_zero_provider_translations(context: object) -> None:
+    typed = _context(context)
+    assert "Translated via provider: 0" in typed.po_result_summary
+
+
 @then('the PO processing result reports the inconsistency detail for "{msgid}"')
 def step_then_inconsistency_detail(context: object, msgid: str) -> None:
     typed = _context(context)
@@ -673,6 +761,7 @@ def _build_site(
     resolved_modes = {
         "compile_mo": True,
         "use_external_translator": True,
+        "use_translation_cache": True,
         "dry_run": False,
         "stats_only": False,
         "report_inconsistencies": False,
@@ -690,6 +779,7 @@ def _build_site(
             is_active=True,
             compile_mo=options.compile_mo,
             use_external_translator=options.use_external_translator,
+            use_translation_cache=options.use_translation_cache,
             dry_run=options.dry_run,
             stats_only=options.stats_only,
             report_inconsistencies=options.report_inconsistencies,

@@ -281,7 +281,7 @@ Test:
 - default loading when the config file does not exist yet
 - round-trip save/load behavior
 - dedicated translation settings such as the default project locale
-- dedicated translation defaults such as `.mo` compilation, external translator usage, `dry-run`, `stats-only`, and inconsistency reporting
+- dedicated translation defaults such as `.mo` compilation, external translator usage, translation-cache enablement/path, `dry-run`, `stats-only`, and inconsistency reporting
 - invalid TOML or invalid setting values
 - locale normalization and invalid locale failures in persisted translation settings
 - per-user config-path resolution overrides
@@ -298,6 +298,19 @@ Test:
 - per-run popup overrides for translation toggles
 - section selection and focused rendering for translation/remote/sync groups
 - fallback preservation of non-visible field values while editing a single section
+
+### If changing PO-processing workflows
+
+Test:
+
+- cache-enabled translation reuse before external-provider calls
+- cache-disabled runs that still fall back to the provider
+- cache open/read/write/close failures wrapped as typed PO-processing errors
+- result summaries that distinguish provider translations from cache hits
+- effective translation settings at all three levels:
+  - general defaults
+  - persisted project settings
+  - per-run popup overrides
 
 ---
 

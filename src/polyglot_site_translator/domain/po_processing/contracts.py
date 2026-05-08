@@ -26,3 +26,31 @@ class POTranslationProvider(Protocol):
 
     def translate_text(self, *, text: str, target_locale: str) -> str:
         """Translate ``text`` into the base language implied by ``target_locale``."""
+
+
+class POTranslationCache(Protocol):
+    """Persistent translation cache used to avoid repeated external calls."""
+
+    def open(self) -> None:
+        """Open any backing resources required by the cache."""
+
+    def close(self) -> None:
+        """Close any backing resources required by the cache."""
+
+    def get(self, *, base_language: str, text: str) -> str | None:
+        """Return a cached translation for ``text`` if available."""
+
+    def set(self, *, base_language: str, text: str, translated_text: str) -> None:
+        """Persist a translated text in the cache."""
+
+
+class POTranslationCacheFactory(Protocol):
+    """Build one translation cache instance for a processing run."""
+
+    def __call__(
+        self,
+        *,
+        cache_path: Path,
+        enabled: bool,
+    ) -> POTranslationCache:
+        """Create a cache instance for the requested path and enabled flag."""

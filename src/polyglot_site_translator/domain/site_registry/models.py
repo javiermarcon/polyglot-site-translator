@@ -22,6 +22,7 @@ class SiteRegistrationInput:
     is_active: bool
     compile_mo: bool = True
     use_external_translator: bool = True
+    use_translation_cache: bool = True
     dry_run: bool = False
     stats_only: bool = False
     report_inconsistencies: bool = False
@@ -39,6 +40,7 @@ class SiteProject:
     is_active: bool
     compile_mo: bool = True
     use_external_translator: bool = True
+    use_translation_cache: bool = True
     dry_run: bool = False
     stats_only: bool = False
     report_inconsistencies: bool = False
@@ -90,6 +92,11 @@ class RegisteredSite:
     def dry_run(self) -> bool:
         """Return whether translation runs in dry-run mode for this project."""
         return self.project.dry_run
+
+    @property
+    def use_translation_cache(self) -> bool:
+        """Return whether the translation cache is enabled for this project."""
+        return self.project.use_translation_cache
 
     @property
     def stats_only(self) -> bool:

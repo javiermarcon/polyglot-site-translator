@@ -106,3 +106,20 @@ Feature: PO processing workflow
     Then the PO processing result reports completed status
     And the PO processing result reports one processed family
     And the PO processing result reports zero translation inconsistencies
+
+  Scenario: Reuse cached translations before calling the external provider
+    Given a site project with untranslated PO locale variants and a preseeded translation cache
+    When the operator runs the PO processing workflow for that site
+    Then the PO processing result reports completed status
+    And the PO processing result reports translated entries
+    And the PO processing result reports one cached translation
+    And the PO processing result reports zero provider translations
+    And the processed PO file contains the translated text
+
+  Scenario: Ignore the translation cache when the run disables it
+    Given a site project with untranslated PO locale variants and a preseeded translation cache
+    When the operator runs the PO processing workflow with translation cache disabled
+    Then the PO processing result reports completed status
+    And the PO processing result reports translated entries
+    And the PO processing result reports zero cached translations
+    And the PO processing result reports one provider translation

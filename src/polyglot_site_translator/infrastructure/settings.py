@@ -185,6 +185,14 @@ class TomlSettingsService:
                 raw_document,
                 default_settings.default_use_external_translator,
             ),
+            default_use_translation_cache=_read_translation_default_use_translation_cache(
+                raw_document,
+                default_settings.default_use_translation_cache,
+            ),
+            translation_cache_path=_read_translation_cache_path(
+                raw_document,
+                default_settings.translation_cache_path,
+            ),
             default_dry_run=_read_translation_default_dry_run(
                 raw_document,
                 default_settings.default_dry_run,
@@ -301,6 +309,10 @@ def _validate_app_settings(app_settings: AppSettingsViewModel) -> AppSettingsVie
     return replace(
         app_settings,
         default_project_locale=default_project_locale,
+        translation_cache_path=_normalize_translation_cache_path(
+            app_settings.translation_cache_path,
+            default_directory=Path(database_directory),
+        ),
         database_directory=database_directory,
         database_filename=database_filename,
         sync_scope_settings=_validate_sync_scope_settings(app_settings.sync_scope_settings),
@@ -329,6 +341,9 @@ def _serialize_settings_document(app_settings: AppSettingsViewModel) -> str:
         f"default_compile_mo = {_format_toml_bool(app_settings.default_compile_mo)}\n"
         "default_use_external_translator = "
         f"{_format_toml_bool(app_settings.default_use_external_translator)}\n"
+        "default_use_translation_cache = "
+        f"{_format_toml_bool(app_settings.default_use_translation_cache)}\n"
+        f"translation_cache_path = {_format_toml_string(app_settings.translation_cache_path)}\n"
         f"default_dry_run = {_format_toml_bool(app_settings.default_dry_run)}\n"
         f"default_stats_only = {_format_toml_bool(app_settings.default_stats_only)}\n"
         "default_report_inconsistencies = "
@@ -419,6 +434,43 @@ def _read_translation_default_dry_run(
     raise ControlledServiceError(msg)
 
 
+def _read_translation_default_use_translation_cache(
+    raw_document: dict[str, Any],
+    default_use_translation_cache: bool,
+) -> bool:
+    raw_translation = raw_document.get("translation")
+    if raw_translation is None:
+        return default_use_translation_cache
+    if not isinstance(raw_translation, dict):
+        msg = "The [translation] settings section must be a TOML table."
+        raise ControlledServiceError(msg)
+    raw_value = raw_translation.get(
+        "default_use_translation_cache",
+        default_use_translation_cache,
+    )
+    if isinstance(raw_value, bool):
+        return raw_value
+    msg = "The translation setting 'default_use_translation_cache' must be a boolean."
+    raise ControlledServiceError(msg)
+
+
+def _read_translation_cache_path(
+    raw_document: dict[str, Any],
+    default_cache_path: str,
+) -> str:
+    raw_translation = raw_document.get("translation")
+    if raw_translation is None:
+        return default_cache_path
+    if not isinstance(raw_translation, dict):
+        msg = "The [translation] settings section must be a TOML table."
+        raise ControlledServiceError(msg)
+    raw_value = raw_translation.get("translation_cache_path", default_cache_path)
+    if isinstance(raw_value, str):
+        return raw_value
+    msg = "The translation setting 'translation_cache_path' must be a string."
+    raise ControlledServiceError(msg)
+
+
 def _read_translation_default_stats_only(
     raw_document: dict[str, Any],
     default_stats_only: bool,
@@ -454,6 +506,20 @@ def _read_translation_default_report_inconsistencies(
         return raw_value
     msg = "The translation setting 'default_report_inconsistencies' must be a boolean."
     raise ControlledServiceError(msg)
+
+
+def _normalize_translation_cache_path(
+    cache_path: str,
+    *,
+    default_directory: Path,
+) -> str:
+    resolved_path = cache_path.strip()
+    if resolved_path == "":
+        return str(default_directory / ".po_translation_cache")
+    normalized_path = Path(resolved_path).expanduser()
+    if not normalized_path.is_absolute():
+        normalized_path = default_directory / normalized_path
+    return str(normalized_path)
 
 
 def _read_sync_scope_settings(

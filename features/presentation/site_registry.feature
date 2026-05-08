@@ -21,6 +21,7 @@ Feature: SQLite-backed site registry management
     And the operator sets the default project locale to "es_AR, es_ES"
     And the operator disables default MO compilation
     And the operator disables the default external translator
+    And the operator disables the default translation cache
     And the operator enables default dry-run mode
     And the operator enables default stats-only mode
     And the operator enables default inconsistency reporting
@@ -29,6 +30,7 @@ Feature: SQLite-backed site registry management
     Then the project editor uses the default locale "es_AR,es_ES"
     And the project editor uses MO compilation disabled
     And the project editor uses the external translator disabled
+    And the project editor uses the translation cache disabled
     And the project editor uses dry-run mode enabled
     And the project editor uses stats-only mode enabled
     And the project editor uses inconsistency reporting enabled
@@ -78,6 +80,13 @@ Feature: SQLite-backed site registry management
     And the operator submits a new site registry entry with external translator disabled
     Then the project detail shows the external translator disabled
     And reopening the persisted site editor shows the external translator disabled
+
+  Scenario: Persist the project translation cache preference
+    Given the frontend shell is wired with SQLite-backed site registry services
+    When the operator opens the create project workflow
+    And the operator submits a new site registry entry with translation cache disabled
+    Then the project detail shows the translation cache disabled
+    And reopening the persisted site editor shows the translation cache disabled
 
   Scenario: Persist the project dry-run, stats-only, and inconsistency-reporting preferences
     Given the frontend shell is wired with SQLite-backed site registry services

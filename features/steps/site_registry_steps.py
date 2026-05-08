@@ -462,6 +462,13 @@ def step_assert_create_editor_external_translator_disabled(context: object) -> N
     assert typed_context.shell.project_editor_state.editor.use_external_translator is False
 
 
+@then("the project editor uses the translation cache disabled")
+def step_assert_create_editor_translation_cache_disabled(context: object) -> None:
+    typed_context = _context_with_shell(context)
+    assert typed_context.shell.project_editor_state is not None
+    assert typed_context.shell.project_editor_state.editor.use_translation_cache is False
+
+
 @then("the project editor uses dry-run mode enabled")
 def step_assert_create_editor_dry_run_enabled(context: object) -> None:
     typed_context = _context_with_shell(context)
@@ -548,6 +555,32 @@ def step_submit_new_site_with_external_translator_disabled(context: object) -> N
     typed_context.created_site_id = typed_context.shell.project_detail_state.project.id
 
 
+@when("the operator submits a new site registry entry with translation cache disabled")
+def step_submit_new_site_with_translation_cache_disabled(context: object) -> None:
+    typed_context = _context_with_shell(context)
+    typed_context.shell.save_new_project(
+        SiteEditorViewModel(
+            site_id=None,
+            name="No Translation Cache Site",
+            framework_type="wordpress",
+            local_path="/workspace/no-translation-cache-site",
+            default_locale="en_US",
+            compile_mo=True,
+            use_external_translator=True,
+            use_translation_cache=False,
+            connection_type="ftp",
+            remote_host="ftp.example.com",
+            remote_port="21",
+            remote_username="deploy",
+            remote_password="super-secret",
+            remote_path="/public_html",
+            is_active=True,
+        )
+    )
+    assert typed_context.shell.project_detail_state is not None
+    typed_context.created_site_id = typed_context.shell.project_detail_state.project.id
+
+
 @when("the operator submits a new site registry entry with translation preview settings enabled")
 def step_submit_new_site_with_translation_preview_settings(context: object) -> None:
     typed_context = _context_with_shell(context)
@@ -601,6 +634,16 @@ def step_assert_project_detail_external_translator_disabled(context: object) -> 
     )
 
 
+@then("the project detail shows the translation cache disabled")
+def step_assert_project_detail_translation_cache_disabled(context: object) -> None:
+    typed_context = _context_with_shell(context)
+    assert typed_context.shell.project_detail_state is not None
+    assert (
+        "Translation cache: disabled"
+        in typed_context.shell.project_detail_state.configuration_summary
+    )
+
+
 @then("the project detail shows dry-run mode enabled")
 def step_assert_project_detail_dry_run_enabled(context: object) -> None:
     typed_context = _context_with_shell(context)
@@ -630,6 +673,14 @@ def step_assert_persisted_external_translator_disabled(context: object) -> None:
     typed_context.shell.open_project_editor_edit(typed_context.created_site_id)
     assert typed_context.shell.project_editor_state is not None
     assert typed_context.shell.project_editor_state.editor.use_external_translator is False
+
+
+@then("reopening the persisted site editor shows the translation cache disabled")
+def step_assert_persisted_translation_cache_disabled(context: object) -> None:
+    typed_context = _context_with_shell(context)
+    typed_context.shell.open_project_editor_edit(typed_context.created_site_id)
+    assert typed_context.shell.project_editor_state is not None
+    assert typed_context.shell.project_editor_state.editor.use_translation_cache is False
 
 
 @then("reopening the persisted site editor shows dry-run mode enabled")

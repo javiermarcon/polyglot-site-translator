@@ -24,6 +24,7 @@ Manage the local record of sites or projects known to the application.
 - preferred locales
 - persisted per-project `.mo` compilation preference
 - persisted per-project external-translator preference
+- persisted per-project translation-cache preference
 - persisted per-project `dry-run`, `stats-only`, and inconsistency-reporting preferences
 - site-specific processing options
 - active/inactive status
@@ -87,6 +88,7 @@ Handle reusable localization and translation logic.
 - translation synchronization
 - translation reuse
 - optional translation provider use
+- optional persistent translation-cache use
 - optional `.mo` compilation
 - optional `dry-run`
 - optional `stats-only`
@@ -101,9 +103,10 @@ Current implemented slice:
 - synchronization of missing singular and plural entries between locale variants
 - translation-memory reuse across files and families for sibling locales
 - optional external translation through the shared provider contract
+- optional persistent translation cache resolved from general settings and project/run toggles
 - per-run override of external-translator usage and execution modes from the presentation workflow
 - sibling `.mo` compilation after persisted `.po` updates when enabled by the effective project/run preference
-- typed processing summary for presentation workflows, including files written, inconsistency details, and per-file MO compilation failures
+- typed processing summary for presentation workflows, including files written, cache-hit/provider counters, inconsistency details, and per-file MO compilation failures
 
 ### Excludes
 

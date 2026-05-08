@@ -9,6 +9,7 @@ import polib
 import pytest
 
 from polyglot_site_translator.domain.po_processing.errors import (
+    POProcessingCacheError,
     POProcessingCompilationError,
     POProcessingInfrastructureError,
     POProcessingTranslationError,
@@ -18,6 +19,7 @@ from polyglot_site_translator.domain.po_processing.models import (
     POEntryData,
     POEntryId,
     POFileData,
+    POProcessingCacheSettings,
     POProcessingFailure,
     POProcessingProgress,
 )
@@ -25,6 +27,8 @@ from polyglot_site_translator.domain.site_registry.models import RegisteredSite,
 from polyglot_site_translator.infrastructure.po_files import PolibPOCatalogRepository
 from polyglot_site_translator.services.po_processing import (
     POProcessingService,
+    _canonical_translation_value,
+    _detect_variant_inconsistencies,
     _FamilyProcessingRuntime,
     _find_entry,
     _group_locales_by_base,
@@ -87,6 +91,45 @@ class PartiallyFailingCompileRepository(PolibPOCatalogRepository):
             )
             raise POProcessingCompilationError(msg)
         super().compile_mo_file(file_data)
+
+
+class StubTranslationCache:
+    """In-memory translation cache used to exercise cache hit/miss behavior."""
+
+    def __init__(
+        self,
+        *,
+        seed: dict[tuple[str, str], str] | None = None,
+        enabled: bool = True,
+        fail_on_set: bool = False,
+    ) -> None:
+        self.enabled = enabled
+        self.fail_on_set = fail_on_set
+        self.store = {} if seed is None else dict(seed)
+        self.open_calls = 0
+        self.close_calls = 0
+        self.get_requests: list[tuple[str, str]] = []
+        self.set_requests: list[tuple[str, str, str]] = []
+
+    def open(self) -> None:
+        self.open_calls += 1
+
+    def close(self) -> None:
+        self.close_calls += 1
+
+    def get(self, *, base_language: str, text: str) -> str | None:
+        self.get_requests.append((base_language, text))
+        if not self.enabled:
+            return None
+        return self.store.get((base_language, text))
+
+    def set(self, *, base_language: str, text: str, translated_text: str) -> None:
+        self.set_requests.append((base_language, text, translated_text))
+        if self.fail_on_set:
+            msg = "cache write failed"
+            raise POProcessingCacheError(msg)
+        if self.enabled:
+            self.store[(base_language, text)] = translated_text
 
 
 def test_process_site_syncs_missing_variant_entries(tmp_path: Path) -> None:
@@ -261,6 +304,99 @@ def test_process_site_skips_external_translation_when_site_disables_it(tmp_path:
     translated_po = polib.pofile(str(locale_dir / "messages-es_ES.po"))
     assert result.entries_translated == 0
     assert provider.requests == []
+    assert cast(polib.POEntry, translated_po.find("Save")).msgstr == ""
+
+
+def test_process_site_reuses_cached_translations_before_calling_provider(tmp_path: Path) -> None:
+    workspace = tmp_path / "workspace"
+    locale_dir = workspace / "locale"
+    locale_dir.mkdir(parents=True, exist_ok=True)
+    _write_po(locale_dir / "messages-es_ES.po", [("Save", "")])
+    provider = StubTranslationProvider({("es_ES", "Save"): "Guardar-api"})
+    cache = StubTranslationCache(seed={("es", "Save"): "Guardar-cache"})
+
+    service = POProcessingService(
+        repository=PolibPOCatalogRepository(),
+        translation_provider=provider,
+        translation_cache_factory=lambda *, cache_path, enabled: cache,
+    )
+
+    result = service.process_site(
+        _build_site(str(workspace), "es_ES"),
+        cache_settings=POProcessingCacheSettings(
+            enabled=True,
+            cache_path=str(tmp_path / "cache.db"),
+        ),
+    )
+
+    translated_po = polib.pofile(str(locale_dir / "messages-es_ES.po"))
+    assert result.entries_translated == 1
+    assert result.entries_translated_from_cache == 1
+    assert result.entries_translated_from_provider == 0
+    assert result.cache_enabled is True
+    assert provider.requests == []
+    assert cache.open_calls == 1
+    assert cache.close_calls == 1
+    assert cast(polib.POEntry, translated_po.find("Save")).msgstr == "Guardar-cache"
+
+
+def test_process_site_can_disable_cache_per_run_and_fall_back_to_provider(tmp_path: Path) -> None:
+    workspace = tmp_path / "workspace"
+    locale_dir = workspace / "locale"
+    locale_dir.mkdir(parents=True, exist_ok=True)
+    _write_po(locale_dir / "messages-es_ES.po", [("Save", "")])
+    provider = StubTranslationProvider({("es_ES", "Save"): "Guardar"})
+    cache = StubTranslationCache(seed={("es", "Save"): "Guardar-cache"}, enabled=False)
+
+    service = POProcessingService(
+        repository=PolibPOCatalogRepository(),
+        translation_provider=provider,
+        translation_cache_factory=lambda *, cache_path, enabled: cache,
+    )
+
+    result = service.process_site(
+        _build_site(str(workspace), "es_ES", modes={"use_translation_cache": False}),
+        cache_settings=POProcessingCacheSettings(
+            enabled=False,
+            cache_path=str(tmp_path / "cache.db"),
+        ),
+    )
+
+    translated_po = polib.pofile(str(locale_dir / "messages-es_ES.po"))
+    assert result.entries_translated == 1
+    assert result.entries_translated_from_cache == 0
+    assert result.entries_translated_from_provider == 1
+    assert result.cache_enabled is False
+    assert provider.requests == [("es_ES", "Save")]
+    assert cast(polib.POEntry, translated_po.find("Save")).msgstr == "Guardar"
+
+
+def test_process_site_collects_cache_failures_and_continues(tmp_path: Path) -> None:
+    workspace = tmp_path / "workspace"
+    locale_dir = workspace / "locale"
+    locale_dir.mkdir(parents=True, exist_ok=True)
+    _write_po(locale_dir / "messages-es_ES.po", [("Save", "")])
+    provider = StubTranslationProvider({("es_ES", "Save"): "Guardar"})
+    cache = StubTranslationCache(fail_on_set=True)
+
+    service = POProcessingService(
+        repository=PolibPOCatalogRepository(),
+        translation_provider=provider,
+        translation_cache_factory=lambda *, cache_path, enabled: cache,
+    )
+
+    result = service.process_site(
+        _build_site(str(workspace), "es_ES"),
+        cache_settings=POProcessingCacheSettings(
+            enabled=True,
+            cache_path=str(tmp_path / "cache.db"),
+        ),
+    )
+
+    translated_po = polib.pofile(str(locale_dir / "messages-es_ES.po"))
+    assert result.entries_translated == 0
+    assert result.entries_failed == 1
+    assert result.failures[0].error_message == "cache write failed"
     assert cast(polib.POEntry, translated_po.find("Save")).msgstr == ""
 
 
@@ -708,6 +844,47 @@ def test_resolve_processing_locales_keeps_first_configured_locale_and_appends_ne
     assert resolved == ("es_ES", "es_AR")
 
 
+def test_detect_variant_inconsistencies_ignores_single_translated_variant() -> None:
+    grouped_files = (
+        POFileData(
+            source_path="/tmp/messages-es_ES.po",
+            relative_path="locale/messages-es_ES.po",
+            locale="es_ES",
+            family_key="messages",
+            nplurals=2,
+            entries=(
+                POEntryData(
+                    entry_id=POEntryId(context=None, msgid="Hello", msgid_plural=None),
+                    msgstr="Hola",
+                    msgstr_plural={},
+                ),
+            ),
+        ),
+        POFileData(
+            source_path="/tmp/messages-es_AR.po",
+            relative_path="locale/messages-es_AR.po",
+            locale="es_AR",
+            family_key="messages",
+            nplurals=2,
+            entries=(
+                POEntryData(
+                    entry_id=POEntryId(context=None, msgid="Hello", msgid_plural=None),
+                    msgstr="",
+                    msgstr_plural={},
+                ),
+            ),
+        ),
+    )
+
+    assert _detect_variant_inconsistencies(grouped_files=grouped_files, enabled=True) == []
+
+
+def test_canonical_translation_value_normalizes_plural_maps() -> None:
+    canonical = _canonical_translation_value({"1": "dias", "0": "dia"})
+
+    assert canonical == "0=dia\x1f1=dias"
+
+
 def test_is_effectively_empty_translation_treats_blank_plural_maps_as_empty() -> None:
     assert _is_effectively_empty_translation({"0": " ", "1": ""}) is True
     assert _is_effectively_empty_translation({"0": "uno"}) is False
@@ -767,16 +944,20 @@ def test_translate_missing_entries_skips_selected_locales_without_a_file() -> No
         )
     }
 
-    synchronized, translated, failures = _translate_missing_entries(
-        family_entries=family_entries,
-        selected_locales=("es_ES", "es_AR"),
-        translation_memory={},
-        file_by_locale=file_by_locale,
-        runtime=_FamilyProcessingRuntime(translation_provider=None),
+    synchronized, translated, translated_from_cache, translated_from_provider, failures = (
+        _translate_missing_entries(
+            family_entries=family_entries,
+            selected_locales=("es_ES", "es_AR"),
+            translation_memory={},
+            file_by_locale=file_by_locale,
+            runtime=_FamilyProcessingRuntime(translation_provider=None),
+        )
     )
 
     assert synchronized == 0
     assert translated == 0
+    assert translated_from_cache == 0
+    assert translated_from_provider == 0
     assert failures == ()
 
 
@@ -789,6 +970,7 @@ def _build_site(
     resolved_modes = {
         "compile_mo": True,
         "use_external_translator": True,
+        "use_translation_cache": True,
         "dry_run": False,
         "stats_only": False,
         "report_inconsistencies": False,
@@ -805,6 +987,7 @@ def _build_site(
             is_active=True,
             compile_mo=resolved_modes["compile_mo"],
             use_external_translator=resolved_modes["use_external_translator"],
+            use_translation_cache=resolved_modes["use_translation_cache"],
             dry_run=resolved_modes["dry_run"],
             stats_only=resolved_modes["stats_only"],
             report_inconsistencies=resolved_modes["report_inconsistencies"],
