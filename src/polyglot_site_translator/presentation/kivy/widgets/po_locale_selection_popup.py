@@ -61,6 +61,11 @@ class POLocaleSelectionPopup(Popup):  # type: ignore[misc]
             size_hint=(None, None),
             size=(72, 36),
         )
+        self._only_fuzzy_switch = Switch(
+            active=default_options.only_fuzzy,
+            size_hint=(None, None),
+            size=(72, 36),
+        )
         self._dry_run_switch = Switch(
             active=default_options.dry_run,
             size_hint=(None, None),
@@ -117,6 +122,11 @@ class POLocaleSelectionPopup(Popup):  # type: ignore[misc]
                 title="Use Translation Cache",
                 description="Reuse cached external translations before calling the provider.",
                 toggle=self._use_translation_cache_switch,
+            ),
+            self._build_toggle_row(
+                title="Only Fuzzy Entries",
+                description="Restrict translation attempts to gettext entries flagged as fuzzy.",
+                toggle=self._only_fuzzy_switch,
             ),
             self._build_toggle_row(
                 title="Dry-run",
@@ -191,6 +201,7 @@ class POLocaleSelectionPopup(Popup):  # type: ignore[misc]
                     compile_mo=self._compile_mo_switch.active,
                     use_external_translator=self._use_external_translator_switch.active,
                     use_translation_cache=self._use_translation_cache_switch.active,
+                    only_fuzzy=self._only_fuzzy_switch.active,
                     dry_run=self._dry_run_switch.active,
                     stats_only=self._stats_only_switch.active,
                     report_inconsistencies=self._report_inconsistencies_switch.active,

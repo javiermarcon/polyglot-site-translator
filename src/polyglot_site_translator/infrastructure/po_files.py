@@ -113,6 +113,7 @@ def _entry_from_polib(entry: polib.POEntry) -> POEntryData:
         ),
         msgstr=entry.msgstr,
         msgstr_plural=_domain_msgstr_plural_from_polib(entry),
+        is_fuzzy=entry.fuzzy,
     )
 
 
@@ -132,6 +133,9 @@ def _apply_entries_to_polib(po_file: polib.POFile, entries: tuple[POEntryData, .
         # Third-party stubs sometimes type ``msgstr_plural`` as ``list[str]``; polib
         # persists plural forms as ``dict[int, str]`` at runtime.
         cast(Any, item).msgstr_plural = plural_for_polib
+        item.flags = [flag for flag in item.flags if flag != "fuzzy"]
+        if updated_entry.is_fuzzy:
+            item.flags.append("fuzzy")
 
 
 def _locale_from_filename(path: Path) -> str:

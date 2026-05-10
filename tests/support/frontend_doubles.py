@@ -91,6 +91,7 @@ def _build_project_detail_from_editor(
         configuration_summary=(
             f"Locale: {editor.default_locale} | Compile MO: {compile_summary} | "
             f"External translator: {external_summary} | Translation cache: {cache_summary} | "
+            f"Only fuzzy: {'enabled' if editor.only_fuzzy else 'disabled'} | "
             f"Dry-run: {dry_run_summary} | "
             f"Stats only: {stats_only_summary} | "
             f"Report inconsistencies: {inconsistency_summary} | "
@@ -103,6 +104,7 @@ def _build_project_detail_from_editor(
         compile_mo=editor.compile_mo,
         use_external_translator=editor.use_external_translator,
         use_translation_cache=editor.use_translation_cache,
+        only_fuzzy=editor.only_fuzzy,
         dry_run=editor.dry_run,
         stats_only=editor.stats_only,
         report_inconsistencies=editor.report_inconsistencies,
@@ -131,6 +133,7 @@ class InMemoryProjectCatalogService:
                     actions=_default_actions(),
                     compile_mo=True,
                     use_external_translator=True,
+                    only_fuzzy=False,
                     dry_run=False,
                     stats_only=False,
                     report_inconsistencies=False,
@@ -318,6 +321,7 @@ class InMemoryProjectRegistryManagementService:
                 compile_mo=detail.compile_mo,
                 use_external_translator=detail.use_external_translator,
                 use_translation_cache=detail.use_translation_cache,
+                only_fuzzy=detail.only_fuzzy,
                 dry_run=detail.dry_run,
                 stats_only=detail.stats_only,
                 report_inconsistencies=detail.report_inconsistencies,

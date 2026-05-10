@@ -134,7 +134,7 @@ Current frontend base:
   Typed PO processing models, contracts, and explicit domain/infrastructure errors.
 
 - `polyglot_site_translator/services/po_processing.py`
-  Shared PO workflow orchestration for discovery, locale-family grouping, translation-memory reuse across families, optional persistent translation-cache reuse, cross-variant synchronization, optional external translation, optional `dry-run` / `stats-only` execution, optional inconsistency reporting, and controlled `.mo` compilation with per-file failure collection.
+  Shared PO workflow orchestration for discovery, locale-family grouping, translation-memory reuse across families, optional persistent translation-cache reuse, cross-variant synchronization, optional external translation, optional `only_fuzzy`, optional `dry-run` / `stats-only` execution, optional inconsistency reporting, controlled `.mo` compilation with per-file failure collection, and legacy-equivalent processing metrics such as fuzzy counts, initial-sync completions, reused-from-other-variant counts, sync-only skips, and variant-difference details.
 
 - `polyglot_site_translator/infrastructure/po_files.py`
   Real PO repository based on `polib` for reading/writing project PO catalogs and compiling sibling `.mo` files.
@@ -179,10 +179,10 @@ Current frontend base:
   Responsive layout rules for the settings screen so compact windows switch to a usable stacked layout.
 
 - `polyglot_site_translator/presentation/kivy/screens/settings.py`
-  Extensible settings screen with editable App / UI / Kivy settings, a real `Translation Settings` section for default locale plus default `.mo` compilation, external-translator usage, translation-cache defaults/path, `dry-run`, `stats-only`, and inconsistency reporting inheritance, and general sync-rule administration for global rules, framework rules, and `.gitignore` integration.
+  Extensible settings screen with editable App / UI / Kivy settings, a real `Translation Settings` section for default locale plus default `.mo` compilation, external-translator usage, translation-cache defaults/path, `only_fuzzy`, `dry-run`, `stats-only`, and inconsistency reporting inheritance, and general sync-rule administration for global rules, framework rules, and `.gitignore` integration.
 
 - `polyglot_site_translator/presentation/kivy/screens/project_editor.py`
-  Thin create/edit screen for site registry records driven entirely by typed presentation state, including sectioned project settings where `General` only owns non-translation/non-remote/non-sync fields, inherited translation defaults for create flows, the persisted per-project `Compile MO Files`, `Use External Translator`, `Use Translation Cache`, `Dry-run`, `Stats Only`, and `Report Inconsistencies` preferences, draft preservation while switching sections, the discoverable remote connection selector, the persisted "Use Adapter Sync Filters" switch, the visible sync-scope catalog, per-rule toggles, project-level rule editing, and the "Test Connection" action. Labeled inputs, spinners, and the remote password row are built via `site_editor_form.py` so create and edit stay aligned.
+  Thin create/edit screen for site registry records driven entirely by typed presentation state, including sectioned project settings where `General` only owns non-translation/non-remote/non-sync fields, inherited translation defaults for create flows, the persisted per-project `Compile MO Files`, `Use External Translator`, `Use Translation Cache`, `Only Fuzzy Entries`, `Dry-run`, `Stats Only`, and `Report Inconsistencies` preferences, draft preservation while switching sections, the discoverable remote connection selector, the persisted "Use Adapter Sync Filters" switch, the visible sync-scope catalog, per-rule toggles, project-level rule editing, and the "Test Connection" action. Labeled inputs, spinners, and the remote password row are built via `site_editor_form.py` so create and edit stay aligned.
 
 - `polyglot_site_translator/presentation/kivy/site_editor_form.py`
   Shared Kivy helpers for the project editor form (create and edit use the same screen): text inputs, spinners, field cards, remote password with visibility toggle, and `find_option_label` / `find_option_value` for spinner option lists (also used by the settings screen).

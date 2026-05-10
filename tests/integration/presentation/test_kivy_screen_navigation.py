@@ -123,7 +123,7 @@ def test_project_detail_screen_po_processing_and_back_navigation() -> None:
     root.current = "project_detail"
     detail_screen._start_po_processing()
     assert detail_screen._po_locale_popup is not None
-    assert len(detail_screen._po_locale_popup._toggle_rows) == 6
+    assert len(detail_screen._po_locale_popup._toggle_rows) == 7
     assert tuple(detail_screen._po_locale_popup.size_hint) == (0.86, 0.9)
     detail_screen._confirm_po_processing(
         TranslationWorkflowRequestViewModel(

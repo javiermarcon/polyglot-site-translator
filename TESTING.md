@@ -161,6 +161,8 @@ Test:
 - synchronization
 - exact-locale filtering vs single-locale base expansion
 - project-level and run-level overrides for `.mo` compilation
+- project-level and run-level overrides for `only_fuzzy`
+- legacy-equivalent metrics such as families found vs processed, fuzzy counts, reused-from-other-variant counts, sync-only skips, and variant-difference details
 - translation-memory reuse across files/families
 - external translation provider behavior
 - progress reporting by completed untranslated entries
@@ -173,6 +175,7 @@ Test:
 - project-level and per-run disabling of the external translator
 - plurals
 - fuzzy/untranslated handling
+- fuzzy-only translation mode preserving non-fuzzy untranslated entries
 - output persistence for both `.po` and `.mo`
 
 ### If changing scanners
@@ -281,7 +284,7 @@ Test:
 - default loading when the config file does not exist yet
 - round-trip save/load behavior
 - dedicated translation settings such as the default project locale
-- dedicated translation defaults such as `.mo` compilation, external translator usage, translation-cache enablement/path, `dry-run`, `stats-only`, and inconsistency reporting
+- dedicated translation defaults such as `.mo` compilation, external translator usage, translation-cache enablement/path, `only_fuzzy`, `dry-run`, `stats-only`, and inconsistency reporting
 - invalid TOML or invalid setting values
 - locale normalization and invalid locale failures in persisted translation settings
 - per-user config-path resolution overrides

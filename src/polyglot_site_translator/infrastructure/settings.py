@@ -189,6 +189,10 @@ class TomlSettingsService:
                 raw_document,
                 default_settings.default_use_translation_cache,
             ),
+            default_only_fuzzy=_read_translation_default_only_fuzzy(
+                raw_document,
+                default_settings.default_only_fuzzy,
+            ),
             translation_cache_path=_read_translation_cache_path(
                 raw_document,
                 default_settings.translation_cache_path,
@@ -343,6 +347,7 @@ def _serialize_settings_document(app_settings: AppSettingsViewModel) -> str:
         f"{_format_toml_bool(app_settings.default_use_external_translator)}\n"
         "default_use_translation_cache = "
         f"{_format_toml_bool(app_settings.default_use_translation_cache)}\n"
+        f"default_only_fuzzy = {_format_toml_bool(app_settings.default_only_fuzzy)}\n"
         f"translation_cache_path = {_format_toml_string(app_settings.translation_cache_path)}\n"
         f"default_dry_run = {_format_toml_bool(app_settings.default_dry_run)}\n"
         f"default_stats_only = {_format_toml_bool(app_settings.default_stats_only)}\n"
@@ -468,6 +473,23 @@ def _read_translation_cache_path(
     if isinstance(raw_value, str):
         return raw_value
     msg = "The translation setting 'translation_cache_path' must be a string."
+    raise ControlledServiceError(msg)
+
+
+def _read_translation_default_only_fuzzy(
+    raw_document: dict[str, Any],
+    default_only_fuzzy: bool,
+) -> bool:
+    raw_translation = raw_document.get("translation")
+    if raw_translation is None:
+        return default_only_fuzzy
+    if not isinstance(raw_translation, dict):
+        msg = "The [translation] settings section must be a TOML table."
+        raise ControlledServiceError(msg)
+    raw_value = raw_translation.get("default_only_fuzzy", default_only_fuzzy)
+    if isinstance(raw_value, bool):
+        return raw_value
+    msg = "The translation setting 'default_only_fuzzy' must be a boolean."
     raise ControlledServiceError(msg)
 
 

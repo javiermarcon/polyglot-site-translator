@@ -107,6 +107,7 @@ class AppSettingsViewModel:
     default_compile_mo: bool = True
     default_use_external_translator: bool = True
     default_use_translation_cache: bool = True
+    default_only_fuzzy: bool = False
     translation_cache_path: str = ""
     default_dry_run: bool = False
     default_stats_only: bool = False
@@ -126,6 +127,7 @@ class TranslationOptionsViewModel:
     compile_mo: bool = True
     use_external_translator: bool = True
     use_translation_cache: bool = True
+    only_fuzzy: bool = False
     dry_run: bool = False
     stats_only: bool = False
     report_inconsistencies: bool = False
@@ -171,6 +173,7 @@ class ProjectDetailViewModel:
     compile_mo: bool = True
     use_external_translator: bool = True
     use_translation_cache: bool = True
+    only_fuzzy: bool = False
     dry_run: bool = False
     stats_only: bool = False
     report_inconsistencies: bool = False
@@ -182,6 +185,7 @@ class ProjectDetailViewModel:
             compile_mo=self.compile_mo,
             use_external_translator=self.use_external_translator,
             use_translation_cache=self.use_translation_cache,
+            only_fuzzy=self.only_fuzzy,
             dry_run=self.dry_run,
             stats_only=self.stats_only,
             report_inconsistencies=self.report_inconsistencies,
@@ -231,6 +235,7 @@ class ProjectDetailStateViewModel:
     compile_mo: bool = True
     use_external_translator: bool = True
     use_translation_cache: bool = True
+    only_fuzzy: bool = False
     dry_run: bool = False
     stats_only: bool = False
     report_inconsistencies: bool = False
@@ -242,6 +247,7 @@ class ProjectDetailStateViewModel:
             compile_mo=self.compile_mo,
             use_external_translator=self.use_external_translator,
             use_translation_cache=self.use_translation_cache,
+            only_fuzzy=self.only_fuzzy,
             dry_run=self.dry_run,
             stats_only=self.stats_only,
             report_inconsistencies=self.report_inconsistencies,
@@ -267,6 +273,7 @@ class SiteEditorViewModel:
     compile_mo: bool = True
     use_external_translator: bool = True
     use_translation_cache: bool = True
+    only_fuzzy: bool = False
     dry_run: bool = False
     stats_only: bool = False
     report_inconsistencies: bool = False
@@ -281,6 +288,7 @@ class SiteEditorViewModel:
             compile_mo=self.compile_mo,
             use_external_translator=self.use_external_translator,
             use_translation_cache=self.use_translation_cache,
+            only_fuzzy=self.only_fuzzy,
             dry_run=self.dry_run,
             stats_only=self.stats_only,
             report_inconsistencies=self.report_inconsistencies,
@@ -513,6 +521,7 @@ def build_default_app_settings(
         default_compile_mo=True,
         default_use_external_translator=True,
         default_use_translation_cache=True,
+        default_only_fuzzy=False,
         translation_cache_path=translation_cache_path,
         default_dry_run=False,
         default_stats_only=False,
@@ -529,6 +538,7 @@ def build_translation_options(  # noqa: PLR0913
     compile_mo: bool = True,
     use_external_translator: bool = True,
     use_translation_cache: bool = True,
+    only_fuzzy: bool = False,
     dry_run: bool = False,
     stats_only: bool = False,
     report_inconsistencies: bool = False,
@@ -538,6 +548,7 @@ def build_translation_options(  # noqa: PLR0913
         compile_mo=compile_mo,
         use_external_translator=use_external_translator,
         use_translation_cache=use_translation_cache,
+        only_fuzzy=only_fuzzy,
         dry_run=dry_run,
         stats_only=stats_only,
         report_inconsistencies=report_inconsistencies,
@@ -560,6 +571,7 @@ def build_default_site_editor(
         compile_mo=options.compile_mo,
         use_external_translator=options.use_external_translator,
         use_translation_cache=options.use_translation_cache,
+        only_fuzzy=options.only_fuzzy,
         dry_run=options.dry_run,
         stats_only=options.stats_only,
         report_inconsistencies=options.report_inconsistencies,

@@ -255,6 +255,12 @@ def step_disable_default_translation_cache(context: object) -> None:
     typed_context.shell.set_settings_default_use_translation_cache(False)
 
 
+@when("the operator enables default only-fuzzy mode")
+def step_enable_default_only_fuzzy(context: object) -> None:
+    typed_context = _context_with_shell(context)
+    typed_context.shell.set_settings_default_only_fuzzy(True)
+
+
 @when('the operator sets the translation cache path to "{cache_path}"')
 def step_set_translation_cache_path(context: object, cache_path: str) -> None:
     typed_context = _context_with_shell(context)
@@ -724,6 +730,13 @@ def step_assert_saved_translation_cache_path(context: object, cache_path: str) -
     typed_context = _context_with_shell(context)
     assert typed_context.shell.settings_state is not None
     assert typed_context.shell.settings_state.app_settings.translation_cache_path == cache_path
+
+
+@then("the saved settings keep default only-fuzzy mode enabled")
+def step_assert_saved_default_only_fuzzy_enabled(context: object) -> None:
+    typed_context = _context_with_shell(context)
+    assert typed_context.shell.settings_state is not None
+    assert typed_context.shell.settings_state.app_settings.default_only_fuzzy is True
 
 
 @then("the saved settings keep default dry-run mode enabled")

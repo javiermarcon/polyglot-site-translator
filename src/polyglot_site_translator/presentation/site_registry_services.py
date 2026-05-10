@@ -195,6 +195,7 @@ class SiteRegistryPresentationManagementService(ProjectRegistryManagementService
                     use_translation_cache=(
                         settings_state.app_settings.default_use_translation_cache
                     ),
+                    only_fuzzy=settings_state.app_settings.default_only_fuzzy,
                     dry_run=settings_state.app_settings.default_dry_run,
                     stats_only=settings_state.app_settings.default_stats_only,
                     report_inconsistencies=(
@@ -512,6 +513,7 @@ class SiteRegistryPresentationWorkflowService(ProjectWorkflowService):
                     compile_mo=request.options.compile_mo,
                     use_external_translator=request.options.use_external_translator,
                     use_translation_cache=request.options.use_translation_cache,
+                    only_fuzzy=request.options.only_fuzzy,
                     dry_run=request.options.dry_run,
                     stats_only=request.options.stats_only,
                     report_inconsistencies=request.options.report_inconsistencies,
@@ -527,17 +529,26 @@ class SiteRegistryPresentationWorkflowService(ProjectWorkflowService):
         except POProcessingError as error:
             raise ControlledServiceError(str(error)) from error
         summary_lines = [
+            f"Files found: {result.files_found}",
+            f"Families found: {result.families_found}",
             f"Families processed: {result.families_processed}",
             f"PO files discovered: {result.files_discovered}",
+            f"Total entries: {result.entries_total}",
+            f"Missing entries: {result.entries_missing}",
+            f"Fuzzy entries: {result.entries_fuzzy}",
+            f"Completed from initial sync: {result.entries_completed_from_sync}",
+            f"Reused from other variant: {result.entries_reused_from_other_variant}",
             f"Synchronized entries: {result.entries_synchronized}",
             f"Translated entries: {result.entries_translated}",
             f"Translated from cache: {result.entries_translated_from_cache}",
             f"Translated via provider: {result.entries_translated_from_provider}",
+            f"Skipped by sync-only: {result.entries_skipped_sync_only}",
             f"Failed entries: {result.entries_failed}",
             f"Written PO files: {result.files_written}",
             f"Compiled MO files: {result.mo_files_compiled}",
             f"Translation cache: {'enabled' if result.cache_enabled else 'disabled'}",
             f"Translation cache path: {cache_settings.cache_path}",
+            f"Only fuzzy: {'enabled' if processing_site.only_fuzzy else 'disabled'}",
             f"Dry-run: {'enabled' if processing_site.dry_run else 'disabled'}",
             f"Stats only: {'enabled' if processing_site.stats_only else 'disabled'}",
             "Report inconsistencies: "
@@ -547,8 +558,9 @@ class SiteRegistryPresentationWorkflowService(ProjectWorkflowService):
             summary_lines.append(
                 f"Translation inconsistencies: {result.variant_inconsistencies_found}"
             )
-        if result.variant_inconsistencies_found > 0:
-            summary_lines.append("Inconsistency details:")
+            summary_lines.append(f"Variant differences found: {result.variant_differences_found}")
+        if result.variant_differences_found > 0:
+            summary_lines.append("Variant difference details:")
             summary_lines.extend(result.variant_inconsistency_details)
         if result.failures:
             summary_lines.extend(
@@ -678,6 +690,7 @@ def _build_service_payload(editor: SiteEditorViewModel) -> SiteRegistrationInput
         compile_mo=editor.compile_mo,
         use_external_translator=editor.use_external_translator,
         use_translation_cache=editor.use_translation_cache,
+        only_fuzzy=editor.only_fuzzy,
         dry_run=editor.dry_run,
         stats_only=editor.stats_only,
         report_inconsistencies=editor.report_inconsistencies,
@@ -706,6 +719,7 @@ def _build_project_detail(
         compile_mo=site.compile_mo,
         use_external_translator=site.use_external_translator,
         use_translation_cache=site.use_translation_cache,
+        only_fuzzy=site.only_fuzzy,
         dry_run=site.dry_run,
         stats_only=site.stats_only,
         report_inconsistencies=site.report_inconsistencies,
@@ -727,6 +741,7 @@ def _build_site_editor(site: RegisteredSite) -> SiteEditorViewModel:
             compile_mo=site.compile_mo,
             use_external_translator=site.use_external_translator,
             use_translation_cache=site.use_translation_cache,
+            only_fuzzy=site.only_fuzzy,
             dry_run=site.dry_run,
             stats_only=site.stats_only,
             report_inconsistencies=site.report_inconsistencies,
@@ -750,6 +765,7 @@ def _build_site_editor(site: RegisteredSite) -> SiteEditorViewModel:
         compile_mo=site.compile_mo,
         use_external_translator=site.use_external_translator,
         use_translation_cache=site.use_translation_cache,
+        only_fuzzy=site.only_fuzzy,
         dry_run=site.dry_run,
         stats_only=site.stats_only,
         report_inconsistencies=site.report_inconsistencies,
@@ -780,13 +796,14 @@ def _build_configuration_summary(site: RegisteredSite) -> str:
         compile_summary = "enabled" if site.compile_mo else "disabled"
         translator_summary = "enabled" if site.use_external_translator else "disabled"
         cache_summary = "enabled" if site.use_translation_cache else "disabled"
+        only_fuzzy_summary = "enabled" if site.only_fuzzy else "disabled"
         dry_run_summary = "enabled" if site.dry_run else "disabled"
         stats_only_summary = "enabled" if site.stats_only else "disabled"
         inconsistency_summary = "enabled" if site.report_inconsistencies else "disabled"
         return (
             f"Locale: {site.default_locale} | Compile MO: {compile_summary} | "
             f"External translator: {translator_summary} | "
-            f"Translation cache: {cache_summary} | "
+            f"Translation cache: {cache_summary} | Only fuzzy: {only_fuzzy_summary} | "
             f"Dry-run: {dry_run_summary} | Stats only: {stats_only_summary} | "
             f"Report inconsistencies: {inconsistency_summary} | "
             "Remote connection: None"
@@ -795,13 +812,14 @@ def _build_configuration_summary(site: RegisteredSite) -> str:
     compile_summary = "enabled" if site.compile_mo else "disabled"
     translator_summary = "enabled" if site.use_external_translator else "disabled"
     cache_summary = "enabled" if site.use_translation_cache else "disabled"
+    only_fuzzy_summary = "enabled" if site.only_fuzzy else "disabled"
     dry_run_summary = "enabled" if site.dry_run else "disabled"
     stats_only_summary = "enabled" if site.stats_only else "disabled"
     inconsistency_summary = "enabled" if site.report_inconsistencies else "disabled"
     return (
         f"Locale: {site.default_locale} | Compile MO: {compile_summary} | "
         f"External translator: {translator_summary} | "
-        f"Translation cache: {cache_summary} | "
+        f"Translation cache: {cache_summary} | Only fuzzy: {only_fuzzy_summary} | "
         f"Dry-run: {dry_run_summary} | Stats only: {stats_only_summary} | "
         f"Report inconsistencies: {inconsistency_summary} | "
         f"Remote: {site.remote_connection.connection_type} "

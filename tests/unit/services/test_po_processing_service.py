@@ -157,11 +157,19 @@ def test_process_site_syncs_missing_variant_entries(tmp_path: Path) -> None:
     compiled_es_es = polib.mofile(str(locale_dir / "messages-es_ES.mo"))
     compiled_es_ar = polib.mofile(str(locale_dir / "messages-es_AR.mo"))
     assert result.families_processed == 1
+    assert result.files_found == 2
     assert result.entries_synchronized == 1
-    assert result.mo_files_compiled == 2
+    assert result.mo_compiled == 2
     synced_entry = synced_po.find("Hello")
     compiled_es_es_entry = compiled_es_es.find("Hello")
     compiled_es_ar_entry = compiled_es_ar.find("Hello")
+    assert result.families_found == 1
+    assert result.entries_total == 2
+    assert result.entries_missing == 1
+    assert result.entries_fuzzy == 0
+    assert result.entries_completed_from_sync == 1
+    assert result.entries_reused_from_other_variant == 0
+    assert result.entries_skipped_sync_only == 0
     assert synced_entry is not None
     assert compiled_es_es_entry is not None
     assert compiled_es_ar_entry is not None
@@ -303,8 +311,38 @@ def test_process_site_skips_external_translation_when_site_disables_it(tmp_path:
 
     translated_po = polib.pofile(str(locale_dir / "messages-es_ES.po"))
     assert result.entries_translated == 0
+    assert result.entries_skipped_sync_only == 1
     assert provider.requests == []
     assert cast(polib.POEntry, translated_po.find("Save")).msgstr == ""
+
+
+def test_process_site_translates_only_fuzzy_entries_when_enabled(tmp_path: Path) -> None:
+    workspace = tmp_path / "workspace"
+    locale_dir = workspace / "locale"
+    locale_dir.mkdir(parents=True, exist_ok=True)
+    po_file = polib.POFile()
+    po_file.metadata = {"Language": "es_ES"}
+    po_file.append(polib.POEntry(msgid="Save", msgstr="", flags=["fuzzy"]))
+    po_file.append(polib.POEntry(msgid="Title", msgstr=""))
+    po_file.save(str(locale_dir / "messages-es_ES.po"))
+    provider = StubTranslationProvider({("es_ES", "Save"): "Guardar"})
+
+    service = POProcessingService(
+        repository=PolibPOCatalogRepository(),
+        translation_provider=provider,
+    )
+
+    result = service.process_site(_build_site(str(workspace), "es_ES", modes={"only_fuzzy": True}))
+
+    translated_po = polib.pofile(str(locale_dir / "messages-es_ES.po"))
+    assert result.entries_pending == 1
+    assert result.entries_total == 2
+    assert result.entries_missing == 2
+    assert result.entries_fuzzy == 1
+    assert result.entries_translated == 1
+    assert provider.requests == [("es_ES", "Save")]
+    assert cast(polib.POEntry, translated_po.find("Save")).msgstr == "Guardar"
+    assert cast(polib.POEntry, translated_po.find("Title")).msgstr == ""
 
 
 def test_process_site_reuses_cached_translations_before_calling_provider(tmp_path: Path) -> None:
@@ -463,7 +501,10 @@ def test_process_site_reports_variant_inconsistencies(tmp_path: Path) -> None:
     )
 
     assert result.variant_inconsistencies_found == 1
+    assert result.variant_differences_found == 1
     assert len(result.variant_inconsistency_details) == 1
+    assert result.variant_inconsistency_details == result.variant_difference_details
+    assert result.variant_inconsistency_details[0].startswith("Diferencia entre variantes: ")
     assert "msgid='Hello'" in result.variant_inconsistency_details[0]
     assert "es_AR, es_ES" in result.variant_inconsistency_details[0]
 
@@ -673,6 +714,9 @@ def test_process_site_reuses_translation_memory_across_families(tmp_path: Path) 
     synced_po = polib.pofile(str(second_dir / "checkout-es_AR.po"))
     synced_entry = synced_po.find("Hello")
     assert result.families_processed == 2
+    assert result.families_found == 2
+    assert result.entries_completed_from_sync == 1
+    assert result.entries_reused_from_other_variant == 1
     assert result.entries_synchronized == 3
     assert result.entries_translated == 0
     assert synced_entry is not None
@@ -698,6 +742,7 @@ def test_process_site_translates_missing_entries_with_external_provider(tmp_path
     es_ar_po = polib.pofile(str(locale_dir / "messages-es_AR.po"))
     assert result.entries_synchronized == 1
     assert result.entries_translated == 1
+    assert result.entries_translated_from_api == 1
     assert provider.requests == [("es_ES", "Save")]
     assert cast(polib.POEntry, es_es_po.find("Save")).msgstr == "Guardar"
     assert cast(polib.POEntry, es_ar_po.find("Save")).msgstr == "Guardar"
@@ -944,21 +989,21 @@ def test_translate_missing_entries_skips_selected_locales_without_a_file() -> No
         )
     }
 
-    synchronized, translated, translated_from_cache, translated_from_provider, failures = (
-        _translate_missing_entries(
-            family_entries=family_entries,
-            selected_locales=("es_ES", "es_AR"),
-            translation_memory={},
-            file_by_locale=file_by_locale,
-            runtime=_FamilyProcessingRuntime(translation_provider=None),
-        )
+    outcome = _translate_missing_entries(
+        family_entries=family_entries,
+        selected_locales=("es_ES", "es_AR"),
+        translation_memory={},
+        file_by_locale=file_by_locale,
+        runtime=_FamilyProcessingRuntime(translation_provider=None),
     )
 
-    assert synchronized == 0
-    assert translated == 0
-    assert translated_from_cache == 0
-    assert translated_from_provider == 0
-    assert failures == ()
+    assert outcome.synchronized_entries == 0
+    assert outcome.reused_from_other_variant == 0
+    assert outcome.translated_entries == 0
+    assert outcome.translated_from_cache == 0
+    assert outcome.translated_from_provider == 0
+    assert outcome.skipped_sync_only == 1
+    assert outcome.failures == ()
 
 
 def _build_site(
@@ -971,6 +1016,7 @@ def _build_site(
         "compile_mo": True,
         "use_external_translator": True,
         "use_translation_cache": True,
+        "only_fuzzy": False,
         "dry_run": False,
         "stats_only": False,
         "report_inconsistencies": False,
@@ -988,6 +1034,7 @@ def _build_site(
             compile_mo=resolved_modes["compile_mo"],
             use_external_translator=resolved_modes["use_external_translator"],
             use_translation_cache=resolved_modes["use_translation_cache"],
+            only_fuzzy=resolved_modes["only_fuzzy"],
             dry_run=resolved_modes["dry_run"],
             stats_only=resolved_modes["stats_only"],
             report_inconsistencies=resolved_modes["report_inconsistencies"],

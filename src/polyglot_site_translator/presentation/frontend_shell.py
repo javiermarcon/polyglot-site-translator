@@ -496,6 +496,16 @@ class FrontendShell:
             status_message="Settings draft updated.",
         )
 
+    def set_settings_default_only_fuzzy(self, default_only_fuzzy: bool) -> None:
+        """Update the default only-fuzzy preference for new project drafts."""
+        state = self._require_settings_state()
+        self.settings_state = replace(
+            state,
+            app_settings=replace(state.app_settings, default_only_fuzzy=default_only_fuzzy),
+            status="editing",
+            status_message="Settings draft updated.",
+        )
+
     def set_settings_translation_cache_path(self, translation_cache_path: str) -> None:
         """Update the draft translation cache path."""
         state = self._require_settings_state()
@@ -893,6 +903,7 @@ class FrontendShell:
                 compile_mo=detail.compile_mo,
                 use_external_translator=detail.use_external_translator,
                 use_translation_cache=detail.use_translation_cache,
+                only_fuzzy=detail.only_fuzzy,
                 dry_run=detail.dry_run,
                 stats_only=detail.stats_only,
                 report_inconsistencies=detail.report_inconsistencies,

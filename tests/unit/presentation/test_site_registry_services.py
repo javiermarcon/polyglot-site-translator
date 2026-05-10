@@ -107,6 +107,7 @@ def _request(locales: str, **modes: bool) -> TranslationWorkflowRequestViewModel
         "compile_mo": True,
         "use_external_translator": True,
         "use_translation_cache": True,
+        "only_fuzzy": False,
         "dry_run": False,
         "stats_only": False,
         "report_inconsistencies": False,
@@ -912,9 +913,17 @@ def test_workflow_service_builds_po_processing_preview(tmp_path: Path) -> None:
     assert preview.processed_families == 0
     assert preview.progress_current == 0
     assert preview.progress_total == 0
+    assert "Files found: 0" in preview.summary
+    assert "Families found: 0" in preview.summary
     assert "Families processed: 0" in preview.summary
+    assert "Total entries: 0" in preview.summary
+    assert "Missing entries: 0" in preview.summary
+    assert "Fuzzy entries: 0" in preview.summary
+    assert "Completed from initial sync: 0" in preview.summary
+    assert "Reused from other variant: 0" in preview.summary
     assert "Compiled MO files: 0" in preview.summary
     assert "Translated from cache: 0" in preview.summary
+    assert "Skipped by sync-only: 0" in preview.summary
     assert "Translation cache: enabled" in preview.summary
 
 
@@ -955,6 +964,8 @@ def test_workflow_service_processes_po_variants_from_site_workspace(tmp_path: Pa
     assert preview.processed_families == 1
     assert preview.progress_current == 1
     assert preview.progress_total == 1
+    assert "Families found: 1" in preview.summary
+    assert "Completed from initial sync: 1" in preview.summary
     assert "Synchronized entries: 1" in preview.summary
     assert "Translated entries: 0" in preview.summary
     assert "Compiled MO files: 2" in preview.summary
@@ -997,6 +1008,8 @@ def test_workflow_service_processes_po_variants_from_selected_locales(tmp_path: 
     assert preview.processed_families == 1
     assert preview.progress_current == 1
     assert preview.progress_total == 1
+    assert "Families found: 1" in preview.summary
+    assert "Completed from initial sync: 1" in preview.summary
     assert "Synchronized entries: 1" in preview.summary
     assert "Translated entries: 0" in preview.summary
     assert "Compiled MO files: 2" in preview.summary
@@ -1039,6 +1052,8 @@ def test_workflow_service_reports_translated_entries_when_provider_is_used(tmp_p
     preview = workflow.start_po_processing(site.id)
 
     assert preview.status == "completed"
+    assert "Completed from initial sync: 0" in preview.summary
+    assert "Reused from other variant: 0" in preview.summary
     assert "Synchronized entries: 1" in preview.summary
     assert "Translated entries: 1" in preview.summary
     assert "Compiled MO files: 2" in preview.summary
@@ -1178,6 +1193,8 @@ def test_workflow_service_summarizes_dry_run_and_stats_only(tmp_path: Path) -> N
 
     assert "Dry-run: enabled" in preview.summary
     assert "Stats only: enabled" in preview.summary
+    assert "Only fuzzy: disabled" in preview.summary
+    assert "Skipped by sync-only: 0" in preview.summary
     assert "Written PO files: 0" in preview.summary
 
 
@@ -1217,6 +1234,9 @@ def test_workflow_service_summarizes_translation_inconsistencies(tmp_path: Path)
     )
 
     assert "Translation inconsistencies: 1" in preview.summary
+    assert "Variant differences found: 1" in preview.summary
+    assert "Variant difference details:" in preview.summary
+    assert "Diferencia entre variantes:" in preview.summary
     assert "msgid='Hello'" in preview.summary
 
 
@@ -1259,7 +1279,51 @@ def test_workflow_service_reports_zero_translation_inconsistencies_when_enabled(
 
     assert "Report inconsistencies: enabled" in preview.summary
     assert "Translation inconsistencies: 0" in preview.summary
-    assert "Inconsistency details:" not in preview.summary
+    assert "Variant differences found: 0" in preview.summary
+    assert "Variant difference details:" not in preview.summary
+
+
+def test_workflow_service_reports_reused_translations_from_other_variants(
+    tmp_path: Path,
+) -> None:
+    first_dir = tmp_path / "plugin_a"
+    second_dir = tmp_path / "plugin_b"
+    first_dir.mkdir(parents=True, exist_ok=True)
+    second_dir.mkdir(parents=True, exist_ok=True)
+    _write_po_file(first_dir / "messages-es_ES.po", [("Hello", "Hola")])
+    _write_po_file(first_dir / "messages-es_AR.po", [("Hello", "")])
+    _write_po_file(second_dir / "checkout-es_ES.po", [("Hello", "")])
+    _write_po_file(second_dir / "checkout-es_AR.po", [("Hello", "")])
+    repository = InMemorySiteRegistryRepository()
+    site_service = _build_domain_service(repository)
+    site = site_service.create_site(
+        SiteRegistrationInput(
+            name="Marketing Site",
+            framework_type="wordpress",
+            local_path=str(tmp_path),
+            default_locale="es_ES,es_AR",
+            remote_connection=RemoteConnectionConfigInput(
+                connection_type="sftp",
+                host="example.com",
+                port=22,
+                username="deploy",
+                password="super-secret",
+                remote_path="/srv/app",
+            ),
+            is_active=True,
+        )
+    )
+    workflow = SiteRegistryPresentationWorkflowService(
+        service=site_service,
+        project_sync_service=SyncStub(),
+        po_processing_service=POProcessingService(repository=PolibPOCatalogRepository()),
+    )
+
+    preview = workflow.start_po_processing(site.id)
+
+    assert "Families found: 2" in preview.summary
+    assert "Families processed: 2" in preview.summary
+    assert "Reused from other variant: 1" in preview.summary
 
 
 def test_workflow_service_wraps_po_processing_lookup_errors() -> None:
@@ -1651,7 +1715,7 @@ def test_build_project_detail_without_remote_connection_is_explicit() -> None:
     assert detail.default_locale == "en_US"
     assert detail.configuration_summary == (
         "Locale: en_US | Compile MO: enabled | External translator: enabled | "
-        "Translation cache: enabled | "
+        "Translation cache: enabled | Only fuzzy: disabled | "
         "Dry-run: disabled | Stats only: disabled | "
         "Report inconsistencies: disabled | "
         "Remote connection: None"

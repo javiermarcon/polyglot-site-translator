@@ -21,6 +21,7 @@ class POEntryData:
     entry_id: POEntryId
     msgstr: str
     msgstr_plural: dict[str, str]
+    is_fuzzy: bool = False
 
 
 @dataclass(frozen=True)
@@ -66,14 +67,46 @@ class POProcessingResult:
     files_written: int
     mo_files_compiled: int
     failures: tuple[POProcessingFailure, ...]
+    families_found: int = 0
+    entries_total: int = 0
+    entries_missing: int = 0
+    entries_fuzzy: int = 0
+    entries_completed_from_sync: int = 0
+    entries_reused_from_other_variant: int = 0
     entries_translated_from_cache: int = 0
     entries_translated_from_provider: int = 0
+    entries_skipped_sync_only: int = 0
     cache_enabled: bool = False
     dry_run: bool = False
     stats_only: bool = False
     variant_inconsistencies_found: int = 0
     variant_inconsistency_details: tuple[str, ...] = ()
     compilation_failures: tuple[POCompilationFailure, ...] = ()
+
+    @property
+    def files_found(self) -> int:
+        """Return the discovered-file count using the legacy metric name."""
+        return self.files_discovered
+
+    @property
+    def entries_translated_from_api(self) -> int:
+        """Return provider-backed translations using the legacy metric name."""
+        return self.entries_translated_from_provider
+
+    @property
+    def variant_differences_found(self) -> int:
+        """Return variant-difference count using the legacy metric name."""
+        return self.variant_inconsistencies_found
+
+    @property
+    def variant_difference_details(self) -> tuple[str, ...]:
+        """Return variant-difference details using the legacy metric name."""
+        return self.variant_inconsistency_details
+
+    @property
+    def mo_compiled(self) -> int:
+        """Return compiled MO count using the legacy metric name."""
+        return self.mo_files_compiled
 
 
 @dataclass(frozen=True)

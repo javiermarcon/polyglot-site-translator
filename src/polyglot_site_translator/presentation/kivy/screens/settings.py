@@ -75,6 +75,7 @@ class SettingsScreen(BaseShellScreen):
         self._default_compile_mo_switch: Switch | None = None
         self._default_use_external_translator_switch: Switch | None = None
         self._default_use_translation_cache_switch: Switch | None = None
+        self._default_only_fuzzy_switch: Switch | None = None
         self._translation_cache_path_input: TextInput | None = None
         self._default_dry_run_switch: Switch | None = None
         self._default_stats_only_switch: Switch | None = None
@@ -117,6 +118,7 @@ class SettingsScreen(BaseShellScreen):
         self._default_compile_mo_switch = None
         self._default_use_external_translator_switch = None
         self._default_use_translation_cache_switch = None
+        self._default_only_fuzzy_switch = None
         self._translation_cache_path_input = None
         self._default_dry_run_switch = None
         self._default_stats_only_switch = None
@@ -259,6 +261,7 @@ class SettingsScreen(BaseShellScreen):
                 value=draft.default_use_translation_cache
             )
         )
+        form.add_widget(self._build_default_only_fuzzy_field(value=draft.default_only_fuzzy))
         form.add_widget(
             self._build_translation_cache_path_field(
                 value=draft.translation_cache_path,
@@ -588,6 +591,24 @@ class SettingsScreen(BaseShellScreen):
             size=(72, 36),
         )
         row.add_widget(self._default_use_translation_cache_switch)
+        card.add_widget(row)
+        return card
+
+    def _build_default_only_fuzzy_field(self, *, value: bool) -> SurfaceBoxLayout:
+        card = _build_field_card(
+            title="Default Only-fuzzy Mode",
+            help_text=(
+                "Restrict new project translation runs to gettext entries flagged as fuzzy."
+            ),
+        )
+        row = BoxLayout(orientation="horizontal", spacing=12, size_hint_y=None, height=40)
+        row.add_widget(WrappedLabel(text="Process only fuzzy entries for new projects."))
+        self._default_only_fuzzy_switch = Switch(
+            active=value,
+            size_hint=(None, None),
+            size=(72, 36),
+        )
+        row.add_widget(self._default_only_fuzzy_switch)
         card.add_widget(row)
         return card
 
@@ -1056,6 +1077,11 @@ class SettingsScreen(BaseShellScreen):
             updated_draft = replace(
                 updated_draft,
                 default_use_translation_cache=self._default_use_translation_cache_switch.active,
+            )
+        if self._default_only_fuzzy_switch is not None:
+            updated_draft = replace(
+                updated_draft,
+                default_only_fuzzy=self._default_only_fuzzy_switch.active,
             )
         if self._translation_cache_path_input is not None:
             updated_draft = replace(

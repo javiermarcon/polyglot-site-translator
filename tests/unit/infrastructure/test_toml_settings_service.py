@@ -66,6 +66,7 @@ def test_save_settings_writes_toml_and_roundtrips_values(tmp_path: Path) -> None
             default_compile_mo=False,
             default_use_external_translator=False,
             default_use_translation_cache=False,
+            default_only_fuzzy=True,
             translation_cache_path="/tmp/polyglot-cache/translation-cache",
             default_dry_run=True,
             default_stats_only=True,
@@ -87,6 +88,7 @@ def test_save_settings_writes_toml_and_roundtrips_values(tmp_path: Path) -> None
     assert reloaded_state.app_settings.default_compile_mo is False
     assert reloaded_state.app_settings.default_use_external_translator is False
     assert reloaded_state.app_settings.default_use_translation_cache is False
+    assert reloaded_state.app_settings.default_only_fuzzy is True
     assert (
         reloaded_state.app_settings.translation_cache_path
         == "/tmp/polyglot-cache/translation-cache"
@@ -222,6 +224,10 @@ def test_load_settings_rejects_invalid_translation_defaults(tmp_path: Path) -> N
             '[app]\nlast_opened_screen = "dashboard"\n'
             '[translation]\ndefault_use_translation_cache = "yes"\n',
             r"The translation setting 'default_use_translation_cache' must be a boolean\.",
+        ),
+        (
+            '[app]\nlast_opened_screen = "dashboard"\n[translation]\ndefault_only_fuzzy = "yes"\n',
+            r"The translation setting 'default_only_fuzzy' must be a boolean\.",
         ),
         (
             '[app]\nlast_opened_screen = "dashboard"\n[translation]\ntranslation_cache_path = 3\n',

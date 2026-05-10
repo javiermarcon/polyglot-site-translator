@@ -56,6 +56,7 @@ class _FamilyProcessingRuntime:
     translation_provider: POTranslationProvider | None
     translation_cache: POTranslationCache | None = None
     progress_callback: Callable[[_FamilyProgressUpdate], None] | None = None
+    only_fuzzy: bool = False
 
 
 @dataclass(frozen=True)
@@ -67,6 +68,30 @@ class _FamilyProgressContext:
     synchronized_entries: int
     translated_entries: int
     failed_entries: int
+
+
+@dataclass(frozen=True)
+class _TranslationPassOutcome:
+    synchronized_entries: int
+    reused_from_other_variant: int
+    translated_entries: int
+    translated_from_cache: int
+    translated_from_provider: int
+    skipped_sync_only: int
+    failures: tuple[POProcessingFailure, ...]
+
+
+@dataclass(frozen=True)
+class _FamilyProcessingOutcome:
+    updated_files: tuple[POFileData, ...]
+    synchronized_entries: int
+    initial_sync_entries: int
+    reused_from_other_variant: int
+    translated_entries: int
+    translated_from_cache: int
+    translated_from_provider: int
+    skipped_sync_only: int
+    failures: tuple[POProcessingFailure, ...]
 
 
 class POProcessingService:
@@ -132,8 +157,15 @@ class POProcessingService:
                 files_written=0,
                 mo_files_compiled=0,
                 failures=(),
+                families_found=0,
+                entries_total=0,
+                entries_missing=0,
+                entries_fuzzy=0,
+                entries_completed_from_sync=0,
+                entries_reused_from_other_variant=0,
                 entries_translated_from_cache=0,
                 entries_translated_from_provider=0,
+                entries_skipped_sync_only=0,
                 cache_enabled=cache_settings.enabled,
                 dry_run=site.dry_run,
                 stats_only=site.stats_only,
@@ -146,16 +178,17 @@ class POProcessingService:
         locale_groups = _group_locales_by_base(selected_locales)
         grouped_files = _group_files_by_family(target_files, selected_locales=selected_locales)
         translation_memory = _build_translation_memory(target_files)
+        files_discovered = len(target_files)
         total_families = len(grouped_files)
-        total_entries = _count_untranslated_entries(target_files)
-        entries_synchronized = 0
-        entries_translated = 0
-        entries_translated_from_cache = 0
-        entries_translated_from_provider = 0
-        entries_failed = 0
+        total_entries = _count_total_entries(target_files)
+        missing_entries = _count_untranslated_entries(target_files)
+        fuzzy_entries = _count_fuzzy_entries(target_files)
+        pending_entries = _count_pending_entries(target_files, only_fuzzy=site.only_fuzzy)
+        entries_synchronized = entries_completed_from_sync = entries_reused_from_other_variant = 0
+        entries_translated = entries_translated_from_cache = entries_translated_from_provider = 0
+        entries_skipped_sync_only = entries_failed = 0
         failures: list[POProcessingFailure] = []
-        current_file: str | None = None
-        current_entry: str | None = None
+        current_file = current_entry = None
 
         def emit_progress(event: POProcessingProgress) -> None:
             if progress_callback is None:
@@ -166,8 +199,8 @@ class POProcessingService:
             POProcessingProgress(
                 processed_families=0,
                 completed_entries=0,
-                total_entries=total_entries,
-                files_discovered=len(target_files),
+                total_entries=pending_entries,
+                files_discovered=files_discovered,
                 entries_synchronized=0,
                 entries_translated=0,
                 entries_failed=0,
@@ -180,8 +213,8 @@ class POProcessingService:
             progress_context = _FamilyProgressContext(
                 processed_families=processed_families,
                 total_families=total_families,
-                total_entries=total_entries,
-                files_discovered=len(target_files),
+                total_entries=pending_entries,
+                files_discovered=files_discovered,
                 synchronized_entries=entries_synchronized,
                 translated_entries=entries_translated,
                 failed_entries=entries_failed,
@@ -215,14 +248,7 @@ class POProcessingService:
                     )
                 )
 
-            (
-                updated_family_files,
-                family_synced,
-                family_translated,
-                family_translated_from_cache,
-                family_translated_from_provider,
-                family_failures,
-            ) = _process_family(
+            family_outcome = _process_family(
                 family_files=family_files,
                 selected_locales=selected_locales,
                 locale_groups=locale_groups,
@@ -233,24 +259,28 @@ class POProcessingService:
                     ),
                     translation_cache=cache,
                     progress_callback=report_family_progress,
+                    only_fuzzy=site.only_fuzzy,
                 ),
             )
-            updated_files.extend(updated_family_files)
-            entries_synchronized += family_synced
-            entries_translated += family_translated
-            entries_translated_from_cache += family_translated_from_cache
-            entries_translated_from_provider += family_translated_from_provider
-            entries_failed += len(family_failures)
-            failures.extend(family_failures)
-            if family_failures:
-                current_file = family_failures[-1].relative_path
-                current_entry = family_failures[-1].msgid
+            updated_files.extend(family_outcome.updated_files)
+            entries_synchronized += family_outcome.synchronized_entries
+            entries_completed_from_sync += family_outcome.initial_sync_entries
+            entries_reused_from_other_variant += family_outcome.reused_from_other_variant
+            entries_translated += family_outcome.translated_entries
+            entries_translated_from_cache += family_outcome.translated_from_cache
+            entries_translated_from_provider += family_outcome.translated_from_provider
+            entries_skipped_sync_only += family_outcome.skipped_sync_only
+            entries_failed += len(family_outcome.failures)
+            failures.extend(family_outcome.failures)
+            if family_outcome.failures:
+                current_file = family_outcome.failures[-1].relative_path
+                current_entry = family_outcome.failures[-1].msgid
             emit_progress(
                 POProcessingProgress(
                     processed_families=processed_families,
                     completed_entries=entries_synchronized + entries_translated,
-                    total_entries=total_entries,
-                    files_discovered=len(target_files),
+                    total_entries=pending_entries,
+                    files_discovered=files_discovered,
                     entries_synchronized=entries_synchronized,
                     entries_translated=entries_translated,
                     entries_failed=entries_failed,
@@ -266,17 +296,24 @@ class POProcessingService:
         )
         if site.stats_only or site.dry_run:
             return POProcessingResult(
-                files_discovered=len(target_files),
+                files_discovered=files_discovered,
                 families_processed=total_families,
-                entries_pending=total_entries,
+                entries_pending=pending_entries,
                 entries_synchronized=entries_synchronized,
                 entries_translated=entries_translated,
                 entries_failed=entries_failed,
                 files_written=0,
                 mo_files_compiled=0,
                 failures=tuple(failures),
+                families_found=total_families,
+                entries_total=total_entries,
+                entries_missing=missing_entries,
+                entries_fuzzy=fuzzy_entries,
+                entries_completed_from_sync=entries_completed_from_sync,
+                entries_reused_from_other_variant=entries_reused_from_other_variant,
                 entries_translated_from_cache=entries_translated_from_cache,
                 entries_translated_from_provider=entries_translated_from_provider,
+                entries_skipped_sync_only=entries_skipped_sync_only,
                 cache_enabled=cache_settings.enabled,
                 dry_run=site.dry_run,
                 stats_only=site.stats_only,
@@ -288,17 +325,24 @@ class POProcessingService:
         files_written = len(updated_files)
         if not site.compile_mo:
             return POProcessingResult(
-                files_discovered=len(target_files),
+                files_discovered=files_discovered,
                 families_processed=total_families,
-                entries_pending=total_entries,
+                entries_pending=pending_entries,
                 entries_synchronized=entries_synchronized,
                 entries_translated=entries_translated,
                 entries_failed=entries_failed,
                 files_written=files_written,
                 mo_files_compiled=0,
                 failures=tuple(failures),
+                families_found=total_families,
+                entries_total=total_entries,
+                entries_missing=missing_entries,
+                entries_fuzzy=fuzzy_entries,
+                entries_completed_from_sync=entries_completed_from_sync,
+                entries_reused_from_other_variant=entries_reused_from_other_variant,
                 entries_translated_from_cache=entries_translated_from_cache,
                 entries_translated_from_provider=entries_translated_from_provider,
+                entries_skipped_sync_only=entries_skipped_sync_only,
                 cache_enabled=cache_settings.enabled,
                 dry_run=site.dry_run,
                 stats_only=site.stats_only,
@@ -311,17 +355,24 @@ class POProcessingService:
             files=tuple(updated_files),
         )
         return POProcessingResult(
-            files_discovered=len(target_files),
+            files_discovered=files_discovered,
             families_processed=total_families,
-            entries_pending=total_entries,
+            entries_pending=pending_entries,
             entries_synchronized=entries_synchronized,
             entries_translated=entries_translated,
             entries_failed=entries_failed,
             files_written=files_written,
             mo_files_compiled=mo_files_compiled,
             failures=tuple(failures),
+            families_found=total_families,
+            entries_total=total_entries,
+            entries_missing=missing_entries,
+            entries_fuzzy=fuzzy_entries,
+            entries_completed_from_sync=entries_completed_from_sync,
+            entries_reused_from_other_variant=entries_reused_from_other_variant,
             entries_translated_from_cache=entries_translated_from_cache,
             entries_translated_from_provider=entries_translated_from_provider,
+            entries_skipped_sync_only=entries_skipped_sync_only,
             cache_enabled=cache_settings.enabled,
             dry_run=site.dry_run,
             stats_only=site.stats_only,
@@ -375,9 +426,9 @@ def _detect_variant_inconsistencies(
             continue
         if len(set(translated_values.values())) <= 1:
             continue
-        context_label = entry_id.context if entry_id.context is not None else "<none>"
+        context_label = entry_id.context if entry_id.context is not None else "<sin contexto>"
         details.append(
-            "Variant inconsistency: "
+            "Diferencia entre variantes: "
             f"{grouped_files[0].family_key} | msgctxt='{context_label}' | "
             f"msgid='{entry_id.msgid}' | locales={', '.join(sorted(translated_values))}"
         )
@@ -464,6 +515,23 @@ def _count_untranslated_entries(files: tuple[POFileData, ...]) -> int:
     return sum(1 for file_data in files for entry in file_data.entries if not _is_translated(entry))
 
 
+def _count_total_entries(files: tuple[POFileData, ...]) -> int:
+    return sum(len(file_data.entries) for file_data in files)
+
+
+def _count_fuzzy_entries(files: tuple[POFileData, ...]) -> int:
+    return sum(1 for file_data in files for entry in file_data.entries if entry.is_fuzzy)
+
+
+def _count_pending_entries(files: tuple[POFileData, ...], *, only_fuzzy: bool) -> int:
+    return sum(
+        1
+        for file_data in files
+        for entry in file_data.entries
+        if _should_process_entry_for_translation(entry, only_fuzzy=only_fuzzy)
+    )
+
+
 def _process_family(
     *,
     family_files: tuple[POFileData, ...],
@@ -471,7 +539,7 @@ def _process_family(
     locale_groups: dict[str, tuple[str, ...]],
     translation_memory: dict[str, dict[POEntryId, TranslationValue]],
     runtime: _FamilyProcessingRuntime,
-) -> tuple[tuple[POFileData, ...], int, int, int, int, tuple[POProcessingFailure, ...]]:
+) -> _FamilyProcessingOutcome:
     file_by_locale = {file_data.locale: file_data for file_data in family_files}
     family_entries: dict[str, list[POEntryData]] = {
         file_data.locale: list(file_data.entries) for file_data in family_files
@@ -500,13 +568,16 @@ def _process_family(
         )
         for file_data in family_files
     )
-    return (
-        updated_files,
-        synchronized_entries + translated_entries[0],
-        translated_entries[1],
-        translated_entries[2],
-        translated_entries[3],
-        translated_entries[4],
+    return _FamilyProcessingOutcome(
+        updated_files=updated_files,
+        synchronized_entries=synchronized_entries + translated_entries.synchronized_entries,
+        initial_sync_entries=synchronized_entries,
+        reused_from_other_variant=translated_entries.reused_from_other_variant,
+        translated_entries=translated_entries.translated_entries,
+        translated_from_cache=translated_entries.translated_from_cache,
+        translated_from_provider=translated_entries.translated_from_provider,
+        skipped_sync_only=translated_entries.skipped_sync_only,
+        failures=translated_entries.failures,
     )
 
 
@@ -546,11 +617,13 @@ def _translate_missing_entries(
     translation_memory: dict[str, dict[POEntryId, TranslationValue]],
     file_by_locale: dict[str, POFileData],
     runtime: _FamilyProcessingRuntime,
-) -> tuple[int, int, int, int, tuple[POProcessingFailure, ...]]:
+) -> _TranslationPassOutcome:
     synchronized_entries = 0
+    reused_from_other_variant = 0
     translated_entries = 0
     translated_from_cache = 0
     translated_from_provider = 0
+    skipped_sync_only = 0
     failures: list[POProcessingFailure] = []
     locale_groups = _group_locales_by_base(selected_locales)
     nplurals_by_locale = {
@@ -561,7 +634,7 @@ def _translate_missing_entries(
         if entries is None:
             continue
         for entry in entries:
-            if _is_translated(entry):
+            if not _should_process_entry_for_translation(entry, only_fuzzy=runtime.only_fuzzy):
                 continue
             if runtime.progress_callback is not None:
                 runtime.progress_callback(
@@ -582,6 +655,7 @@ def _translate_missing_entries(
             if candidate is not None:
                 _apply_translation(entry, candidate)
                 translation_memory.setdefault(locale, {})[entry.entry_id] = candidate
+                reused_from_other_variant += 1
                 synchronized_entries += 1
                 synchronized_entries += _propagate_translation_to_family(
                     family_entries=family_entries,
@@ -592,6 +666,7 @@ def _translate_missing_entries(
                 )
                 continue
             if runtime.translation_provider is None:
+                skipped_sync_only += 1
                 continue
             if not _should_attempt_external_translation(entry):
                 continue
@@ -628,12 +703,14 @@ def _translate_missing_entries(
                 translation=translation[0],
                 translation_memory=translation_memory,
             )
-    return (
-        synchronized_entries,
-        translated_entries,
-        translated_from_cache,
-        translated_from_provider,
-        tuple(failures),
+    return _TranslationPassOutcome(
+        synchronized_entries=synchronized_entries,
+        reused_from_other_variant=reused_from_other_variant,
+        translated_entries=translated_entries,
+        translated_from_cache=translated_from_cache,
+        translated_from_provider=translated_from_provider,
+        skipped_sync_only=skipped_sync_only,
+        failures=tuple(failures),
     )
 
 
@@ -808,6 +885,14 @@ def _should_attempt_external_translation(entry: POEntryData) -> bool:
         return False
     plural = entry.entry_id.msgid_plural
     return not (plural is not None and _is_hashtag_like_token(plural.strip()))
+
+
+def _should_process_entry_for_translation(entry: POEntryData, *, only_fuzzy: bool) -> bool:
+    if _is_translated(entry):
+        return False
+    if only_fuzzy:
+        return entry.is_fuzzy
+    return True
 
 
 def _is_hashtag_like_token(text: str) -> bool:

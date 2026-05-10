@@ -76,10 +76,12 @@ Current frontend-facing service entrypoints:
 - `ProjectWorkflowService.start_audit`
 - `ProjectWorkflowService.start_po_processing`
 - `polyglot_site_translator.services.po_processing.POProcessingService.process_site`
+  Returns the typed PO workflow result, including legacy-equivalent processing metrics mirrored from `ProcessStats`.
 - `polyglot_site_translator.infrastructure.po_files.PolibPOCatalogRepository.discover_po_files`
 - `polyglot_site_translator.infrastructure.po_files.PolibPOCatalogRepository.save_po_files`
 - `polyglot_site_translator.infrastructure.po_files.PolibPOCatalogRepository.compile_mo_file`
 - `polyglot_site_translator.infrastructure.po_translation_cache_shelve.build_shelve_translation_cache`
+- `polyglot_site_translator.presentation.kivy.widgets.po_locale_selection_popup.POLocaleSelectionPopup`
 - `SettingsService.load_settings`
 - `SettingsService.save_settings`
 - `SettingsService.reset_settings`

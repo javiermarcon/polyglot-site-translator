@@ -7,7 +7,9 @@ Feature: PO processing workflow
     Given a site project with PO locale variants in the local workspace
     When the operator runs the PO processing workflow for that site
     Then the PO processing result reports completed status
+    And the PO processing result reports one found family
     And the PO processing result reports one processed family
+    And the PO processing result reports one entry completed from initial sync
     And the PO processing result reports synchronized entries
     And the PO processing result reports compiled mo files
     And the processed locale variants contain compiled mo files
@@ -56,6 +58,7 @@ Feature: PO processing workflow
     Then the PO processing result reports completed status
     And the PO processing result reports one processed family
     And the PO processing result reports zero translated entries
+    And the PO processing result reports two skipped sync-only entries
     And the processed PO file keeps the untranslated text
 
   Scenario: Continue processing when one PO entry fails in external translation
@@ -92,12 +95,31 @@ Feature: PO processing workflow
     And the PO processing result reports zero compiled mo files
     And the processed PO file keeps the untranslated text
 
+  Scenario: Run the PO workflow in only-fuzzy mode
+    Given a site project with fuzzy and non-fuzzy untranslated PO entries
+    When the operator runs the PO processing workflow for that site
+    Then the PO processing result reports completed status
+    And the PO processing result reports one processed family
+    And the PO processing result reports translated entries
+    And the PO processing result reports one fuzzy entry
+    And the PO processing result reports only-fuzzy mode enabled
+    And the processed PO file translates only fuzzy entries
+
+  Scenario: Reuse a translation from another variant as a separate metric
+    Given a site project with reusable translations across locale families
+    When the operator runs the PO processing workflow for that site
+    Then the PO processing result reports completed status
+    And the PO processing result reports two found families
+    And the PO processing result reports two processed families
+    And the PO processing result reports one reused translation from another variant
+
   Scenario: Report translation inconsistencies across locale variants
     Given a site project with inconsistent translated PO locale variants
     When the operator runs the PO processing workflow for that site
     Then the PO processing result reports completed status
     And the PO processing result reports one processed family
     And the PO processing result reports one translation inconsistency
+    And the PO processing result reports one variant difference
     And the PO processing result reports the inconsistency detail for "Hello"
 
   Scenario: Report zero translation inconsistencies when the variants match

@@ -58,7 +58,7 @@ def test_sqlite_repository_roundtrips_the_filtered_sync_preference(tmp_path: Pat
 
 def test_sqlite_repository_roundtrips_the_compile_mo_preference(tmp_path: Path) -> None:
     repository = _build_repository(tmp_path)
-    site = _build_site(compile_mo=False)
+    site = _build_site(translation_modes={"compile_mo": False})
 
     repository.create_site(site)
     loaded_site = repository.get_site(site.id)
@@ -70,7 +70,7 @@ def test_sqlite_repository_roundtrips_the_external_translator_preference(
     tmp_path: Path,
 ) -> None:
     repository = _build_repository(tmp_path)
-    site = _build_site(use_external_translator=False)
+    site = _build_site(translation_modes={"use_external_translator": False})
 
     repository.create_site(site)
     loaded_site = repository.get_site(site.id)
@@ -82,12 +82,22 @@ def test_sqlite_repository_roundtrips_the_translation_cache_preference(
     tmp_path: Path,
 ) -> None:
     repository = _build_repository(tmp_path)
-    site = _build_site(use_translation_cache=False)
+    site = _build_site(translation_modes={"use_translation_cache": False})
 
     repository.create_site(site)
     loaded_site = repository.get_site(site.id)
 
     assert loaded_site.project.use_translation_cache is False
+
+
+def test_sqlite_repository_roundtrips_the_only_fuzzy_preference(tmp_path: Path) -> None:
+    repository = _build_repository(tmp_path)
+    site = _build_site(translation_modes={"only_fuzzy": True})
+
+    repository.create_site(site)
+    loaded_site = repository.get_site(site.id)
+
+    assert loaded_site.project.only_fuzzy is True
 
 
 def test_sqlite_repository_roundtrips_project_sync_rule_overrides(tmp_path: Path) -> None:
@@ -602,10 +612,16 @@ def _build_site(
     *,
     use_adapter_sync_filters: bool = False,
     sync_rule_overrides: tuple[ProjectSyncRuleOverride, ...] = (),
-    compile_mo: bool = True,
-    use_external_translator: bool = True,
-    use_translation_cache: bool = True,
+    translation_modes: dict[str, bool] | None = None,
 ) -> RegisteredSite:
+    resolved_modes = {
+        "compile_mo": True,
+        "use_external_translator": True,
+        "use_translation_cache": True,
+        "only_fuzzy": False,
+    }
+    if translation_modes is not None:
+        resolved_modes.update(translation_modes)
     return RegisteredSite(
         project=SiteProject(
             id="site-1",
@@ -614,9 +630,10 @@ def _build_site(
             local_path="/workspace/marketing-site",
             default_locale="en_US",
             is_active=True,
-            compile_mo=compile_mo,
-            use_external_translator=use_external_translator,
-            use_translation_cache=use_translation_cache,
+            compile_mo=resolved_modes["compile_mo"],
+            use_external_translator=resolved_modes["use_external_translator"],
+            use_translation_cache=resolved_modes["use_translation_cache"],
+            only_fuzzy=resolved_modes["only_fuzzy"],
         ),
         remote_connection=RemoteConnectionConfig(
             id="remote-site-1",

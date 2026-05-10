@@ -22,6 +22,7 @@ Feature: SQLite-backed site registry management
     And the operator disables default MO compilation
     And the operator disables the default external translator
     And the operator disables the default translation cache
+    And the operator enables default only-fuzzy mode
     And the operator enables default dry-run mode
     And the operator enables default stats-only mode
     And the operator enables default inconsistency reporting
@@ -31,6 +32,7 @@ Feature: SQLite-backed site registry management
     And the project editor uses MO compilation disabled
     And the project editor uses the external translator disabled
     And the project editor uses the translation cache disabled
+    And the project editor uses only-fuzzy mode enabled
     And the project editor uses dry-run mode enabled
     And the project editor uses stats-only mode enabled
     And the project editor uses inconsistency reporting enabled
@@ -92,12 +94,21 @@ Feature: SQLite-backed site registry management
     Given the frontend shell is wired with SQLite-backed site registry services
     When the operator opens the create project workflow
     And the operator submits a new site registry entry with translation preview settings enabled
+    Then the project detail shows only-fuzzy mode enabled
+    And reopening the persisted site editor shows only-fuzzy mode enabled
     Then the project detail shows dry-run mode enabled
     And the project detail shows stats-only mode enabled
     And the project detail shows inconsistency reporting enabled
     And reopening the persisted site editor shows dry-run mode enabled
     And reopening the persisted site editor shows stats-only mode enabled
     And reopening the persisted site editor shows inconsistency reporting enabled
+
+  Scenario: Persist the project only-fuzzy preference
+    Given the frontend shell is wired with SQLite-backed site registry services
+    When the operator opens the create project workflow
+    And the operator submits a new site registry entry with only-fuzzy mode enabled
+    Then the project detail shows only-fuzzy mode enabled
+    And reopening the persisted site editor shows only-fuzzy mode enabled
 
   Scenario: Persist the adapter-filter sync preference in the remote configuration
     Given the frontend shell is wired with SQLite-backed site registry services

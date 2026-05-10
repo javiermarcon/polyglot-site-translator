@@ -42,6 +42,7 @@ from polyglot_site_translator.presentation.view_models import (
 from polyglot_site_translator.services.po_processing import POProcessingService
 
 StepFunction = TypeVar("StepFunction", bound=Callable[..., object])
+_TWO_FAMILIES = 2
 
 given = cast(Callable[[str], Callable[[StepFunction], StepFunction]], behave_module.given)
 when = cast(Callable[[str], Callable[[StepFunction], StepFunction]], behave_module.when)
@@ -321,6 +322,30 @@ def step_given_site_with_untranslated_variants_and_stats_only(context: object) -
     )
 
 
+@given("a site project with fuzzy and non-fuzzy untranslated PO entries")
+def step_given_site_with_fuzzy_and_non_fuzzy_entries(context: object) -> None:
+    typed = _context(context)
+    typed.temp_dir = tempfile.TemporaryDirectory()
+    workspace = Path(typed.temp_dir.name)
+    locale_dir = workspace / "locale"
+    locale_dir.mkdir(parents=True, exist_ok=True)
+    po_file = polib.POFile()
+    po_file.metadata = {"Language": "es_ES"}
+    po_file.append(polib.POEntry(msgid="Save", msgstr="", flags=["fuzzy"]))
+    po_file.append(polib.POEntry(msgid="Title", msgstr=""))
+    po_file.save(str(locale_dir / "messages-es_ES.po"))
+    site = _build_site(workspace, modes={"only_fuzzy": True})
+    typed.site = site
+    typed.site_id = site.id
+    typed.workflow_service = SiteRegistryPresentationWorkflowService(
+        service=_InMemorySiteWorkflowService(site),
+        project_sync_service=_SyncStub(),
+        po_processing_service=POProcessingService(
+            translation_provider=_BehaveTranslationProvider()
+        ),
+    )
+
+
 @given("a site project with untranslated PO locale variants and a preseeded translation cache")
 def step_given_site_with_untranslated_variants_and_cache(context: object) -> None:
     typed = _context(context)
@@ -353,6 +378,29 @@ def step_given_site_with_inconsistent_translated_variants(context: object) -> No
     _write_po(locale_dir / "messages-es_ES.po", [("Hello", "Hola")])
     _write_po(locale_dir / "messages-es_AR.po", [("Hello", "Che hola")])
     site = _build_site(workspace, modes={"report_inconsistencies": True})
+    typed.site = site
+    typed.site_id = site.id
+    typed.workflow_service = SiteRegistryPresentationWorkflowService(
+        service=_InMemorySiteWorkflowService(site),
+        project_sync_service=_SyncStub(),
+        po_processing_service=POProcessingService(),
+    )
+
+
+@given("a site project with reusable translations across locale families")
+def step_given_site_with_reusable_translations_across_families(context: object) -> None:
+    typed = _context(context)
+    typed.temp_dir = tempfile.TemporaryDirectory()
+    workspace = Path(typed.temp_dir.name)
+    first_dir = workspace / "plugin_a"
+    second_dir = workspace / "plugin_b"
+    first_dir.mkdir(parents=True, exist_ok=True)
+    second_dir.mkdir(parents=True, exist_ok=True)
+    _write_po(first_dir / "messages-es_ES.po", [("Hello", "Hola")])
+    _write_po(first_dir / "messages-es_AR.po", [("Hello", "")])
+    _write_po(second_dir / "checkout-es_ES.po", [("Hello", "")])
+    _write_po(second_dir / "checkout-es_AR.po", [("Hello", "")])
+    site = _build_site(workspace)
     typed.site = site
     typed.site_id = site.id
     typed.workflow_service = SiteRegistryPresentationWorkflowService(
@@ -480,6 +528,7 @@ def step_when_run_po(context: object) -> None:
                 compile_mo=typed.site.compile_mo,
                 use_external_translator=typed.site.use_external_translator,
                 use_translation_cache=typed.site.use_translation_cache,
+                only_fuzzy=typed.site.only_fuzzy,
                 dry_run=typed.site.dry_run,
                 stats_only=typed.site.stats_only,
                 report_inconsistencies=typed.site.report_inconsistencies,
@@ -511,6 +560,7 @@ def step_when_run_po_with_selected_locale(context: object, locale: str) -> None:
                 compile_mo=typed.site.compile_mo,
                 use_external_translator=typed.site.use_external_translator,
                 use_translation_cache=typed.site.use_translation_cache,
+                only_fuzzy=typed.site.only_fuzzy,
                 dry_run=typed.site.dry_run,
                 stats_only=typed.site.stats_only,
                 report_inconsistencies=typed.site.report_inconsistencies,
@@ -536,6 +586,7 @@ def step_when_run_po_with_inconsistency_reporting_enabled(context: object) -> No
                 compile_mo=typed.site.compile_mo,
                 use_external_translator=typed.site.use_external_translator,
                 use_translation_cache=typed.site.use_translation_cache,
+                only_fuzzy=typed.site.only_fuzzy,
                 dry_run=typed.site.dry_run,
                 stats_only=typed.site.stats_only,
                 report_inconsistencies=True,
@@ -561,6 +612,7 @@ def step_when_run_po_with_translation_cache_disabled(context: object) -> None:
                 compile_mo=typed.site.compile_mo,
                 use_external_translator=typed.site.use_external_translator,
                 use_translation_cache=False,
+                only_fuzzy=typed.site.only_fuzzy,
                 dry_run=typed.site.dry_run,
                 stats_only=typed.site.stats_only,
                 report_inconsistencies=typed.site.report_inconsistencies,
@@ -596,6 +648,30 @@ def step_then_completed_with_errors(context: object) -> None:
 def step_then_one_family(context: object) -> None:
     typed = _context(context)
     assert typed.po_result_families == 1
+
+
+@then("the PO processing result reports two processed families")
+def step_then_two_families(context: object) -> None:
+    typed = _context(context)
+    assert typed.po_result_families == _TWO_FAMILIES
+
+
+@then("the PO processing result reports one found family")
+def step_then_one_found_family(context: object) -> None:
+    typed = _context(context)
+    assert "Families found: 1" in typed.po_result_summary
+
+
+@then("the PO processing result reports two found families")
+def step_then_two_found_families(context: object) -> None:
+    typed = _context(context)
+    assert "Families found: 2" in typed.po_result_summary
+
+
+@then("the PO processing result reports one entry completed from initial sync")
+def step_then_one_completed_from_initial_sync(context: object) -> None:
+    typed = _context(context)
+    assert "Completed from initial sync: 1" in typed.po_result_summary
 
 
 @then("the PO processing result reports synchronized entries")
@@ -684,6 +760,14 @@ def step_then_processed_po_keeps_untranslated_text(context: object) -> None:
     assert "Save=Guardar" not in typed.processed_po_text
 
 
+@then("the processed PO file translates only fuzzy entries")
+def step_then_processed_po_translates_only_fuzzy_entries(context: object) -> None:
+    typed = _context(context)
+    assert "Save=Guardar" in typed.processed_po_text
+    assert "Title=" in typed.processed_po_text
+    assert "Title=Titulo" not in typed.processed_po_text
+
+
 @then("the processed PO file contains all translated texts")
 def step_then_processed_po_contains_all_translations(context: object) -> None:
     typed = _context(context)
@@ -717,6 +801,12 @@ def step_then_one_translation_inconsistency(context: object) -> None:
     assert "Translation inconsistencies: 1" in typed.po_result_summary
 
 
+@then("the PO processing result reports one variant difference")
+def step_then_one_variant_difference(context: object) -> None:
+    typed = _context(context)
+    assert "Variant differences found: 1" in typed.po_result_summary
+
+
 @then("the PO processing result reports zero translation inconsistencies")
 def step_then_zero_translation_inconsistencies(context: object) -> None:
     typed = _context(context)
@@ -747,9 +837,34 @@ def step_then_zero_provider_translations(context: object) -> None:
     assert "Translated via provider: 0" in typed.po_result_summary
 
 
+@then("the PO processing result reports only-fuzzy mode enabled")
+def step_then_only_fuzzy_mode_enabled(context: object) -> None:
+    typed = _context(context)
+    assert "Only fuzzy: enabled" in typed.po_result_summary
+
+
+@then("the PO processing result reports one fuzzy entry")
+def step_then_one_fuzzy_entry(context: object) -> None:
+    typed = _context(context)
+    assert "Fuzzy entries: 1" in typed.po_result_summary
+
+
+@then("the PO processing result reports two skipped sync-only entries")
+def step_then_skipped_sync_only_entries(context: object) -> None:
+    typed = _context(context)
+    assert "Skipped by sync-only: 2" in typed.po_result_summary
+
+
+@then("the PO processing result reports one reused translation from another variant")
+def step_then_one_reused_translation_from_another_variant(context: object) -> None:
+    typed = _context(context)
+    assert "Reused from other variant: 1" in typed.po_result_summary
+
+
 @then('the PO processing result reports the inconsistency detail for "{msgid}"')
 def step_then_inconsistency_detail(context: object, msgid: str) -> None:
     typed = _context(context)
+    assert "Variant difference details:" in typed.po_result_summary
     assert f"msgid='{msgid}'" in typed.po_result_summary
 
 
@@ -762,6 +877,7 @@ def _build_site(
         "compile_mo": True,
         "use_external_translator": True,
         "use_translation_cache": True,
+        "only_fuzzy": False,
         "dry_run": False,
         "stats_only": False,
         "report_inconsistencies": False,
@@ -780,6 +896,7 @@ def _build_site(
             compile_mo=options.compile_mo,
             use_external_translator=options.use_external_translator,
             use_translation_cache=options.use_translation_cache,
+            only_fuzzy=options.only_fuzzy,
             dry_run=options.dry_run,
             stats_only=options.stats_only,
             report_inconsistencies=options.report_inconsistencies,
