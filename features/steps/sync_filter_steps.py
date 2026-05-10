@@ -186,9 +186,7 @@ def step_then_scope_lacks_exclusion(context: object, relative_path: str) -> None
     if resolved_scope is None:
         msg = "The sync scope must be resolved before asserting its exclusions."
         raise AssertionError(msg)
-    if relative_path in [
-        sync_filter.relative_path for sync_filter in resolved_scope.excludes
-    ]:
+    if relative_path in [sync_filter.relative_path for sync_filter in resolved_scope.excludes]:
         raise AssertionError
 
 

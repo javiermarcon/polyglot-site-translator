@@ -398,7 +398,8 @@ def step_assert_persisted_default_locale(context: object, default_locale: str) -
     typed_context = _context_with_shell(context)
     assert typed_context.shell.project_detail_state is not None
     if (
-        f"Locale: {default_locale}" not in typed_context.shell.project_detail_state.configuration_summary
+        f"Locale: {default_locale}"
+        not in typed_context.shell.project_detail_state.configuration_summary
     ):
         raise AssertionError
 
@@ -676,7 +677,8 @@ def step_assert_project_detail_external_translator_disabled(context: object) -> 
     typed_context = _context_with_shell(context)
     assert typed_context.shell.project_detail_state is not None
     if (
-        "External translator: disabled" not in typed_context.shell.project_detail_state.configuration_summary
+        "External translator: disabled"
+        not in typed_context.shell.project_detail_state.configuration_summary
     ):
         raise AssertionError
 
@@ -686,7 +688,8 @@ def step_assert_project_detail_translation_cache_disabled(context: object) -> No
     typed_context = _context_with_shell(context)
     assert typed_context.shell.project_detail_state is not None
     if (
-        "Translation cache: disabled" not in typed_context.shell.project_detail_state.configuration_summary
+        "Translation cache: disabled"
+        not in typed_context.shell.project_detail_state.configuration_summary
     ):
         raise AssertionError
 

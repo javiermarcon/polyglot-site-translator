@@ -324,7 +324,8 @@ def step_assert_missing_remote_validation_error(context: object) -> None:
     if typed_context.shell.project_editor_state.status != "failed":
         raise AssertionError
     if (
-        typed_context.shell.project_editor_state.status_message != "Remote connection test requires a configured remote connection."
+        typed_context.shell.project_editor_state.status_message
+        != "Remote connection test requires a configured remote connection."
     ):
         raise AssertionError
 

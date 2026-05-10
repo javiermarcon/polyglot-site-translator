@@ -582,9 +582,7 @@ def step_assert_audit_error_message(context: object) -> None:
 @then("the frontend shell shows the controlled translation error message")
 def step_assert_translation_error_message(context: object) -> None:
     typed_context = _context_with_shell(context)
-    if (
-        typed_context.shell.latest_error != "Translation workflow is unavailable for this project."
-    ):
+    if typed_context.shell.latest_error != "Translation workflow is unavailable for this project.":
         raise AssertionError
 
 
