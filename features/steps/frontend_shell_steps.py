@@ -429,17 +429,19 @@ def step_assert_dashboard_route(context: object) -> None:
 def step_assert_saved_gitignore_sync_exclusions(context: object) -> None:
     typed_context = _context_with_shell(context)
     assert typed_context.shell.settings_state is not None
-    assert typed_context.shell.settings_state.app_settings.sync_scope_settings.use_gitignore_rules
+    if not typed_context.shell.settings_state.app_settings.sync_scope_settings.use_gitignore_rules:
+        raise AssertionError
 
 
 @then('the saved settings contain the global sync rule "{relative_path}"')
 def step_assert_saved_global_sync_rule(context: object, relative_path: str) -> None:
     typed_context = _context_with_shell(context)
     assert typed_context.shell.settings_state is not None
-    assert relative_path in [
+    if relative_path not in [
         rule.relative_path
         for rule in typed_context.shell.settings_state.app_settings.sync_scope_settings.global_rules
-    ]
+    ]:
+        raise AssertionError
 
 
 @then('the saved settings contain the framework sync rule "{relative_path}" for "{framework_type}"')
@@ -456,8 +458,10 @@ def step_assert_saved_framework_sync_rule(
     framework_rules = [
         rule_set for rule_set in framework_rule_sets if rule_set.framework_type == framework_type
     ]
-    assert framework_rules != []
-    assert relative_path in [rule.relative_path for rule in framework_rules[0].rules]
+    if framework_rules == []:
+        raise AssertionError
+    if relative_path not in [rule.relative_path for rule in framework_rules[0].rules]:
+        raise AssertionError
 
 
 @then("the dashboard shows the main workflow sections")
@@ -517,7 +521,8 @@ def step_assert_audit_summary(context: object) -> None:
 def step_assert_audit_failed(context: object) -> None:
     typed_context = _context_with_shell(context)
     assert typed_context.shell.audit_state is not None
-    assert typed_context.shell.audit_state.status == "failed"
+    if typed_context.shell.audit_state.status != "failed":
+        raise AssertionError
 
 
 @then("the po processing panel shows a completed status")
@@ -538,7 +543,8 @@ def step_assert_po_family_count(context: object) -> None:
 def step_assert_po_failed(context: object) -> None:
     typed_context = _context_with_shell(context)
     assert typed_context.shell.po_processing_state is not None
-    assert typed_context.shell.po_processing_state.status == "failed"
+    if typed_context.shell.po_processing_state.status != "failed":
+        raise AssertionError
 
 
 @then("the projects list is empty")
@@ -569,15 +575,17 @@ def step_assert_error_message(context: object) -> None:
 @then("the frontend shell shows the controlled audit error message")
 def step_assert_audit_error_message(context: object) -> None:
     typed_context = _context_with_shell(context)
-    assert typed_context.shell.latest_error == "Audit preview is unavailable for this project."
+    if typed_context.shell.latest_error != "Audit preview is unavailable for this project.":
+        raise AssertionError
 
 
 @then("the frontend shell shows the controlled translation error message")
 def step_assert_translation_error_message(context: object) -> None:
     typed_context = _context_with_shell(context)
-    assert (
-        typed_context.shell.latest_error == "Translation workflow is unavailable for this project."
-    )
+    if (
+        typed_context.shell.latest_error != "Translation workflow is unavailable for this project."
+    ):
+        raise AssertionError
 
 
 @then("the settings route is active")
@@ -701,60 +709,69 @@ def step_assert_translation_settings_section(context: object) -> None:
 def step_assert_saved_default_project_locale(context: object, default_locale: str) -> None:
     typed_context = _context_with_shell(context)
     assert typed_context.shell.settings_state is not None
-    assert typed_context.shell.settings_state.app_settings.default_project_locale == default_locale
+    if typed_context.shell.settings_state.app_settings.default_project_locale != default_locale:
+        raise AssertionError
 
 
 @then("the saved settings keep default MO compilation enabled")
 def step_assert_saved_default_mo_compilation_enabled(context: object) -> None:
     typed_context = _context_with_shell(context)
     assert typed_context.shell.settings_state is not None
-    assert typed_context.shell.settings_state.app_settings.default_compile_mo is True
+    if typed_context.shell.settings_state.app_settings.default_compile_mo is not True:
+        raise AssertionError
 
 
 @then("the saved settings keep the default external translator disabled")
 def step_assert_saved_default_external_translator_disabled(context: object) -> None:
     typed_context = _context_with_shell(context)
     assert typed_context.shell.settings_state is not None
-    assert typed_context.shell.settings_state.app_settings.default_use_external_translator is False
+    if typed_context.shell.settings_state.app_settings.default_use_external_translator is not False:
+        raise AssertionError
 
 
 @then("the saved settings keep the default translation cache disabled")
 def step_assert_saved_default_translation_cache_disabled(context: object) -> None:
     typed_context = _context_with_shell(context)
     assert typed_context.shell.settings_state is not None
-    assert typed_context.shell.settings_state.app_settings.default_use_translation_cache is False
+    if typed_context.shell.settings_state.app_settings.default_use_translation_cache is not False:
+        raise AssertionError
 
 
 @then('the saved settings keep the translation cache path "{cache_path}"')
 def step_assert_saved_translation_cache_path(context: object, cache_path: str) -> None:
     typed_context = _context_with_shell(context)
     assert typed_context.shell.settings_state is not None
-    assert typed_context.shell.settings_state.app_settings.translation_cache_path == cache_path
+    if typed_context.shell.settings_state.app_settings.translation_cache_path != cache_path:
+        raise AssertionError
 
 
 @then("the saved settings keep default only-fuzzy mode enabled")
 def step_assert_saved_default_only_fuzzy_enabled(context: object) -> None:
     typed_context = _context_with_shell(context)
     assert typed_context.shell.settings_state is not None
-    assert typed_context.shell.settings_state.app_settings.default_only_fuzzy is True
+    if typed_context.shell.settings_state.app_settings.default_only_fuzzy is not True:
+        raise AssertionError
 
 
 @then("the saved settings keep default dry-run mode enabled")
 def step_assert_saved_default_dry_run_enabled(context: object) -> None:
     typed_context = _context_with_shell(context)
     assert typed_context.shell.settings_state is not None
-    assert typed_context.shell.settings_state.app_settings.default_dry_run is True
+    if typed_context.shell.settings_state.app_settings.default_dry_run is not True:
+        raise AssertionError
 
 
 @then("the saved settings keep default stats-only mode disabled")
 def step_assert_saved_default_stats_only_disabled(context: object) -> None:
     typed_context = _context_with_shell(context)
     assert typed_context.shell.settings_state is not None
-    assert typed_context.shell.settings_state.app_settings.default_stats_only is False
+    if typed_context.shell.settings_state.app_settings.default_stats_only is not False:
+        raise AssertionError
 
 
 @then("the saved settings keep default inconsistency reporting enabled")
 def step_assert_saved_default_inconsistency_reporting_enabled(context: object) -> None:
     typed_context = _context_with_shell(context)
     assert typed_context.shell.settings_state is not None
-    assert typed_context.shell.settings_state.app_settings.default_report_inconsistencies is True
+    if typed_context.shell.settings_state.app_settings.default_report_inconsistencies is not True:
+        raise AssertionError

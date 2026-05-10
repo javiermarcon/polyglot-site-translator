@@ -72,14 +72,15 @@ class _InMemorySiteWorkflowService:
             raise SiteRegistryNotFoundError(msg)
         return self._site
 
-    def detect_framework(self, project_path: str) -> FrameworkDetectionResult:
+    @staticmethod
+    def detect_framework(project_path: str) -> FrameworkDetectionResult:
         return FrameworkDetectionResult.unmatched(
             project_path=project_path,
             warnings=["Framework detection not required for PO workflow BDD."],
         )
 
-    def test_remote_connection(self, registration: object) -> RemoteConnectionTestResult:
-        del registration
+    @staticmethod
+    def test_remote_connection(registration: object) -> RemoteConnectionTestResult:
         return RemoteConnectionTestResult(
             success=True,
             connection_type="none",
@@ -91,12 +92,11 @@ class _InMemorySiteWorkflowService:
 
 
 class _SyncStub:
+    @staticmethod
     def sync_remote_to_local(
-        self,
         site: RegisteredSite,
         progress_callback: Callable[[SyncProgressEvent], None] | None = None,
     ) -> SyncResult:
-        del progress_callback
         return SyncResult(
             direction=SyncDirection.REMOTE_TO_LOCAL,
             success=True,
@@ -112,12 +112,11 @@ class _SyncStub:
             error=None,
         )
 
+    @staticmethod
     def sync_local_to_remote(
-        self,
         site: RegisteredSite,
         progress_callback: Callable[[SyncProgressEvent], None] | None = None,
     ) -> SyncResult:
-        del progress_callback
         return SyncResult(
             direction=SyncDirection.LOCAL_TO_REMOTE,
             success=True,
@@ -137,7 +136,8 @@ class _SyncStub:
 
 
 class _BehaveTranslationProvider:
-    def translate_text(self, *, text: str, target_locale: str) -> str:
+    @staticmethod
+    def translate_text(*, text: str, target_locale: str) -> str:
         translations = {
             ("es_ES", "Save"): "Guardar",
             ("es_AR", "Save"): "Guardar",
@@ -148,7 +148,8 @@ class _BehaveTranslationProvider:
 
 
 class _BehavePartiallyFailingTranslationProvider:
-    def translate_text(self, *, text: str, target_locale: str) -> str:
+    @staticmethod
+    def translate_text(*, text: str, target_locale: str) -> str:
         if text == "Broken":
             msg = f"provider exploded for {target_locale}:{text}"
             raise POProcessingTranslationError(msg)
@@ -635,237 +636,284 @@ def step_when_run_po_with_translation_cache_disabled(context: object) -> None:
 @then("the PO processing result reports completed status")
 def step_then_completed(context: object) -> None:
     typed = _context(context)
-    assert typed.po_result_status == "completed"
+    if typed.po_result_status != "completed":
+        raise AssertionError
 
 
 @then("the PO processing result reports completed with errors status")
 def step_then_completed_with_errors(context: object) -> None:
     typed = _context(context)
-    assert typed.po_result_status == "completed_with_errors"
+    if typed.po_result_status != "completed_with_errors":
+        raise AssertionError
 
 
 @then("the PO processing result reports one processed family")
 def step_then_one_family(context: object) -> None:
     typed = _context(context)
-    assert typed.po_result_families == 1
+    if typed.po_result_families != 1:
+        raise AssertionError
 
 
 @then("the PO processing result reports two processed families")
 def step_then_two_families(context: object) -> None:
     typed = _context(context)
-    assert typed.po_result_families == _TWO_FAMILIES
+    if typed.po_result_families != _TWO_FAMILIES:
+        raise AssertionError
 
 
 @then("the PO processing result reports one found family")
 def step_then_one_found_family(context: object) -> None:
     typed = _context(context)
-    assert "Families found: 1" in typed.po_result_summary
+    if "Families found: 1" not in typed.po_result_summary:
+        raise AssertionError
 
 
 @then("the PO processing result reports two found families")
 def step_then_two_found_families(context: object) -> None:
     typed = _context(context)
-    assert "Families found: 2" in typed.po_result_summary
+    if "Families found: 2" not in typed.po_result_summary:
+        raise AssertionError
 
 
 @then("the PO processing result reports one entry completed from initial sync")
 def step_then_one_completed_from_initial_sync(context: object) -> None:
     typed = _context(context)
-    assert "Completed from initial sync: 1" in typed.po_result_summary
+    if "Completed from initial sync: 1" not in typed.po_result_summary:
+        raise AssertionError
 
 
 @then("the PO processing result reports synchronized entries")
 def step_then_synced_entries(context: object) -> None:
     typed = _context(context)
-    assert "Synchronized entries: 1" in typed.po_result_summary
+    if "Synchronized entries: 1" not in typed.po_result_summary:
+        raise AssertionError
 
 
 @then("the PO processing result reports translated entries")
 def step_then_translated_entries(context: object) -> None:
     typed = _context(context)
-    assert "Translated entries: 1" in typed.po_result_summary
+    if "Translated entries: 1" not in typed.po_result_summary:
+        raise AssertionError
 
 
 @then("the PO processing result reports zero translated entries")
 def step_then_zero_translated_entries(context: object) -> None:
     typed = _context(context)
-    assert "Translated entries: 0" in typed.po_result_summary
+    if "Translated entries: 0" not in typed.po_result_summary:
+        raise AssertionError
 
 
 @then("the PO processing result reports three translated entries")
 def step_then_three_translated_entries(context: object) -> None:
     typed = _context(context)
-    assert "Translated entries: 3" in typed.po_result_summary
+    if "Translated entries: 3" not in typed.po_result_summary:
+        raise AssertionError
 
 
 @then("the PO processing result reports failed entries for the source file")
 def step_then_failed_entries_for_source_file(context: object) -> None:
     typed = _context(context)
-    assert "Failed entries: 1" in typed.po_result_summary
-    assert "locale/messages-es_ES.po" in typed.po_result_summary
-    assert "Broken" in typed.po_result_summary
+    if "Failed entries: 1" not in typed.po_result_summary:
+        raise AssertionError
+    if "locale/messages-es_ES.po" not in typed.po_result_summary:
+        raise AssertionError
+    if "Broken" not in typed.po_result_summary:
+        raise AssertionError
 
 
 @then("the PO processing result reports failed mo files for the source file")
 def step_then_failed_mo_files_for_source_file(context: object) -> None:
     typed = _context(context)
-    assert "Failed MO files:" in typed.po_result_summary
-    assert "locale/messages-es_ES.po" in typed.po_result_summary
-    assert "messages-es_ES.mo" in typed.po_result_summary
+    if "Failed MO files:" not in typed.po_result_summary:
+        raise AssertionError
+    if "locale/messages-es_ES.po" not in typed.po_result_summary:
+        raise AssertionError
+    if "messages-es_ES.mo" not in typed.po_result_summary:
+        raise AssertionError
 
 
 @then("the PO processing result reports compiled mo files")
 def step_then_compiled_mo_files(context: object) -> None:
     typed = _context(context)
-    assert "Compiled MO files: 2" in typed.po_result_summary
+    if "Compiled MO files: 2" not in typed.po_result_summary:
+        raise AssertionError
 
 
 @then("the processed locale variants contain compiled mo files")
 def step_then_compiled_mo_files_exist(context: object) -> None:
     typed = _context(context)
-    assert typed.compiled_mo_paths == (
+    if typed.compiled_mo_paths != (
         Path(typed.temp_dir.name) / "locale" / "messages-es_AR.mo",
         Path(typed.temp_dir.name) / "locale" / "messages-es_ES.mo",
-    )
+    ):
+        raise AssertionError
 
 
 @then("the PO processing result reports zero compiled mo files")
 def step_then_zero_compiled_mo_files(context: object) -> None:
     typed = _context(context)
-    assert "Compiled MO files: 0" in typed.po_result_summary
+    if "Compiled MO files: 0" not in typed.po_result_summary:
+        raise AssertionError
 
 
 @then("the PO processing result reports zero written PO files")
 def step_then_zero_written_po_files(context: object) -> None:
     typed = _context(context)
-    assert "Written PO files: 0" in typed.po_result_summary
+    if "Written PO files: 0" not in typed.po_result_summary:
+        raise AssertionError
 
 
 @then("the processed locale variants do not contain compiled mo files")
 def step_then_no_compiled_mo_files_exist(context: object) -> None:
     typed = _context(context)
-    assert typed.compiled_mo_paths == ()
+    if typed.compiled_mo_paths != ():
+        raise AssertionError
 
 
 @then("the processed PO file contains the translated text")
 def step_then_processed_po_contains_translation(context: object) -> None:
     typed = _context(context)
-    assert "Save=Guardar" in typed.processed_po_text
+    if "Save=Guardar" not in typed.processed_po_text:
+        raise AssertionError
 
 
 @then("the processed PO file keeps the untranslated text")
 def step_then_processed_po_keeps_untranslated_text(context: object) -> None:
     typed = _context(context)
-    assert "Save=" in typed.processed_po_text
-    assert "Save=Guardar" not in typed.processed_po_text
+    if "Save=" not in typed.processed_po_text:
+        raise AssertionError
+    if "Save=Guardar" in typed.processed_po_text:
+        raise AssertionError
 
 
 @then("the processed PO file translates only fuzzy entries")
 def step_then_processed_po_translates_only_fuzzy_entries(context: object) -> None:
     typed = _context(context)
-    assert "Save=Guardar" in typed.processed_po_text
-    assert "Title=" in typed.processed_po_text
-    assert "Title=Titulo" not in typed.processed_po_text
+    if "Save=Guardar" not in typed.processed_po_text:
+        raise AssertionError
+    if "Title=" not in typed.processed_po_text:
+        raise AssertionError
+    if "Title=Titulo" in typed.processed_po_text:
+        raise AssertionError
 
 
 @then("the processed PO file contains all translated texts")
 def step_then_processed_po_contains_all_translations(context: object) -> None:
     typed = _context(context)
-    assert "Save=Guardar" in typed.processed_po_text
-    assert "Title=Titulo" in typed.processed_po_text
-    assert "Price=Precio" in typed.processed_po_text
+    if "Save=Guardar" not in typed.processed_po_text:
+        raise AssertionError
+    if "Title=Titulo" not in typed.processed_po_text:
+        raise AssertionError
+    if "Price=Precio" not in typed.processed_po_text:
+        raise AssertionError
 
 
 @then("the PO processing progress reports the current file and entry")
 def step_then_progress_reports_current_file_and_entry(context: object) -> None:
     typed = _context(context)
-    assert any(
+    if not any(
         event.current_file == "locale/messages-es_ES.po" and event.current_entry == "Save"
         for event in typed.po_progress_events
-    )
-    assert any(
+    ):
+        raise AssertionError
+    if not any(
         event.current_file == "locale/messages-es_ES.po" and event.current_entry == "Title"
         for event in typed.po_progress_events
-    )
+    ):
+        raise AssertionError
 
 
 @then("the PO processing result reports zero processed families")
 def step_then_zero_family(context: object) -> None:
     typed = _context(context)
-    assert typed.po_result_families == 0
+    if typed.po_result_families != 0:
+        raise AssertionError
 
 
 @then("the PO processing result reports one translation inconsistency")
 def step_then_one_translation_inconsistency(context: object) -> None:
     typed = _context(context)
-    assert "Translation inconsistencies: 1" in typed.po_result_summary
+    if "Translation inconsistencies: 1" not in typed.po_result_summary:
+        raise AssertionError
 
 
 @then("the PO processing result reports one variant difference")
 def step_then_one_variant_difference(context: object) -> None:
     typed = _context(context)
-    assert "Variant differences found: 1" in typed.po_result_summary
+    if "Variant differences found: 1" not in typed.po_result_summary:
+        raise AssertionError
 
 
 @then("the PO processing result reports zero translation inconsistencies")
 def step_then_zero_translation_inconsistencies(context: object) -> None:
     typed = _context(context)
-    assert "Translation inconsistencies: 0" in typed.po_result_summary
+    if "Translation inconsistencies: 0" not in typed.po_result_summary:
+        raise AssertionError
 
 
 @then("the PO processing result reports one cached translation")
 def step_then_one_cached_translation(context: object) -> None:
     typed = _context(context)
-    assert "Translated from cache: 1" in typed.po_result_summary
+    if "Translated from cache: 1" not in typed.po_result_summary:
+        raise AssertionError
 
 
 @then("the PO processing result reports zero cached translations")
 def step_then_zero_cached_translations(context: object) -> None:
     typed = _context(context)
-    assert "Translated from cache: 0" in typed.po_result_summary
+    if "Translated from cache: 0" not in typed.po_result_summary:
+        raise AssertionError
 
 
 @then("the PO processing result reports one provider translation")
 def step_then_one_provider_translation(context: object) -> None:
     typed = _context(context)
-    assert "Translated via provider: 1" in typed.po_result_summary
+    if "Translated via provider: 1" not in typed.po_result_summary:
+        raise AssertionError
 
 
 @then("the PO processing result reports zero provider translations")
 def step_then_zero_provider_translations(context: object) -> None:
     typed = _context(context)
-    assert "Translated via provider: 0" in typed.po_result_summary
+    if "Translated via provider: 0" not in typed.po_result_summary:
+        raise AssertionError
 
 
 @then("the PO processing result reports only-fuzzy mode enabled")
 def step_then_only_fuzzy_mode_enabled(context: object) -> None:
     typed = _context(context)
-    assert "Only fuzzy: enabled" in typed.po_result_summary
+    if "Only fuzzy: enabled" not in typed.po_result_summary:
+        raise AssertionError
 
 
 @then("the PO processing result reports one fuzzy entry")
 def step_then_one_fuzzy_entry(context: object) -> None:
     typed = _context(context)
-    assert "Fuzzy entries: 1" in typed.po_result_summary
+    if "Fuzzy entries: 1" not in typed.po_result_summary:
+        raise AssertionError
 
 
 @then("the PO processing result reports two skipped sync-only entries")
 def step_then_skipped_sync_only_entries(context: object) -> None:
     typed = _context(context)
-    assert "Skipped by sync-only: 2" in typed.po_result_summary
+    if "Skipped by sync-only: 2" not in typed.po_result_summary:
+        raise AssertionError
 
 
 @then("the PO processing result reports one reused translation from another variant")
 def step_then_one_reused_translation_from_another_variant(context: object) -> None:
     typed = _context(context)
-    assert "Reused from other variant: 1" in typed.po_result_summary
+    if "Reused from other variant: 1" not in typed.po_result_summary:
+        raise AssertionError
 
 
 @then('the PO processing result reports the inconsistency detail for "{msgid}"')
 def step_then_inconsistency_detail(context: object, msgid: str) -> None:
     typed = _context(context)
-    assert "Variant difference details:" in typed.po_result_summary
-    assert f"msgid='{msgid}'" in typed.po_result_summary
+    if "Variant difference details:" not in typed.po_result_summary:
+        raise AssertionError
+    if f"msgid='{msgid}'" not in typed.po_result_summary:
+        raise AssertionError
 
 
 def _build_site(

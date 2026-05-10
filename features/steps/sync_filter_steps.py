@@ -152,7 +152,8 @@ def step_then_scope_status(context: object, status: str) -> None:
     if resolved_scope is None:
         msg = "The sync scope must be resolved before asserting its status."
         raise AssertionError(msg)
-    assert resolved_scope.status == status
+    if resolved_scope.status != status:
+        raise AssertionError
 
 
 @then('the resolved sync scope includes the filter "{relative_path}"')
@@ -163,7 +164,8 @@ def step_then_scope_contains_filter(context: object, relative_path: str) -> None
         msg = "The sync scope must be resolved before asserting its filters."
         raise AssertionError(msg)
     filters = resolved_scope.filters
-    assert relative_path in [sync_filter.relative_path for sync_filter in filters]
+    if relative_path not in [sync_filter.relative_path for sync_filter in filters]:
+        raise AssertionError
 
 
 @then('the resolved sync scope excludes the filter "{relative_path}"')
@@ -173,7 +175,8 @@ def step_then_scope_contains_exclusion(context: object, relative_path: str) -> N
     if resolved_scope is None:
         msg = "The sync scope must be resolved before asserting its exclusions."
         raise AssertionError(msg)
-    assert relative_path in [sync_filter.relative_path for sync_filter in resolved_scope.excludes]
+    if relative_path not in [sync_filter.relative_path for sync_filter in resolved_scope.excludes]:
+        raise AssertionError
 
 
 @then('the resolved sync scope does not exclude the filter "{relative_path}"')
@@ -183,9 +186,10 @@ def step_then_scope_lacks_exclusion(context: object, relative_path: str) -> None
     if resolved_scope is None:
         msg = "The sync scope must be resolved before asserting its exclusions."
         raise AssertionError(msg)
-    assert relative_path not in [
+    if relative_path in [
         sync_filter.relative_path for sync_filter in resolved_scope.excludes
-    ]
+    ]:
+        raise AssertionError
 
 
 @then("the resolved sync scope reports no sync filters")
@@ -195,4 +199,5 @@ def step_then_scope_has_no_filters(context: object) -> None:
     if resolved_scope is None:
         msg = "The sync scope must be resolved before asserting its filters."
         raise AssertionError(msg)
-    assert resolved_scope.filters == ()
+    if resolved_scope.filters != ():
+        raise AssertionError

@@ -177,8 +177,8 @@ class StubProjectWorkflowService:
             error_code=None,
         )
 
+    @staticmethod
     def start_sync_to_remote(
-        self,
         project_id: str,
         progress_callback: Callable[[SyncProgressEvent], None] | None = None,
     ) -> SyncStatusViewModel:
@@ -189,7 +189,8 @@ class StubProjectWorkflowService:
             error_code=None,
         )
 
-    def trust_remote_host_key(self, project_id: str) -> RemoteConnectionTestResultViewModel:
+    @staticmethod
+    def trust_remote_host_key(project_id: str) -> RemoteConnectionTestResultViewModel:
         return RemoteConnectionTestResultViewModel(
             success=True,
             message=f"Trusted SSH host key for {project_id}.",
@@ -212,11 +213,9 @@ class StubProjectWorkflowService:
         request: TranslationWorkflowRequestViewModel | None = None,
         progress_callback: Callable[[POProcessingProgress], None] | None = None,
     ) -> POProcessingSummaryViewModel:
-        del progress_callback
         if self.fail_po_processing and project_id == "wp-site":
             msg = "Translation workflow is unavailable for this project."
             raise ControlledServiceError(msg)
-        del request
         return POProcessingSummaryViewModel(
             status="completed",
             processed_families=4,
@@ -386,8 +385,8 @@ class InMemoryProjectRegistryManagementService:
             error_code=None if success else "invalid_remote_config",
         )
 
+    @staticmethod
     def preview_project_editor(
-        self,
         editor: SiteEditorViewModel,
         *,
         mode: str,

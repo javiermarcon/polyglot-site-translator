@@ -267,7 +267,6 @@ def test_po_processing_screen_refresh_loop_and_back_navigation_branches(
             self.cancelled = True
 
     def _schedule_interval(callback: object, _interval: float) -> _FakeEvent:
-        del callback
         event = _FakeEvent()
         scheduled.append(event)
         return event
@@ -374,10 +373,12 @@ def test_base_screen_menu_opens_when_parent_window_exists_and_route_opens_withou
         def add_widget(self, widget: object) -> None:
             self.children.append(widget)
 
-        def open(self, widget: object) -> None:
+        @staticmethod
+        def open(widget: object) -> None:
             open_calls.append(widget)
 
-        def dismiss(self) -> None:
+        @staticmethod
+        def dismiss() -> None:
             open_calls.append("dismissed")
 
     def _parent_window() -> object:

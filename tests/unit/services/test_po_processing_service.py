@@ -56,7 +56,8 @@ class StubTranslationProvider:
 class FailingTranslationProvider:
     """Provider stub that always surfaces a translation error."""
 
-    def translate_text(self, *, text: str, target_locale: str) -> str:
+    @staticmethod
+    def translate_text(*, text: str, target_locale: str) -> str:
         msg = f"translation failed for {target_locale}:{text}"
         raise POProcessingTranslationError(msg)
 

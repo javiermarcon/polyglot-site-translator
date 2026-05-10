@@ -88,13 +88,15 @@ from polyglot_site_translator.services.site_registry import SiteRegistryService
 
 
 class _StubPOTranslationProvider:
-    def translate_text(self, *, text: str, target_locale: str) -> str:
+    @staticmethod
+    def translate_text(*, text: str, target_locale: str) -> str:
         translations = {("es_ES", "Save"): "Guardar", ("es_AR", "Save"): "Guardar"}
         return translations[(target_locale, text)]
 
 
 class _PartiallyFailingPOTranslationProvider:
-    def translate_text(self, *, text: str, target_locale: str) -> str:
+    @staticmethod
+    def translate_text(*, text: str, target_locale: str) -> str:
         if text == "Broken":
             msg = f"translation failed for {target_locale}:{text}"
             raise POProcessingTranslationError(msg)
@@ -192,14 +194,15 @@ class SuccessfulSFTPProvider:
     ) -> list[RemoteSyncFile]:
         return []
 
+    @staticmethod
     def iter_remote_files(
-        self,
         config: RemoteConnectionConfig,
         progress_callback: Callable[[SyncProgressEvent], None] | None = None,
     ) -> Iterable[RemoteSyncFile]:
         return iter(())
 
-    def open_session(self, config: RemoteConnectionConfig) -> Any:
+    @staticmethod
+    def open_session(config: RemoteConnectionConfig) -> Any:
         msg = f"open_session not used in this test for {config.connection_type}"
         raise AssertionError(msg)
 
@@ -212,8 +215,8 @@ class SuccessfulSFTPProvider:
         msg = f"download not used in this test for {remote_path}"
         raise AssertionError(msg)
 
+    @staticmethod
     def ensure_remote_directory(
-        self,
         config: RemoteConnectionConfig,
         remote_path: str,
         progress_callback: Callable[[SyncProgressEvent], None] | None = None,
@@ -221,8 +224,8 @@ class SuccessfulSFTPProvider:
         msg = f"ensure_remote_directory not used in this test for {remote_path}"
         raise AssertionError(msg)
 
+    @staticmethod
     def upload_file(
-        self,
         config: RemoteConnectionConfig,
         remote_path: str,
         contents: bytes,
@@ -257,8 +260,8 @@ class SyncStub:
             error=None,
         )
 
+    @staticmethod
     def sync_local_to_remote(
-        self,
         site: RegisteredSite,
         progress_callback: Callable[[SyncProgressEvent], None] | None = None,
     ) -> SyncResult:
@@ -283,14 +286,13 @@ class SyncStub:
 
 
 class FailingFrameworkSyncScopeService:
+    @staticmethod
     def resolve_for_framework(
-        self,
         *,
         framework_type: str,
         project_path: Path | str,
         project_rule_overrides: tuple[object, ...] = (),
     ) -> Any:
-        del framework_type, project_path, project_rule_overrides
         msg = "broken sync scope"
         raise SyncConfigurationError(msg)
 
@@ -1384,13 +1386,12 @@ def test_workflow_service_wraps_sync_lookup_errors_for_both_directions() -> None
 
 def test_workflow_service_wraps_po_processing_service_errors() -> None:
     class _ExplodingPOService:
+        @staticmethod
         def process_site(
-            self,
             site: RegisteredSite,
             cache_settings: POProcessingCacheSettings | None = None,
             progress_callback: Callable[[POProcessingProgress], None] | None = None,
         ) -> object:
-            del site, cache_settings, progress_callback
             msg = "PO workflow exploded."
             raise POProcessingTranslationError(msg)
 
@@ -1409,7 +1410,8 @@ def test_workflow_service_wraps_po_processing_service_errors() -> None:
 
 def test_workflow_service_wraps_cache_settings_load_errors() -> None:
     class FailingSettingsService:
-        def load_settings(self) -> SettingsStateViewModel:
+        @staticmethod
+        def load_settings() -> SettingsStateViewModel:
             msg = "Settings load failed."
             raise ControlledServiceError(msg)
 

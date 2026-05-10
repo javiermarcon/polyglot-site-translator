@@ -66,7 +66,6 @@ class FailingFrameworkSyncScopeService:
     error: OSError | SyncConfigurationError
 
     def resolve_for_site(self, site: RegisteredSite) -> ResolvedSyncScope:
-        del site
         raise self.error
 
 
@@ -1845,7 +1844,6 @@ def test_project_sync_service_continues_when_scope_excludes_a_local_file(
     )
 
     def _scope_includes(scope: ResolvedSyncScope | None, relative_path: str) -> bool:
-        del scope
         scope_calls.append(relative_path)
         return relative_path == "keep.txt"
 

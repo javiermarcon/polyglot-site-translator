@@ -148,7 +148,6 @@ def test_sqlite_sync_scope_repository_wraps_schema_read_and_write_failures(
     )
 
     def _failing_mkdir(self: Path, *args: object, **kwargs: object) -> None:
-        del self, args, kwargs
         msg = "directory denied"
         raise OSError(msg)
 
@@ -190,7 +189,6 @@ def test_sqlite_sync_scope_repository_wraps_sqlite_failures_for_read_and_write(
     repository = SqliteSyncScopeRepository(location=location)
 
     def _broken_connect(self: SqliteSyncScopeRepository) -> sqlite3.Connection:
-        del self
         msg = "db broken"
         raise sqlite3.OperationalError(msg)
 

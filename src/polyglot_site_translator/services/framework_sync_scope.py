@@ -439,5 +439,3 @@ class SyncScopeResolutionService(FrameworkSyncScopeService):
     global rules, persisted framework rules, project-specific overrides, and
     optional .gitignore-derived exclusions.
     """
-
-    pass

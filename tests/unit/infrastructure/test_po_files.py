@@ -106,7 +106,6 @@ def test_catalog_repository_wraps_workspace_scan_errors(
     repository = PolibPOCatalogRepository()
 
     def failing_rglob(self: Path, pattern: str) -> list[Path]:
-        del pattern
         if self == tmp_path:
             msg = "permission denied"
             raise OSError(msg)
@@ -182,7 +181,6 @@ def test_catalog_repository_wraps_po_write_errors_during_save(
     _write_po_file(po_path, [("Save", "")])
 
     def failing_save(self: polib.POFile, path: str) -> None:
-        del self, path
         msg = "read only"
         raise OSError(msg)
 
@@ -236,7 +234,6 @@ def test_catalog_repository_raises_when_mo_file_cannot_be_written(
     po_file.save(str(po_path))
 
     def failing_save_as_mofile(self: polib.POFile, path: str) -> None:
-        del self, path
         msg = "disk full"
         raise OSError(msg)
 

@@ -33,7 +33,8 @@ class LocalSyncWorkspace:
         """Persist downloaded bytes in the local workspace."""
         target_path.write_bytes(contents)
 
-    def read_file(self, source_path: Path) -> bytes:
+    @staticmethod
+    def read_file(source_path: Path) -> bytes:
         """Read a local file before uploading it to the remote workspace."""
         return source_path.read_bytes()
 
@@ -47,7 +48,8 @@ class LocalSyncWorkspace:
             raise OSError(msg)
         return self._iter_local_files(normalized_root)
 
-    def _iter_local_files(self, local_root: Path) -> Iterable[LocalSyncFile]:
+    @staticmethod
+    def _iter_local_files(local_root: Path) -> Iterable[LocalSyncFile]:
         for path in sorted(local_root.rglob("*")):
             if not path.is_file():
                 continue

@@ -30,10 +30,12 @@ class FakeAdapter:
     def detect(self, project_path: Path) -> FrameworkDetectionResult:
         return self.result
 
-    def get_sync_filters(self, project_path: Path) -> tuple[SyncFilterSpec, ...]:
+    @staticmethod
+    def get_sync_filters(project_path: Path) -> tuple[SyncFilterSpec, ...]:
         return ()
 
-    def get_sync_scope(self, project_path: Path) -> AdapterSyncScope:
+    @staticmethod
+    def get_sync_scope(project_path: Path) -> AdapterSyncScope:
         return AdapterSyncScope()
 
 

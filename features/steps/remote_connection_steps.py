@@ -63,14 +63,15 @@ class StubRemoteConnectionProvider:
     ) -> list[RemoteSyncFile]:
         return []
 
+    @staticmethod
     def iter_remote_files(
-        self,
         config: RemoteConnectionConfig,
         progress_callback: Callable[[SyncProgressEvent], None] | None = None,
     ) -> Iterable[RemoteSyncFile]:
         return iter(())
 
-    def open_session(self, config: RemoteConnectionConfig) -> Any:
+    @staticmethod
+    def open_session(config: RemoteConnectionConfig) -> Any:
         msg = f"open_session not used in this BDD provider for {config.connection_type}"
         raise AssertionError(msg)
 
@@ -83,8 +84,8 @@ class StubRemoteConnectionProvider:
         msg = f"download not used in this BDD provider for {remote_path}"
         raise AssertionError(msg)
 
+    @staticmethod
     def ensure_remote_directory(
-        self,
         config: RemoteConnectionConfig,
         remote_path: str,
         progress_callback: Callable[[SyncProgressEvent], None] | None = None,
@@ -92,8 +93,8 @@ class StubRemoteConnectionProvider:
         msg = f"ensure_remote_directory not used in this BDD provider for {remote_path}"
         raise AssertionError(msg)
 
+    @staticmethod
     def upload_file(
-        self,
         config: RemoteConnectionConfig,
         remote_path: str,
         contents: bytes,
@@ -320,17 +321,20 @@ def step_assert_failed_remote_test(context: object) -> None:
 def step_assert_missing_remote_validation_error(context: object) -> None:
     typed_context = _context(context)
     assert typed_context.shell.project_editor_state is not None
-    assert typed_context.shell.project_editor_state.status == "failed"
-    assert (
-        typed_context.shell.project_editor_state.status_message
-        == "Remote connection test requires a configured remote connection."
-    )
+    if typed_context.shell.project_editor_state.status != "failed":
+        raise AssertionError
+    if (
+        typed_context.shell.project_editor_state.status_message != "Remote connection test requires a configured remote connection."
+    ):
+        raise AssertionError
 
 
 @then("the project editor shows the invalid remote port validation error")
 def step_assert_invalid_remote_port_validation_error(context: object) -> None:
     typed_context = _context(context)
     assert typed_context.shell.project_editor_state is not None
-    assert typed_context.shell.project_editor_state.status == "failed"
+    if typed_context.shell.project_editor_state.status != "failed":
+        raise AssertionError
     assert typed_context.shell.project_editor_state.status_message is not None
-    assert "invalid literal for int()" in typed_context.shell.project_editor_state.status_message
+    if "invalid literal for int()" not in typed_context.shell.project_editor_state.status_message:
+        raise AssertionError

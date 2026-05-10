@@ -50,8 +50,8 @@ class _ServiceStub:
             warnings=["Framework detection is not used in this sync workflow test."],
         )
 
+    @staticmethod
     def test_remote_connection(
-        self,
         registration: SiteRegistrationInput,
     ) -> RemoteConnectionTestResult:
         return RemoteConnectionTestResult(

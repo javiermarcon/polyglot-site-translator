@@ -203,7 +203,8 @@ class ImplicitFTPSRemoteConnectionProvider(BaseRemoteConnectionProvider):
             transport_label="FTPS",
         )
 
-    def _build_client(self) -> ImplicitFtpTls:
+    @staticmethod
+    def _build_client() -> ImplicitFtpTls:
         return ImplicitFtpTls(context=ssl.create_default_context())
 
 

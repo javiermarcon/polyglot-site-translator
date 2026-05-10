@@ -355,11 +355,13 @@ def test_implicit_ftp_tls_keeps_existing_timeout_when_timeout_is_omitted(
         family = 123
 
     class _FakeWrappedSocket:
-        def makefile(self, mode: str, encoding: str) -> str:
+        @staticmethod
+        def makefile(mode: str, encoding: str) -> str:
             return "wrapped-file"
 
     class _FakeContext:
-        def wrap_socket(self, sock: object, *, server_hostname: str) -> _FakeWrappedSocket:
+        @staticmethod
+        def wrap_socket(sock: object, *, server_hostname: str) -> _FakeWrappedSocket:
             assert sock is raw_socket
             assert server_hostname == "example.test"
             return wrapped_socket
@@ -469,12 +471,14 @@ def test_close_ftp_client_uses_oserror_branch_when_library_error_tuple_excludes_
     events: list[str] = []
 
     class _OSErrorFtpClient:
-        def quit(self) -> None:
+        @staticmethod
+        def quit() -> None:
             events.append("quit")
             msg = "network down"
             raise OSError(msg)
 
-        def close(self) -> None:
+        @staticmethod
+        def close() -> None:
             events.append("close")
 
     monkeypatch.setattr(ftp, "all_errors", (EOFError,))
@@ -488,7 +492,8 @@ def test_close_ftp_socket_uses_oserror_branch_when_library_error_tuple_excludes_
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     class _OSErrorSocketClient:
-        def close(self) -> None:
+        @staticmethod
+        def close() -> None:
             msg = "socket close failed"
             raise OSError(msg)
 

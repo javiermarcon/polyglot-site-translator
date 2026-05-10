@@ -26,6 +26,7 @@ class BaseFrameworkAdapter(ABC):
         """Return adapter-defined include/exclude sync rules for the given project path."""
         return AdapterSyncScope(filters=self.get_sync_filters(project_path))
 
-    def get_sync_filters(self, project_path: Path) -> tuple[SyncFilterSpec, ...]:
+    @staticmethod
+    def get_sync_filters(project_path: Path) -> tuple[SyncFilterSpec, ...]:
         """Return adapter-defined sync filters for the given project path."""
         return ()

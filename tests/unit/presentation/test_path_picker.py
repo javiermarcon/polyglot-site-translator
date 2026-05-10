@@ -107,19 +107,23 @@ def test_initial_browse_directory_falls_back_to_home_when_parent_chain_stops(
         def __init__(self) -> None:
             self.parent = self
 
-        def is_dir(self) -> bool:
+        @staticmethod
+        def is_dir() -> bool:
             return False
 
     fake_resolved = _FakeResolvedPath()
 
     class _FakeExpandedPath:
-        def is_dir(self) -> bool:
+        @staticmethod
+        def is_dir() -> bool:
             return False
 
-        def is_file(self) -> bool:
+        @staticmethod
+        def is_file() -> bool:
             return False
 
-        def resolve(self) -> _FakeResolvedPath:
+        @staticmethod
+        def resolve() -> _FakeResolvedPath:
             return fake_resolved
 
     monkeypatch.setattr(Path, "expanduser", lambda self: _FakeExpandedPath())
@@ -141,7 +145,6 @@ def test_directory_only_listing_filter_rejects_file(tmp_path: Path) -> None:
 
 def test_directory_only_listing_filter_handles_os_errors(monkeypatch: pytest.MonkeyPatch) -> None:
     def _raise_os_error(self: Path) -> bool:
-        del self
         msg = "broken filesystem"
         raise OSError(msg)
 

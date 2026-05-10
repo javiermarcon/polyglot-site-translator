@@ -944,7 +944,6 @@ class FrontendShell:
         traceback: TracebackType | None = None,
     ) -> None:
         """Convert an unhandled runtime error into visible UI state."""
-        del traceback
         cause = str(error).strip() or error.__class__.__name__
         error_message = (
             f"Unhandled runtime error in {context}. Cause: {error.__class__.__name__}: {cause}"

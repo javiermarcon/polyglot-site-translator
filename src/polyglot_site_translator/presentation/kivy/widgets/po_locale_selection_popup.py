@@ -158,8 +158,8 @@ class POLocaleSelectionPopup(Popup):  # type: ignore[misc]
         container.add_widget(actions)
         self.content = container
 
+    @staticmethod
     def _build_toggle_row(
-        self,
         *,
         title: str,
         description: str,

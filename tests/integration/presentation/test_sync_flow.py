@@ -38,8 +38,8 @@ from polyglot_site_translator.services.remote_connections import RemoteConnectio
 
 
 class _FailingFrameworkSyncScopeService:
-    def resolve_for_site(self, site: RegisteredSite) -> ResolvedSyncScope:
-        del site
+    @staticmethod
+    def resolve_for_site(site: RegisteredSite) -> ResolvedSyncScope:
         msg = "broken sync scope"
         raise OSError(msg)
 
@@ -56,7 +56,8 @@ class StubSyncProvider:
         )
     )
 
-    def open_session(self, config: RemoteConnectionConfig) -> _StubSyncSession:
+    @staticmethod
+    def open_session(config: RemoteConnectionConfig) -> _StubSyncSession:
         return _StubSyncSession(config=config)
 
     def list_remote_files(

@@ -1342,18 +1342,21 @@ class SettingsScreen(BaseShellScreen):
         )
         self.refresh()
 
-    def _require_text_input(self, widget: TextInput | None) -> TextInput:
+    @staticmethod
+    def _require_text_input(widget: TextInput | None) -> TextInput:
         if widget is None:
             msg = "Text input must exist before using the settings form."
             raise ValueError(msg)
         return widget
 
-    def _build_framework_type_options(self) -> list[SettingsOptionViewModel]:
+    @staticmethod
+    def _build_framework_type_options() -> list[SettingsOptionViewModel]:
         return build_framework_type_options_from_descriptors(
             FrameworkAdapterRegistry.discover_installed().list_framework_descriptors()
         )
 
-    def _require_spinner(self, widget: Spinner | None) -> Spinner:
+    @staticmethod
+    def _require_spinner(widget: Spinner | None) -> Spinner:
         if widget is None:
             msg = "Spinner must exist before using the settings form."
             raise ValueError(msg)

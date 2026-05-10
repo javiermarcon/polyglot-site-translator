@@ -107,11 +107,13 @@ def test_framework_detection_service_lists_supported_frameworks() -> None:
 
 def test_framework_detection_service_wraps_registry_runtime_failures(tmp_path: Path) -> None:
     class _FailingRegistry:
-        def resolve(self, _project_path: Path) -> object:
+        @staticmethod
+        def resolve(_project_path: Path) -> object:
             msg = "broken adapter registry"
             raise OSError(msg)
 
-        def list_framework_descriptors(self) -> list[FrameworkDescriptor]:
+        @staticmethod
+        def list_framework_descriptors() -> list[FrameworkDescriptor]:
             msg = "broken adapter registry"
             raise RuntimeError(msg)
 

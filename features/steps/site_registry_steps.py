@@ -397,10 +397,10 @@ def step_assert_site_detail(context: object) -> None:
 def step_assert_persisted_default_locale(context: object, default_locale: str) -> None:
     typed_context = _context_with_shell(context)
     assert typed_context.shell.project_detail_state is not None
-    assert (
-        f"Locale: {default_locale}"
-        in typed_context.shell.project_detail_state.configuration_summary
-    )
+    if (
+        f"Locale: {default_locale}" not in typed_context.shell.project_detail_state.configuration_summary
+    ):
+        raise AssertionError
 
 
 @then("the projects list shows the persisted SQLite site")
@@ -438,70 +438,80 @@ def step_assert_reopened_default_locale(context: object, default_locale: str) ->
     typed_context = _context_with_shell(context)
     typed_context.shell.open_project_editor_edit(typed_context.created_site_id)
     assert typed_context.shell.project_editor_state is not None
-    assert typed_context.shell.project_editor_state.editor.default_locale == default_locale
+    if typed_context.shell.project_editor_state.editor.default_locale != default_locale:
+        raise AssertionError
 
 
 @then('the project editor uses the default locale "{default_locale}"')
 def step_assert_create_editor_default_locale(context: object, default_locale: str) -> None:
     typed_context = _context_with_shell(context)
     assert typed_context.shell.project_editor_state is not None
-    assert typed_context.shell.project_editor_state.editor.default_locale == default_locale
+    if typed_context.shell.project_editor_state.editor.default_locale != default_locale:
+        raise AssertionError
 
 
 @then("the project editor uses MO compilation disabled")
 def step_assert_create_editor_compile_mo_disabled(context: object) -> None:
     typed_context = _context_with_shell(context)
     assert typed_context.shell.project_editor_state is not None
-    assert typed_context.shell.project_editor_state.editor.compile_mo is False
+    if typed_context.shell.project_editor_state.editor.compile_mo is not False:
+        raise AssertionError
 
 
 @then("the project editor uses the external translator disabled")
 def step_assert_create_editor_external_translator_disabled(context: object) -> None:
     typed_context = _context_with_shell(context)
     assert typed_context.shell.project_editor_state is not None
-    assert typed_context.shell.project_editor_state.editor.use_external_translator is False
+    if typed_context.shell.project_editor_state.editor.use_external_translator is not False:
+        raise AssertionError
 
 
 @then("the project editor uses the translation cache disabled")
 def step_assert_create_editor_translation_cache_disabled(context: object) -> None:
     typed_context = _context_with_shell(context)
     assert typed_context.shell.project_editor_state is not None
-    assert typed_context.shell.project_editor_state.editor.use_translation_cache is False
+    if typed_context.shell.project_editor_state.editor.use_translation_cache is not False:
+        raise AssertionError
 
 
 @then("the project editor uses only-fuzzy mode enabled")
 def step_assert_create_editor_only_fuzzy_enabled(context: object) -> None:
     typed_context = _context_with_shell(context)
     assert typed_context.shell.project_editor_state is not None
-    assert typed_context.shell.project_editor_state.editor.only_fuzzy is True
+    if typed_context.shell.project_editor_state.editor.only_fuzzy is not True:
+        raise AssertionError
 
 
 @then("the project editor uses dry-run mode enabled")
 def step_assert_create_editor_dry_run_enabled(context: object) -> None:
     typed_context = _context_with_shell(context)
     assert typed_context.shell.project_editor_state is not None
-    assert typed_context.shell.project_editor_state.editor.dry_run is True
+    if typed_context.shell.project_editor_state.editor.dry_run is not True:
+        raise AssertionError
 
 
 @then("the project editor uses stats-only mode enabled")
 def step_assert_create_editor_stats_only_enabled(context: object) -> None:
     typed_context = _context_with_shell(context)
     assert typed_context.shell.project_editor_state is not None
-    assert typed_context.shell.project_editor_state.editor.stats_only is True
+    if typed_context.shell.project_editor_state.editor.stats_only is not True:
+        raise AssertionError
 
 
 @then("the project editor uses inconsistency reporting enabled")
 def step_assert_create_editor_inconsistency_reporting_enabled(context: object) -> None:
     typed_context = _context_with_shell(context)
     assert typed_context.shell.project_editor_state is not None
-    assert typed_context.shell.project_editor_state.editor.report_inconsistencies is True
+    if typed_context.shell.project_editor_state.editor.report_inconsistencies is not True:
+        raise AssertionError
 
 
 @then('the project detail shows the persisted sync mode "{mode}"')
 def step_assert_persisted_sync_mode(context: object, mode: str) -> None:
     typed_context = _context_with_shell(context)
     assert typed_context.shell.project_detail_state is not None
-    assert f"Sync mode: {mode}" in typed_context.shell.project_detail_state.configuration_summary
+    if f"Sync mode: {mode}" not in typed_context.shell.project_detail_state.configuration_summary:
+        raise AssertionError
 
 
 @then("reopening the persisted site editor shows adapter sync filters enabled")
@@ -509,7 +519,8 @@ def step_assert_persisted_adapter_sync_filters(context: object) -> None:
     typed_context = _context_with_shell(context)
     typed_context.shell.open_project_editor_edit(typed_context.created_site_id)
     assert typed_context.shell.project_editor_state is not None
-    assert typed_context.shell.project_editor_state.editor.use_adapter_sync_filters is True
+    if typed_context.shell.project_editor_state.editor.use_adapter_sync_filters is not True:
+        raise AssertionError
 
 
 @when("the operator submits a new site registry entry with MO compilation disabled")
@@ -647,7 +658,8 @@ def step_submit_new_site_with_only_fuzzy(context: object) -> None:
 def step_assert_project_detail_compile_mo_disabled(context: object) -> None:
     typed_context = _context_with_shell(context)
     assert typed_context.shell.project_detail_state is not None
-    assert "Compile MO: disabled" in typed_context.shell.project_detail_state.configuration_summary
+    if "Compile MO: disabled" not in typed_context.shell.project_detail_state.configuration_summary:
+        raise AssertionError
 
 
 @then("reopening the persisted site editor shows MO compilation disabled")
@@ -655,57 +667,62 @@ def step_assert_persisted_compile_mo_disabled(context: object) -> None:
     typed_context = _context_with_shell(context)
     typed_context.shell.open_project_editor_edit(typed_context.created_site_id)
     assert typed_context.shell.project_editor_state is not None
-    assert typed_context.shell.project_editor_state.editor.compile_mo is False
+    if typed_context.shell.project_editor_state.editor.compile_mo is not False:
+        raise AssertionError
 
 
 @then("the project detail shows the external translator disabled")
 def step_assert_project_detail_external_translator_disabled(context: object) -> None:
     typed_context = _context_with_shell(context)
     assert typed_context.shell.project_detail_state is not None
-    assert (
-        "External translator: disabled"
-        in typed_context.shell.project_detail_state.configuration_summary
-    )
+    if (
+        "External translator: disabled" not in typed_context.shell.project_detail_state.configuration_summary
+    ):
+        raise AssertionError
 
 
 @then("the project detail shows the translation cache disabled")
 def step_assert_project_detail_translation_cache_disabled(context: object) -> None:
     typed_context = _context_with_shell(context)
     assert typed_context.shell.project_detail_state is not None
-    assert (
-        "Translation cache: disabled"
-        in typed_context.shell.project_detail_state.configuration_summary
-    )
+    if (
+        "Translation cache: disabled" not in typed_context.shell.project_detail_state.configuration_summary
+    ):
+        raise AssertionError
 
 
 @then("the project detail shows only-fuzzy mode enabled")
 def step_assert_project_detail_only_fuzzy_enabled(context: object) -> None:
     typed_context = _context_with_shell(context)
     assert typed_context.shell.project_detail_state is not None
-    assert "Only fuzzy: enabled" in typed_context.shell.project_detail_state.configuration_summary
+    if "Only fuzzy: enabled" not in typed_context.shell.project_detail_state.configuration_summary:
+        raise AssertionError
 
 
 @then("the project detail shows dry-run mode enabled")
 def step_assert_project_detail_dry_run_enabled(context: object) -> None:
     typed_context = _context_with_shell(context)
     assert typed_context.shell.project_detail_state is not None
-    assert "Dry-run: enabled" in typed_context.shell.project_detail_state.configuration_summary
+    if "Dry-run: enabled" not in typed_context.shell.project_detail_state.configuration_summary:
+        raise AssertionError
 
 
 @then("the project detail shows stats-only mode enabled")
 def step_assert_project_detail_stats_only_enabled(context: object) -> None:
     typed_context = _context_with_shell(context)
     assert typed_context.shell.project_detail_state is not None
-    assert "Stats only: enabled" in typed_context.shell.project_detail_state.configuration_summary
+    if "Stats only: enabled" not in typed_context.shell.project_detail_state.configuration_summary:
+        raise AssertionError
 
 
 @then("the project detail shows inconsistency reporting enabled")
 def step_assert_project_detail_inconsistency_reporting_enabled(context: object) -> None:
     typed_context = _context_with_shell(context)
     assert typed_context.shell.project_detail_state is not None
-    assert "Report inconsistencies: enabled" in (
+    if "Report inconsistencies: enabled" not in (
         typed_context.shell.project_detail_state.configuration_summary
-    )
+    ):
+        raise AssertionError
 
 
 @then("reopening the persisted site editor shows the external translator disabled")
@@ -713,7 +730,8 @@ def step_assert_persisted_external_translator_disabled(context: object) -> None:
     typed_context = _context_with_shell(context)
     typed_context.shell.open_project_editor_edit(typed_context.created_site_id)
     assert typed_context.shell.project_editor_state is not None
-    assert typed_context.shell.project_editor_state.editor.use_external_translator is False
+    if typed_context.shell.project_editor_state.editor.use_external_translator is not False:
+        raise AssertionError
 
 
 @then("reopening the persisted site editor shows the translation cache disabled")
@@ -721,7 +739,8 @@ def step_assert_persisted_translation_cache_disabled(context: object) -> None:
     typed_context = _context_with_shell(context)
     typed_context.shell.open_project_editor_edit(typed_context.created_site_id)
     assert typed_context.shell.project_editor_state is not None
-    assert typed_context.shell.project_editor_state.editor.use_translation_cache is False
+    if typed_context.shell.project_editor_state.editor.use_translation_cache is not False:
+        raise AssertionError
 
 
 @then("reopening the persisted site editor shows only-fuzzy mode enabled")
@@ -729,7 +748,8 @@ def step_assert_persisted_only_fuzzy_enabled(context: object) -> None:
     typed_context = _context_with_shell(context)
     typed_context.shell.open_project_editor_edit(typed_context.created_site_id)
     assert typed_context.shell.project_editor_state is not None
-    assert typed_context.shell.project_editor_state.editor.only_fuzzy is True
+    if typed_context.shell.project_editor_state.editor.only_fuzzy is not True:
+        raise AssertionError
 
 
 @then("reopening the persisted site editor shows dry-run mode enabled")
@@ -737,7 +757,8 @@ def step_assert_persisted_dry_run_enabled(context: object) -> None:
     typed_context = _context_with_shell(context)
     typed_context.shell.open_project_editor_edit(typed_context.created_site_id)
     assert typed_context.shell.project_editor_state is not None
-    assert typed_context.shell.project_editor_state.editor.dry_run is True
+    if typed_context.shell.project_editor_state.editor.dry_run is not True:
+        raise AssertionError
 
 
 @then("reopening the persisted site editor shows stats-only mode enabled")
@@ -745,7 +766,8 @@ def step_assert_persisted_stats_only_enabled(context: object) -> None:
     typed_context = _context_with_shell(context)
     typed_context.shell.open_project_editor_edit(typed_context.created_site_id)
     assert typed_context.shell.project_editor_state is not None
-    assert typed_context.shell.project_editor_state.editor.stats_only is True
+    if typed_context.shell.project_editor_state.editor.stats_only is not True:
+        raise AssertionError
 
 
 @then("reopening the persisted site editor shows inconsistency reporting enabled")
@@ -753,7 +775,8 @@ def step_assert_persisted_inconsistency_reporting_enabled(context: object) -> No
     typed_context = _context_with_shell(context)
     typed_context.shell.open_project_editor_edit(typed_context.created_site_id)
     assert typed_context.shell.project_editor_state is not None
-    assert typed_context.shell.project_editor_state.editor.report_inconsistencies is True
+    if typed_context.shell.project_editor_state.editor.report_inconsistencies is not True:
+        raise AssertionError
 
 
 @then('reopening the persisted site editor shows the custom sync rule "{relative_path}"')
@@ -761,10 +784,11 @@ def step_assert_persisted_custom_sync_rule(context: object, relative_path: str) 
     typed_context = _context_with_shell(context)
     typed_context.shell.open_project_editor_edit(typed_context.created_site_id)
     assert typed_context.shell.project_editor_state is not None
-    assert relative_path in [
+    if relative_path not in [
         item.relative_path
         for item in typed_context.shell.project_editor_state.editor.sync_rule_items
-    ]
+    ]:
+        raise AssertionError
 
 
 @then('reopening the persisted site editor shows the adapter rule "{relative_path}" disabled')
@@ -777,7 +801,8 @@ def step_assert_persisted_disabled_adapter_rule(context: object, relative_path: 
         for item in typed_context.shell.project_editor_state.editor.sync_rule_items
         if item.relative_path == relative_path
     ]
-    assert matching_rules and matching_rules[0].is_enabled is False
+    if not (matching_rules and matching_rules[0].is_enabled is False):
+        raise AssertionError
 
 
 @then("the settings draft shows the configured database directory")
@@ -808,21 +833,29 @@ def step_assert_reopened_editor_without_remote_connection(context: object) -> No
     typed_context.shell.open_project_editor_edit(typed_context.created_site_id)
     assert typed_context.shell.project_editor_state is not None
     editor = typed_context.shell.project_editor_state.editor
-    assert editor.connection_type == "none"
-    assert editor.remote_host == ""
-    assert editor.remote_port == ""
-    assert editor.remote_username == ""
-    assert editor.remote_password == ""
-    assert editor.remote_path == ""
+    if editor.connection_type != "none":
+        raise AssertionError
+    if editor.remote_host != "":
+        raise AssertionError
+    if editor.remote_port != "":
+        raise AssertionError
+    if editor.remote_username != "":
+        raise AssertionError
+    if editor.remote_password != "":
+        raise AssertionError
+    if editor.remote_path != "":
+        raise AssertionError
 
 
 @then("the project editor shows the duplicate site-name validation error")
 def step_assert_duplicate_site_name_validation_error(context: object) -> None:
     typed_context = _context_with_shell(context)
     assert typed_context.shell.project_editor_state is not None
-    assert typed_context.shell.project_editor_state.status == "failed"
+    if typed_context.shell.project_editor_state.status != "failed":
+        raise AssertionError
     assert typed_context.shell.project_editor_state.status_message is not None
-    assert "already exists" in typed_context.shell.project_editor_state.status_message
+    if "already exists" not in typed_context.shell.project_editor_state.status_message:
+        raise AssertionError
     assert typed_context.shell.latest_error != ""
 
 
@@ -830,8 +863,10 @@ def step_assert_duplicate_site_name_validation_error(context: object) -> None:
 def step_assert_default_locale_validation_error(context: object) -> None:
     typed_context = _context_with_shell(context)
     assert typed_context.shell.project_editor_state is not None
-    assert typed_context.shell.project_editor_state.status == "failed"
-    assert typed_context.shell.project_editor_state.status_message == (
+    if typed_context.shell.project_editor_state.status != "failed":
+        raise AssertionError
+    if typed_context.shell.project_editor_state.status_message != (
         "Default locale must be a valid locale or a comma-separated list of valid "
         "locales. Invalid values: asad@."
-    )
+    ):
+        raise AssertionError

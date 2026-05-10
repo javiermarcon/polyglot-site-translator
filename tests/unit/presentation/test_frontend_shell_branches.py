@@ -89,8 +89,8 @@ class FailingRegistryService:
         msg = f"Remote connection test unavailable for {editor.name}."
         raise ControlledServiceError(msg)
 
+    @staticmethod
     def preview_project_editor(
-        self,
         editor: SiteEditorViewModel,
         *,
         mode: str,
@@ -112,7 +112,6 @@ class FailingAuditAndPOWorkflowService(StubProjectWorkflowService):
         request: TranslationWorkflowRequestViewModel | None = None,
         progress_callback: Callable[[POProcessingProgress], None] | None = None,
     ) -> POProcessingSummaryViewModel:
-        del request, progress_callback
         msg = f"PO processing failed for {project_id}."
         raise ControlledServiceError(msg)
 
@@ -121,23 +120,23 @@ class FailingSaveSettingsService(InMemorySettingsService):
     """Settings fake that fails on save for route-persistence coverage."""
 
     def save_settings(self, app_settings: AppSettingsViewModel) -> SettingsStateViewModel:
-        del app_settings
         msg = "Last opened screen could not be persisted."
         raise ControlledServiceError(msg)
 
 
 class _AliveThread:
-    def is_alive(self) -> bool:
+    @staticmethod
+    def is_alive() -> bool:
         return True
 
 
 class _CapturedThread:
     def __init__(self, *args: object, name: str, **kwargs: object) -> None:
-        del args, kwargs
         self.name = name
         self.started = False
 
-    def is_alive(self) -> bool:
+    @staticmethod
+    def is_alive() -> bool:
         return False
 
     def start(self) -> None:

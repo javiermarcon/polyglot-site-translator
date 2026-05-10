@@ -55,39 +55,39 @@ class _StubTranslator:
 
 @dataclass
 class _FailingTranslator:
-    async def translate(self, text: str, dest: str) -> Any:
-        del text, dest
+    @staticmethod
+    async def translate(text: str, dest: str) -> Any:
         msg = "network down"
         raise OSError(msg)
 
 
 @dataclass
 class _ListTranslator:
-    async def translate(self, text: str, dest: str) -> list[str]:
-        del text, dest
+    @staticmethod
+    async def translate(text: str, dest: str) -> list[str]:
         return ["bad-shape"]
 
 
 @dataclass
 class _ProtocolFailingTranslator:
-    async def translate(self, text: str, dest: str) -> Any:
-        del text, dest
+    @staticmethod
+    async def translate(text: str, dest: str) -> Any:
         msg = "protocol closed"
         raise RuntimeError(msg)
 
 
 @dataclass
 class _MisconfiguredTranslator:
-    async def translate(self, text: str, dest: str) -> Any:
-        del text, dest
+    @staticmethod
+    async def translate(text: str, dest: str) -> Any:
         msg = "translator object has no HTTP client"
         raise AttributeError(msg)
 
 
 @dataclass
 class _UnexpectedResultTranslator:
-    async def translate(self, text: str, dest: str) -> object:
-        del text, dest
+    @staticmethod
+    async def translate(text: str, dest: str) -> object:
         return {"text": "Hola"}
 
 

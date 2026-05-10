@@ -306,8 +306,8 @@ class ProjectSetupSpec:
 
 
 class _FailingFrameworkSyncScopeService:
-    def resolve_for_site(self, site: Any) -> Any:
-        del site
+    @staticmethod
+    def resolve_for_site(site: Any) -> Any:
         msg = "broken sync scope"
         raise OSError(msg)
 
@@ -696,14 +696,16 @@ def step_assert_sync_screen(context: object) -> None:
 def step_assert_uploaded_files(context: object, uploaded_files: int) -> None:
     typed_context = _context(context)
     assert typed_context.shell.sync_state is not None
-    assert typed_context.shell.sync_state.files_synced == uploaded_files
+    if typed_context.shell.sync_state.files_synced != uploaded_files:
+        raise AssertionError
 
 
 @then("the sync screen shows the uploaded file count")
 def step_assert_sync_screen_uploaded_files(context: object) -> None:
     typed_context = _context(context)
     typed_context.sync_screen.refresh()
-    assert "Files: 2" in typed_context.sync_screen._summary_label.text
+    if "Files: 2" not in typed_context.sync_screen._summary_label.text:
+        raise AssertionError
 
 
 @when("the operator starts the sync workflow from the project detail screen")
@@ -750,7 +752,8 @@ def step_assert_sync_progress_window_download_commands(context: object) -> None:
         if "SFTP GET /srv/app/locale/es.po" in popup._command_log_label.text:
             break
         time.sleep(0.01)
-    assert "SFTP GET /srv/app/locale/es.po" in popup._command_log_label.text
+    if "SFTP GET /srv/app/locale/es.po" not in popup._command_log_label.text:
+        raise AssertionError
 
 
 @then("the sync progress window shows a failed status")
@@ -764,7 +767,8 @@ def step_assert_sync_progress_window_failed_status(context: object) -> None:
         if popup._status_label.text == "Status: failed":
             break
         time.sleep(0.01)
-    assert popup._status_label.text == "Status: failed"
+    if popup._status_label.text != "Status: failed":
+        raise AssertionError
 
 
 @then("the sync progress window shows the sync error message")
@@ -783,7 +787,8 @@ def step_assert_sync_progress_window_error_message(context: object) -> None:
         if expected_message in popup._message_label.text:
             break
         time.sleep(0.01)
-    assert expected_message in popup._message_label.text
+    if expected_message not in popup._message_label.text:
+        raise AssertionError
 
 
 @then("the sync progress window offers the SSH host-key trust action")
@@ -797,8 +802,10 @@ def step_assert_sync_progress_window_host_key_trust_action(context: object) -> N
         if not popup._trust_host_key_button.disabled:
             break
         time.sleep(0.01)
-    assert popup._trust_host_key_button.opacity == 1
-    assert popup._trust_host_key_button.disabled is False
+    if popup._trust_host_key_button.opacity != 1:
+        raise AssertionError
+    if popup._trust_host_key_button.disabled is not False:
+        raise AssertionError
 
 
 @then("the sync progress window keeps only the last {limit:d} operations")
@@ -819,9 +826,12 @@ def step_assert_sync_progress_window_limit(context: object, limit: int) -> None:
         time.sleep(0.01)
     command_lines = [line for line in popup._command_log_label.text.splitlines() if line.strip()]
     assert len(command_lines) == limit
-    assert "SFTP LIST /srv/app" not in command_lines
-    assert f"LOCAL WRITE {local_root / 'templates' / 'home.html'}" in command_lines
-    assert "SFTP CLOSE marketing.example.test:22" in command_lines
+    if "SFTP LIST /srv/app" in command_lines:
+        raise AssertionError
+    if f"LOCAL WRITE {local_root / 'templates' / 'home.html'}" not in command_lines:
+        raise AssertionError
+    if "SFTP CLOSE marketing.example.test:22" not in command_lines:
+        raise AssertionError
 
 
 @then("the sync progress window shows a single remote connect command")
@@ -835,7 +845,8 @@ def step_assert_single_remote_connect(context: object) -> None:
         if popup._command_log_label.text.count("SFTP CONNECT marketing.example.test:22") == 1:
             break
         time.sleep(0.01)
-    assert popup._command_log_label.text.count("SFTP CONNECT marketing.example.test:22") == 1
+    if popup._command_log_label.text.count("SFTP CONNECT marketing.example.test:22") != 1:
+        raise AssertionError
 
 
 @then("the sync progress window shows a single remote close command")
@@ -849,7 +860,8 @@ def step_assert_single_remote_close(context: object) -> None:
         if popup._command_log_label.text.count("SFTP CLOSE marketing.example.test:22") == 1:
             break
         time.sleep(0.01)
-    assert popup._command_log_label.text.count("SFTP CLOSE marketing.example.test:22") == 1
+    if popup._command_log_label.text.count("SFTP CLOSE marketing.example.test:22") != 1:
+        raise AssertionError
 
 
 def _create_project(

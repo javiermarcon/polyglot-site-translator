@@ -63,7 +63,8 @@ class _BlockingWorkflowService:
             error_code=None,
         )
 
-    def trust_remote_host_key(self, project_id: str) -> RemoteConnectionTestResultViewModel:
+    @staticmethod
+    def trust_remote_host_key(project_id: str) -> RemoteConnectionTestResultViewModel:
         return build_seeded_services().workflows.trust_remote_host_key(project_id)
 
     def start_sync_to_remote(
@@ -106,8 +107,8 @@ class _BlockingWorkflowService:
 
 @dataclass
 class _FailingBackgroundWorkflowService:
+    @staticmethod
     def start_sync(
-        self,
         project_id: str,
         progress_callback: Callable[[SyncProgressEvent], None] | None = None,
     ) -> SyncStatusViewModel:
@@ -122,11 +123,12 @@ class _FailingBackgroundWorkflowService:
         msg = "Temporary failure in name resolution"
         raise AttributeError(msg)
 
-    def trust_remote_host_key(self, project_id: str) -> RemoteConnectionTestResultViewModel:
+    @staticmethod
+    def trust_remote_host_key(project_id: str) -> RemoteConnectionTestResultViewModel:
         return build_seeded_services().workflows.trust_remote_host_key(project_id)
 
+    @staticmethod
     def start_sync_to_remote(
-        self,
         project_id: str,
         progress_callback: Callable[[SyncProgressEvent], None] | None = None,
     ) -> SyncStatusViewModel:
@@ -141,11 +143,12 @@ class _FailingBackgroundWorkflowService:
         msg = "Temporary failure in name resolution"
         raise AttributeError(msg)
 
-    def start_audit(self, project_id: str) -> AuditSummaryViewModel:
+    @staticmethod
+    def start_audit(project_id: str) -> AuditSummaryViewModel:
         return build_seeded_services().workflows.start_audit(project_id)
 
+    @staticmethod
     def start_po_processing(
-        self,
         project_id: str,
         request: TranslationWorkflowRequestViewModel | None = None,
         progress_callback: Callable[[POProcessingProgress], None] | None = None,
@@ -168,24 +171,26 @@ class _BlockingPOProcessingWorkflowService:
     requested_stats_only: list[bool | None]
     requested_report_inconsistencies: list[bool | None]
 
+    @staticmethod
     def start_sync(
-        self,
         project_id: str,
         progress_callback: Callable[[SyncProgressEvent], None] | None = None,
     ) -> SyncStatusViewModel:
         return build_seeded_services().workflows.start_sync(project_id, progress_callback)
 
-    def trust_remote_host_key(self, project_id: str) -> RemoteConnectionTestResultViewModel:
+    @staticmethod
+    def trust_remote_host_key(project_id: str) -> RemoteConnectionTestResultViewModel:
         return build_seeded_services().workflows.trust_remote_host_key(project_id)
 
+    @staticmethod
     def start_sync_to_remote(
-        self,
         project_id: str,
         progress_callback: Callable[[SyncProgressEvent], None] | None = None,
     ) -> SyncStatusViewModel:
         return build_seeded_services().workflows.start_sync_to_remote(project_id, progress_callback)
 
-    def start_audit(self, project_id: str) -> AuditSummaryViewModel:
+    @staticmethod
+    def start_audit(project_id: str) -> AuditSummaryViewModel:
         return build_seeded_services().workflows.start_audit(project_id)
 
     def start_po_processing(
@@ -239,28 +244,30 @@ class _BlockingPOProcessingWorkflowService:
 
 @dataclass
 class _FailingPOProcessingWorkflowService:
+    @staticmethod
     def start_sync(
-        self,
         project_id: str,
         progress_callback: Callable[[SyncProgressEvent], None] | None = None,
     ) -> SyncStatusViewModel:
         return build_seeded_services().workflows.start_sync(project_id, progress_callback)
 
-    def trust_remote_host_key(self, project_id: str) -> RemoteConnectionTestResultViewModel:
+    @staticmethod
+    def trust_remote_host_key(project_id: str) -> RemoteConnectionTestResultViewModel:
         return build_seeded_services().workflows.trust_remote_host_key(project_id)
 
+    @staticmethod
     def start_sync_to_remote(
-        self,
         project_id: str,
         progress_callback: Callable[[SyncProgressEvent], None] | None = None,
     ) -> SyncStatusViewModel:
         return build_seeded_services().workflows.start_sync_to_remote(project_id, progress_callback)
 
-    def start_audit(self, project_id: str) -> AuditSummaryViewModel:
+    @staticmethod
+    def start_audit(project_id: str) -> AuditSummaryViewModel:
         return build_seeded_services().workflows.start_audit(project_id)
 
+    @staticmethod
     def start_po_processing(
-        self,
         project_id: str,
         request: TranslationWorkflowRequestViewModel | None = None,
         progress_callback: Callable[[POProcessingProgress], None] | None = None,
@@ -285,8 +292,8 @@ class _TrustHostKeyWorkflowService:
     succeed: bool = True
     raise_error: bool = False
 
+    @staticmethod
     def start_sync(
-        self,
         project_id: str,
         progress_callback: Callable[[SyncProgressEvent], None] | None = None,
     ) -> SyncStatusViewModel:
@@ -302,18 +309,19 @@ class _TrustHostKeyWorkflowService:
             error_code=None if self.succeed else "trust_failed",
         )
 
+    @staticmethod
     def start_sync_to_remote(
-        self,
         project_id: str,
         progress_callback: Callable[[SyncProgressEvent], None] | None = None,
     ) -> SyncStatusViewModel:
         return build_seeded_services().workflows.start_sync_to_remote(project_id, progress_callback)
 
-    def start_audit(self, project_id: str) -> AuditSummaryViewModel:
+    @staticmethod
+    def start_audit(project_id: str) -> AuditSummaryViewModel:
         return build_seeded_services().workflows.start_audit(project_id)
 
+    @staticmethod
     def start_po_processing(
-        self,
         project_id: str,
         request: TranslationWorkflowRequestViewModel | None = None,
         progress_callback: Callable[[POProcessingProgress], None] | None = None,

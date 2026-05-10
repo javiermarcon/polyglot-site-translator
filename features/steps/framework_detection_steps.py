@@ -196,7 +196,8 @@ def step_assert_no_framework_detected_in_audit(context: object) -> None:
 def step_assert_matched_framework_findings(context: object) -> None:
     typed_context = _context_with_shell(context)
     assert typed_context.shell.audit_state is not None
-    assert typed_context.shell.audit_state.findings_count >= MIN_MATCHED_FRAMEWORK_FINDINGS
+    if typed_context.shell.audit_state.findings_count < MIN_MATCHED_FRAMEWORK_FINDINGS:
+        raise AssertionError
 
 
 @then("the audit preview lists framework evidence")
@@ -204,8 +205,10 @@ def step_assert_framework_evidence_in_audit(context: object) -> None:
     typed_context = _context_with_shell(context)
     assert typed_context.shell.audit_state is not None
     summary = typed_context.shell.audit_state.findings_summary
-    assert "wp-config.php" in summary
-    assert "wp-content/" in summary
+    if "wp-config.php" not in summary:
+        raise AssertionError
+    if "wp-content/" not in summary:
+        raise AssertionError
 
 
 @then("the framework combo shows the auto-discovered supported options")

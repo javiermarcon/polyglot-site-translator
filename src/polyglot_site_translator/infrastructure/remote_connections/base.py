@@ -150,7 +150,8 @@ class BaseRemoteConnectionSession(ABC):
                 self._state = RemoteConnectionSessionState.OPEN
                 return
 
-    def _should_retry_connect(self, error: RemoteConnectionOperationError) -> bool:
+    @staticmethod
+    def _should_retry_connect(error: RemoteConnectionOperationError) -> bool:
         return error.error_code in {"connection_timeout", "transport_io_failed"}
 
     @abstractmethod

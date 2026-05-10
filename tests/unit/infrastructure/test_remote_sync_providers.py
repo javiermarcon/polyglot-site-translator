@@ -47,7 +47,8 @@ class _ListBackedSession:
     def iter_remote_files(self, progress_callback: Any = None) -> Iterator[RemoteSyncFile]:
         return iter(self.files)
 
-    def download_file(self, remote_path: str, progress_callback: Any = None) -> bytes:
+    @staticmethod
+    def download_file(remote_path: str, progress_callback: Any = None) -> bytes:
         msg = f"download not used in this test for {remote_path}"
         raise AssertionError(msg)
 
@@ -775,12 +776,14 @@ def test_sftp_session_wraps_missing_paramiko_as_dependency_error(
 
 def test_ssh_close_helpers_ignore_missing_and_failing_clients() -> None:
     class _FailingCloseClient:
-        def close(self) -> None:
+        @staticmethod
+        def close() -> None:
             msg = "close failed"
             raise OSError(msg)
 
     class _AttributeFailingCloseClient:
-        def close(self) -> None:
+        @staticmethod
+        def close() -> None:
             msg = "close unavailable"
             raise AttributeError(msg)
 
@@ -953,11 +956,13 @@ def test_ftp_provider_wraps_malformed_listing_sizes(
 
 def test_close_ftp_client_ignores_quit_failures_from_half_open_connections() -> None:
     class _HalfOpenFtpClient:
-        def quit(self) -> None:
+        @staticmethod
+        def quit() -> None:
             msg = "socket is not connected"
             raise AttributeError(msg)
 
-        def close(self) -> None:
+        @staticmethod
+        def close() -> None:
             return None
 
     ftp._close_ftp_client(cast(Any, _HalfOpenFtpClient()))
@@ -965,11 +970,13 @@ def test_close_ftp_client_ignores_quit_failures_from_half_open_connections() -> 
 
 def test_close_ftp_client_ignores_close_failures_after_quit_errors() -> None:
     class _CloseFailingFtpClient:
-        def quit(self) -> None:
+        @staticmethod
+        def quit() -> None:
             msg = "socket is not connected"
             raise AttributeError(msg)
 
-        def close(self) -> None:
+        @staticmethod
+        def close() -> None:
             msg = "close failed"
             raise OSError(msg)
 
@@ -978,11 +985,13 @@ def test_close_ftp_client_ignores_close_failures_after_quit_errors() -> None:
 
 def test_close_ftp_client_ignores_library_close_failures_after_os_errors() -> None:
     class _LibraryCloseFailingFtpClient:
-        def quit(self) -> None:
+        @staticmethod
+        def quit() -> None:
             msg = "network down"
             raise OSError(msg)
 
-        def close(self) -> None:
+        @staticmethod
+        def close() -> None:
             msg = "close failed"
             raise EOFError(msg)
 
@@ -1492,11 +1501,13 @@ def test_ftp_provider_wraps_upload_failures_as_os_errors(
 
 def test_close_ftp_client_ignores_socket_close_failures_after_quit_os_error() -> None:
     class _SocketCloseFailingFtpClient:
-        def quit(self) -> None:
+        @staticmethod
+        def quit() -> None:
             msg = "network down"
             raise OSError(msg)
 
-        def close(self) -> None:
+        @staticmethod
+        def close() -> None:
             msg = "socket close failed"
             raise OSError(msg)
 
@@ -1505,7 +1516,8 @@ def test_close_ftp_client_ignores_socket_close_failures_after_quit_os_error() ->
 
 def test_close_ftp_socket_ignores_attribute_errors() -> None:
     class _AttributeFailingFtpSocket:
-        def close(self) -> None:
+        @staticmethod
+        def close() -> None:
             msg = "close unavailable"
             raise AttributeError(msg)
 
@@ -1670,13 +1682,16 @@ def test_configure_host_key_policy_imports_paramiko_when_needed(
         pass
 
     class _RecordingSshClient:
-        def load_system_host_keys(self) -> None:
+        @staticmethod
+        def load_system_host_keys() -> None:
             actions.append("load_system_host_keys")
 
-        def load_host_keys(self, filename: str) -> None:
+        @staticmethod
+        def load_host_keys(filename: str) -> None:
             actions.append(f"load_host_keys:{filename}")
 
-        def set_missing_host_key_policy(self, policy: object) -> None:
+        @staticmethod
+        def set_missing_host_key_policy(policy: object) -> None:
             actions.append(f"set_policy:{policy.__class__.__name__}")
 
     monkeypatch.setattr(Path, "home", lambda: tmp_path)

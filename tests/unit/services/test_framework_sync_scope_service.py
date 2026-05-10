@@ -46,13 +46,16 @@ class _NoFilterAdapter:
     adapter_name: str = "no_filter_adapter"
     display_name: str = "NoFilter"
 
-    def detect(self, project_path: Path) -> FrameworkDetectionResult:
+    @staticmethod
+    def detect(project_path: Path) -> FrameworkDetectionResult:
         return FrameworkDetectionResult.unmatched(project_path=str(project_path))
 
-    def get_sync_scope(self, project_path: Path) -> AdapterSyncScope:
+    @staticmethod
+    def get_sync_scope(project_path: Path) -> AdapterSyncScope:
         return AdapterSyncScope()
 
-    def get_sync_filters(self, project_path: Path) -> tuple[SyncFilterSpec, ...]:
+    @staticmethod
+    def get_sync_filters(project_path: Path) -> tuple[SyncFilterSpec, ...]:
         return ()
 
 
@@ -320,15 +323,17 @@ def test_framework_sync_scope_service_wraps_adapter_scope_resolution_failures(
         adapter_name: str = "broken_adapter"
         display_name: str = "Broken"
 
-        def detect(self, project_path: Path) -> FrameworkDetectionResult:
+        @staticmethod
+        def detect(project_path: Path) -> FrameworkDetectionResult:
             return FrameworkDetectionResult.unmatched(project_path=str(project_path))
 
-        def get_sync_scope(self, project_path: Path) -> AdapterSyncScope:
+        @staticmethod
+        def get_sync_scope(project_path: Path) -> AdapterSyncScope:
             msg = f"cannot inspect {project_path}"
             raise OSError(msg)
 
-        def get_sync_filters(self, project_path: Path) -> tuple[SyncFilterSpec, ...]:
-            del project_path
+        @staticmethod
+        def get_sync_filters(project_path: Path) -> tuple[SyncFilterSpec, ...]:
             return ()
 
     service = FrameworkSyncScopeService(

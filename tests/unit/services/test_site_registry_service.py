@@ -97,14 +97,15 @@ class StubSFTPProvider:
     ) -> list[RemoteSyncFile]:
         return []
 
+    @staticmethod
     def iter_remote_files(
-        self,
         config: RemoteConnectionConfig,
         progress_callback: Callable[[SyncProgressEvent], None] | None = None,
     ) -> Iterable[RemoteSyncFile]:
         return iter(())
 
-    def open_session(self, config: RemoteConnectionConfig) -> Any:
+    @staticmethod
+    def open_session(config: RemoteConnectionConfig) -> Any:
         msg = f"open_session not used in this test for {config.connection_type}"
         raise AssertionError(msg)
 
@@ -117,8 +118,8 @@ class StubSFTPProvider:
         msg = f"download not used in this test for {remote_path}"
         raise AssertionError(msg)
 
+    @staticmethod
     def ensure_remote_directory(
-        self,
         config: RemoteConnectionConfig,
         remote_path: str,
         progress_callback: Callable[[SyncProgressEvent], None] | None = None,
@@ -126,8 +127,8 @@ class StubSFTPProvider:
         msg = f"ensure_remote_directory not used in this test for {remote_path}"
         raise AssertionError(msg)
 
+    @staticmethod
     def upload_file(
-        self,
         config: RemoteConnectionConfig,
         remote_path: str,
         contents: bytes,

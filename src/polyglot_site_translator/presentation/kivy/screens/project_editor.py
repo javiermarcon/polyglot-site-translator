@@ -991,13 +991,14 @@ class ProjectEditorScreen(BaseShellScreen):
             raise ValueError(msg)
         return find_option_value(options, str(field.text).strip())
 
-    def _text_or_fallback(self, field: TextInput | None, fallback: str) -> str:
+    @staticmethod
+    def _text_or_fallback(field: TextInput | None, fallback: str) -> str:
         if field is None:
             return fallback
         return str(field.text).strip()
 
+    @staticmethod
     def _spinner_value_or_fallback(
-        self,
         *,
         options: list[SettingsOptionViewModel],
         field: Spinner | None,
