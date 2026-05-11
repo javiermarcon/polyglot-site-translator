@@ -10,9 +10,27 @@ from polyglot_site_translator.presentation.kivy.widgets.common import WrappedLab
 
 
 class SyncScreen(BaseShellScreen):
-    """Screen showing sync workflow state."""
+    """Screen showing sync workflow state.
+
+    Attributes:
+        None: This type does not declare class-level attributes.
+    """
 
     def __init__(self, *, shell: FrontendShell, manager_ref: ScreenManager) -> None:
+        """Build the sync summary screen and its back-navigation action.
+
+        Args:
+            self:
+                Value supplied to this callable.
+            shell:
+                Value supplied to this callable.
+            manager_ref:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+        """
         super().__init__(
             screen_name="sync",
             title="Sync",
@@ -26,11 +44,33 @@ class SyncScreen(BaseShellScreen):
         self.refresh()
 
     def _back_to_project(self, *_args: object) -> None:
+        """Handle back to project.
+
+        Args:
+            self:
+                Value supplied to this callable.
+            *_args:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+        """
         if self._shell.project_detail_state is not None:
             self._shell.select_project(self._shell.project_detail_state.project.id)
         self.show_route("project_detail")
 
     def refresh(self) -> None:
+        """Refresh the sync summary from the latest workflow state.
+
+        Args:
+            self:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+        """
         state = self._shell.sync_state
         if state is None:
             self._summary_label.text = "No sync action started."

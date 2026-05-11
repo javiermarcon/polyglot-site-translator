@@ -7,15 +7,36 @@ from kivy.uix.screenmanager import ScreenManager
 from polyglot_site_translator.presentation.frontend_shell import FrontendShell
 from polyglot_site_translator.presentation.kivy.screens.base import BaseShellScreen
 from polyglot_site_translator.presentation.kivy.widgets.common import WrappedLabel
-from polyglot_site_translator.presentation.kivy.widgets.sync_progress_popup import (
-    SyncProgressPopup,
+from polyglot_site_translator.presentation.view_models import (
+    TranslationWorkflowRequestViewModel,
 )
+
+from ..widgets.po_locale_selection_popup import POLocaleSelectionPopup
+from ..widgets.sync_progress_popup import SyncProgressPopup
 
 
 class ProjectDetailScreen(BaseShellScreen):
-    """Screen showing project details and workflow actions."""
+    """Screen showing project details and workflow actions.
+
+    Attributes:
+        None: This type does not declare class-level attributes.
+    """
 
     def __init__(self, *, shell: FrontendShell, manager_ref: ScreenManager) -> None:
+        """Build project actions, summary labels, and workflow popups.
+
+        Args:
+            self:
+                Value supplied to this callable.
+            shell:
+                Value supplied to this callable.
+            manager_ref:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+        """
         super().__init__(
             screen_name="project_detail",
             title="Project Detail",
@@ -26,32 +47,141 @@ class ProjectDetailScreen(BaseShellScreen):
         self.add_nav_button("Back to Projects", self._back_to_projects)
         self.add_nav_button("Edit Project", self._edit_project, primary=False)
         self.add_nav_button("Sync Remote", self._start_sync)
+        self.add_nav_button("Sync Local to Remote", self._start_sync_to_remote)
         self.add_nav_button("Run Audit", self._start_audit)
-        self.add_nav_button("Process PO", self._start_po_processing)
+        self.add_nav_button("Translate", self._start_po_processing)
         self._detail_label = WrappedLabel(font_size=15)
         self._sync_progress_popup: SyncProgressPopup | None = None
+        self._po_locale_popup: POLocaleSelectionPopup | None = None
         self._content.add_widget(self._detail_label)
         self.refresh()
 
     def _back_to_projects(self, *_args: object) -> None:
+        """Handle back to projects.
+
+        Args:
+            self:
+                Value supplied to this callable.
+            *_args:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+        """
         self._shell.open_projects()
         self.show_route("projects")
 
     def _start_sync(self, *_args: object) -> None:
+        """Handle start sync.
+
+        Args:
+            self:
+                Value supplied to this callable.
+            *_args:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+        """
         self._shell.start_sync_async()
         if self._sync_progress_popup is None:
             self._sync_progress_popup = SyncProgressPopup(shell=self._shell)
         self._sync_progress_popup.open_for_sync()
 
+    def _start_sync_to_remote(self, *_args: object) -> None:
+        """Handle start sync to remote.
+
+        Args:
+            self:
+                Value supplied to this callable.
+            *_args:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+        """
+        self._shell.start_sync_to_remote_async()
+        if self._sync_progress_popup is None:
+            self._sync_progress_popup = SyncProgressPopup(shell=self._shell)
+        self._sync_progress_popup.open_for_sync()
+
     def _start_audit(self, *_args: object) -> None:
+        """Handle start audit.
+
+        Args:
+            self:
+                Value supplied to this callable.
+            *_args:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+        """
         self._shell.start_audit()
         self.show_route("audit")
 
     def _start_po_processing(self, *_args: object) -> None:
-        self._shell.start_po_processing()
+        """Handle start po processing.
+
+        Args:
+            self:
+                Value supplied to this callable.
+            *_args:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+        """
+        detail = self._shell.project_detail_state
+        if detail is None:
+            return
+        self._po_locale_popup = POLocaleSelectionPopup(
+            default_locales=detail.default_locale,
+            default_options=detail.translation_options,
+            on_confirm=self._confirm_po_processing,
+        )
+        self._po_locale_popup.open()
+
+    def _confirm_po_processing(
+        self,
+        request: TranslationWorkflowRequestViewModel,
+    ) -> None:
+        """Handle confirm po processing.
+
+        Args:
+            self:
+                Value supplied to this callable.
+            request:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+        """
+        self._shell.start_po_processing_async(
+            request.locales,
+            options=request.options,
+        )
         self.show_route("po_processing")
 
     def _edit_project(self, *_args: object) -> None:
+        """Handle edit project.
+
+        Args:
+            self:
+                Value supplied to this callable.
+            *_args:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+        """
         detail = self._shell.project_detail_state
         if detail is None:
             return
@@ -59,6 +189,16 @@ class ProjectDetailScreen(BaseShellScreen):
         self.show_route("project_editor")
 
     def refresh(self) -> None:
+        """Refresh the detail summary from the selected project state.
+
+        Args:
+            self:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+        """
         detail = self._shell.project_detail_state
         if detail is None:
             self._detail_label.text = "No project selected."

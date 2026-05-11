@@ -1,38 +1,81 @@
-"""Integration tests for the real remote-to-local sync flow."""
+"""Integration tests for the real sync flows."""
 
 from __future__ import annotations
 
-from collections.abc import Callable
-from dataclasses import dataclass, field
+from collections.abc import Callable, Iterable
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 import time
 
+from polyglot_site_translator.adapters.framework_registry import (
+    FrameworkAdapterRegistry,
+)
 from polyglot_site_translator.app import create_kivy_app
 from polyglot_site_translator.domain.remote_connections.models import (
     RemoteConnectionConfig,
     RemoteConnectionConfigInput,
+    RemoteConnectionSessionState,
     RemoteConnectionTestResult,
     RemoteConnectionTypeDescriptor,
 )
+from polyglot_site_translator.domain.site_registry.models import RegisteredSite
 from polyglot_site_translator.domain.sync.models import (
     RemoteSyncFile,
     SyncProgressEvent,
     SyncProgressStage,
 )
+from polyglot_site_translator.domain.sync.scope import ResolvedSyncScope
 from polyglot_site_translator.infrastructure.remote_connections.registry import (
     RemoteConnectionRegistry,
 )
-from polyglot_site_translator.infrastructure.settings import build_default_settings_service
+from polyglot_site_translator.infrastructure.settings import (
+    build_default_settings_service,
+)
 from polyglot_site_translator.presentation.fakes import build_default_frontend_services
 from polyglot_site_translator.presentation.kivy.screens.sync import SyncScreen
 from polyglot_site_translator.presentation.view_models import SiteEditorViewModel
+from polyglot_site_translator.services.framework_sync_scope import (
+    FrameworkSyncScopeService,
+)
 from polyglot_site_translator.services.project_sync import ProjectSyncService
 from polyglot_site_translator.services.remote_connections import RemoteConnectionService
 
 
+class _FailingFrameworkSyncScopeService:
+    """Test helper for FailingFrameworkSyncScopeService.
+
+    Attributes:
+        None: This type does not declare class-level attributes.
+    """
+
+    @staticmethod
+    def resolve_for_site(site: RegisteredSite) -> ResolvedSyncScope:
+        """Handle resolve for site.
+
+        Args:
+            site:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+
+        Raises:
+            OSError:
+                Raised when this callable hits the corresponding error path.
+        """
+        msg = "broken sync scope"
+        raise OSError(msg)
+
+
 @dataclass(frozen=True)
 class StubSyncProvider:
-    """Remote provider stub used by the integration runtime."""
+    """Test helper for StubSyncProvider.
+
+    Attributes:
+        descriptor:
+            Documented attribute exposed by this type.
+    """
 
     descriptor: RemoteConnectionTypeDescriptor = field(
         default_factory=lambda: RemoteConnectionTypeDescriptor(
@@ -42,10 +85,177 @@ class StubSyncProvider:
         )
     )
 
+    @staticmethod
+    def open_session(config: RemoteConnectionConfig) -> _StubSyncSession:
+        """Handle open session.
+
+        Args:
+            config:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+        """
+        return _StubSyncSession(config=config)
+
+    def list_remote_files(
+        self,
+        config: RemoteConnectionConfig,
+        progress_callback: Callable[[SyncProgressEvent], None] | None = None,
+        *,
+        max_files: int = 1000,
+    ) -> list[RemoteSyncFile]:
+        """Handle list remote files.
+
+        Args:
+            self:
+                Value supplied to this callable.
+            config:
+                Value supplied to this callable.
+            progress_callback:
+                Value supplied to this callable.
+            max_files:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+        """
+        session = self.open_session(config)
+        try:
+            return list(session.iter_remote_files(progress_callback))[:max_files]
+        finally:
+            session.close(progress_callback)
+
+    def iter_remote_files(
+        self,
+        config: RemoteConnectionConfig,
+        progress_callback: Callable[[SyncProgressEvent], None] | None = None,
+    ) -> Iterable[RemoteSyncFile]:
+        """Handle iter remote files.
+
+        Args:
+            self:
+                Value supplied to this callable.
+            config:
+                Value supplied to this callable.
+            progress_callback:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+        """
+        session = self.open_session(config)
+        try:
+            yield from session.iter_remote_files(progress_callback)
+        finally:
+            session.close(progress_callback)
+
+    def download_file(
+        self,
+        config: RemoteConnectionConfig,
+        remote_path: str,
+        progress_callback: Callable[[SyncProgressEvent], None] | None = None,
+    ) -> bytes:
+        """Handle download file.
+
+        Args:
+            self:
+                Value supplied to this callable.
+            config:
+                Value supplied to this callable.
+            remote_path:
+                Value supplied to this callable.
+            progress_callback:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+        """
+        session = self.open_session(config)
+        try:
+            return session.download_file(remote_path, progress_callback)
+        finally:
+            session.close(progress_callback)
+
+    def ensure_remote_directory(
+        self,
+        config: RemoteConnectionConfig,
+        remote_path: str,
+        progress_callback: Callable[[SyncProgressEvent], None] | None = None,
+    ) -> int:
+        """Handle ensure remote directory.
+
+        Args:
+            self:
+                Value supplied to this callable.
+            config:
+                Value supplied to this callable.
+            remote_path:
+                Value supplied to this callable.
+            progress_callback:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+        """
+        session = self.open_session(config)
+        try:
+            return session.ensure_remote_directory(remote_path, progress_callback)
+        finally:
+            session.close(progress_callback)
+
+    def upload_file(
+        self,
+        config: RemoteConnectionConfig,
+        remote_path: str,
+        contents: bytes,
+        progress_callback: Callable[[SyncProgressEvent], None] | None = None,
+    ) -> None:
+        """Handle upload file.
+
+        Args:
+            self:
+                Value supplied to this callable.
+            config:
+                Value supplied to this callable.
+            remote_path:
+                Value supplied to this callable.
+            contents:
+                Value supplied to this callable.
+            progress_callback:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+        """
+        session = self.open_session(config)
+        try:
+            session.upload_file(remote_path, contents, progress_callback)
+        finally:
+            session.close(progress_callback)
+
     def test_connection(
         self,
         config: RemoteConnectionConfigInput,
     ) -> RemoteConnectionTestResult:
+        """Verify connection.
+
+        Args:
+            self:
+                Value supplied to this callable.
+            config:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+        """
         return RemoteConnectionTestResult(
             success=True,
             connection_type=config.connection_type,
@@ -55,64 +265,278 @@ class StubSyncProvider:
             error_code=None,
         )
 
-    def list_remote_files(
+
+def _build_project_sync_service(
+    remote_registry: RemoteConnectionRegistry,
+) -> ProjectSyncService:
+    """Handle build project sync service.
+
+    Args:
+        remote_registry:
+            Value supplied to this callable.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
+    return ProjectSyncService(
+        registry=remote_registry,
+        framework_sync_scope_service=FrameworkSyncScopeService(
+            registry=FrameworkAdapterRegistry.discover_installed()
+        ),
+    )
+
+
+@dataclass
+class _StubSyncSession:
+    """Test helper for StubSyncSession.
+
+    Attributes:
+        config:
+            Documented attribute exposed by this type.
+        state:
+            Documented attribute exposed by this type.
+        _connect_emitted:
+            Documented attribute exposed by this type.
+    """
+
+    config: RemoteConnectionConfig
+    state: RemoteConnectionSessionState = RemoteConnectionSessionState.OPEN
+    _connect_emitted: bool = False
+
+    def _emit_connect_if_needed(
         self,
-        config: RemoteConnectionConfig,
+        progress_callback: Callable[[SyncProgressEvent], None] | None,
+    ) -> None:
+        """Handle emit connect if needed.
+
+        Args:
+            self:
+                Value supplied to this callable.
+            progress_callback:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+        """
+        if self._connect_emitted or progress_callback is None:
+            return
+        progress_callback(
+            SyncProgressEvent(
+                stage=SyncProgressStage.LISTING_REMOTE,
+                message="Connecting through the sync integration stub session.",
+                command_text=f"SFTP CONNECT {self.config.host}:{self.config.port}",
+            )
+        )
+        self._connect_emitted = True
+
+    def iter_remote_files(
+        self,
         progress_callback: Callable[[SyncProgressEvent], None] | None = None,
-    ) -> list[RemoteSyncFile]:
+    ) -> Iterable[RemoteSyncFile]:
+        """Handle iter remote files.
+
+        Args:
+            self:
+                Value supplied to this callable.
+            progress_callback:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+
+        Raises:
+            OSError:
+                Raised when this callable hits the corresponding error path.
+        """
         if progress_callback is not None:
+            self._emit_connect_if_needed(progress_callback)
             progress_callback(
                 SyncProgressEvent(
                     stage=SyncProgressStage.LISTING_REMOTE,
                     message="Listing remote files through the sync integration stub.",
-                    command_text=f"SFTP LIST {config.remote_path}",
+                    command_text=f"SFTP LIST {self.config.remote_path}",
                 )
             )
-        if config.host == "broken.example.test":
+        if self.config.host == "broken.example.test":
             msg = "Remote listing failed."
             raise OSError(msg)
-        return [
-            RemoteSyncFile(
-                remote_path="/srv/app/locale/es.po",
-                relative_path="locale/es.po",
+        if self.config.host == "filtered.example.test":
+            yield RemoteSyncFile(
+                remote_path="/srv/app/wp-content/themes/theme/style.css",
+                relative_path="wp-content/themes/theme/style.css",
                 size_bytes=16,
-            ),
-            RemoteSyncFile(
-                remote_path="/srv/app/templates/home.html",
-                relative_path="templates/home.html",
+            )
+            yield RemoteSyncFile(
+                remote_path="/srv/app/readme.html",
+                relative_path="readme.html",
                 size_bytes=14,
-            ),
-        ]
+            )
+            return
+        yield RemoteSyncFile(
+            remote_path="/srv/app/locale/es.po",
+            relative_path="locale/es.po",
+            size_bytes=16,
+        )
+        yield RemoteSyncFile(
+            remote_path="/srv/app/templates/home.html",
+            relative_path="templates/home.html",
+            size_bytes=14,
+        )
 
     def download_file(
         self,
-        config: RemoteConnectionConfig,
         remote_path: str,
         progress_callback: Callable[[SyncProgressEvent], None] | None = None,
     ) -> bytes:
+        """Handle download file.
+
+        Args:
+            self:
+                Value supplied to this callable.
+            remote_path:
+                Value supplied to this callable.
+            progress_callback:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+        """
         if progress_callback is not None:
+            self._emit_connect_if_needed(progress_callback)
             progress_callback(
                 SyncProgressEvent(
                     stage=SyncProgressStage.DOWNLOADING_FILE,
-                    message=f"Downloading {remote_path} through the sync integration stub.",
+                    message=(
+                        f"Downloading {remote_path} through the sync integration stub."
+                    ),
                     command_text=f"SFTP GET {remote_path}",
                 )
             )
         payloads = {
             "/srv/app/locale/es.po": b'msgid "hello"\n',
             "/srv/app/templates/home.html": b"<h1>Hello</h1>\n",
+            "/srv/app/wp-content/themes/theme/style.css": b"body{}\n",
+            "/srv/app/readme.html": b"readme\n",
         }
         return payloads[remote_path]
 
+    def ensure_remote_directory(
+        self,
+        remote_path: str,
+        progress_callback: Callable[[SyncProgressEvent], None] | None = None,
+    ) -> int:
+        """Handle ensure remote directory.
 
-def test_real_sync_flow_downloads_files_into_the_project_workspace(tmp_path: Path) -> None:
+        Args:
+            self:
+                Value supplied to this callable.
+            remote_path:
+                Value supplied to this callable.
+            progress_callback:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+        """
+        if progress_callback is not None:
+            self._emit_connect_if_needed(progress_callback)
+            progress_callback(
+                SyncProgressEvent(
+                    stage=SyncProgressStage.PREPARING_REMOTE,
+                    message=f"Preparing remote directory {remote_path}.",
+                    command_text=f"SFTP MKDIR {remote_path}",
+                )
+            )
+        return 1
+
+    def upload_file(
+        self,
+        remote_path: str,
+        contents: bytes,
+        progress_callback: Callable[[SyncProgressEvent], None] | None = None,
+    ) -> None:
+        """Handle upload file.
+
+        Args:
+            self:
+                Value supplied to this callable.
+            remote_path:
+                Value supplied to this callable.
+            contents:
+                Value supplied to this callable.
+            progress_callback:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+        """
+        if progress_callback is not None:
+            self._emit_connect_if_needed(progress_callback)
+            progress_callback(
+                SyncProgressEvent(
+                    stage=SyncProgressStage.UPLOADING_FILE,
+                    message=(
+                        f"Uploading {remote_path} through the sync integration stub."
+                    ),
+                    command_text=f"SFTP PUT {remote_path}",
+                )
+            )
+
+    def close(
+        self,
+        progress_callback: Callable[[SyncProgressEvent], None] | None = None,
+    ) -> None:
+        """Handle close.
+
+        Args:
+            self:
+                Value supplied to this callable.
+            progress_callback:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+        """
+        self.state = RemoteConnectionSessionState.CLOSED
+        if progress_callback is not None:
+            progress_callback(
+                SyncProgressEvent(
+                    stage=SyncProgressStage.DOWNLOADING_FILE,
+                    message="Closing the sync integration stub session.",
+                    command_text=f"SFTP CLOSE {self.config.host}:{self.config.port}",
+                )
+            )
+
+
+def test_real_sync_flow_downloads_files_into_the_project_workspace(
+    tmp_path: Path,
+) -> None:
+    """Verify real sync flow downloads files into the project workspace.
+
+    Args:
+        tmp_path:
+            Value supplied to this callable.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
     settings_service = build_default_settings_service(config_dir=tmp_path / "config")
-    remote_registry = RemoteConnectionRegistry.default_registry(providers=[StubSyncProvider()])
+    remote_registry = RemoteConnectionRegistry.default_registry(
+        providers=[StubSyncProvider()]
+    )
     app = create_kivy_app(
         services=build_default_frontend_services(
             settings_service=settings_service,
             remote_connection_service=RemoteConnectionService(registry=remote_registry),
-            project_sync_service=ProjectSyncService(registry=remote_registry),
+            project_sync_service=_build_project_sync_service(remote_registry),
         )
     )
     shell = app._shell
@@ -149,14 +573,146 @@ def test_real_sync_flow_downloads_files_into_the_project_workspace(tmp_path: Pat
     assert (local_root / "templates" / "home.html").read_bytes() == b"<h1>Hello</h1>\n"
 
 
-def test_sync_screen_renders_real_sync_results(tmp_path: Path) -> None:
+def test_real_sync_flow_uses_filtered_mode_when_the_project_preference_enables_it(
+    tmp_path: Path,
+) -> None:
+    """Verify real sync flow uses filtered mode when the project preference enables it.
+
+    Args:
+        tmp_path:
+            Value supplied to this callable.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
     settings_service = build_default_settings_service(config_dir=tmp_path / "config")
-    remote_registry = RemoteConnectionRegistry.default_registry(providers=[StubSyncProvider()])
+    remote_registry = RemoteConnectionRegistry.default_registry(
+        providers=[StubSyncProvider()]
+    )
     app = create_kivy_app(
         services=build_default_frontend_services(
             settings_service=settings_service,
             remote_connection_service=RemoteConnectionService(registry=remote_registry),
-            project_sync_service=ProjectSyncService(registry=remote_registry),
+            project_sync_service=_build_project_sync_service(remote_registry),
+        )
+    )
+    shell = app._shell
+    local_root = tmp_path / "workspace" / "filtered-site"
+
+    shell.open_project_editor_create()
+    shell.save_new_project(
+        SiteEditorViewModel(
+            site_id=None,
+            name="Filtered Site",
+            framework_type="wordpress",
+            local_path=str(local_root),
+            default_locale="en_US",
+            connection_type="sftp",
+            remote_host="filtered.example.test",
+            remote_port="22",
+            remote_username="deploy",
+            remote_password="secret",
+            remote_path="/srv/app",
+            is_active=True,
+            use_adapter_sync_filters=True,
+        )
+    )
+
+    shell.open_projects()
+    created_project = shell.projects_state.projects[0]
+    shell.select_project(created_project.id)
+    shell.start_sync()
+
+    assert shell.sync_state is not None
+    assert shell.sync_state.status == "completed"
+    assert shell.sync_state.files_synced == 1
+    assert (
+        local_root / "wp-content" / "themes" / "theme" / "style.css"
+    ).exists() is True
+    assert (local_root / "readme.html").exists() is False
+
+
+def test_real_sync_flow_surfaces_scope_resolution_failures_without_crashing(
+    tmp_path: Path,
+) -> None:
+    """Verify real sync flow surfaces scope resolution failures without crashing.
+
+    Args:
+        tmp_path:
+            Value supplied to this callable.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
+    settings_service = build_default_settings_service(config_dir=tmp_path / "config")
+    remote_registry = RemoteConnectionRegistry.default_registry(
+        providers=[StubSyncProvider()]
+    )
+    app = create_kivy_app(
+        services=build_default_frontend_services(
+            settings_service=settings_service,
+            remote_connection_service=RemoteConnectionService(registry=remote_registry),
+            project_sync_service=ProjectSyncService(
+                registry=remote_registry,
+                framework_sync_scope_service=_FailingFrameworkSyncScopeService(),
+            ),
+        )
+    )
+    shell = app._shell
+    local_root = tmp_path / "workspace" / "filtered-site"
+
+    shell.open_project_editor_create()
+    shell.save_new_project(
+        SiteEditorViewModel(
+            site_id=None,
+            name="Filtered Site",
+            framework_type="wordpress",
+            local_path=str(local_root),
+            default_locale="en_US",
+            connection_type="sftp",
+            remote_host="filtered.example.test",
+            remote_port="22",
+            remote_username="deploy",
+            remote_password="secret",
+            remote_path="/srv/app",
+            is_active=True,
+            use_adapter_sync_filters=True,
+        )
+    )
+
+    shell.open_projects()
+    created_project = shell.projects_state.projects[0]
+    shell.select_project(created_project.id)
+    shell.start_sync()
+
+    assert shell.sync_state is not None
+    assert shell.sync_state.status == "failed"
+    assert shell.sync_state.error_code == "sync_scope_resolution_failed"
+    assert "broken sync scope" in shell.sync_state.summary
+
+
+def test_sync_screen_renders_real_sync_results(tmp_path: Path) -> None:
+    """Verify sync screen renders real sync results.
+
+    Args:
+        tmp_path:
+            Value supplied to this callable.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
+    settings_service = build_default_settings_service(config_dir=tmp_path / "config")
+    remote_registry = RemoteConnectionRegistry.default_registry(
+        providers=[StubSyncProvider()]
+    )
+    app = create_kivy_app(
+        services=build_default_frontend_services(
+            settings_service=settings_service,
+            remote_connection_service=RemoteConnectionService(registry=remote_registry),
+            project_sync_service=_build_project_sync_service(remote_registry),
         )
     )
     root = app.build()
@@ -194,13 +750,25 @@ def test_sync_screen_renders_real_sync_results(tmp_path: Path) -> None:
 
 
 def test_sync_screen_renders_structured_errors(tmp_path: Path) -> None:
+    """Verify sync screen renders structured errors.
+
+    Args:
+        tmp_path:
+            Value supplied to this callable.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
     settings_service = build_default_settings_service(config_dir=tmp_path / "config")
-    remote_registry = RemoteConnectionRegistry.default_registry(providers=[StubSyncProvider()])
+    remote_registry = RemoteConnectionRegistry.default_registry(
+        providers=[StubSyncProvider()]
+    )
     app = create_kivy_app(
         services=build_default_frontend_services(
             settings_service=settings_service,
             remote_connection_service=RemoteConnectionService(registry=remote_registry),
-            project_sync_service=ProjectSyncService(registry=remote_registry),
+            project_sync_service=_build_project_sync_service(remote_registry),
         )
     )
     root = app.build()
@@ -240,13 +808,25 @@ def test_sync_screen_renders_structured_errors(tmp_path: Path) -> None:
 def test_project_detail_sync_action_opens_a_progress_window_with_command_log(
     tmp_path: Path,
 ) -> None:
+    """Verify project detail sync action opens a progress window with command log.
+
+    Args:
+        tmp_path:
+            Value supplied to this callable.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
     settings_service = build_default_settings_service(config_dir=tmp_path / "config")
-    remote_registry = RemoteConnectionRegistry.default_registry(providers=[StubSyncProvider()])
+    remote_registry = RemoteConnectionRegistry.default_registry(
+        providers=[StubSyncProvider()]
+    )
     app = create_kivy_app(
         services=build_default_frontend_services(
             settings_service=settings_service,
             remote_connection_service=RemoteConnectionService(registry=remote_registry),
-            project_sync_service=ProjectSyncService(registry=remote_registry),
+            project_sync_service=_build_project_sync_service(remote_registry),
         )
     )
     root = app.build()
@@ -283,8 +863,225 @@ def test_project_detail_sync_action_opens_a_progress_window_with_command_log(
     deadline = time.monotonic() + 1
     while time.monotonic() < deadline:
         detail_screen._sync_progress_popup.refresh()
-        if "SFTP LIST /srv/app" in detail_screen._sync_progress_popup._command_log_label.text:
+        command_log_text = detail_screen._sync_progress_popup._command_log_label.text
+        if (
+            "SFTP LIST /srv/app" in command_log_text
+            and "SFTP GET /srv/app/locale/es.po" in command_log_text
+        ):
             break
         time.sleep(0.01)
 
-    assert "SFTP LIST /srv/app" in detail_screen._sync_progress_popup._command_log_label.text
+    command_log_text = detail_screen._sync_progress_popup._command_log_label.text
+    assert "SFTP LIST /srv/app" in command_log_text
+    assert "SFTP GET /srv/app/locale/es.po" in command_log_text
+
+
+def test_project_detail_sync_action_reuses_a_single_remote_session(
+    tmp_path: Path,
+) -> None:
+    """Verify project detail sync action reuses a single remote session.
+
+    Args:
+        tmp_path:
+            Value supplied to this callable.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
+    settings_service = build_default_settings_service(config_dir=tmp_path / "config")
+    remote_registry = RemoteConnectionRegistry.default_registry(
+        providers=[StubSyncProvider()]
+    )
+    app = create_kivy_app(
+        services=build_default_frontend_services(
+            settings_service=settings_service,
+            remote_connection_service=RemoteConnectionService(registry=remote_registry),
+            project_sync_service=_build_project_sync_service(remote_registry),
+        )
+    )
+    root = app.build()
+    detail_screen = root.get_screen("project_detail")
+    shell = detail_screen._shell
+    local_root = tmp_path / "workspace" / "marketing-site"
+
+    shell.open_project_editor_create()
+    shell.save_new_project(
+        SiteEditorViewModel(
+            site_id=None,
+            name="Marketing Site",
+            framework_type="wordpress",
+            local_path=str(local_root),
+            default_locale="en_US",
+            connection_type="sftp",
+            remote_host="example.test",
+            remote_port="22",
+            remote_username="deploy",
+            remote_password="secret",
+            remote_path="/srv/app",
+            is_active=True,
+        )
+    )
+    shell.open_projects()
+    created_project = shell.projects_state.projects[0]
+    shell.select_project(created_project.id)
+    root.current = "project_detail"
+
+    detail_screen._start_sync()
+
+    assert detail_screen._sync_progress_popup is not None
+    deadline = time.monotonic() + 1
+    while time.monotonic() < deadline:
+        detail_screen._sync_progress_popup.refresh()
+        command_log_text = detail_screen._sync_progress_popup._command_log_label.text
+        if "SFTP CLOSE example.test:22" in command_log_text:
+            break
+        time.sleep(0.01)
+
+    command_log_text = detail_screen._sync_progress_popup._command_log_label.text
+    assert command_log_text.count("SFTP CONNECT example.test:22") == 1
+    assert command_log_text.count("SFTP CLOSE example.test:22") == 1
+
+
+def test_project_detail_progress_window_keeps_only_the_latest_configured_commands(
+    tmp_path: Path,
+) -> None:
+    """Verify project detail progress window keeps only the latest configured commands.
+
+    Args:
+        tmp_path:
+            Value supplied to this callable.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
+    settings_service = build_default_settings_service(config_dir=tmp_path / "config")
+    initial_state = settings_service.load_settings()
+    settings_service.save_settings(
+        replace(initial_state.app_settings, sync_progress_log_limit=2)
+    )
+    remote_registry = RemoteConnectionRegistry.default_registry(
+        providers=[StubSyncProvider()]
+    )
+    app = create_kivy_app(
+        services=build_default_frontend_services(
+            settings_service=settings_service,
+            remote_connection_service=RemoteConnectionService(registry=remote_registry),
+            project_sync_service=_build_project_sync_service(remote_registry),
+        )
+    )
+    root = app.build()
+    detail_screen = root.get_screen("project_detail")
+    shell = detail_screen._shell
+    local_root = tmp_path / "workspace" / "marketing-site"
+
+    shell.open_project_editor_create()
+    shell.save_new_project(
+        SiteEditorViewModel(
+            site_id=None,
+            name="Marketing Site",
+            framework_type="wordpress",
+            local_path=str(local_root),
+            default_locale="en_US",
+            connection_type="sftp",
+            remote_host="example.test",
+            remote_port="22",
+            remote_username="deploy",
+            remote_password="secret",
+            remote_path="/srv/app",
+            is_active=True,
+        )
+    )
+    shell.open_projects()
+    created_project = shell.projects_state.projects[0]
+    shell.select_project(created_project.id)
+    root.current = "project_detail"
+
+    detail_screen._start_sync()
+
+    assert detail_screen._sync_progress_popup is not None
+    deadline = time.monotonic() + 1
+    while time.monotonic() < deadline:
+        detail_screen._sync_progress_popup.refresh()
+        command_lines = [
+            line
+            for line in (
+                detail_screen._sync_progress_popup._command_log_label.text.splitlines()
+            )
+            if line.strip()
+        ]
+        if len(command_lines) == 2 and "SFTP CLOSE example.test:22" in command_lines:
+            break
+        time.sleep(0.01)
+
+    command_lines = [
+        line
+        for line in (
+            detail_screen._sync_progress_popup._command_log_label.text.splitlines()
+        )
+        if line.strip()
+    ]
+    assert command_lines == [
+        f"LOCAL WRITE {local_root / 'templates' / 'home.html'}",
+        "SFTP CLOSE example.test:22",
+    ]
+
+
+def test_real_sync_flow_uploads_local_files_into_the_remote_workspace(
+    tmp_path: Path,
+) -> None:
+    """Verify real sync flow uploads local files into the remote workspace.
+
+    Args:
+        tmp_path:
+            Value supplied to this callable.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
+    settings_service = build_default_settings_service(config_dir=tmp_path / "config")
+    remote_registry = RemoteConnectionRegistry.default_registry(
+        providers=[StubSyncProvider()]
+    )
+    app = create_kivy_app(
+        services=build_default_frontend_services(
+            settings_service=settings_service,
+            remote_connection_service=RemoteConnectionService(registry=remote_registry),
+            project_sync_service=_build_project_sync_service(remote_registry),
+        )
+    )
+    shell = app._shell
+    local_root = tmp_path / "workspace" / "marketing-site"
+    (local_root / "locale").mkdir(parents=True)
+    (local_root / "templates").mkdir(parents=True)
+    (local_root / "locale" / "es.po").write_bytes(b'msgid "hola"\n')
+    (local_root / "templates" / "home.html").write_bytes(b"<h1>Hola</h1>\n")
+
+    shell.open_project_editor_create()
+    shell.save_new_project(
+        SiteEditorViewModel(
+            site_id=None,
+            name="Marketing Site",
+            framework_type="wordpress",
+            local_path=str(local_root),
+            default_locale="en_US",
+            connection_type="sftp",
+            remote_host="example.test",
+            remote_port="22",
+            remote_username="deploy",
+            remote_password="secret",
+            remote_path="/srv/app",
+            is_active=True,
+        )
+    )
+
+    shell.open_projects()
+    created_project = shell.projects_state.projects[0]
+    shell.select_project(created_project.id)
+    shell.start_sync_to_remote()
+
+    assert shell.sync_state is not None
+    assert shell.sync_state.status == "completed"
+    assert shell.sync_state.files_synced == 2

@@ -9,7 +9,24 @@ COMPACT_LAYOUT_MAX_WIDTH = 900
 
 @dataclass(frozen=True)
 class SettingsLayoutSpec:
-    """Layout choices for the settings screen at a given window width."""
+    """Layout choices for the settings screen at a given window width.
+
+    Attributes:
+        mode:
+            Documented attribute exposed by this type.
+        main_columns:
+            Documented attribute exposed by this type.
+        sections_width:
+            Documented attribute exposed by this type.
+        action_orientation:
+            Documented attribute exposed by this type.
+        field_row_orientation:
+            Documented attribute exposed by this type.
+        toggle_row_orientation:
+            Documented attribute exposed by this type.
+        section_button_height:
+            Documented attribute exposed by this type.
+    """
 
     mode: str
     main_columns: int
@@ -21,7 +38,16 @@ class SettingsLayoutSpec:
 
 
 def build_settings_layout_spec(window_width: int) -> SettingsLayoutSpec:
-    """Return the responsive settings layout for the current window width."""
+    """Return the responsive settings layout for the current window width.
+
+    Args:
+        window_width:
+            Value supplied to this callable.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
     if window_width < COMPACT_LAYOUT_MAX_WIDTH:
         return SettingsLayoutSpec(
             mode="compact",

@@ -14,6 +14,29 @@ Feature: SQLite-backed site registry management
     Then the settings draft shows the configured database directory
     And the settings draft shows the configured database filename
 
+  Scenario: Use the translation settings defaults when creating a project
+    Given the frontend shell is wired with SQLite-backed site registry services
+    And the operator has opened the settings screen
+    When the operator selects the settings section "translation"
+    And the operator sets the default project locale to "es_AR, es_ES"
+    And the operator disables default MO compilation
+    And the operator disables the default external translator
+    And the operator disables the default translation cache
+    And the operator enables default only-fuzzy mode
+    And the operator enables default dry-run mode
+    And the operator enables default stats-only mode
+    And the operator enables default inconsistency reporting
+    And the operator applies the settings changes
+    And the operator opens the create project workflow
+    Then the project editor uses the default locale "es_AR,es_ES"
+    And the project editor uses MO compilation disabled
+    And the project editor uses the external translator disabled
+    And the project editor uses the translation cache disabled
+    And the project editor uses only-fuzzy mode enabled
+    And the project editor uses dry-run mode enabled
+    And the project editor uses stats-only mode enabled
+    And the project editor uses inconsistency reporting enabled
+
   Scenario: Register the first site in an empty SQLite registry
     Given the frontend shell is wired with SQLite-backed site registry services
     When the operator opens the projects list
@@ -37,6 +60,88 @@ Feature: SQLite-backed site registry management
     And the operator updates the local path and remote connection data
     Then the project detail shows the updated persisted site registry values
     And reopening the persisted site editor shows the updated remote connection values
+
+  Scenario: Remove the persisted remote connection from an existing site
+    Given the frontend shell is wired with SQLite-backed site registry services
+    And a site has been registered in the SQLite registry
+    When the operator opens the edit project workflow for the persisted site
+    And the operator updates the persisted site to remove the remote connection
+    Then the project detail shows that no remote connection is configured
+    And reopening the persisted site editor shows that no remote connection is configured
+
+  Scenario: Persist the project MO compilation preference
+    Given the frontend shell is wired with SQLite-backed site registry services
+    When the operator opens the create project workflow
+    And the operator submits a new site registry entry with MO compilation disabled
+    Then the project detail shows MO compilation disabled
+    And reopening the persisted site editor shows MO compilation disabled
+
+  Scenario: Persist the project external translator preference
+    Given the frontend shell is wired with SQLite-backed site registry services
+    When the operator opens the create project workflow
+    And the operator submits a new site registry entry with external translator disabled
+    Then the project detail shows the external translator disabled
+    And reopening the persisted site editor shows the external translator disabled
+
+  Scenario: Persist the project translation cache preference
+    Given the frontend shell is wired with SQLite-backed site registry services
+    When the operator opens the create project workflow
+    And the operator submits a new site registry entry with translation cache disabled
+    Then the project detail shows the translation cache disabled
+    And reopening the persisted site editor shows the translation cache disabled
+
+  Scenario: Persist the project dry-run, stats-only, and inconsistency-reporting preferences
+    Given the frontend shell is wired with SQLite-backed site registry services
+    When the operator opens the create project workflow
+    And the operator submits a new site registry entry with translation preview settings enabled
+    Then the project detail shows only-fuzzy mode enabled
+    And reopening the persisted site editor shows only-fuzzy mode enabled
+    Then the project detail shows dry-run mode enabled
+    And the project detail shows stats-only mode enabled
+    And the project detail shows inconsistency reporting enabled
+    And reopening the persisted site editor shows dry-run mode enabled
+    And reopening the persisted site editor shows stats-only mode enabled
+    And reopening the persisted site editor shows inconsistency reporting enabled
+
+  Scenario: Persist the project only-fuzzy preference
+    Given the frontend shell is wired with SQLite-backed site registry services
+    When the operator opens the create project workflow
+    And the operator submits a new site registry entry with only-fuzzy mode enabled
+    Then the project detail shows only-fuzzy mode enabled
+    And reopening the persisted site editor shows only-fuzzy mode enabled
+
+  Scenario: Persist the adapter-filter sync preference in the remote configuration
+    Given the frontend shell is wired with SQLite-backed site registry services
+    When the operator opens the create project workflow
+    And the operator submits a new site registry entry with adapter sync filters enabled
+    Then the project detail shows the persisted sync mode "filtered"
+    And reopening the persisted site editor shows adapter sync filters enabled
+
+  Scenario: Persist project sync-rule overrides from the editor
+    Given the frontend shell is wired with SQLite-backed site registry services
+    When the operator opens the create project workflow
+    And the operator submits a new Django site registry entry with custom sync rule overrides
+    Then reopening the persisted site editor shows the custom sync rule "locale_custom"
+    And reopening the persisted site editor shows the adapter rule "__pycache__" disabled
+
+  Scenario: Normalize a persisted default locale list
+    Given the frontend shell is wired with SQLite-backed site registry services
+    When the operator opens the create project workflow
+    And the operator submits a new site registry entry with a spaced default locale list
+    Then the project detail shows the persisted default locale "es_ES,es_AR"
+    And reopening the persisted site editor shows the persisted default locale "es_ES,es_AR"
+
+  Scenario: Reject an invalid default locale value
+    Given the frontend shell is wired with SQLite-backed site registry services
+    When the operator opens the create project workflow
+    And the operator submits a new site registry entry with an invalid default locale
+    Then the project editor shows the default locale validation error
+
+  Scenario: Reject a duplicate site name in the SQLite registry
+    Given the frontend shell is wired with SQLite-backed site registry services
+    And a site has been registered in the SQLite registry
+    When the operator attempts to register another site with the same name
+    Then the project editor shows the duplicate site-name validation error
 
   Scenario: Surface an invalid SQLite configuration through the projects flow
     Given the frontend shell is wired with SQLite-backed services and invalid database settings

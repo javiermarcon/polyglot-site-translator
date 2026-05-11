@@ -14,6 +14,27 @@ This project combines:
 
 Testing must reflect those responsibilities without making the suite fragile.
 
+Validation expectations for every non-trivial change remain explicit:
+
+- PEP8
+- PEP257
+- PEP484
+- Ruff
+- mypy
+- the repository docstring audit for public and private symbols
+- pytest for the affected scope
+
+The repository uses an explicit 88-character Python line-length limit. Changes are not complete if
+they rely on a wider local wrapping style than the configured Ruff formatter/linter limit.
+
+Docstring compliance is structural, not cosmetic. For classes, functions, and methods, public or
+private:
+
+- one-line placeholder docstrings are not acceptable
+- docstrings must be multi-line
+- functions and methods must include `Args:`, `Returns:`, and `Raises:` sections when relevant
+- classes must include `Attributes:` when they expose meaningful state
+
 ---
 
 ## Test stack
@@ -34,6 +55,14 @@ Avoid tests that depend on:
 - real Android packaging
 - GUI timing hacks unless absolutely necessary
 
+Canonical validation commands now include:
+
+- `python -m ruff check .`
+- `python -m ruff format --check .`
+- `python -m mypy .`
+- `python tests/run_docstring_audit.py`
+- `python -m pytest`
+
 ---
 
 ## Testing layers
@@ -51,6 +80,27 @@ Unit tests must cover, at minimum:
 - expected operational failures
 - expected exceptions
 - regression scenarios for known bugs
+
+For touched production modules, tests should also explicitly aim to cover:
+
+- every public function
+- every public method
+- every class with behavior
+- private functions and methods whenever they contain real behavior instead of trivial forwarding
+- public docstring-covered behavior and contract expectations, so documentation and tests remain
+  aligned
+- meaningful private helpers when they contain branching, validation, mapping, or error-handling logic
+- all relevant success, edge, and failure branches
+
+Coverage should be treated as a design requirement, not just a reporting metric. When implementing or modifying functionality, contributors are expected to add tests that intentionally exercise:
+
+- the main successful path
+- boundary and edge cases
+- malformed, missing, or invalid input
+- expected infrastructure, persistence, transport, or adapter failures
+- typed exceptions and explicit error paths
+
+The repository target is to keep coverage near 99% for the touched logic. If a function, method, class branch, or error path is not covered, the omission must be narrow, justified, and documented in the work report.
 
 They must not only verify “success cases”.
 They must also prove that the code behaves correctly under failure and boundary conditions.
@@ -86,6 +136,8 @@ Use lightweight integration tests for:
 Keep Kivy UI tests minimal and focused.
 Prefer testing view-model/service orchestration over brittle widget-level behavior.
 If UI behavior is tested, scope it narrowly and document assumptions.
+Filesystem path hint helpers and directory-only listing filters used by Kivy path pickers (for example `initial_browse_directory`, `directory_only_listing_filter`) should stay unit-testable without a display server.
+Pure helpers for password visibility toggle labels (`password_visibility_toggle_label`) are unit-tested without a display server.
 
 ---
 
@@ -139,9 +191,24 @@ Test:
 - locale extraction
 - family grouping
 - synchronization
+- exact-locale filtering vs single-locale base expansion
+- project-level and run-level overrides for `.mo` compilation
+- project-level and run-level overrides for `only_fuzzy`
+- legacy-equivalent metrics such as families found vs processed, fuzzy counts, reused-from-other-variant counts, sync-only skips, and variant-difference details
+- translation-memory reuse across files/families
+- external translation provider behavior
+- progress reporting by completed untranslated entries
+- partial translation failures that must be reported per file while processing continues
+- `.mo` compilation after PO persistence
+- partial `.mo` compilation failures that must be reported per file while processing continues
+- provider transport/protocol failures that must be wrapped and reported without aborting the full PO run
+- provider configuration failures and invalid response shapes as typed translation-provider errors
+- token-like entries that should be skipped instead of sent to the external translator
+- project-level and per-run disabling of the external translator
 - plurals
 - fuzzy/untranslated handling
-- output persistence
+- fuzzy-only translation mode preserving non-fuzzy untranslated entries
+- output persistence for both `.po` and `.mo`
 
 ### If changing scanners
 
@@ -162,6 +229,8 @@ Test:
 - target-specific extraction behavior
 - normalization into shared contracts
 - failure behavior for invalid configurations
+- typed wrapping of adapter/runtime failures instead of raw filesystem or transport exceptions
+- frontend-facing workflows that consume those adapters still surface controlled error states instead of uncaught failures
 
 ### If changing report generation
 
@@ -183,6 +252,8 @@ Test:
 - configured database-path resolution from settings
 - explicit persistence/configuration error wrapping
 - encrypted secret storage behavior if credential fields are persisted
+- corrupted encrypted secrets and invalid ciphertext payloads
+- repository reads that must translate sqlite/decode failures into typed persistence errors
 
 ### If changing remote connection code
 
@@ -194,6 +265,8 @@ Test:
 - optional no-connection flows
 - structured connection-test results
 - failure behavior through mocks/stubs
+- typed operation errors for dependency, transport, listing, download, directory preparation, and upload failures
+- malformed remote listings that should not leak raw parser exceptions
 - no accidental destructive behavior
 
 ### If changing sync code
@@ -206,7 +279,9 @@ Test:
 - remote listing failures
 - download failures
 - local workspace preparation and directory creation
+- sync-scope resolution failures coming from adapters, `.gitignore`, or persisted shared sync rules
 - UI-facing sync summaries and controlled error codes
+- editor fallback behavior when sync-scope resolution fails before a sync run starts
 
 ### If changing CLI
 
@@ -216,6 +291,15 @@ Test:
 - command dispatch
 - error messaging
 - output files where applicable
+
+### If changing runtime bootstrap or global error handling
+
+Test:
+
+- uncaught worker-thread failures are surfaced into failed shell state
+- uncaught Kivy callback failures become visible UI failure state when recovery is possible
+- startup/settings bootstrap still falls back to a safe state on controlled errors
+- external provider protocol/transport failures are converted into controlled operational errors
 
 ### If changing Kivy orchestration
 
@@ -231,11 +315,37 @@ Test:
 
 - default loading when the config file does not exist yet
 - round-trip save/load behavior
+- dedicated translation settings such as the default project locale
+- dedicated translation defaults such as `.mo` compilation, external translator usage, translation-cache enablement/path, `only_fuzzy`, `dry-run`, `stats-only`, and inconsistency reporting
 - invalid TOML or invalid setting values
+- locale normalization and invalid locale failures in persisted translation settings
 - per-user config-path resolution overrides
 - remembered safe startup screens and runtime setting application
 - database directory/filename validation and normalization
 - integration with the configured SQLite site registry location
+
+### If changing project-editor configuration flows
+
+Test:
+
+- create-project defaults inherited from persisted settings
+- persisted project-level translation toggles inherited from general settings
+- per-run popup overrides for translation toggles
+- section selection and focused rendering for translation/remote/sync groups
+- fallback preservation of non-visible field values while editing a single section
+
+### If changing PO-processing workflows
+
+Test:
+
+- cache-enabled translation reuse before external-provider calls
+- cache-disabled runs that still fall back to the provider
+- cache open/read/write/close failures wrapped as typed PO-processing errors
+- result summaries that distinguish provider translations from cache hits
+- effective translation settings at all three levels:
+  - general defaults
+  - persisted project settings
+  - per-run popup overrides
 
 ---
 
@@ -304,7 +414,7 @@ High-value targets:
 - CLI
 - report generation
 
-For non-trivial new or modified logic in this repository, the expected target remains at least 95% coverage for each relevant file unless a narrow documented exception is justified.
+For non-trivial new or modified logic in this repository, the expected target remains at least 99% coverage for each relevant file unless a narrow documented exception is justified.
 
 Widget rendering internals are a lower priority than domain correctness and orchestration boundaries.
 
@@ -316,7 +426,7 @@ Unit test coverage is a mandatory quality gate.
 
 ### Minimum required coverage
 
-As a rule, unit tests must achieve **at least 95% coverage** for the code they are responsible for validating.
+As a rule, unit tests must achieve **at least 99% coverage** for the code they are responsible for validating.
 
 This applies especially to:
 
@@ -328,7 +438,7 @@ This applies especially to:
 - CLI behavior
 - presentation orchestration / view-model logic
 
-### What “95% coverage” means in practice
+### What “99% coverage” means in practice
 
 Coverage is not just about line execution.
 Tests must also exercise meaningful behavioral branches, including:
@@ -348,7 +458,7 @@ Coverage must reflect real behavioral verification, not artificial execution.
 
 ### Exceptions
 
-If a specific area cannot reasonably reach 95% due to platform/runtime/UI constraints, that exception must be explicitly justified in the task output and should be limited to narrow UI/platform glue, not core logic.
+If a specific area cannot reasonably reach 99% due to platform/runtime/UI constraints, that exception must be explicitly justified in the task output and should be limited to narrow UI/platform glue, not core logic.
 
 ---
 
@@ -385,6 +495,14 @@ For every non-trivial feature or behavior change:
 
 This order is mandatory.
 
+For user-visible workflows, “BDD scenarios first” means updating the relevant `.feature` coverage before implementation so that the end-to-end contract is explicit for:
+
+- happy path behavior
+- edge cases
+- surfaced validation failures
+- controlled operational failures
+- expected visible error states
+
 ---
 
 ## BDD expectations
@@ -398,6 +516,18 @@ Each meaningful feature should include scenarios for:
 - invalid input
 - operational failures
 - expected exceptions or error outcomes
+
+For user-visible workflows, BDD coverage is mandatory from end to end.
+Do not treat `.feature` files as smoke tests only.
+If a workflow is visible through the shell, screen navigation, project editor, settings, sync, audit, remote-connection, or translation flows, the expectation is that the affected workflow has `.feature` scenarios covering:
+
+- the main successful path
+- important edge and boundary behavior
+- validation outcomes visible to the operator
+- controlled service, adapter, or infrastructure failures as surfaced by the system
+- fallback or degraded states where the product is designed to continue
+
+If a behavior is intentionally only unit-tested and not covered through `behave`, that exception must be narrow, justified, and limited to internals that are not directly user-visible end to end.
 
 BDD should focus on system behavior and use cases, not brittle visual assertions.
 
@@ -426,7 +556,7 @@ At minimum, tests must cover:
 - expected domain exceptions
 - regression cases for known bugs
 
-For unit-tested logic, the test suite must be sufficiently complete to support the repository’s minimum unit-test coverage target of **95%**.
+For unit-tested logic, the test suite must be sufficiently complete to support the repository’s minimum unit-test coverage target of **99%**.
 
 Do not add implementation first and “backfill” tests afterward except for purely mechanical refactors that do not change behavior
 ---

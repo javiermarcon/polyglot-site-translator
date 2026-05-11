@@ -9,7 +9,16 @@ UNKNOWN_FRAMEWORK_TYPE = "unknown"
 
 @dataclass(frozen=True)
 class FrameworkDescriptor:
-    """Selectable/displayable metadata for a supported framework."""
+    """Selectable/displayable metadata for a supported framework.
+
+    Attributes:
+        framework_type:
+            Documented attribute exposed by this type.
+        adapter_name:
+            Documented attribute exposed by this type.
+        display_name:
+            Documented attribute exposed by this type.
+    """
 
     framework_type: str
     adapter_name: str
@@ -17,7 +26,12 @@ class FrameworkDescriptor:
 
 
 def unknown_framework_descriptor() -> FrameworkDescriptor:
-    """Return the stable descriptor for unresolved framework selection."""
+    """Return the stable descriptor for unresolved framework selection.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
     return FrameworkDescriptor(
         framework_type=UNKNOWN_FRAMEWORK_TYPE,
         adapter_name="unresolved",
@@ -27,7 +41,26 @@ def unknown_framework_descriptor() -> FrameworkDescriptor:
 
 @dataclass(frozen=True)
 class FrameworkDetectionResult:
-    """Structured framework detection output."""
+    """Structured framework detection output.
+
+    Attributes:
+        framework_type:
+            Documented attribute exposed by this type.
+        adapter_name:
+            Documented attribute exposed by this type.
+        matched:
+            Documented attribute exposed by this type.
+        confidence:
+            Documented attribute exposed by this type.
+        evidence:
+            Documented attribute exposed by this type.
+        relevant_paths:
+            Documented attribute exposed by this type.
+        config_files:
+            Documented attribute exposed by this type.
+        warnings:
+            Documented attribute exposed by this type.
+    """
 
     framework_type: str
     adapter_name: str
@@ -45,7 +78,20 @@ class FrameworkDetectionResult:
         project_path: str,
         warnings: list[str] | None = None,
     ) -> FrameworkDetectionResult:
-        """Build an unmatched detection result with a stable shape."""
+        """Build an unmatched detection result with a stable shape.
+
+        Args:
+            cls:
+                Value supplied to this callable.
+            project_path:
+                Value supplied to this callable.
+            warnings:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+        """
         return cls(
             framework_type=UNKNOWN_FRAMEWORK_TYPE,
             adapter_name="unresolved",

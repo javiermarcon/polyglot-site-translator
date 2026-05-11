@@ -8,14 +8,22 @@ from pathlib import Path
 from typing import Protocol
 
 from polyglot_site_translator.domain.framework_detection.errors import (
-    FrameworkDetectionAmbiguityError,
+    FrameworkDetectionError,
 )
 from polyglot_site_translator.domain.framework_detection.models import (
     FrameworkDetectionResult,
 )
+from polyglot_site_translator.domain.po_processing.errors import POProcessingError
+from polyglot_site_translator.domain.po_processing.models import (
+    POProcessingCacheSettings,
+    POProcessingProgress,
+    POProcessingResult,
+)
 from polyglot_site_translator.domain.remote_connections.models import (
     NO_REMOTE_CONNECTION_VALUE,
     RemoteConnectionConfigInput,
+    RemoteConnectionFlags,
+    RemoteConnectionTestResult,
 )
 from polyglot_site_translator.domain.site_registry.errors import (
     SiteRegistryConfigurationError,
@@ -28,7 +36,25 @@ from polyglot_site_translator.domain.site_registry.models import (
     RegisteredSite,
     SiteRegistrationInput,
 )
-from polyglot_site_translator.domain.sync.models import SyncProgressEvent, SyncResult
+from polyglot_site_translator.domain.sync.errors import (
+    SyncConfigurationError,
+    SyncScopePersistenceError,
+)
+from polyglot_site_translator.domain.sync.models import (
+    SyncDirection,
+    SyncProgressEvent,
+    SyncResult,
+)
+from polyglot_site_translator.domain.sync.scope import (
+    ProjectSyncRuleOverride,
+    ResolvedSyncRule,
+    ResolvedSyncScope,
+    SyncFilterType,
+    SyncRuleBehavior,
+    SyncRuleSource,
+    SyncScopeStatus,
+    build_sync_rule_key,
+)
 from polyglot_site_translator.infrastructure.database_location import (
     resolve_sqlite_database_location,
 )
@@ -46,45 +72,194 @@ from polyglot_site_translator.presentation.view_models import (
     ProjectEditorStateViewModel,
     ProjectSummaryViewModel,
     RemoteConnectionTestResultViewModel,
+    SettingsStateViewModel,
     SiteEditorViewModel,
+    SyncRuleEditorItemViewModel,
     SyncStatusViewModel,
+    TranslationWorkflowRequestViewModel,
     build_connection_type_options,
     build_default_site_editor,
     build_framework_type_options_from_descriptors,
     build_project_editor_state,
+    build_sync_rule_behavior_options,
+    build_sync_rule_filter_type_options,
+    build_translation_options,
+)
+from polyglot_site_translator.services.framework_sync_scope import (
+    FrameworkSyncScopeService,
 )
 from polyglot_site_translator.services.site_registry import SiteRegistryService
 
 
 class SiteRegistryWorkflowService(Protocol):
-    """Subset of site-registry behavior required by workflow presentation adapters."""
+    """Subset of site-registry behavior required by workflow presentation adapters.
+
+    Attributes:
+        None: This type does not declare class-level attributes.
+    """
 
     def get_site(self, site_id: str) -> RegisteredSite:
-        """Return a persisted site registry record."""
+        """Return a persisted site registry record.
+
+        Args:
+            self:
+                Value supplied to this callable.
+            site_id:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+        """
 
     def detect_framework(self, project_path: str) -> FrameworkDetectionResult:
-        """Return framework detection data for a local path."""
+        """Return framework detection data for a local path.
+
+        Args:
+            self:
+                Value supplied to this callable.
+            project_path:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+        """
+
+    def test_remote_connection(
+        self,
+        registration: SiteRegistrationInput,
+    ) -> RemoteConnectionTestResult:
+        """Test a remote connection from site registration input.
+
+        Args:
+            self:
+                Value supplied to this callable.
+            registration:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+        """
 
 
 class ProjectSyncWorkflowService(Protocol):
-    """Sync orchestration contract consumed by workflow presentation adapters."""
+    """Sync orchestration contract consumed by workflow presentation adapters.
+
+    Attributes:
+        None: This type does not declare class-level attributes.
+    """
 
     def sync_remote_to_local(
         self,
         site: RegisteredSite,
         progress_callback: Callable[[SyncProgressEvent], None] | None = None,
     ) -> SyncResult:
-        """Synchronize the remote project into the local workspace."""
+        """Synchronize the remote project into the local workspace.
+
+        Args:
+            self:
+                Value supplied to this callable.
+            site:
+                Value supplied to this callable.
+            progress_callback:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+        """
+
+    def sync_local_to_remote(
+        self,
+        site: RegisteredSite,
+        progress_callback: Callable[[SyncProgressEvent], None] | None = None,
+    ) -> SyncResult:
+        """Synchronize the local workspace into the remote project.
+
+        Args:
+            self:
+                Value supplied to this callable.
+            site:
+                Value supplied to this callable.
+            progress_callback:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+        """
+
+
+class POProcessingWorkflowService(Protocol):
+    """PO processing contract consumed by workflow presentation adapters.
+
+    Attributes:
+        None: This type does not declare class-level attributes.
+    """
+
+    def process_site(
+        self,
+        site: RegisteredSite,
+        cache_settings: POProcessingCacheSettings | None = None,
+        progress_callback: Callable[[POProcessingProgress], None] | None = None,
+    ) -> POProcessingResult:
+        """Run PO processing for a site workspace.
+
+        Args:
+            self:
+                Value supplied to this callable.
+            site:
+                Value supplied to this callable.
+            cache_settings:
+                Value supplied to this callable.
+            progress_callback:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+        """
 
 
 class SiteRegistryPresentationCatalogService(ProjectCatalogService):
-    """Expose real site registry records as project summary/detail view models."""
+    """Expose real site registry records as project summary/detail view models.
+
+    Attributes:
+        None: This type does not declare class-level attributes.
+    """
 
     def __init__(self, service: SiteRegistryService) -> None:
+        """Bind the presentation catalog adapter to the real registry service.
+
+        Args:
+            self:
+                Value supplied to this callable.
+            service:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+        """
         self._service = service
 
     def list_projects(self) -> list[ProjectSummaryViewModel]:
-        """Return project summaries backed by SQLite."""
+        """Return project summaries backed by SQLite.
+
+        Args:
+            self:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+
+        Raises:
+            ControlledServiceError:
+                Raised when this callable hits the corresponding error path.
+        """
         try:
             sites = self._service.list_sites()
         except (
@@ -95,7 +270,22 @@ class SiteRegistryPresentationCatalogService(ProjectCatalogService):
         return [_build_project_summary(site) for site in sites]
 
     def get_project_detail(self, project_id: str) -> ProjectDetailViewModel:
-        """Return project detail information backed by SQLite."""
+        """Return project detail information backed by SQLite.
+
+        Args:
+            self:
+                Value supplied to this callable.
+            project_id:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+
+        Raises:
+            ControlledServiceError:
+                Raised when this callable hits the corresponding error path.
+        """
         try:
             site = self._service.get_site(project_id)
             detection_result = self._service.detect_framework(site.local_path)
@@ -103,32 +293,82 @@ class SiteRegistryPresentationCatalogService(ProjectCatalogService):
             SiteRegistryNotFoundError,
             SiteRegistryPersistenceError,
             SiteRegistryConfigurationError,
-            FrameworkDetectionAmbiguityError,
+            FrameworkDetectionError,
         ) as error:
             raise ControlledServiceError(str(error)) from error
         return _build_project_detail(site, detection_result)
 
 
 class SiteRegistryPresentationManagementService(ProjectRegistryManagementService):
-    """Expose create and update site registry workflows to the UI."""
+    """Expose create and update site registry workflows to the UI.
+
+    Attributes:
+        None: This type does not declare class-level attributes.
+    """
 
     def __init__(
         self,
         *,
         service: SiteRegistryService,
         settings_service: TomlSettingsService,
+        framework_sync_scope_service: FrameworkSyncScopeService | None = None,
     ) -> None:
+        """Store registry, settings, and sync-scope services used by editor workflows.
+
+        Args:
+            self:
+                Value supplied to this callable.
+            service:
+                Value supplied to this callable.
+            settings_service:
+                Value supplied to this callable.
+            framework_sync_scope_service:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+        """
         self._service = service
         self._settings_service = settings_service
+        self._framework_sync_scope_service = framework_sync_scope_service
 
     def build_create_project_editor(self) -> ProjectEditorStateViewModel:
-        """Return the initial create-project editor state."""
+        """Return the initial create-project editor state.
+
+        Args:
+            self:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+        """
+        settings_state = self._load_settings_state()
         editor = replace(
-            build_default_site_editor(),
+            build_default_site_editor(
+                default_locale=settings_state.app_settings.default_project_locale,
+                translation_options=build_translation_options(
+                    compile_mo=settings_state.app_settings.default_compile_mo,
+                    use_external_translator=(
+                        settings_state.app_settings.default_use_external_translator
+                    ),
+                    use_translation_cache=(
+                        settings_state.app_settings.default_use_translation_cache
+                    ),
+                    only_fuzzy=settings_state.app_settings.default_only_fuzzy,
+                    dry_run=settings_state.app_settings.default_dry_run,
+                    stats_only=settings_state.app_settings.default_stats_only,
+                    report_inconsistencies=(
+                        settings_state.app_settings.default_report_inconsistencies
+                    ),
+                ),
+            ),
             local_path=str(self._default_workspace_root() / "site"),
         )
         return _build_editor_state(
             service=self._service,
+            framework_sync_scope_service=self._framework_sync_scope_service,
             mode="create",
             editor=editor,
             status="editing",
@@ -137,17 +377,35 @@ class SiteRegistryPresentationManagementService(ProjectRegistryManagementService
         )
 
     def build_edit_project_editor(self, project_id: str) -> ProjectEditorStateViewModel:
-        """Return the initial edit-project editor state."""
+        """Return the initial edit-project editor state.
+
+        Args:
+            self:
+                Value supplied to this callable.
+            project_id:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+
+        Raises:
+            ControlledServiceError:
+                Raised when this callable hits the corresponding error path.
+        """
         try:
             site = self._service.get_site(project_id)
         except (
             SiteRegistryNotFoundError,
             SiteRegistryPersistenceError,
             SiteRegistryConfigurationError,
+            SyncConfigurationError,
+            SyncScopePersistenceError,
         ) as error:
             raise ControlledServiceError(str(error)) from error
         return _build_editor_state(
             service=self._service,
+            framework_sync_scope_service=self._framework_sync_scope_service,
             mode="edit",
             editor=_build_site_editor(site),
             status="editing",
@@ -156,13 +414,28 @@ class SiteRegistryPresentationManagementService(ProjectRegistryManagementService
         )
 
     def create_project(self, editor: SiteEditorViewModel) -> ProjectDetailViewModel:
-        """Create a site registry record from the editor state."""
+        """Create a site registry record from the editor state.
+
+        Args:
+            self:
+                Value supplied to this callable.
+            editor:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+
+        Raises:
+            ControlledServiceError:
+                Raised when this callable hits the corresponding error path.
+        """
         try:
             site = self._service.create_site(_build_service_payload(editor))
             detection_result = self._service.detect_framework(site.local_path)
         except (
             ValueError,
-            FrameworkDetectionAmbiguityError,
+            FrameworkDetectionError,
             SiteRegistryValidationError,
             SiteRegistryConflictError,
             SiteRegistryConfigurationError,
@@ -176,7 +449,24 @@ class SiteRegistryPresentationManagementService(ProjectRegistryManagementService
         project_id: str,
         editor: SiteEditorViewModel,
     ) -> ProjectDetailViewModel:
-        """Update a site registry record from the editor state."""
+        """Update a site registry record from the editor state.
+
+        Args:
+            self:
+                Value supplied to this callable.
+            project_id:
+                Value supplied to this callable.
+            editor:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+
+        Raises:
+            ControlledServiceError:
+                Raised when this callable hits the corresponding error path.
+        """
         try:
             site = self._service.update_site(
                 site_id=project_id,
@@ -185,7 +475,7 @@ class SiteRegistryPresentationManagementService(ProjectRegistryManagementService
             detection_result = self._service.detect_framework(site.local_path)
         except (
             ValueError,
-            FrameworkDetectionAmbiguityError,
+            FrameworkDetectionError,
             SiteRegistryValidationError,
             SiteRegistryConflictError,
             SiteRegistryNotFoundError,
@@ -199,9 +489,26 @@ class SiteRegistryPresentationManagementService(ProjectRegistryManagementService
         self,
         editor: SiteEditorViewModel,
     ) -> RemoteConnectionTestResultViewModel:
-        """Test the current remote connection draft from the editor."""
+        """Test the current remote connection draft from the editor.
+
+        Args:
+            self:
+                Value supplied to this callable.
+            editor:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+
+        Raises:
+            ControlledServiceError:
+                Raised when this callable hits the corresponding error path.
+        """
         try:
-            result = self._service.test_remote_connection(_build_service_payload(editor))
+            result = self._service.test_remote_connection(
+                _build_service_payload(editor)
+            )
         except (
             ValueError,
             SiteRegistryValidationError,
@@ -215,43 +522,166 @@ class SiteRegistryPresentationManagementService(ProjectRegistryManagementService
             error_code=result.error_code,
         )
 
-    def _default_workspace_root(self) -> Path:
+    def preview_project_editor(
+        self,
+        editor: SiteEditorViewModel,
+        *,
+        mode: str,
+    ) -> ProjectEditorStateViewModel:
+        """Rebuild the editor state for the current draft without persisting changes.
+
+        Args:
+            self:
+                Value supplied to this callable.
+            editor:
+                Value supplied to this callable.
+            mode:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+
+        Raises:
+            ControlledServiceError:
+                Raised when this callable hits the corresponding error path.
+        """
         try:
-            settings_state = self._settings_service.load_settings()
+            return _build_editor_state(
+                service=self._service,
+                framework_sync_scope_service=self._framework_sync_scope_service,
+                mode=mode,
+                editor=editor,
+                status="editing",
+                status_message="Project editor draft updated.",
+                connection_test_result=None,
+            )
+        except (
+            ValueError,
+            SyncConfigurationError,
+            SyncScopePersistenceError,
+        ) as error:
+            raise ControlledServiceError(str(error)) from error
+
+    def _default_workspace_root(self) -> Path:
+        """Handle default workspace root.
+
+        Args:
+            self:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+
+        Raises:
+            ControlledServiceError:
+                Raised when this callable hits the corresponding error path.
+        """
+        settings_state = self._load_settings_state()
+        try:
             location = resolve_sqlite_database_location(settings_state.app_settings)
         except (
-            ControlledServiceError,
             SiteRegistryConfigurationError,
             SiteRegistryPersistenceError,
         ) as error:
             raise ControlledServiceError(str(error)) from error
         return location.directory
 
+    def _load_settings_state(self) -> SettingsStateViewModel:
+        """Load settings state.
+
+        Args:
+            self:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+
+        Raises:
+            ControlledServiceError:
+                Raised when this callable hits the corresponding error path.
+        """
+        try:
+            return self._settings_service.load_settings()
+        except (
+            ControlledServiceError,
+            SiteRegistryConfigurationError,
+            SiteRegistryPersistenceError,
+        ) as error:
+            raise ControlledServiceError(str(error)) from error
+
 
 class SiteRegistryPresentationWorkflowService(ProjectWorkflowService):
-    """Expose runtime workflow previews backed by persisted project context."""
+    """Expose runtime workflow previews backed by persisted project context.
+
+    Attributes:
+        None: This type does not declare class-level attributes.
+    """
 
     def __init__(
         self,
         *,
         service: SiteRegistryWorkflowService,
         project_sync_service: ProjectSyncWorkflowService,
+        po_processing_service: POProcessingWorkflowService | None = None,
+        settings_service: TomlSettingsService | None = None,
     ) -> None:
+        """Store the workflow services required by sync, audit, and translation actions.
+
+        Args:
+            self:
+                Value supplied to this callable.
+            service:
+                Value supplied to this callable.
+            project_sync_service:
+                Value supplied to this callable.
+            po_processing_service:
+                Value supplied to this callable.
+            settings_service:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+        """
         self._service = service
         self._project_sync_service = project_sync_service
+        self._po_processing_service = po_processing_service
+        self._settings_service = settings_service
 
     def start_sync(
         self,
         project_id: str,
         progress_callback: Callable[[SyncProgressEvent], None] | None = None,
     ) -> SyncStatusViewModel:
-        """Run remote-to-local sync for the selected project."""
+        """Run remote-to-local sync for the selected project.
+
+        Args:
+            self:
+                Value supplied to this callable.
+            project_id:
+                Value supplied to this callable.
+            progress_callback:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+
+        Raises:
+            ControlledServiceError:
+                Raised when this callable hits the corresponding error path.
+        """
         try:
             site = self._service.get_site(project_id)
         except (
             SiteRegistryNotFoundError,
             SiteRegistryPersistenceError,
             SiteRegistryConfigurationError,
+            SyncConfigurationError,
+            SyncScopePersistenceError,
         ) as error:
             raise ControlledServiceError(str(error)) from error
         result = self._project_sync_service.sync_remote_to_local(
@@ -260,8 +690,122 @@ class SiteRegistryPresentationWorkflowService(ProjectWorkflowService):
         )
         return _build_sync_status(result)
 
+    def start_sync_to_remote(
+        self,
+        project_id: str,
+        progress_callback: Callable[[SyncProgressEvent], None] | None = None,
+    ) -> SyncStatusViewModel:
+        """Run local-to-remote sync for the selected project.
+
+        Args:
+            self:
+                Value supplied to this callable.
+            project_id:
+                Value supplied to this callable.
+            progress_callback:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+
+        Raises:
+            ControlledServiceError:
+                Raised when this callable hits the corresponding error path.
+        """
+        try:
+            site = self._service.get_site(project_id)
+        except (
+            SiteRegistryNotFoundError,
+            SiteRegistryPersistenceError,
+            SiteRegistryConfigurationError,
+            SyncConfigurationError,
+            SyncScopePersistenceError,
+        ) as error:
+            raise ControlledServiceError(str(error)) from error
+        result = self._project_sync_service.sync_local_to_remote(
+            site,
+            progress_callback=progress_callback,
+        )
+        return _build_sync_status(result)
+
+    def trust_remote_host_key(
+        self, project_id: str
+    ) -> RemoteConnectionTestResultViewModel:
+        """Trust a selected project's SSH host key after explicit UI confirmation.
+
+        Args:
+            self:
+                Value supplied to this callable.
+            project_id:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+
+        Raises:
+            AssertionError:
+                Raised when this callable hits the corresponding error path.
+            ControlledServiceError:
+                Raised when this callable hits the corresponding error path.
+        """
+        try:
+            site = self._service.get_site(project_id)
+            _require_remote_connection_for_host_key_trust(site)
+            remote_connection = site.remote_connection
+            if remote_connection is None:
+                msg = "Remote connection unexpectedly missing after validation."
+                raise AssertionError(msg)
+            result = self._service.test_remote_connection(
+                SiteRegistrationInput(
+                    name=site.name,
+                    framework_type=site.framework_type,
+                    local_path=site.local_path,
+                    default_locale=site.default_locale,
+                    remote_connection=RemoteConnectionConfigInput(
+                        connection_type=remote_connection.connection_type,
+                        host=remote_connection.host,
+                        port=remote_connection.port,
+                        username=remote_connection.username,
+                        password=remote_connection.password,
+                        remote_path=remote_connection.remote_path,
+                        flags=replace(remote_connection.flags, verify_host=False),
+                    ),
+                    is_active=site.is_active,
+                )
+            )
+        except (
+            ValueError,
+            SiteRegistryValidationError,
+            SiteRegistryNotFoundError,
+            SiteRegistryPersistenceError,
+            SiteRegistryConfigurationError,
+        ) as error:
+            raise ControlledServiceError(str(error)) from error
+        return RemoteConnectionTestResultViewModel(
+            success=result.success,
+            message=result.message,
+            error_code=result.error_code,
+        )
+
     def start_audit(self, project_id: str) -> AuditSummaryViewModel:
-        """Return a framework-aware audit preview for the selected project."""
+        """Return a framework-aware audit preview for the selected project.
+
+        Args:
+            self:
+                Value supplied to this callable.
+            project_id:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+
+        Raises:
+            ControlledServiceError:
+                Raised when this callable hits the corresponding error path.
+        """
         try:
             site = self._service.get_site(project_id)
             detection_result = self._service.detect_framework(site.local_path)
@@ -269,7 +813,7 @@ class SiteRegistryPresentationWorkflowService(ProjectWorkflowService):
             SiteRegistryNotFoundError,
             SiteRegistryPersistenceError,
             SiteRegistryConfigurationError,
-            FrameworkDetectionAmbiguityError,
+            FrameworkDetectionError,
         ) as error:
             raise ControlledServiceError(str(error)) from error
         if detection_result.matched:
@@ -289,41 +833,283 @@ class SiteRegistryPresentationWorkflowService(ProjectWorkflowService):
             ),
         )
 
-    def start_po_processing(self, project_id: str) -> POProcessingSummaryViewModel:
-        """Return the current PO processing preview placeholder."""
+    def start_po_processing(
+        self,
+        project_id: str,
+        request: TranslationWorkflowRequestViewModel | None = None,
+        progress_callback: Callable[[POProcessingProgress], None] | None = None,
+    ) -> POProcessingSummaryViewModel:
+        """Run PO processing and return a typed workflow summary.
+
+        Args:
+            self:
+                Value supplied to this callable.
+            project_id:
+                Value supplied to this callable.
+            request:
+                Value supplied to this callable.
+            progress_callback:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+
+        Raises:
+            ControlledServiceError:
+                Raised when this callable hits the corresponding error path.
+        """
+        try:
+            site = self._service.get_site(project_id)
+        except (
+            SiteRegistryNotFoundError,
+            SiteRegistryPersistenceError,
+            SiteRegistryConfigurationError,
+        ) as error:
+            raise ControlledServiceError(str(error)) from error
+        if self._po_processing_service is None:
+            return POProcessingSummaryViewModel(
+                status="completed",
+                processed_families=0,
+                progress_current=0,
+                progress_total=0,
+                progress_is_indeterminate=False,
+                summary=(
+                    "PO processing service is not configured in this runtime. "
+                    "Families processed: 0 | Synchronized entries: 0 | "
+                    "Translated entries: 0 | Failed entries: 0 | Compiled MO files: 0"
+                ),
+                current_file=None,
+                current_entry=None,
+            )
+        processing_site = site
+        if request is not None:
+            processing_site = replace(
+                site,
+                project=replace(
+                    site.project,
+                    default_locale=request.locales,
+                    compile_mo=request.options.compile_mo,
+                    use_external_translator=request.options.use_external_translator,
+                    use_translation_cache=request.options.use_translation_cache,
+                    only_fuzzy=request.options.only_fuzzy,
+                    dry_run=request.options.dry_run,
+                    stats_only=request.options.stats_only,
+                    report_inconsistencies=request.options.report_inconsistencies,
+                ),
+            )
+        cache_settings = self._build_po_processing_cache_settings(processing_site)
+        try:
+            result = self._po_processing_service.process_site(
+                processing_site,
+                cache_settings=cache_settings,
+                progress_callback=progress_callback,
+            )
+        except POProcessingError as error:
+            raise ControlledServiceError(str(error)) from error
+        summary_lines = [
+            f"Files found: {result.files_found}",
+            f"Families found: {result.families_found}",
+            f"Families processed: {result.families_processed}",
+            f"PO files discovered: {result.files_discovered}",
+            f"Total entries: {result.entries_total}",
+            f"Missing entries: {result.entries_missing}",
+            f"Fuzzy entries: {result.entries_fuzzy}",
+            f"Completed from initial sync: {result.entries_completed_from_sync}",
+            f"Reused from other variant: {result.entries_reused_from_other_variant}",
+            f"Synchronized entries: {result.entries_synchronized}",
+            f"Translated entries: {result.entries_translated}",
+            f"Translated from cache: {result.entries_translated_from_cache}",
+            f"Translated via provider: {result.entries_translated_from_provider}",
+            f"Skipped by sync-only: {result.entries_skipped_sync_only}",
+            f"Failed entries: {result.entries_failed}",
+            f"Written PO files: {result.files_written}",
+            f"Compiled MO files: {result.mo_files_compiled}",
+            f"Translation cache: {'enabled' if result.cache_enabled else 'disabled'}",
+            f"Translation cache path: {cache_settings.cache_path}",
+            f"Only fuzzy: {'enabled' if processing_site.only_fuzzy else 'disabled'}",
+            f"Dry-run: {'enabled' if processing_site.dry_run else 'disabled'}",
+            f"Stats only: {'enabled' if processing_site.stats_only else 'disabled'}",
+            "Report inconsistencies: "
+            f"{'enabled' if processing_site.report_inconsistencies else 'disabled'}",
+        ]
+        if processing_site.report_inconsistencies:
+            summary_lines.append(
+                f"Translation inconsistencies: {result.variant_inconsistencies_found}"
+            )
+            summary_lines.append(
+                f"Variant differences found: {result.variant_differences_found}"
+            )
+        if result.variant_differences_found > 0:
+            summary_lines.append("Variant difference details:")
+            summary_lines.extend(result.variant_inconsistency_details)
+        if result.failures:
+            summary_lines.extend(
+                [
+                    "Failed items:",
+                    *[
+                        (
+                            f"- {failure.relative_path} | locale {failure.locale} | "
+                            f"msgid '{failure.msgid}' | {failure.error_message}"
+                        )
+                        for failure in result.failures
+                    ],
+                ]
+            )
+        if result.compilation_failures:
+            summary_lines.extend(
+                [
+                    "Failed MO files:",
+                    *[
+                        (
+                            f"- {failure.relative_path} | locale {failure.locale} | "
+                            f"mo '{failure.mo_path}' | {failure.error_message}"
+                        )
+                        for failure in result.compilation_failures
+                    ],
+                ]
+            )
         return POProcessingSummaryViewModel(
-            status="completed",
-            processed_families=4,
-            summary="Prepared 4 locale families for future PO synchronization.",
+            status=(
+                "completed_with_errors"
+                if result.entries_failed > 0 or result.compilation_failures
+                else "completed"
+            ),
+            processed_families=result.families_processed,
+            progress_current=result.entries_synchronized + result.entries_translated,
+            progress_total=result.entries_pending,
+            progress_is_indeterminate=False,
+            summary="\n".join(summary_lines),
+            current_file=None,
+            current_entry=None,
+        )
+
+    def _build_po_processing_cache_settings(
+        self,
+        site: RegisteredSite,
+    ) -> POProcessingCacheSettings:
+        """Build po processing cache settings.
+
+        Args:
+            self:
+                Value supplied to this callable.
+            site:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+
+        Raises:
+            ControlledServiceError:
+                Raised when this callable hits the corresponding error path.
+        """
+        if self._settings_service is None:
+            return POProcessingCacheSettings(
+                enabled=site.use_translation_cache,
+                cache_path=str(Path(site.local_path) / ".po_translation_cache"),
+            )
+        try:
+            settings_state = self._settings_service.load_settings()
+        except ControlledServiceError as error:
+            raise ControlledServiceError(str(error)) from error
+        return POProcessingCacheSettings(
+            enabled=site.use_translation_cache,
+            cache_path=settings_state.app_settings.translation_cache_path,
         )
 
 
 def _build_editor_state(  # noqa: PLR0913
     *,
     service: SiteRegistryService,
+    framework_sync_scope_service: FrameworkSyncScopeService | None,
     mode: str,
     editor: SiteEditorViewModel,
     status: str,
     status_message: str | None,
     connection_test_result: RemoteConnectionTestResultViewModel | None,
 ) -> ProjectEditorStateViewModel:
+    """Build editor state.
+
+    Args:
+        service:
+            Value supplied to this callable.
+        framework_sync_scope_service:
+            Value supplied to this callable.
+        mode:
+            Value supplied to this callable.
+        editor:
+            Value supplied to this callable.
+        status:
+            Value supplied to this callable.
+        status_message:
+            Value supplied to this callable.
+        connection_test_result:
+            Value supplied to this callable.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
+    resolved_scope = _resolve_editor_sync_scope(
+        framework_sync_scope_service=framework_sync_scope_service,
+        editor=editor,
+    )
+    editor_with_scope = _apply_resolved_scope_to_editor(editor, resolved_scope)
     return build_project_editor_state(
         mode=mode,
-        editor=editor,
+        editor=editor_with_scope,
         framework_options=build_framework_type_options_from_descriptors(
             service.list_supported_frameworks()
         ),
         connection_type_options=build_connection_type_options(
             descriptors=service.list_supported_connection_types()
         ),
-        connection_test_enabled=service.can_test_remote_connection(_build_service_payload(editor)),
+        sync_rule_filter_type_options=build_sync_rule_filter_type_options(),
+        sync_rule_behavior_options=build_sync_rule_behavior_options(),
+        connection_test_enabled=service.can_test_remote_connection(
+            _build_service_payload(editor_with_scope)
+        ),
         connection_test_result=connection_test_result,
+        sync_scope_status=resolved_scope.status.value,
+        sync_scope_message=resolved_scope.message,
         status=status,
         status_message=status_message,
     )
 
 
+def _require_remote_connection_for_host_key_trust(site: RegisteredSite) -> None:
+    """Validate and return remote connection for host key trust.
+
+    Args:
+        site:
+            Value supplied to this callable.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+
+    Raises:
+        SiteRegistryValidationError:
+            Raised when this callable hits the corresponding error path.
+    """
+    if site.remote_connection is not None:
+        return
+    msg = "Remote host-key trust requires a configured remote connection."
+    raise SiteRegistryValidationError(msg)
+
+
 def _build_service_payload(editor: SiteEditorViewModel) -> SiteRegistrationInput:
+    """Build service payload.
+
+    Args:
+        editor:
+            Value supplied to this callable.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
     remote_connection: RemoteConnectionConfigInput | None = None
     if editor.connection_type != NO_REMOTE_CONNECTION_VALUE:
         remote_connection = RemoteConnectionConfigInput(
@@ -333,18 +1119,42 @@ def _build_service_payload(editor: SiteEditorViewModel) -> SiteRegistrationInput
             username=editor.remote_username,
             password=editor.remote_password,
             remote_path=editor.remote_path,
+            flags=RemoteConnectionFlags(
+                verify_host=editor.remote_verify_host,
+                use_adapter_sync_filters=editor.use_adapter_sync_filters,
+                sync_rule_overrides=_build_project_rule_overrides(
+                    editor.sync_rule_items
+                ),
+            ),
         )
     return SiteRegistrationInput(
         name=editor.name,
         framework_type=editor.framework_type,
         local_path=editor.local_path,
         default_locale=editor.default_locale,
+        compile_mo=editor.compile_mo,
+        use_external_translator=editor.use_external_translator,
+        use_translation_cache=editor.use_translation_cache,
+        only_fuzzy=editor.only_fuzzy,
+        dry_run=editor.dry_run,
+        stats_only=editor.stats_only,
+        report_inconsistencies=editor.report_inconsistencies,
         remote_connection=remote_connection,
         is_active=editor.is_active,
     )
 
 
 def _build_project_summary(site: RegisteredSite) -> ProjectSummaryViewModel:
+    """Build project summary.
+
+    Args:
+        site:
+            Value supplied to this callable.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
     return ProjectSummaryViewModel(
         id=site.id,
         name=site.name,
@@ -358,8 +1168,28 @@ def _build_project_detail(
     site: RegisteredSite,
     detection_result: FrameworkDetectionResult | None = None,
 ) -> ProjectDetailViewModel:
+    """Build project detail.
+
+    Args:
+        site:
+            Value supplied to this callable.
+        detection_result:
+            Value supplied to this callable.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
     return ProjectDetailViewModel(
         project=_build_project_summary(site),
+        default_locale=site.default_locale,
+        compile_mo=site.compile_mo,
+        use_external_translator=site.use_external_translator,
+        use_translation_cache=site.use_translation_cache,
+        only_fuzzy=site.only_fuzzy,
+        dry_run=site.dry_run,
+        stats_only=site.stats_only,
+        report_inconsistencies=site.report_inconsistencies,
         configuration_summary=_build_configuration_summary(site),
         metadata_summary=_build_metadata_summary(site, detection_result),
         actions=[],
@@ -367,6 +1197,16 @@ def _build_project_detail(
 
 
 def _build_site_editor(site: RegisteredSite) -> SiteEditorViewModel:
+    """Build site editor.
+
+    Args:
+        site:
+            Value supplied to this callable.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
     remote_connection = site.remote_connection
     if remote_connection is None:
         return SiteEditorViewModel(
@@ -375,6 +1215,13 @@ def _build_site_editor(site: RegisteredSite) -> SiteEditorViewModel:
             framework_type=site.framework_type,
             local_path=site.local_path,
             default_locale=site.default_locale,
+            compile_mo=site.compile_mo,
+            use_external_translator=site.use_external_translator,
+            use_translation_cache=site.use_translation_cache,
+            only_fuzzy=site.only_fuzzy,
+            dry_run=site.dry_run,
+            stats_only=site.stats_only,
+            report_inconsistencies=site.report_inconsistencies,
             connection_type=NO_REMOTE_CONNECTION_VALUE,
             remote_host="",
             remote_port="",
@@ -382,6 +1229,9 @@ def _build_site_editor(site: RegisteredSite) -> SiteEditorViewModel:
             remote_password="",
             remote_path="",
             is_active=site.is_active,
+            remote_verify_host=True,
+            use_adapter_sync_filters=False,
+            sync_rule_items=(),
         )
     return SiteEditorViewModel(
         site_id=site.id,
@@ -389,6 +1239,13 @@ def _build_site_editor(site: RegisteredSite) -> SiteEditorViewModel:
         framework_type=site.framework_type,
         local_path=site.local_path,
         default_locale=site.default_locale,
+        compile_mo=site.compile_mo,
+        use_external_translator=site.use_external_translator,
+        use_translation_cache=site.use_translation_cache,
+        only_fuzzy=site.only_fuzzy,
+        dry_run=site.dry_run,
+        stats_only=site.stats_only,
+        report_inconsistencies=site.report_inconsistencies,
         connection_type=remote_connection.connection_type,
         remote_host=remote_connection.host,
         remote_port=str(remote_connection.port),
@@ -396,10 +1253,25 @@ def _build_site_editor(site: RegisteredSite) -> SiteEditorViewModel:
         remote_password=remote_connection.password,
         remote_path=remote_connection.remote_path,
         is_active=site.is_active,
+        remote_verify_host=remote_connection.flags.verify_host,
+        use_adapter_sync_filters=remote_connection.flags.use_adapter_sync_filters,
+        sync_rule_items=_build_override_editor_items(
+            remote_connection.flags.sync_rule_overrides
+        ),
     )
 
 
 def _format_framework_name(framework_type: str) -> str:
+    """Format framework name.
+
+    Args:
+        framework_type:
+            Value supplied to this callable.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
     framework_map = {
         "wordpress": "WordPress",
         "django": "Django",
@@ -409,12 +1281,51 @@ def _format_framework_name(framework_type: str) -> str:
 
 
 def _build_configuration_summary(site: RegisteredSite) -> str:
+    """Build configuration summary.
+
+    Args:
+        site:
+            Value supplied to this callable.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
     if site.remote_connection is None:
-        return f"Locale: {site.default_locale} | Remote connection: None"
+        compile_summary = "enabled" if site.compile_mo else "disabled"
+        translator_summary = "enabled" if site.use_external_translator else "disabled"
+        cache_summary = "enabled" if site.use_translation_cache else "disabled"
+        only_fuzzy_summary = "enabled" if site.only_fuzzy else "disabled"
+        dry_run_summary = "enabled" if site.dry_run else "disabled"
+        stats_only_summary = "enabled" if site.stats_only else "disabled"
+        inconsistency_summary = "enabled" if site.report_inconsistencies else "disabled"
+        return (
+            f"Locale: {site.default_locale} | Compile MO: {compile_summary} | "
+            f"External translator: {translator_summary} | "
+            f"Translation cache: {cache_summary} | Only fuzzy: {only_fuzzy_summary} | "
+            f"Dry-run: {dry_run_summary} | Stats only: {stats_only_summary} | "
+            f"Report inconsistencies: {inconsistency_summary} | "
+            "Remote connection: None"
+        )
+    sync_mode = (
+        "filtered" if site.remote_connection.flags.use_adapter_sync_filters else "full"
+    )
+    compile_summary = "enabled" if site.compile_mo else "disabled"
+    translator_summary = "enabled" if site.use_external_translator else "disabled"
+    cache_summary = "enabled" if site.use_translation_cache else "disabled"
+    only_fuzzy_summary = "enabled" if site.only_fuzzy else "disabled"
+    dry_run_summary = "enabled" if site.dry_run else "disabled"
+    stats_only_summary = "enabled" if site.stats_only else "disabled"
+    inconsistency_summary = "enabled" if site.report_inconsistencies else "disabled"
     return (
-        f"Locale: {site.default_locale} | Remote: {site.remote_connection.connection_type} "
+        f"Locale: {site.default_locale} | Compile MO: {compile_summary} | "
+        f"External translator: {translator_summary} | "
+        f"Translation cache: {cache_summary} | Only fuzzy: {only_fuzzy_summary} | "
+        f"Dry-run: {dry_run_summary} | Stats only: {stats_only_summary} | "
+        f"Report inconsistencies: {inconsistency_summary} | "
+        f"Remote: {site.remote_connection.connection_type} "
         f"{site.remote_connection.host}:{site.remote_connection.port} "
-        f"| Path: {site.remote_connection.remote_path}"
+        f"| Path: {site.remote_connection.remote_path} | Sync mode: {sync_mode}"
     )
 
 
@@ -422,13 +1333,27 @@ def _build_metadata_summary(
     site: RegisteredSite,
     detection_result: FrameworkDetectionResult | None,
 ) -> str:
+    """Build metadata summary.
+
+    Args:
+        site:
+            Value supplied to this callable.
+        detection_result:
+            Value supplied to this callable.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
     remote_summary = "Remote connection: none configured"
     if site.remote_connection is not None:
         remote_summary = (
             f"Remote user: {site.remote_connection.username} | "
             f"Connection type: {site.remote_connection.connection_type}"
         )
-    summary = f"Framework: {_format_framework_name(site.framework_type)} | {remote_summary}"
+    summary = (
+        f"Framework: {_format_framework_name(site.framework_type)} | {remote_summary}"
+    )
     if detection_result is None:
         return summary
     if detection_result.matched:
@@ -445,28 +1370,300 @@ def _build_metadata_summary(
 
 
 def _build_sync_status(result: SyncResult) -> SyncStatusViewModel:
+    """Build sync status.
+
+    Args:
+        result:
+            Value supplied to this callable.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
     if result.success:
-        if result.summary.files_downloaded == 0:
+        if result.direction is SyncDirection.LOCAL_TO_REMOTE:
+            if result.summary.files_uploaded == 0:
+                summary = "Local workspace is empty. No files were uploaded."
+            else:
+                summary = (
+                    f"Uploaded {result.summary.files_uploaded} files from "
+                    f"{result.local_path} into the remote workspace."
+                )
+        elif result.summary.files_downloaded == 0:
             summary = "Remote workspace is empty. No files were downloaded."
         else:
             summary = (
-                f"Downloaded {result.summary.files_downloaded} files into {result.local_path}."
+                f"Downloaded {result.summary.files_downloaded} files into "
+                f"{result.local_path}."
             )
         return SyncStatusViewModel(
             status="completed",
-            files_synced=result.summary.files_downloaded,
+            files_synced=(
+                result.summary.files_uploaded
+                if result.direction is SyncDirection.LOCAL_TO_REMOTE
+                else result.summary.files_downloaded
+            ),
             summary=summary,
             error_code=None,
         )
     error = result.error
-    error_message = "Sync failed."
-    error_code = None
+    error_message = (
+        f"Remote sync failed for project '{result.project_id}' using "
+        f"{result.connection_type} into '{result.local_path}', but no detailed sync "
+        "error was provided."
+    )
+    error_code = "sync_failed"
     if error is not None:
         error_message = error.message
         error_code = error.code
     return SyncStatusViewModel(
         status="failed",
-        files_synced=result.summary.files_downloaded,
+        files_synced=(
+            result.summary.files_uploaded
+            if result.direction is SyncDirection.LOCAL_TO_REMOTE
+            else result.summary.files_downloaded
+        ),
         summary=error_message,
         error_code=error_code,
+    )
+
+
+def _resolve_editor_sync_scope(
+    *,
+    framework_sync_scope_service: FrameworkSyncScopeService | None,
+    editor: SiteEditorViewModel,
+) -> ResolvedSyncScope:
+    """Resolve editor sync scope.
+
+    Args:
+        framework_sync_scope_service:
+            Value supplied to this callable.
+        editor:
+            Value supplied to this callable.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
+    framework_type = editor.framework_type.strip().lower()
+    if framework_sync_scope_service is None:
+        return ResolvedSyncScope(
+            framework_type=framework_type or "unknown",
+            adapter_name=None,
+            status=SyncScopeStatus.ADAPTER_UNAVAILABLE,
+            filters=(),
+            excludes=(),
+            message=(
+                "Framework sync scope service is not available in this "
+                "frontend runtime."
+            ),
+            catalog_rules=_build_resolved_rules_from_editor_items(
+                editor.sync_rule_items
+            ),
+        )
+    try:
+        return framework_sync_scope_service.resolve_for_framework(
+            framework_type=framework_type,
+            project_path=editor.local_path,
+            project_rule_overrides=_build_project_rule_overrides(
+                editor.sync_rule_items
+            ),
+        )
+    except (
+        SyncConfigurationError,
+        SyncScopePersistenceError,
+        LookupError,
+        OSError,
+        RuntimeError,
+        ValueError,
+    ) as error:
+        return ResolvedSyncScope(
+            framework_type=framework_type or "unknown",
+            adapter_name=None,
+            status=SyncScopeStatus.ADAPTER_UNAVAILABLE,
+            filters=(),
+            excludes=(),
+            message=f"Framework sync scope resolution failed. Cause: {error}",
+            catalog_rules=_build_resolved_rules_from_editor_items(
+                editor.sync_rule_items
+            ),
+        )
+
+
+def _apply_resolved_scope_to_editor(
+    editor: SiteEditorViewModel,
+    resolved_scope: ResolvedSyncScope,
+) -> SiteEditorViewModel:
+    """Apply resolved scope to editor.
+
+    Args:
+        editor:
+            Value supplied to this callable.
+        resolved_scope:
+            Value supplied to this callable.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
+    if resolved_scope.catalog_rules == ():
+        return replace(editor, sync_rule_items=())
+    return replace(
+        editor,
+        sync_rule_items=_build_editor_sync_rule_items(resolved_scope),
+    )
+
+
+def _build_editor_sync_rule_items(
+    resolved_scope: ResolvedSyncScope,
+) -> tuple[SyncRuleEditorItemViewModel, ...]:
+    """Build editor sync rule items.
+
+    Args:
+        resolved_scope:
+            Value supplied to this callable.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
+    sorted_rules = sorted(
+        resolved_scope.catalog_rules,
+        key=lambda rule: (
+            0 if rule.source is SyncRuleSource.ADAPTER else 1,
+            0 if rule.behavior is SyncRuleBehavior.INCLUDE else 1,
+            rule.relative_path,
+        ),
+    )
+    return tuple(
+        SyncRuleEditorItemViewModel(
+            rule_key=rule.rule_key,
+            target_rule_key=(
+                rule.rule_key if rule.source is SyncRuleSource.ADAPTER else None
+            ),
+            relative_path=rule.relative_path,
+            filter_type=rule.filter_type.value,
+            behavior=rule.behavior.value,
+            description=rule.description,
+            source=rule.source.value,
+            is_enabled=rule.is_enabled,
+            is_removable=rule.source is SyncRuleSource.PROJECT,
+        )
+        for rule in sorted_rules
+    )
+
+
+def _build_override_editor_items(
+    overrides: tuple[ProjectSyncRuleOverride, ...],
+) -> tuple[SyncRuleEditorItemViewModel, ...]:
+    """Build override editor items.
+
+    Args:
+        overrides:
+            Value supplied to this callable.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
+    return tuple(
+        SyncRuleEditorItemViewModel(
+            rule_key=override.rule_key,
+            target_rule_key=override.target_rule_key,
+            relative_path=override.relative_path,
+            filter_type=override.filter_type.value,
+            behavior=override.behavior.value,
+            description=override.description,
+            source=(
+                SyncRuleSource.PROJECT.value
+                if override.is_custom
+                else SyncRuleSource.ADAPTER.value
+            ),
+            is_enabled=override.is_enabled,
+            is_removable=override.is_custom,
+        )
+        for override in overrides
+    )
+
+
+def _build_project_rule_overrides(
+    items: tuple[SyncRuleEditorItemViewModel, ...],
+) -> tuple[ProjectSyncRuleOverride, ...]:
+    """Build project rule overrides.
+
+    Args:
+        items:
+            Value supplied to this callable.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+
+    Raises:
+        ValueError:
+            Raised when this callable hits the corresponding error path.
+    """
+    overrides: list[ProjectSyncRuleOverride] = []
+    seen_rule_keys: set[str] = set()
+    for item in items:
+        relative_path = item.relative_path.strip().strip("/")
+        if relative_path == "":
+            msg = "Sync rule paths must not be blank."
+            raise ValueError(msg)
+        filter_type = SyncFilterType(item.filter_type)
+        behavior = SyncRuleBehavior(item.behavior)
+        source = SyncRuleSource(item.source)
+        rule_key = item.rule_key
+        target_rule_key = item.target_rule_key
+        if source is SyncRuleSource.PROJECT:
+            rule_key = build_sync_rule_key(
+                relative_path=relative_path,
+                filter_type=filter_type,
+                behavior=behavior,
+            )
+            target_rule_key = None
+        elif target_rule_key is None:
+            target_rule_key = rule_key
+        if rule_key in seen_rule_keys:
+            msg = f"Duplicate sync rule detected for '{relative_path}'."
+            raise ValueError(msg)
+        seen_rule_keys.add(rule_key)
+        overrides.append(
+            ProjectSyncRuleOverride(
+                rule_key=rule_key,
+                target_rule_key=target_rule_key,
+                relative_path=relative_path,
+                filter_type=filter_type,
+                behavior=behavior,
+                is_enabled=item.is_enabled,
+                description=item.description,
+            )
+        )
+    return tuple(overrides)
+
+
+def _build_resolved_rules_from_editor_items(
+    items: tuple[SyncRuleEditorItemViewModel, ...],
+) -> tuple[ResolvedSyncRule, ...]:
+    """Build resolved rules from editor items.
+
+    Args:
+        items:
+            Value supplied to this callable.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
+    return tuple(
+        ResolvedSyncRule(
+            rule_key=item.rule_key,
+            relative_path=item.relative_path,
+            filter_type=SyncFilterType(item.filter_type),
+            behavior=SyncRuleBehavior(item.behavior),
+            description=item.description,
+            source=SyncRuleSource(item.source),
+            is_enabled=item.is_enabled,
+        )
+        for item in items
     )

@@ -15,10 +15,23 @@ from polyglot_site_translator.domain.sync.models import (
 
 
 def test_sync_direction_exposes_remote_to_local_value() -> None:
+    """Verify sync direction exposes remote to local value.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
     assert SyncDirection.REMOTE_TO_LOCAL.value == "remote_to_local"
+    assert SyncDirection.LOCAL_TO_REMOTE.value == "local_to_remote"
 
 
 def test_sync_result_can_represent_a_successful_sync() -> None:
+    """Verify sync result can represent a successful sync.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
     result = SyncResult(
         direction=SyncDirection.REMOTE_TO_LOCAL,
         success=True,
@@ -39,7 +52,42 @@ def test_sync_result_can_represent_a_successful_sync() -> None:
     assert result.error is None
 
 
+def test_sync_result_can_represent_a_successful_local_to_remote_sync() -> None:
+    """Verify sync result can represent a successful local to remote sync.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
+    result = SyncResult(
+        direction=SyncDirection.LOCAL_TO_REMOTE,
+        success=True,
+        project_id="site-123",
+        connection_type="sftp",
+        local_path="/workspace/site",
+        summary=SyncSummary(
+            files_discovered=2,
+            files_downloaded=0,
+            directories_created=1,
+            bytes_downloaded=0,
+            files_uploaded=2,
+            bytes_uploaded=64,
+        ),
+        error=None,
+    )
+
+    assert result.success is True
+    assert result.summary.files_uploaded == 2
+    assert result.summary.bytes_uploaded == 64
+
+
 def test_sync_result_can_represent_a_controlled_failure() -> None:
+    """Verify sync result can represent a controlled failure.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
     result = SyncResult(
         direction=SyncDirection.REMOTE_TO_LOCAL,
         success=False,
@@ -66,5 +114,11 @@ def test_sync_result_can_represent_a_controlled_failure() -> None:
 
 
 def test_sync_errors_are_typed() -> None:
+    """Verify sync errors are typed.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
     assert str(SyncConfigurationError("missing remote")) == "missing remote"
     assert str(SyncOperationError("download failed")) == "download failed"

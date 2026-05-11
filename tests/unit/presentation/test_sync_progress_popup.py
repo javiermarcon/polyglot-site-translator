@@ -14,19 +14,96 @@ from polyglot_site_translator.presentation.kivy.widgets.sync_progress_popup impo
 from polyglot_site_translator.presentation.view_models import (
     SyncCommandLogEntryViewModel,
     SyncProgressStateViewModel,
+    SyncStatusViewModel,
 )
 from tests.support.frontend_doubles import build_seeded_services
 
 
 @dataclass
 class _FakeClockEvent:
+    """Test helper for FakeClockEvent.
+
+    Attributes:
+        cancelled:
+            Documented attribute exposed by this type.
+    """
+
     cancelled: bool = False
 
     def cancel(self) -> None:
+        """Handle cancel.
+
+        Args:
+            self:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+        """
         self.cancelled = True
 
 
+@dataclass
+class _FakeConfirmationPopup:
+    """Test helper for FakeConfirmationPopup.
+
+    Attributes:
+        title:
+            Documented attribute exposed by this type.
+        size_hint:
+            Documented attribute exposed by this type.
+        auto_dismiss:
+            Documented attribute exposed by this type.
+        content:
+            Documented attribute exposed by this type.
+        opened:
+            Documented attribute exposed by this type.
+        dismissed:
+            Documented attribute exposed by this type.
+    """
+
+    title: str = ""
+    size_hint: tuple[float, float] | None = None
+    auto_dismiss: bool = False
+    content: object | None = None
+    opened: bool = False
+    dismissed: bool = False
+
+    def dismiss(self) -> None:
+        """Handle dismiss.
+
+        Args:
+            self:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+        """
+        self.dismissed = True
+
+    def open(self) -> None:
+        """Handle open.
+
+        Args:
+            self:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+        """
+        self.opened = True
+
+
 def test_sync_progress_popup_renders_empty_and_populated_states() -> None:
+    """Verify sync progress popup renders empty and populated states.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
     shell = create_frontend_shell(build_seeded_services())
     popup = SyncProgressPopup(shell=shell)
 
@@ -44,10 +121,11 @@ def test_sync_progress_popup_renders_empty_and_populated_states() -> None:
         progress_current=0,
         progress_total=0,
         progress_is_indeterminate=False,
+        command_log_limit=10,
         command_log=[],
     )
     popup.refresh()
-    assert popup.title == "Remote Sync Progress: Marketing Site"
+    assert popup.title == "Sync Progress: Marketing Site"
     assert popup._status_label.text == "Status: completed"
     assert popup._progress_bar.max == 1
     assert popup._progress_bar.value == 1
@@ -61,6 +139,7 @@ def test_sync_progress_popup_renders_empty_and_populated_states() -> None:
         progress_current=1,
         progress_total=2,
         progress_is_indeterminate=False,
+        command_log_limit=10,
         command_log=[
             SyncCommandLogEntryViewModel(
                 command_text="SFTP LIST /srv/app",
@@ -82,17 +161,45 @@ def test_sync_progress_popup_renders_empty_and_populated_states() -> None:
 def test_sync_progress_popup_open_and_dismiss_manage_refresh_loop(
     monkeypatch: MonkeyPatch,
 ) -> None:
+    """Verify sync progress popup open and dismiss manage refresh loop.
+
+    Args:
+        monkeypatch:
+            Value supplied to this callable.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
     shell = create_frontend_shell(build_seeded_services())
     popup = SyncProgressPopup(shell=shell)
     scheduled_events: list[_FakeClockEvent] = []
     open_calls: list[str] = []
 
     def record_schedule(_callback: object, _interval: float) -> _FakeClockEvent:
+        """Handle record schedule.
+
+        Args:
+            _callback:
+                Value supplied to this callable.
+            _interval:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+        """
         event = _FakeClockEvent()
         scheduled_events.append(event)
         return event
 
     def record_open() -> None:
+        """Handle record open.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+        """
         open_calls.append("open")
 
     monkeypatch.setattr(
@@ -110,3 +217,186 @@ def test_sync_progress_popup_open_and_dismiss_manage_refresh_loop(
 
     assert scheduled_events[0].cancelled is True
     assert popup._refresh_event is None
+
+
+def test_sync_progress_popup_on_dismiss_without_refresh_event_is_a_noop() -> None:
+    """Verify sync progress popup on dismiss without refresh event is a noop.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
+    shell = create_frontend_shell(build_seeded_services())
+    popup = SyncProgressPopup(shell=shell)
+
+    popup._refresh_event = None
+    popup.on_dismiss()
+
+    assert popup._refresh_event is None
+
+
+def test_sync_progress_popup_offers_host_key_trust_only_for_unknown_ssh_hosts() -> None:
+    """Verify sync progress popup offers host key trust only for unknown ssh hosts.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
+    shell = create_frontend_shell(build_seeded_services())
+    popup = SyncProgressPopup(shell=shell)
+    shell.sync_progress_state = SyncProgressStateViewModel(
+        project_id="site-123",
+        project_name="Marketing Site",
+        status="failed",
+        message="Server '127.0.0.1' not found in known_hosts",
+        progress_current=0,
+        progress_total=0,
+        progress_is_indeterminate=True,
+        command_log_limit=10,
+        command_log=[],
+    )
+
+    shell.sync_state = SyncStatusViewModel(
+        status="failed",
+        files_synced=0,
+        summary="Server '127.0.0.1' not found in known_hosts",
+        error_code="unknown_ssh_host_key",
+    )
+    popup.refresh()
+    assert popup._trust_host_key_button.disabled is False
+    assert popup._trust_host_key_button.opacity == 1
+
+    shell.sync_state = SyncStatusViewModel(
+        status="failed",
+        files_synced=0,
+        summary="Authentication failed.",
+        error_code="ssh_authentication_failed",
+    )
+    popup.refresh()
+    assert popup._trust_host_key_button.opacity == 0
+    assert popup._trust_host_key_button.disabled is True
+
+
+def test_sync_progress_popup_hides_host_key_trust_while_retry_is_running() -> None:
+    """Verify sync progress popup hides host key trust while retry is running.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
+    shell = create_frontend_shell(build_seeded_services())
+    popup = SyncProgressPopup(shell=shell)
+    shell.sync_state = SyncStatusViewModel(
+        status="failed",
+        files_synced=0,
+        summary="Server '127.0.0.1' not found in known_hosts",
+        error_code="unknown_ssh_host_key",
+    )
+    shell.sync_progress_state = SyncProgressStateViewModel(
+        project_id="site-123",
+        project_name="Marketing Site",
+        status="running",
+        message="Starting remote sync after trusting the SSH host key.",
+        progress_current=0,
+        progress_total=0,
+        progress_is_indeterminate=True,
+        command_log_limit=10,
+        command_log=[],
+    )
+
+    popup.refresh()
+
+    assert popup._trust_host_key_button.opacity == 0
+    assert popup._trust_host_key_button.disabled is True
+
+
+def test_sync_progress_popup_trust_confirmation_delegates_to_shell(
+    monkeypatch: MonkeyPatch,
+) -> None:
+    """Verify sync progress popup trust confirmation delegates to shell.
+
+    Args:
+        monkeypatch:
+            Value supplied to this callable.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
+    shell = create_frontend_shell(build_seeded_services())
+    popup = SyncProgressPopup(shell=shell)
+    trust_calls: list[str] = []
+
+    def record_trust() -> None:
+        """Handle record trust.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+        """
+        trust_calls.append("trusted")
+
+    monkeypatch.setattr(shell, "trust_selected_project_remote_host_key", record_trust)
+
+    popup._run_trust_host_key_after_confirmation()
+
+    assert trust_calls == ["trusted"]
+
+
+def test_sync_progress_popup_opens_host_key_confirmation(
+    monkeypatch: MonkeyPatch,
+) -> None:
+    """Verify sync progress popup opens host key confirmation.
+
+    Args:
+        monkeypatch:
+            Value supplied to this callable.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
+    shell = create_frontend_shell(build_seeded_services())
+    popup = SyncProgressPopup(shell=shell)
+    confirmations: list[_FakeConfirmationPopup] = []
+
+    def build_confirmation_popup(
+        *,
+        title: str,
+        size_hint: tuple[float, float],
+        auto_dismiss: bool,
+    ) -> _FakeConfirmationPopup:
+        """Handle build confirmation popup.
+
+        Args:
+            title:
+                Value supplied to this callable.
+            size_hint:
+                Value supplied to this callable.
+            auto_dismiss:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+        """
+        confirmation = _FakeConfirmationPopup(
+            title=title,
+            size_hint=size_hint,
+            auto_dismiss=auto_dismiss,
+        )
+        confirmations.append(confirmation)
+        return confirmation
+
+    monkeypatch.setattr(
+        "polyglot_site_translator.presentation.kivy.widgets.ssh_host_key_trust_dialog.Popup",
+        build_confirmation_popup,
+    )
+
+    popup._open_host_key_confirmation()
+
+    assert len(confirmations) == 1
+    assert confirmations[0].title == "Trust SSH Host Key?"
+    assert confirmations[0].auto_dismiss is False
+    assert confirmations[0].content is not None
+    assert confirmations[0].opened is True

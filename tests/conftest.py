@@ -13,9 +13,16 @@ SRC_PATH = Path(__file__).resolve().parents[1] / "src"
 if str(SRC_PATH) not in sys.path:
     sys.path.insert(0, str(SRC_PATH))
 
-from polyglot_site_translator.domain.remote_connections.models import RemoteConnectionConfig
-from polyglot_site_translator.domain.site_registry.models import RegisteredSite, SiteProject
-from polyglot_site_translator.infrastructure.settings import build_default_settings_service
+from polyglot_site_translator.domain.remote_connections.models import (
+    RemoteConnectionConfig,
+)
+from polyglot_site_translator.domain.site_registry.models import (
+    RegisteredSite,
+    SiteProject,
+)
+from polyglot_site_translator.infrastructure.settings import (
+    build_default_settings_service,
+)
 from polyglot_site_translator.infrastructure.site_registry_sqlite import (
     ConfiguredSqliteSiteRegistryRepository,
 )
@@ -26,7 +33,18 @@ def isolate_user_config_dir(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
-    """Force tests to use an isolated user config directory."""
+    """Handle isolate user config dir.
+
+    Args:
+        monkeypatch:
+            Value supplied to this callable.
+        tmp_path:
+            Value supplied to this callable.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
     monkeypatch.setenv("POLYGLOT_SITE_TRANSLATOR_CONFIG_DIR", str(tmp_path))
     settings_service = build_default_settings_service(config_dir=tmp_path)
     settings_service.reset_settings()

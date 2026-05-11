@@ -8,6 +8,12 @@ from polyglot_site_translator.presentation.kivy.settings_layout import (
 
 
 def test_build_settings_layout_spec_uses_compact_mode_for_narrow_windows() -> None:
+    """Verify build settings layout spec uses compact mode for narrow windows.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
     layout_spec = build_settings_layout_spec(550)
 
     assert layout_spec.mode == "compact"
@@ -19,6 +25,12 @@ def test_build_settings_layout_spec_uses_compact_mode_for_narrow_windows() -> No
 
 
 def test_build_settings_layout_spec_uses_wide_mode_for_desktop_windows() -> None:
+    """Verify build settings layout spec uses wide mode for desktop windows.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
     layout_spec = build_settings_layout_spec(1280)
 
     assert layout_spec.mode == "wide"

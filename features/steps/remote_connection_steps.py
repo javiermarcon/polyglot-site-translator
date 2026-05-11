@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable
+from collections.abc import Callable, Iterable
 from dataclasses import dataclass
 from pathlib import Path
 import tempfile
-from typing import Protocol, TypeVar, cast
+from typing import Any, Protocol, TypeVar, cast
 
 import behave as behave_module  # type: ignore[import-untyped]
 
@@ -17,11 +17,16 @@ from polyglot_site_translator.domain.remote_connections.models import (
     RemoteConnectionTestResult,
     RemoteConnectionTypeDescriptor,
 )
-from polyglot_site_translator.domain.sync.models import RemoteSyncFile, SyncProgressEvent
+from polyglot_site_translator.domain.sync.models import (
+    RemoteSyncFile,
+    SyncProgressEvent,
+)
 from polyglot_site_translator.infrastructure.remote_connections.registry import (
     RemoteConnectionRegistry,
 )
-from polyglot_site_translator.infrastructure.settings import build_default_settings_service
+from polyglot_site_translator.infrastructure.settings import (
+    build_default_settings_service,
+)
 from polyglot_site_translator.presentation.fakes import build_default_frontend_services
 from polyglot_site_translator.presentation.frontend_shell import FrontendShell
 from polyglot_site_translator.presentation.view_models import SiteEditorViewModel
@@ -29,14 +34,23 @@ from polyglot_site_translator.services.remote_connections import RemoteConnectio
 
 StepFunction = TypeVar("StepFunction", bound=Callable[..., object])
 
-given = cast(Callable[[str], Callable[[StepFunction], StepFunction]], behave_module.given)
+given = cast(
+    Callable[[str], Callable[[StepFunction], StepFunction]], behave_module.given
+)
 when = cast(Callable[[str], Callable[[StepFunction], StepFunction]], behave_module.when)
 then = cast(Callable[[str], Callable[[StepFunction], StepFunction]], behave_module.then)
 
 
 @dataclass(frozen=True)
 class StubRemoteConnectionProvider:
-    """Provider stub used by BDD scenarios."""
+    """BDD helper for StubRemoteConnectionProvider.
+
+    Attributes:
+        descriptor:
+            Documented attribute exposed by this type.
+        result:
+            Documented attribute exposed by this type.
+    """
 
     descriptor: RemoteConnectionTypeDescriptor
     result: RemoteConnectionTestResult
@@ -45,6 +59,18 @@ class StubRemoteConnectionProvider:
         self,
         config: RemoteConnectionConfigInput,
     ) -> RemoteConnectionTestResult:
+        """Verify connection.
+
+        Args:
+            self:
+                Value supplied to this callable.
+            config:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+        """
         return RemoteConnectionTestResult(
             success=self.result.success,
             connection_type=config.connection_type,
@@ -58,8 +84,64 @@ class StubRemoteConnectionProvider:
         self,
         config: RemoteConnectionConfig,
         progress_callback: Callable[[SyncProgressEvent], None] | None = None,
+        *,
+        max_files: int = 1000,
     ) -> list[RemoteSyncFile]:
+        """Handle list remote files.
+
+        Args:
+            self:
+                Value supplied to this callable.
+            config:
+                Value supplied to this callable.
+            progress_callback:
+                Value supplied to this callable.
+            max_files:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+        """
         return []
+
+    @staticmethod
+    def iter_remote_files(
+        config: RemoteConnectionConfig,
+        progress_callback: Callable[[SyncProgressEvent], None] | None = None,
+    ) -> Iterable[RemoteSyncFile]:
+        """Handle iter remote files.
+
+        Args:
+            config:
+                Value supplied to this callable.
+            progress_callback:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+        """
+        return iter(())
+
+    @staticmethod
+    def open_session(config: RemoteConnectionConfig) -> Any:
+        """Handle open session.
+
+        Args:
+            config:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+
+        Raises:
+            AssertionError:
+                Raised when this callable hits the corresponding error path.
+        """
+        msg = f"open_session not used in this BDD provider for {config.connection_type}"
+        raise AssertionError(msg)
 
     def download_file(
         self,
@@ -67,12 +149,100 @@ class StubRemoteConnectionProvider:
         remote_path: str,
         progress_callback: Callable[[SyncProgressEvent], None] | None = None,
     ) -> bytes:
+        """Handle download file.
+
+        Args:
+            self:
+                Value supplied to this callable.
+            config:
+                Value supplied to this callable.
+            remote_path:
+                Value supplied to this callable.
+            progress_callback:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+
+        Raises:
+            AssertionError:
+                Raised when this callable hits the corresponding error path.
+        """
         msg = f"download not used in this BDD provider for {remote_path}"
+        raise AssertionError(msg)
+
+    @staticmethod
+    def ensure_remote_directory(
+        config: RemoteConnectionConfig,
+        remote_path: str,
+        progress_callback: Callable[[SyncProgressEvent], None] | None = None,
+    ) -> int:
+        """Handle ensure remote directory.
+
+        Args:
+            config:
+                Value supplied to this callable.
+            remote_path:
+                Value supplied to this callable.
+            progress_callback:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+
+        Raises:
+            AssertionError:
+                Raised when this callable hits the corresponding error path.
+        """
+        msg = f"ensure_remote_directory not used in this BDD provider for {remote_path}"
+        raise AssertionError(msg)
+
+    @staticmethod
+    def upload_file(
+        config: RemoteConnectionConfig,
+        remote_path: str,
+        contents: bytes,
+        progress_callback: Callable[[SyncProgressEvent], None] | None = None,
+    ) -> None:
+        """Handle upload file.
+
+        Args:
+            config:
+                Value supplied to this callable.
+            remote_path:
+                Value supplied to this callable.
+            contents:
+                Value supplied to this callable.
+            progress_callback:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+
+        Raises:
+            AssertionError:
+                Raised when this callable hits the corresponding error path.
+        """
+        msg = f"upload not used in this BDD provider for {remote_path}"
         raise AssertionError(msg)
 
 
 class BehaveRemoteConnectionContext(Protocol):
-    """Typed subset of behave context used by the remote connection feature."""
+    """BDD helper for BehaveRemoteConnectionContext.
+
+    Attributes:
+        shell:
+            Documented attribute exposed by this type.
+        settings_temp_dir:
+            Documented attribute exposed by this type.
+        remote_connection_service:
+            Documented attribute exposed by this type.
+        editor_draft:
+            Documented attribute exposed by this type.
+    """
 
     shell: FrontendShell
     settings_temp_dir: tempfile.TemporaryDirectory[str]
@@ -81,10 +251,30 @@ class BehaveRemoteConnectionContext(Protocol):
 
 
 def _context(context: object) -> BehaveRemoteConnectionContext:
+    """Handle context.
+
+    Args:
+        context:
+            Value supplied to this callable.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
     return cast(BehaveRemoteConnectionContext, context)
 
 
 def _rebuild_shell(context: BehaveRemoteConnectionContext) -> None:
+    """Handle rebuild shell.
+
+    Args:
+        context:
+            Value supplied to this callable.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
     settings_service = build_default_settings_service(
         config_dir=Path(context.settings_temp_dir.name)
     )
@@ -98,6 +288,16 @@ def _rebuild_shell(context: BehaveRemoteConnectionContext) -> None:
 
 @given("the frontend shell is wired with SQLite-backed remote connection services")
 def step_remote_connection_shell(context: object) -> None:
+    """Run the BDD step for remote connection shell.
+
+    Args:
+        context:
+            Value supplied to this callable.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
     typed_context = _context(context)
     typed_context.settings_temp_dir = tempfile.TemporaryDirectory()
     typed_context.remote_connection_service = RemoteConnectionService(
@@ -108,6 +308,18 @@ def step_remote_connection_shell(context: object) -> None:
 
 @given('remote connection tests succeed for "{connection_type}"')
 def step_remote_connection_success(context: object, connection_type: str) -> None:
+    """Run the BDD step for remote connection success.
+
+    Args:
+        context:
+            Value supplied to this callable.
+        connection_type:
+            Value supplied to this callable.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
     typed_context = _context(context)
     typed_context.remote_connection_service = RemoteConnectionService(
         registry=RemoteConnectionRegistry.default_registry(
@@ -139,6 +351,20 @@ def step_remote_connection_failure(
     connection_type: str,
     error_code: str,
 ) -> None:
+    """Run the BDD step for remote connection failure.
+
+    Args:
+        context:
+            Value supplied to this callable.
+        connection_type:
+            Value supplied to this callable.
+        error_code:
+            Value supplied to this callable.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
     typed_context = _context(context)
     typed_context.remote_connection_service = RemoteConnectionService(
         registry=RemoteConnectionRegistry.default_registry(
@@ -166,16 +392,36 @@ def step_remote_connection_failure(
 
 @then('the remote connection selector includes the "No Remote Connection" option')
 def step_assert_no_remote_option(context: object) -> None:
+    """Run the BDD step for assert no remote option.
+
+    Args:
+        context:
+            Value supplied to this callable.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
     typed_context = _context(context)
     typed_context.shell.open_project_editor_create()
     assert typed_context.shell.project_editor_state is not None
-    assert typed_context.shell.project_editor_state.connection_type_options[0].label == (
-        "No Remote Connection"
-    )
+    assert typed_context.shell.project_editor_state.connection_type_options[
+        0
+    ].label == ("No Remote Connection")
 
 
 @when("the operator submits a new project without remote connection")
 def step_submit_without_remote(context: object) -> None:
+    """Run the BDD step for submit without remote.
+
+    Args:
+        context:
+            Value supplied to this callable.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
     typed_context = _context(context)
     typed_context.shell.save_new_project(
         SiteEditorViewModel(
@@ -197,15 +443,38 @@ def step_submit_without_remote(context: object) -> None:
 
 @then("the project detail shows that no remote connection is configured")
 def step_assert_no_remote_summary(context: object) -> None:
+    """Run the BDD step for assert no remote summary.
+
+    Args:
+        context:
+            Value supplied to this callable.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
     typed_context = _context(context)
     assert typed_context.shell.project_detail_state is not None
     assert (
-        "Remote connection: None" in typed_context.shell.project_detail_state.configuration_summary
+        "Remote connection: None"
+        in typed_context.shell.project_detail_state.configuration_summary
     )
 
 
 @when('the operator fills a valid "{connection_type}" remote connection draft')
 def step_fill_valid_remote_draft(context: object, connection_type: str) -> None:
+    """Run the BDD step for fill valid remote draft.
+
+    Args:
+        context:
+            Value supplied to this callable.
+        connection_type:
+            Value supplied to this callable.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
     typed_context = _context(context)
     typed_context.editor_draft = SiteEditorViewModel(
         site_id=None,
@@ -223,8 +492,80 @@ def step_fill_valid_remote_draft(context: object, connection_type: str) -> None:
     )
 
 
+@when("the operator fills a draft without remote connection")
+def step_fill_no_remote_draft(context: object) -> None:
+    """Run the BDD step for fill no remote draft.
+
+    Args:
+        context:
+            Value supplied to this callable.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
+    typed_context = _context(context)
+    typed_context.editor_draft = SiteEditorViewModel(
+        site_id=None,
+        name="Local Project",
+        framework_type="unknown",
+        local_path="/workspace/local-project",
+        default_locale="en_US",
+        connection_type="none",
+        remote_host="",
+        remote_port="",
+        remote_username="",
+        remote_password="",
+        remote_path="",
+        is_active=True,
+    )
+
+
+@when('the operator fills an invalid "{connection_type}" remote connection draft')
+def step_fill_invalid_remote_draft(context: object, connection_type: str) -> None:
+    """Run the BDD step for fill invalid remote draft.
+
+    Args:
+        context:
+            Value supplied to this callable.
+        connection_type:
+            Value supplied to this callable.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
+    typed_context = _context(context)
+    typed_context.editor_draft = SiteEditorViewModel(
+        site_id=None,
+        name="Remote Project",
+        framework_type="unknown",
+        local_path="/workspace/remote-project",
+        default_locale="en_US",
+        connection_type=connection_type,
+        remote_host="example.com",
+        remote_port="twenty-two"
+        if connection_type in {"sftp", "scp"}
+        else "twenty-one",
+        remote_username="deploy",
+        remote_password="super-secret",
+        remote_path="/srv/app",
+        is_active=True,
+    )
+
+
 @when("the operator runs the remote connection test from the editor")
 def step_run_remote_connection_test(context: object) -> None:
+    """Run the BDD step for run remote connection test.
+
+    Args:
+        context:
+            Value supplied to this callable.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
     typed_context = _context(context)
     typed_context.shell.open_project_editor_create()
     typed_context.shell.test_project_connection(typed_context.editor_draft)
@@ -232,15 +573,94 @@ def step_run_remote_connection_test(context: object) -> None:
 
 @then("the project editor shows a successful remote connection test result")
 def step_assert_successful_remote_test(context: object) -> None:
+    """Run the BDD step for assert successful remote test.
+
+    Args:
+        context:
+            Value supplied to this callable.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
     typed_context = _context(context)
     assert typed_context.shell.project_editor_state is not None
     assert typed_context.shell.project_editor_state.connection_test_result is not None
-    assert typed_context.shell.project_editor_state.connection_test_result.success is True
+    assert (
+        typed_context.shell.project_editor_state.connection_test_result.success is True
+    )
 
 
 @then("the project editor shows a failed remote connection test result")
 def step_assert_failed_remote_test(context: object) -> None:
+    """Run the BDD step for assert failed remote test.
+
+    Args:
+        context:
+            Value supplied to this callable.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
     typed_context = _context(context)
     assert typed_context.shell.project_editor_state is not None
     assert typed_context.shell.project_editor_state.connection_test_result is not None
-    assert typed_context.shell.project_editor_state.connection_test_result.success is False
+    assert (
+        typed_context.shell.project_editor_state.connection_test_result.success is False
+    )
+
+
+@then("the project editor shows the missing remote connection validation error")
+def step_assert_missing_remote_validation_error(context: object) -> None:
+    """Run the BDD step for assert missing remote validation error.
+
+    Args:
+        context:
+            Value supplied to this callable.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+
+    Raises:
+        AssertionError:
+            Raised when this callable hits the corresponding error path.
+    """
+    typed_context = _context(context)
+    assert typed_context.shell.project_editor_state is not None
+    if typed_context.shell.project_editor_state.status != "failed":
+        raise AssertionError
+    if (
+        typed_context.shell.project_editor_state.status_message
+        != "Remote connection test requires a configured remote connection."
+    ):
+        raise AssertionError
+
+
+@then("the project editor shows the invalid remote port validation error")
+def step_assert_invalid_remote_port_validation_error(context: object) -> None:
+    """Run the BDD step for assert invalid remote port validation error.
+
+    Args:
+        context:
+            Value supplied to this callable.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+
+    Raises:
+        AssertionError:
+            Raised when this callable hits the corresponding error path.
+    """
+    typed_context = _context(context)
+    assert typed_context.shell.project_editor_state is not None
+    if typed_context.shell.project_editor_state.status != "failed":
+        raise AssertionError
+    assert typed_context.shell.project_editor_state.status_message is not None
+    if (
+        "invalid literal for int()"
+        not in typed_context.shell.project_editor_state.status_message
+    ):
+        raise AssertionError

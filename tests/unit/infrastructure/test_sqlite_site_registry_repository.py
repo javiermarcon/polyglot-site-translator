@@ -7,25 +7,51 @@ import sqlite3
 
 import pytest
 
-from polyglot_site_translator.domain.remote_connections.models import RemoteConnectionConfig
+from polyglot_site_translator.domain.remote_connections.models import (
+    RemoteConnectionConfig,
+    RemoteConnectionFlags,
+)
 from polyglot_site_translator.domain.site_registry.errors import (
     SiteRegistryConfigurationError,
     SiteRegistryNotFoundError,
     SiteRegistryPersistenceError,
 )
-from polyglot_site_translator.domain.site_registry.models import RegisteredSite, SiteProject
-from polyglot_site_translator.infrastructure.database_location import SQLiteDatabaseLocation
+from polyglot_site_translator.domain.site_registry.models import (
+    RegisteredSite,
+    SiteProject,
+)
+from polyglot_site_translator.domain.sync.scope import (
+    ProjectSyncRuleOverride,
+    SyncFilterType,
+    SyncRuleBehavior,
+    build_sync_rule_key,
+)
+from polyglot_site_translator.infrastructure.database_location import (
+    SQLiteDatabaseLocation,
+)
 from polyglot_site_translator.infrastructure.settings import TomlSettingsService
 from polyglot_site_translator.infrastructure.site_registry_sqlite import (
     ConfiguredSqliteSiteRegistryRepository,
     SqliteSiteRegistryRepository,
 )
-from polyglot_site_translator.infrastructure.site_secrets import LocalKeySiteSecretCipher
+from polyglot_site_translator.infrastructure.site_secrets import (
+    LocalKeySiteSecretCipher,
+)
 from polyglot_site_translator.presentation.errors import ControlledServiceError
 from polyglot_site_translator.presentation.view_models import SettingsStateViewModel
 
 
 def test_sqlite_repository_creates_schema_and_roundtrips_a_site(tmp_path: Path) -> None:
+    """Verify sqlite repository creates schema and roundtrips a site.
+
+    Args:
+        tmp_path:
+            Value supplied to this callable.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
     repository = _build_repository(tmp_path)
     site = _build_site()
 
@@ -36,7 +62,183 @@ def test_sqlite_repository_creates_schema_and_roundtrips_a_site(tmp_path: Path) 
     assert repository.list_sites() == [site]
 
 
+def test_sqlite_repository_roundtrips_the_filtered_sync_preference(
+    tmp_path: Path,
+) -> None:
+    """Verify sqlite repository roundtrips the filtered sync preference.
+
+    Args:
+        tmp_path:
+            Value supplied to this callable.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
+    repository = _build_repository(tmp_path)
+    site = _build_site(use_adapter_sync_filters=True)
+
+    repository.create_site(site)
+    loaded_site = repository.get_site(site.id)
+
+    assert loaded_site.remote_connection is not None
+    assert loaded_site.remote_connection.flags.use_adapter_sync_filters is True
+
+
+def test_sqlite_repository_roundtrips_the_compile_mo_preference(tmp_path: Path) -> None:
+    """Verify sqlite repository roundtrips the compile mo preference.
+
+    Args:
+        tmp_path:
+            Value supplied to this callable.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
+    repository = _build_repository(tmp_path)
+    site = _build_site(translation_modes={"compile_mo": False})
+
+    repository.create_site(site)
+    loaded_site = repository.get_site(site.id)
+
+    assert loaded_site.project.compile_mo is False
+
+
+def test_sqlite_repository_roundtrips_the_external_translator_preference(
+    tmp_path: Path,
+) -> None:
+    """Verify sqlite repository roundtrips the external translator preference.
+
+    Args:
+        tmp_path:
+            Value supplied to this callable.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
+    repository = _build_repository(tmp_path)
+    site = _build_site(translation_modes={"use_external_translator": False})
+
+    repository.create_site(site)
+    loaded_site = repository.get_site(site.id)
+
+    assert loaded_site.project.use_external_translator is False
+
+
+def test_sqlite_repository_roundtrips_the_translation_cache_preference(
+    tmp_path: Path,
+) -> None:
+    """Verify sqlite repository roundtrips the translation cache preference.
+
+    Args:
+        tmp_path:
+            Value supplied to this callable.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
+    repository = _build_repository(tmp_path)
+    site = _build_site(translation_modes={"use_translation_cache": False})
+
+    repository.create_site(site)
+    loaded_site = repository.get_site(site.id)
+
+    assert loaded_site.project.use_translation_cache is False
+
+
+def test_sqlite_repository_roundtrips_the_only_fuzzy_preference(tmp_path: Path) -> None:
+    """Verify sqlite repository roundtrips the only fuzzy preference.
+
+    Args:
+        tmp_path:
+            Value supplied to this callable.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
+    repository = _build_repository(tmp_path)
+    site = _build_site(translation_modes={"only_fuzzy": True})
+
+    repository.create_site(site)
+    loaded_site = repository.get_site(site.id)
+
+    assert loaded_site.project.only_fuzzy is True
+
+
+def test_sqlite_repository_roundtrips_project_sync_rule_overrides(
+    tmp_path: Path,
+) -> None:
+    """Verify sqlite repository roundtrips project sync rule overrides.
+
+    Args:
+        tmp_path:
+            Value supplied to this callable.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
+    repository = _build_repository(tmp_path)
+    site = _build_site(
+        sync_rule_overrides=(
+            ProjectSyncRuleOverride(
+                rule_key=build_sync_rule_key(
+                    relative_path="locale_custom",
+                    filter_type=SyncFilterType.DIRECTORY,
+                    behavior=SyncRuleBehavior.INCLUDE,
+                ),
+                target_rule_key=None,
+                relative_path="locale_custom",
+                filter_type=SyncFilterType.DIRECTORY,
+                behavior=SyncRuleBehavior.INCLUDE,
+                is_enabled=True,
+                description="Project locale override",
+            ),
+            ProjectSyncRuleOverride(
+                rule_key=build_sync_rule_key(
+                    relative_path="__pycache__",
+                    filter_type=SyncFilterType.DIRECTORY,
+                    behavior=SyncRuleBehavior.EXCLUDE,
+                ),
+                target_rule_key=build_sync_rule_key(
+                    relative_path="__pycache__",
+                    filter_type=SyncFilterType.DIRECTORY,
+                    behavior=SyncRuleBehavior.EXCLUDE,
+                ),
+                relative_path="__pycache__",
+                filter_type=SyncFilterType.DIRECTORY,
+                behavior=SyncRuleBehavior.EXCLUDE,
+                is_enabled=False,
+                description="Disable adapter cache exclusion",
+            ),
+        ),
+    )
+
+    repository.create_site(site)
+    loaded_site = repository.get_site(site.id)
+
+    assert site.remote_connection is not None
+    assert loaded_site.remote_connection is not None
+    assert loaded_site.remote_connection.flags.sync_rule_overrides == (
+        site.remote_connection.flags.sync_rule_overrides
+    )
+
+
 def test_sqlite_repository_updates_a_site(tmp_path: Path) -> None:
+    """Verify sqlite repository updates a site.
+
+    Args:
+        tmp_path:
+            Value supplied to this callable.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
     repository = _build_repository(tmp_path)
     site = _build_site()
     repository.create_site(site)
@@ -63,13 +265,58 @@ def test_sqlite_repository_updates_a_site(tmp_path: Path) -> None:
     assert repository.get_site(site.id) == updated_site
 
 
-def test_sqlite_repository_returns_an_empty_list_when_no_sites_exist(tmp_path: Path) -> None:
+def test_sqlite_repository_update_can_remove_a_remote_connection(
+    tmp_path: Path,
+) -> None:
+    """Verify sqlite repository update can remove a remote connection.
+
+    Args:
+        tmp_path:
+            Value supplied to this callable.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
+    repository = _build_repository(tmp_path)
+    site = _build_site()
+    repository.create_site(site)
+    updated_site = RegisteredSite(project=site.project, remote_connection=None)
+
+    repository.update_site(updated_site)
+
+    assert repository.get_site(site.id).remote_connection is None
+
+
+def test_sqlite_repository_returns_an_empty_list_when_no_sites_exist(
+    tmp_path: Path,
+) -> None:
+    """Verify sqlite repository returns an empty list when no sites exist.
+
+    Args:
+        tmp_path:
+            Value supplied to this callable.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
     repository = _build_repository(tmp_path)
 
     assert repository.list_sites() == []
 
 
 def test_sqlite_repository_rejects_duplicate_site_names(tmp_path: Path) -> None:
+    """Verify sqlite repository rejects duplicate site names.
+
+    Args:
+        tmp_path:
+            Value supplied to this callable.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
     repository = _build_repository(tmp_path)
     repository.create_site(_build_site())
 
@@ -92,7 +339,66 @@ def test_sqlite_repository_rejects_duplicate_site_names(tmp_path: Path) -> None:
         )
 
 
+def test_sqlite_repository_rejects_duplicate_names_during_update(
+    tmp_path: Path,
+) -> None:
+    """Verify sqlite repository rejects duplicate names during update.
+
+    Args:
+        tmp_path:
+            Value supplied to this callable.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
+    repository = _build_repository(tmp_path)
+    original_site = _build_site()
+    repository.create_site(original_site)
+    repository.create_site(
+        RegisteredSite(
+            project=SiteProject(
+                id="site-2",
+                name="Other Site",
+                framework_type="wordpress",
+                local_path="/workspace/other",
+                default_locale="en_US",
+                is_active=True,
+            ),
+            remote_connection=None,
+        )
+    )
+
+    with pytest.raises(
+        ValueError,
+        match=r"A site with the name 'Marketing Site' already exists\.",
+    ):
+        repository.update_site(
+            RegisteredSite(
+                project=SiteProject(
+                    id="site-2",
+                    name="Marketing Site",
+                    framework_type="wordpress",
+                    local_path="/workspace/other",
+                    default_locale="en_US",
+                    is_active=True,
+                ),
+                remote_connection=None,
+            )
+        )
+
+
 def test_sqlite_repository_encrypts_the_stored_remote_password(tmp_path: Path) -> None:
+    """Verify sqlite repository encrypts the stored remote password.
+
+    Args:
+        tmp_path:
+            Value supplied to this callable.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
     repository = _build_repository(tmp_path)
     site = _build_site()
 
@@ -104,7 +410,52 @@ def test_sqlite_repository_encrypts_the_stored_remote_password(tmp_path: Path) -
     assert site.remote_connection.password not in stored_password
 
 
-def test_sqlite_repository_supports_projects_without_remote_connections(tmp_path: Path) -> None:
+def test_sqlite_repository_reports_corrupted_encrypted_passwords(
+    tmp_path: Path,
+) -> None:
+    """Verify sqlite repository reports corrupted encrypted passwords.
+
+    Args:
+        tmp_path:
+            Value supplied to this callable.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
+    repository = _build_repository(tmp_path)
+    site = _build_site()
+
+    repository.create_site(site)
+    with sqlite3.connect(tmp_path / "registry.sqlite3") as connection:
+        connection.execute(
+            """UPDATE site_remote_connections
+            SET password_encrypted = ?
+            WHERE site_project_id = ?
+            """,
+            ("not-valid-base64***", site.id),
+        )
+
+    with pytest.raises(
+        SiteRegistryPersistenceError,
+        match=r"Stored site secret failed integrity validation\.",
+    ):
+        repository.get_site(site.id)
+
+
+def test_sqlite_repository_supports_projects_without_remote_connections(
+    tmp_path: Path,
+) -> None:
+    """Verify sqlite repository supports projects without remote connections.
+
+    Args:
+        tmp_path:
+            Value supplied to this callable.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
     repository = _build_repository(tmp_path)
     site = RegisteredSite(
         project=SiteProject(
@@ -126,13 +477,22 @@ def test_sqlite_repository_supports_projects_without_remote_connections(tmp_path
 def test_sqlite_repository_migrates_legacy_ftp_columns_without_losing_ciphertext(
     tmp_path: Path,
 ) -> None:
+    """Verify sqlite repository migrates legacy ftp columns without losing ciphertext.
+
+    Args:
+        tmp_path:
+            Value supplied to this callable.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
     database_path = tmp_path / "legacy.sqlite3"
     cipher = LocalKeySiteSecretCipher(tmp_path / "site_registry.key")
     encrypted_password = cipher.encrypt("super-secret")
     with sqlite3.connect(database_path) as connection:
         connection.execute(
-            """
-            CREATE TABLE site_registry (
+            """CREATE TABLE site_registry (
                 id TEXT PRIMARY KEY,
                 name TEXT NOT NULL UNIQUE,
                 framework_type TEXT NOT NULL,
@@ -148,8 +508,7 @@ def test_sqlite_repository_migrates_legacy_ftp_columns_without_losing_ciphertext
             """
         )
         connection.execute(
-            """
-            INSERT INTO site_registry (
+            """INSERT INTO site_registry (
                 id,
                 name,
                 framework_type,
@@ -195,7 +554,19 @@ def test_sqlite_repository_migrates_legacy_ftp_columns_without_losing_ciphertext
     assert stored_ciphertext == encrypted_password
 
 
-def test_sqlite_repository_raises_for_missing_rows_and_delete_roundtrip(tmp_path: Path) -> None:
+def test_sqlite_repository_raises_for_missing_rows_and_delete_roundtrip(
+    tmp_path: Path,
+) -> None:
+    """Verify sqlite repository raises for missing rows and delete roundtrip.
+
+    Args:
+        tmp_path:
+            Value supplied to this callable.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
     repository = _build_repository(tmp_path)
     site = _build_site()
     repository.create_site(site)
@@ -209,7 +580,9 @@ def test_sqlite_repository_raises_for_missing_rows_and_delete_roundtrip(tmp_path
     with pytest.raises(SiteRegistryNotFoundError, match=r"Unknown site id: site-1"):
         repository.fetch_encrypted_password(site.id)
 
-    with pytest.raises(SiteRegistryNotFoundError, match=r"Unknown site id: missing-site"):
+    with pytest.raises(
+        SiteRegistryNotFoundError, match=r"Unknown site id: missing-site"
+    ):
         repository.delete_site("missing-site")
 
     with pytest.raises(SiteRegistryNotFoundError, match=r"Unknown site id: site-1"):
@@ -220,34 +593,130 @@ def test_sqlite_repository_wraps_sqlite_errors_for_read_write_and_delete(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
+    """Verify sqlite repository wraps sqlite errors for read write and delete.
+
+    Args:
+        monkeypatch:
+            Value supplied to this callable.
+        tmp_path:
+            Value supplied to this callable.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+
+    Raises:
+        OperationalError:
+            Raised when this callable hits the corresponding error path.
+    """
     repository = _build_repository(tmp_path)
 
     def fail_connect() -> sqlite3.Connection:
+        """Handle fail connect.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+
+        Raises:
+            OperationalError:
+                Raised when this callable hits the corresponding error path.
+        """
         msg = "boom"
         raise sqlite3.OperationalError(msg)
 
     monkeypatch.setattr(repository, "_connect", fail_connect)
 
-    with pytest.raises(SiteRegistryPersistenceError, match=r"SQLite site registry write failed"):
+    with pytest.raises(
+        SiteRegistryPersistenceError, match=r"SQLite site registry write failed"
+    ):
         repository.create_site(_build_site())
 
-    with pytest.raises(SiteRegistryPersistenceError, match=r"SQLite site registry read failed"):
+    with pytest.raises(
+        SiteRegistryPersistenceError, match=r"SQLite site registry read failed"
+    ):
         repository.list_sites()
 
-    with pytest.raises(SiteRegistryPersistenceError, match=r"SQLite site registry read failed"):
+    with pytest.raises(
+        SiteRegistryPersistenceError, match=r"SQLite site registry read failed"
+    ):
         repository.get_site("site-1")
 
-    with pytest.raises(SiteRegistryPersistenceError, match=r"SQLite site registry write failed"):
+    with pytest.raises(
+        SiteRegistryPersistenceError, match=r"SQLite site registry write failed"
+    ):
         repository.update_site(_build_site())
 
-    with pytest.raises(SiteRegistryPersistenceError, match=r"SQLite site registry delete failed"):
+    with pytest.raises(
+        SiteRegistryPersistenceError, match=r"SQLite site registry delete failed"
+    ):
         repository.delete_site("site-1")
+
+
+def test_sqlite_repository_wraps_fetch_encrypted_password_read_errors(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """Verify sqlite repository wraps fetch encrypted password read errors.
+
+    Args:
+        monkeypatch:
+            Value supplied to this callable.
+        tmp_path:
+            Value supplied to this callable.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+
+    Raises:
+        OperationalError:
+            Raised when this callable hits the corresponding error path.
+    """
+    repository = _build_repository(tmp_path)
+
+    def fail_connect() -> sqlite3.Connection:
+        """Handle fail connect.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+
+        Raises:
+            OperationalError:
+                Raised when this callable hits the corresponding error path.
+        """
+        msg = "boom"
+        raise sqlite3.OperationalError(msg)
+
+    monkeypatch.setattr(repository, "_connect", fail_connect)
+
+    with pytest.raises(
+        SiteRegistryPersistenceError, match=r"SQLite site registry read failed"
+    ):
+        repository.fetch_encrypted_password("site-1")
 
 
 def test_sqlite_repository_wraps_schema_preparation_errors(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
+    """Verify sqlite repository wraps schema preparation errors.
+
+    Args:
+        monkeypatch:
+            Value supplied to this callable.
+        tmp_path:
+            Value supplied to this callable.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+
+    Raises:
+        OSError:
+            Raised when this callable hits the corresponding error path.
+    """
     location = SQLiteDatabaseLocation(
         directory=tmp_path / "nested",
         filename="registry.sqlite3",
@@ -255,6 +724,22 @@ def test_sqlite_repository_wraps_schema_preparation_errors(
     )
 
     def fail_mkdir(*_args: object, **_kwargs: object) -> None:
+        """Handle fail mkdir.
+
+        Args:
+            *_args:
+                Value supplied to this callable.
+            **_kwargs:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+
+        Raises:
+            OSError:
+                Raised when this callable hits the corresponding error path.
+        """
         msg = "boom"
         raise OSError(msg)
 
@@ -270,9 +755,142 @@ def test_sqlite_repository_wraps_schema_preparation_errors(
         )
 
 
+def test_sqlite_repository_wraps_sqlite_schema_initialization_errors(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """Verify sqlite repository wraps sqlite schema initialization errors.
+
+    Args:
+        monkeypatch:
+            Value supplied to this callable.
+        tmp_path:
+            Value supplied to this callable.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+
+    Raises:
+        OperationalError:
+            Raised when this callable hits the corresponding error path.
+    """
+    location = SQLiteDatabaseLocation(
+        directory=tmp_path / "nested",
+        filename="registry.sqlite3",
+        database_path=tmp_path / "nested" / "registry.sqlite3",
+    )
+
+    def fail_connect(_self: SqliteSiteRegistryRepository) -> sqlite3.Connection:
+        """Handle fail connect.
+
+        Args:
+            _self:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+
+        Raises:
+            OperationalError:
+                Raised when this callable hits the corresponding error path.
+        """
+        msg = "boom"
+        raise sqlite3.OperationalError(msg)
+
+    monkeypatch.setattr(SqliteSiteRegistryRepository, "_connect", fail_connect)
+
+    with pytest.raises(
+        SiteRegistryPersistenceError,
+        match=r"SQLite schema initialization failed at",
+    ):
+        SqliteSiteRegistryRepository(
+            location=location,
+            secret_cipher=LocalKeySiteSecretCipher(tmp_path / "site_registry.key"),
+        )
+
+
+def test_sqlite_repository_migrates_remote_filter_flag_column(tmp_path: Path) -> None:
+    """Verify sqlite repository migrates remote filter flag column.
+
+    Args:
+        tmp_path:
+            Value supplied to this callable.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
+    database_path = tmp_path / "legacy-remote.sqlite3"
+    with sqlite3.connect(database_path) as connection:
+        connection.execute(
+            """CREATE TABLE site_registry (
+                id TEXT PRIMARY KEY,
+                name TEXT NOT NULL UNIQUE,
+                framework_type TEXT NOT NULL,
+                local_path TEXT NOT NULL UNIQUE,
+                default_locale TEXT NOT NULL,
+                compile_mo INTEGER NOT NULL DEFAULT 1,
+                use_external_translator INTEGER NOT NULL DEFAULT 1,
+                is_active INTEGER NOT NULL CHECK (is_active IN (0, 1))
+            )
+            """
+        )
+        connection.execute(
+            """CREATE TABLE site_remote_connections (
+                id TEXT PRIMARY KEY,
+                site_project_id TEXT NOT NULL UNIQUE,
+                connection_type TEXT NOT NULL,
+                host TEXT NOT NULL,
+                port INTEGER NOT NULL,
+                username TEXT NOT NULL,
+                password_encrypted TEXT NOT NULL,
+                remote_path TEXT NOT NULL,
+                passive_mode INTEGER NOT NULL CHECK (passive_mode IN (0, 1)),
+                verify_host INTEGER NOT NULL CHECK (verify_host IN (0, 1)),
+                FOREIGN KEY (site_project_id) REFERENCES site_registry(id)
+                ON DELETE CASCADE
+            )
+            """
+        )
+
+    repository = SqliteSiteRegistryRepository(
+        location=SQLiteDatabaseLocation(
+            directory=tmp_path,
+            filename="legacy-remote.sqlite3",
+            database_path=database_path,
+        ),
+        secret_cipher=LocalKeySiteSecretCipher(tmp_path / "site_registry.key"),
+    )
+
+    with sqlite3.connect(database_path) as connection:
+        column_names = {
+            str(row[1])
+            for row in connection.execute("PRAGMA table_info(site_remote_connections)")
+        }
+
+    assert isinstance(repository, SqliteSiteRegistryRepository)
+    assert "use_adapter_sync_filters" in column_names
+
+
 def test_configured_sqlite_repository_resolves_settings_and_wraps_load_failures(
     tmp_path: Path,
 ) -> None:
+    """Verify configured sqlite repository resolves settings and wraps load failures.
+
+    Args:
+        tmp_path:
+            Value supplied to this callable.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+
+    Raises:
+        ControlledServiceError:
+            Raised when this callable hits the corresponding error path.
+    """
     isolated_config_dir = tmp_path / "isolated-config"
     settings_service = TomlSettingsService(isolated_config_dir / "settings.toml")
     settings_service.reset_settings()
@@ -310,7 +928,27 @@ def test_configured_sqlite_repository_resolves_settings_and_wraps_load_failures(
     assert repository.list_sites() == []
 
     class FailingSettingsService(TomlSettingsService):
+        """Test helper for FailingSettingsService.
+
+        Attributes:
+            None: This type does not declare class-level attributes.
+        """
+
         def load_settings(self) -> SettingsStateViewModel:
+            """Handle load settings.
+
+            Args:
+                self:
+                    Value supplied to this callable.
+
+            Returns:
+                value:
+                    Structured value returned by this callable.
+
+            Raises:
+                ControlledServiceError:
+                    Raised when this callable hits the corresponding error path.
+            """
             msg = "Settings unavailable."
             raise ControlledServiceError(msg)
 
@@ -321,6 +959,16 @@ def test_configured_sqlite_repository_resolves_settings_and_wraps_load_failures(
 
 
 def _build_repository(tmp_path: Path) -> SqliteSiteRegistryRepository:
+    """Handle build repository.
+
+    Args:
+        tmp_path:
+            Value supplied to this callable.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
     location = SQLiteDatabaseLocation(
         directory=tmp_path,
         filename="registry.sqlite3",
@@ -332,7 +980,34 @@ def _build_repository(tmp_path: Path) -> SqliteSiteRegistryRepository:
     )
 
 
-def _build_site() -> RegisteredSite:
+def _build_site(
+    *,
+    use_adapter_sync_filters: bool = False,
+    sync_rule_overrides: tuple[ProjectSyncRuleOverride, ...] = (),
+    translation_modes: dict[str, bool] | None = None,
+) -> RegisteredSite:
+    """Handle build site.
+
+    Args:
+        use_adapter_sync_filters:
+            Value supplied to this callable.
+        sync_rule_overrides:
+            Value supplied to this callable.
+        translation_modes:
+            Value supplied to this callable.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
+    resolved_modes = {
+        "compile_mo": True,
+        "use_external_translator": True,
+        "use_translation_cache": True,
+        "only_fuzzy": False,
+    }
+    if translation_modes is not None:
+        resolved_modes.update(translation_modes)
     return RegisteredSite(
         project=SiteProject(
             id="site-1",
@@ -341,6 +1016,10 @@ def _build_site() -> RegisteredSite:
             local_path="/workspace/marketing-site",
             default_locale="en_US",
             is_active=True,
+            compile_mo=resolved_modes["compile_mo"],
+            use_external_translator=resolved_modes["use_external_translator"],
+            use_translation_cache=resolved_modes["use_translation_cache"],
+            only_fuzzy=resolved_modes["only_fuzzy"],
         ),
         remote_connection=RemoteConnectionConfig(
             id="remote-site-1",
@@ -351,5 +1030,9 @@ def _build_site() -> RegisteredSite:
             username="deploy",
             password="super-secret",
             remote_path="/public_html",
+            flags=RemoteConnectionFlags(
+                use_adapter_sync_filters=use_adapter_sync_filters,
+                sync_rule_overrides=sync_rule_overrides,
+            ),
         ),
     )

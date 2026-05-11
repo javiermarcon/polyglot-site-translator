@@ -12,20 +12,47 @@ from polyglot_site_translator.domain.remote_connections.models import (
     RemoteConnectionTypeDescriptor,
     no_remote_connection_descriptor,
 )
-from polyglot_site_translator.domain.site_registry.errors import SiteRegistryValidationError
+from polyglot_site_translator.domain.site_registry.errors import (
+    SiteRegistryValidationError,
+)
 from polyglot_site_translator.infrastructure.remote_connections.registry import (
     RemoteConnectionRegistry,
 )
 
 
 class RemoteConnectionService:
-    """Orchestrate remote connection validation and provider dispatch."""
+    """Orchestrate remote connection validation and provider dispatch.
+
+    Attributes:
+        None: This type does not declare class-level attributes.
+    """
 
     def __init__(self, *, registry: RemoteConnectionRegistry) -> None:
+        """Store the provider registry used for validation and transport dispatch.
+
+        Args:
+            self:
+                Value supplied to this callable.
+            registry:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+        """
         self._registry = registry
 
     def list_supported_connection_types(self) -> list[RemoteConnectionTypeDescriptor]:
-        """Return the optional no-connection option plus discovered providers."""
+        """Return the optional no-connection option plus discovered providers.
+
+        Args:
+            self:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+        """
         return [
             no_remote_connection_descriptor(),
             *self._registry.list_connection_descriptors(),
@@ -35,10 +62,23 @@ class RemoteConnectionService:
         self,
         config: RemoteConnectionConfigInput | None,
     ) -> RemoteConnectionConfigInput | None:
-        """Validate a remote config only when remote access is actually configured."""
+        """Validate a remote config only when remote access is actually configured.
+
+        Args:
+            self:
+                Value supplied to this callable.
+            config:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+        """
         if config is None:
             return None
-        connection_type = _require_text(config.connection_type, "Remote connection type")
+        connection_type = _require_text(
+            config.connection_type, "Remote connection type"
+        )
         if connection_type == NO_REMOTE_CONNECTION_VALUE:
             return None
         self._require_supported_type(connection_type)
@@ -53,15 +93,43 @@ class RemoteConnectionService:
         )
 
     def can_test_connection(self, config: RemoteConnectionConfigInput | None) -> bool:
-        """Return whether a remote config is complete enough to run a test."""
+        """Return whether a remote config is complete enough to run a test.
+
+        Args:
+            self:
+                Value supplied to this callable.
+            config:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+        """
         try:
             validated_config = self.validate_optional_config(config)
         except SiteRegistryValidationError:
             return False
         return validated_config is not None
 
-    def test_connection(self, config: RemoteConnectionConfigInput) -> RemoteConnectionTestResult:
-        """Validate and test a remote connection using the matching provider."""
+    def test_connection(
+        self, config: RemoteConnectionConfigInput
+    ) -> RemoteConnectionTestResult:
+        """Validate and test a remote connection using the matching provider.
+
+        Args:
+            self:
+                Value supplied to this callable.
+            config:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+
+        Raises:
+            SiteRegistryValidationError:
+                Raised when this callable hits the corresponding error path.
+        """
         validated_config = self.validate_optional_config(config)
         if validated_config is None:
             msg = "Remote connection test requires a configured remote connection."
@@ -73,6 +141,22 @@ class RemoteConnectionService:
         self,
         connection_type: str,
     ) -> RemoteConnectionProvider:
+        """Validate and return supported type.
+
+        Args:
+            self:
+                Value supplied to this callable.
+            connection_type:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+
+        Raises:
+            SiteRegistryValidationError:
+                Raised when this callable hits the corresponding error path.
+        """
         try:
             return self._registry.get_provider(connection_type)
         except LookupError as error:
@@ -80,6 +164,22 @@ class RemoteConnectionService:
 
 
 def _require_text(value: str, label: str) -> str:
+    """Validate and return text.
+
+    Args:
+        value:
+            Value supplied to this callable.
+        label:
+            Value supplied to this callable.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+
+    Raises:
+        SiteRegistryValidationError:
+            Raised when this callable hits the corresponding error path.
+    """
     normalized_value = value.strip()
     if normalized_value:
         return normalized_value
@@ -88,6 +188,20 @@ def _require_text(value: str, label: str) -> str:
 
 
 def _require_port(port: int) -> int:
+    """Validate and return port.
+
+    Args:
+        port:
+            Value supplied to this callable.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+
+    Raises:
+        SiteRegistryValidationError:
+            Raised when this callable hits the corresponding error path.
+    """
     if port > 0:
         return port
     msg = "Remote port must be a positive integer."

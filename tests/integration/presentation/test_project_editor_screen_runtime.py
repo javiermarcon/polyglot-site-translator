@@ -2,21 +2,37 @@
 
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Any, cast
 
+from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.spinner import Spinner
+from kivy.uix.widget import Widget
 import pytest
 
 from polyglot_site_translator.app import create_kivy_app
-from polyglot_site_translator.presentation.kivy.screens.project_editor import (
-    _find_option_label,
-    _find_option_value,
+from polyglot_site_translator.infrastructure.settings import (
+    build_default_settings_service,
 )
-from polyglot_site_translator.presentation.view_models import SiteEditorViewModel
+from polyglot_site_translator.presentation.fakes import build_default_frontend_services
+from polyglot_site_translator.presentation.kivy.site_editor_form import (
+    find_option_label,
+    find_option_value,
+)
+from polyglot_site_translator.presentation.view_models import (
+    SiteEditorViewModel,
+    SyncRuleEditorItemViewModel,
+)
 from tests.support.frontend_doubles import build_seeded_services
 
 
 def test_project_editor_screen_renders_empty_state_and_requires_loaded_state() -> None:
+    """Verify project editor screen renders empty state and requires loaded state.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
     app = cast(Any, create_kivy_app(services=build_seeded_services()))
     root = app.build()
     editor_screen = root.get_screen("project_editor")
@@ -29,7 +45,10 @@ def test_project_editor_screen_renders_empty_state_and_requires_loaded_state() -
         for widget in editor_screen._content.children[0].children
         if hasattr(widget, "text")
     ]
-    assert "Open the register or edit workflow to load a project editor draft." in label_texts
+    assert (
+        "Open the register or edit workflow to load a project editor draft."
+        in label_texts
+    )
     with pytest.raises(
         ValueError,
         match=r"Project editor state must be loaded before rendering the screen\.",
@@ -49,13 +68,19 @@ def test_project_editor_screen_renders_empty_state_and_requires_loaded_state() -
         editor_screen._require_framework_value([], None)
 
     with pytest.raises(LookupError, match="Unknown option value: tornado"):
-        _find_option_label([], "tornado")
+        find_option_label([], "tornado")
 
     with pytest.raises(LookupError, match="Unknown option label: Tornado"):
-        _find_option_value([], "Tornado")
+        find_option_value([], "Tornado")
 
 
 def test_project_editor_screen_saves_new_projects_and_can_return_to_projects() -> None:
+    """Verify project editor screen saves new projects and can return to projects.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
     app = cast(Any, create_kivy_app(services=build_seeded_services()))
     root = app.build()
     editor_screen = root.get_screen("project_editor")
@@ -67,14 +92,22 @@ def test_project_editor_screen_saves_new_projects_and_can_return_to_projects() -
     editor_screen._name_input.text = "New Project"
     editor_screen._framework_spinner.text = "Django"
     editor_screen._local_path_input.text = "/workspace/new-project"
+    editor_screen._is_active_switch.active = False
+    editor_screen._select_project_editor_section("translation")
     editor_screen._default_locale_input.text = "en_US"
+    editor_screen._compile_mo_switch.active = False
+    editor_screen._use_external_translator_switch.active = False
+    editor_screen._use_translation_cache_switch.active = False
+    editor_screen._dry_run_switch.active = True
+    editor_screen._stats_only_switch.active = True
+    editor_screen._report_inconsistencies_switch.active = True
+    editor_screen._select_project_editor_section("remote")
     editor_screen._connection_type_spinner.text = "FTP"
     editor_screen._remote_host_input.text = "ftp.example.com"
     editor_screen._remote_port_input.text = "21"
     editor_screen._remote_username_input.text = "deploy"
     editor_screen._remote_password_input.text = "super-secret"
     editor_screen._remote_path_input.text = "/srv/new-project"
-    editor_screen._is_active_switch.active = False
 
     editor_screen._save_editor()
 
@@ -82,12 +115,33 @@ def test_project_editor_screen_saves_new_projects_and_can_return_to_projects() -
     assert shell.project_detail_state is not None
     assert shell.project_detail_state.project.name == "New Project"
     assert shell.project_detail_state.project.status == "Inactive"
+    assert "Compile MO: disabled" in shell.project_detail_state.configuration_summary
+    assert (
+        "External translator: disabled"
+        in shell.project_detail_state.configuration_summary
+    )
+    assert (
+        "Translation cache: disabled"
+        in shell.project_detail_state.configuration_summary
+    )
+    assert "Dry-run: enabled" in shell.project_detail_state.configuration_summary
+    assert "Stats only: enabled" in shell.project_detail_state.configuration_summary
+    assert (
+        "Report inconsistencies: enabled"
+        in shell.project_detail_state.configuration_summary
+    )
 
     editor_screen._back_to_projects()
     assert root.current == "projects"
 
 
 def test_project_editor_screen_exposes_dynamic_framework_options() -> None:
+    """Verify project editor screen exposes dynamic framework options.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
     app = cast(Any, create_kivy_app(services=build_seeded_services()))
     root = app.build()
     editor_screen = root.get_screen("project_editor")
@@ -107,9 +161,14 @@ def test_project_editor_screen_exposes_dynamic_framework_options() -> None:
         "WordPress",
     )
     assert (
-        _find_option_label(shell.project_editor_state.framework_options, "wordpress") == "WordPress"
+        find_option_label(shell.project_editor_state.framework_options, "wordpress")
+        == "WordPress"
     )
-    assert _find_option_value(shell.project_editor_state.framework_options, "Flask") == "flask"
+    assert (
+        find_option_value(shell.project_editor_state.framework_options, "Flask")
+        == "flask"
+    )
+    editor_screen._select_project_editor_section("remote")
     assert tuple(editor_screen._connection_type_spinner.values) == (
         "No Remote Connection",
         "FTP",
@@ -120,7 +179,94 @@ def test_project_editor_screen_exposes_dynamic_framework_options() -> None:
     )
 
 
-def test_project_editor_screen_saves_edits_and_refreshes_when_not_routed_to_detail() -> None:
+def test_project_editor_screen_uses_sectioned_layout_and_can_switch_sections() -> None:
+    """Verify project editor screen uses sectioned layout and can switch sections.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
+    app = cast(Any, create_kivy_app(services=build_seeded_services()))
+    root = app.build()
+    editor_screen = root.get_screen("project_editor")
+    shell = editor_screen._shell
+
+    shell.open_project_editor_create()
+    root.current = "project_editor"
+    editor_screen.refresh()
+
+    assert shell.project_editor_state is not None
+    assert shell.project_editor_state.selected_section_key == "general"
+    label_texts = [
+        widget.text
+        for widget in editor_screen.walk(restrict=True)
+        if hasattr(widget, "text")
+    ]
+    assert "Project Settings Sections" in label_texts
+    assert "Default Locale" not in label_texts
+    assert "Remote Connection Type" not in label_texts
+    assert "Resolved Sync Scope" not in label_texts
+
+    editor_screen._select_project_editor_section("translation")
+
+    assert shell.project_editor_state is not None
+    assert shell.project_editor_state.selected_section_key == "translation"
+    translation_labels = [
+        widget.text
+        for widget in editor_screen.walk(restrict=True)
+        if hasattr(widget, "text")
+    ]
+    assert "Default Locale" in translation_labels
+    assert "Compile MO Files" in translation_labels
+    assert "Use External Translator" in translation_labels
+    assert "Use Translation Cache" in translation_labels
+    assert "Remote Connection Type" not in translation_labels
+
+    editor_screen._select_project_editor_section("sync")
+
+    sync_labels = [
+        widget.text
+        for widget in editor_screen.walk(restrict=True)
+        if hasattr(widget, "text")
+    ]
+    assert "Resolved Sync Scope" in sync_labels
+    assert "Local Path" not in sync_labels
+
+
+def test_project_editor_screen_keeps_the_sections_menu_top_aligned() -> None:
+    """Verify project editor screen keeps the sections menu top aligned.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
+    app = cast(Any, create_kivy_app(services=build_seeded_services()))
+    root = app.build()
+    editor_screen = root.get_screen("project_editor")
+    shell = editor_screen._shell
+
+    shell.open_project_editor_create()
+    root.current = "project_editor"
+    editor_screen.refresh()
+
+    main_layout = editor_screen._content.children[0].children[0]
+    sections_column = main_layout.children[1]
+
+    assert isinstance(sections_column, BoxLayout)
+    assert sections_column.size_hint_x is None
+    assert sections_column.width == 300
+    assert len(sections_column.children) == 2
+    assert isinstance(sections_column.children[0], Widget)
+    assert isinstance(sections_column.children[1], BoxLayout)
+
+
+def test_project_editor_screen_saves_edits_refreshe_no_c866() -> None:
+    """Verify project editor screen saves edits and refreshes when not routed to detail.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
     app = cast(Any, create_kivy_app(services=build_seeded_services()))
     root = app.build()
     detail_screen = root.get_screen("project_detail")
@@ -134,6 +280,7 @@ def test_project_editor_screen_saves_edits_and_refreshes_when_not_routed_to_deta
     assert root.current == "project_editor"
 
     editor_screen._local_path_input.text = "/workspace/marketing-site-v2"
+    editor_screen._select_project_editor_section("remote")
     editor_screen._connection_type_spinner.text = "FTP"
     editor_screen._remote_host_input.text = "ftp-v2.example.com"
     editor_screen._remote_port_input.text = "21"
@@ -144,14 +291,32 @@ def test_project_editor_screen_saves_edits_and_refreshes_when_not_routed_to_deta
 
     assert root.current == "project_detail"
     assert shell.project_detail_state is not None
-    assert shell.project_detail_state.project.local_path == "/workspace/marketing-site-v2"
+    assert (
+        shell.project_detail_state.project.local_path == "/workspace/marketing-site-v2"
+    )
 
     refresh_calls: list[str] = []
 
     def record_refresh() -> None:
+        """Handle record refresh.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+        """
         refresh_calls.append("refresh")
 
     def keep_editor_route(_editor: SiteEditorViewModel) -> None:
+        """Handle keep editor route.
+
+        Args:
+            _editor:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+        """
         shell.router.go_to(shell.router.current.name)
 
     shell.open_project_editor_create()
@@ -165,7 +330,13 @@ def test_project_editor_screen_saves_edits_and_refreshes_when_not_routed_to_deta
     assert refresh_calls == ["refresh"]
 
 
-def test_project_detail_screen_edit_button_ignores_missing_detail_and_opens_editor() -> None:
+def test_project_detail_screen_edit_button_ignores_mis_8b0a() -> None:
+    """Verify project detail screen edit button ignores missing detail and opens editor.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
     app = cast(Any, create_kivy_app(services=build_seeded_services()))
     root = app.build()
     detail_screen = root.get_screen("project_detail")
@@ -184,7 +355,15 @@ def test_project_detail_screen_edit_button_ignores_missing_detail_and_opens_edit
     assert editor_screen._shell.project_editor_state is not None
 
 
-def test_project_editor_screen_uses_save_new_project_when_site_id_is_missing_in_edit_mode() -> None:
+def test_project_editor_screen_uses_save_new_project_4261() -> None:
+    """Verify project editor screen uses save new project when site id is missing in.
+
+    edit mode.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
     app = cast(Any, create_kivy_app(services=build_seeded_services()))
     root = app.build()
     editor_screen = root.get_screen("project_editor")
@@ -192,6 +371,16 @@ def test_project_editor_screen_uses_save_new_project_when_site_id_is_missing_in_
     calls: list[tuple[str, SiteEditorViewModel]] = []
 
     def record_create(editor: SiteEditorViewModel) -> None:
+        """Handle record create.
+
+        Args:
+            editor:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+        """
         calls.append(("create", editor))
 
     shell.open_project_editor_create()
@@ -199,13 +388,21 @@ def test_project_editor_screen_uses_save_new_project_when_site_id_is_missing_in_
         mode="edit",
         title="Edit Project",
         submit_label="Save Changes",
+        sections=shell.project_editor_state.sections,
+        selected_section_key=shell.project_editor_state.selected_section_key,
+        selected_section_title=shell.project_editor_state.selected_section_title,
+        selected_section_description=shell.project_editor_state.selected_section_description,
         editor=SiteEditorViewModel(
             **{**shell.project_editor_state.editor.__dict__, "site_id": None}
         ),
         framework_options=shell.project_editor_state.framework_options,
         connection_type_options=shell.project_editor_state.connection_type_options,
+        sync_rule_filter_type_options=shell.project_editor_state.sync_rule_filter_type_options,
+        sync_rule_behavior_options=shell.project_editor_state.sync_rule_behavior_options,
         connection_test_enabled=shell.project_editor_state.connection_test_enabled,
         connection_test_result=shell.project_editor_state.connection_test_result,
+        sync_scope_status=shell.project_editor_state.sync_scope_status,
+        sync_scope_message=shell.project_editor_state.sync_scope_message,
         status="editing",
         status_message="Update the persisted site registry record.",
     )
@@ -215,3 +412,196 @@ def test_project_editor_screen_uses_save_new_project_when_site_id_is_missing_in_
     editor_screen._save_editor()
 
     assert calls and calls[0][0] == "create"
+
+
+def test_project_editor_screen_refreshes_scope_and_allows_custom_project_rules(
+    tmp_path: Path,
+) -> None:
+    """Verify project editor screen refreshes scope and allows custom project rules.
+
+    Args:
+        tmp_path:
+            Value supplied to this callable.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
+    settings_service = build_default_settings_service(config_dir=tmp_path / "config")
+    app = cast(
+        Any,
+        create_kivy_app(
+            services=build_default_frontend_services(settings_service=settings_service)
+        ),
+    )
+    root = app.build()
+    editor_screen = root.get_screen("project_editor")
+    shell = editor_screen._shell
+
+    shell.open_project_editor_create()
+    root.current = "project_editor"
+    editor_screen.refresh()
+    editor_screen._framework_spinner.text = "Django"
+    editor_screen._local_path_input.text = "/workspace/django-site"
+    editor_screen._select_project_editor_section("sync")
+
+    editor_screen._refresh_sync_scope()
+
+    assert shell.project_editor_state is not None
+    assert "locale" in [
+        item.relative_path for item in shell.project_editor_state.editor.sync_rule_items
+    ]
+    editor_screen._sync_rule_path_input.text = "locale_custom"
+    editor_screen._sync_rule_description_input.text = "Project locale override"
+    editor_screen._sync_rule_filter_type_spinner.text = "Directory"
+    editor_screen._sync_rule_behavior_spinner.text = "Include"
+
+    editor_screen._add_sync_rule(shell.project_editor_state)
+
+    assert shell.project_editor_state is not None
+    assert "locale_custom" in [
+        item.relative_path for item in shell.project_editor_state.editor.sync_rule_items
+    ]
+
+
+def test_project_editor_screen_can_disable_and_remove_project_sync_rules(
+    tmp_path: Path,
+) -> None:
+    """Verify project editor screen can disable and remove project sync rules.
+
+    Args:
+        tmp_path:
+            Value supplied to this callable.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
+    settings_service = build_default_settings_service(config_dir=tmp_path / "config")
+    app = cast(
+        Any,
+        create_kivy_app(
+            services=build_default_frontend_services(settings_service=settings_service)
+        ),
+    )
+    root = app.build()
+    editor_screen = root.get_screen("project_editor")
+    shell = editor_screen._shell
+
+    shell.open_project_editor_create()
+    root.current = "project_editor"
+    editor_screen.refresh()
+    shell.project_editor_state = shell.project_editor_state.__class__(
+        mode=shell.project_editor_state.mode,
+        title=shell.project_editor_state.title,
+        submit_label=shell.project_editor_state.submit_label,
+        sections=shell.project_editor_state.sections,
+        selected_section_key=shell.project_editor_state.selected_section_key,
+        selected_section_title=shell.project_editor_state.selected_section_title,
+        selected_section_description=shell.project_editor_state.selected_section_description,
+        editor=SiteEditorViewModel(
+            **{
+                **shell.project_editor_state.editor.__dict__,
+                "sync_rule_items": (
+                    SyncRuleEditorItemViewModel(
+                        rule_key="include:directory:locale_custom",
+                        target_rule_key=None,
+                        relative_path="locale_custom",
+                        filter_type="directory",
+                        behavior="include",
+                        description="Project locale override",
+                        source="project",
+                        is_enabled=True,
+                        is_removable=True,
+                    ),
+                ),
+            }
+        ),
+        framework_options=shell.project_editor_state.framework_options,
+        connection_type_options=shell.project_editor_state.connection_type_options,
+        sync_rule_filter_type_options=shell.project_editor_state.sync_rule_filter_type_options,
+        sync_rule_behavior_options=shell.project_editor_state.sync_rule_behavior_options,
+        connection_test_enabled=shell.project_editor_state.connection_test_enabled,
+        connection_test_result=shell.project_editor_state.connection_test_result,
+        sync_scope_status=shell.project_editor_state.sync_scope_status,
+        sync_scope_message=shell.project_editor_state.sync_scope_message,
+        status=shell.project_editor_state.status,
+        status_message=shell.project_editor_state.status_message,
+    )
+    shell.select_project_editor_section("sync")
+    editor_screen.refresh()
+
+    editor_screen._toggle_sync_rule(
+        shell.project_editor_state,
+        "include:directory:locale_custom",
+        False,
+    )
+    assert shell.project_editor_state is not None
+    assert shell.project_editor_state.editor.sync_rule_items[0].is_enabled is False
+
+    editor_screen._remove_sync_rule(
+        shell.project_editor_state,
+        "include:directory:locale_custom",
+    )
+    assert shell.project_editor_state is not None
+    assert all(
+        sync_rule.source != "project"
+        for sync_rule in shell.project_editor_state.editor.sync_rule_items
+    )
+    assert ".git" in [
+        sync_rule.relative_path
+        for sync_rule in shell.project_editor_state.editor.sync_rule_items
+    ]
+
+
+def test_project_editor_screen_preserves_hidden_fields_across_section_switches() -> (
+    None
+):
+    """Verify project editor screen preserves hidden fields across section switches.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
+    app = cast(Any, create_kivy_app(services=build_seeded_services()))
+    root = app.build()
+    editor_screen = root.get_screen("project_editor")
+    shell = editor_screen._shell
+
+    shell.open_project_editor_create()
+    root.current = "project_editor"
+    editor_screen.refresh()
+    editor_screen._name_input.text = "Sectioned Project"
+    editor_screen._framework_spinner.text = "WordPress"
+    editor_screen._local_path_input.text = "/workspace/sectioned-project"
+    editor_screen._is_active_switch.active = True
+
+    editor_screen._select_project_editor_section("translation")
+    editor_screen._default_locale_input.text = "es_ES"
+
+    editor_screen._select_project_editor_section("remote")
+    editor_screen._connection_type_spinner.text = "FTP"
+    editor_screen._remote_host_input.text = "ftp.sectioned.example.com"
+    editor_screen._remote_port_input.text = "21"
+    editor_screen._remote_username_input.text = "deployer"
+    editor_screen._remote_password_input.text = "remote-secret"
+    editor_screen._remote_path_input.text = "/srv/sectioned-project"
+    current_state = editor_screen._require_state()
+    collected_editor = editor_screen._collect_editor_from_form(current_state)
+
+    assert collected_editor.name == "Sectioned Project"
+    assert collected_editor.framework_type == "wordpress"
+    assert collected_editor.local_path == "/workspace/sectioned-project"
+    assert collected_editor.default_locale == "es_ES"
+    assert collected_editor.connection_type == "ftp"
+    assert collected_editor.remote_host == "ftp.sectioned.example.com"
+    assert collected_editor.remote_port == "21"
+    assert collected_editor.remote_username == "deployer"
+    assert collected_editor.remote_password == "remote-secret"
+    assert collected_editor.remote_path == "/srv/sectioned-project"
+
+    editor_screen._save_editor()
+
+    assert shell.project_detail_state is not None
+    assert shell.project_detail_state.project.name == "Sectioned Project"
+    assert shell.project_detail_state.project.framework == "Wordpress"

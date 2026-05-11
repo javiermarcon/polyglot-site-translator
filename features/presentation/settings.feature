@@ -58,11 +58,52 @@ Feature: Frontend settings management
     Then the settings draft uses the default window size
     And the settings draft keeps remember last screen disabled
 
-  Scenario: Browse planned settings categories
+  Scenario: Browse translation settings and persist translation defaults
     Given the frontend shell is wired with seeded frontend test doubles
     And the operator has opened the settings screen
     When the operator selects the settings section "translation"
-    Then the settings screen shows the selected planned section
+    And the operator sets the default project locale to "es_ES, es_AR"
+    And the operator enables default MO compilation
+    And the operator disables the default external translator
+    And the operator disables the default translation cache
+    And the operator sets the translation cache path to "/tmp/polyglot-cache/settings-cache"
+    And the operator enables default only-fuzzy mode
+    And the operator enables default dry-run mode
+    And the operator disables default stats-only mode
+    And the operator enables default inconsistency reporting
+    And the operator applies the settings changes
+    Then the settings screen shows the translation settings section
+    And the saved settings keep the default project locale "es_ES,es_AR"
+    And the saved settings keep default MO compilation enabled
+    And the saved settings keep the default external translator disabled
+    And the saved settings keep the default translation cache disabled
+    And the saved settings keep the translation cache path "/tmp/polyglot-cache/settings-cache"
+    And the saved settings keep default only-fuzzy mode enabled
+    And the saved settings keep default dry-run mode enabled
+    And the saved settings keep default stats-only mode disabled
+    And the saved settings keep default inconsistency reporting enabled
+
+  Scenario: Configure global sync rules and persist them
+    Given the frontend shell is wired with TOML-backed settings persistence
+    And the operator has opened the settings screen
+    When the operator selects the settings section "frameworks"
+    And the operator enables gitignore-based sync exclusions
+    And the operator adds the global sync rule ".git" as "exclude" "directory"
+    And the operator applies the settings changes
+    Then the settings screen shows the changes as saved
+    And the saved settings enable gitignore-based sync exclusions
+    And the saved settings contain the global sync rule ".git"
+
+  Scenario: Configure framework sync rules and reopen them from TOML
+    Given the frontend shell is wired with TOML-backed settings persistence
+    And the operator has opened the settings screen
+    When the operator selects the settings section "frameworks"
+    And the operator adds the framework sync rule ".venv" for "django" as "exclude" "directory"
+    And the operator applies the settings changes
+    And the operator restarts the frontend shell
+    And the operator opens the settings screen
+    And the operator selects the settings section "frameworks"
+    Then the saved settings contain the framework sync rule ".venv" for "django"
 
   Scenario: Handle a controlled load error
     Given the frontend shell is wired with a failing settings-load test double

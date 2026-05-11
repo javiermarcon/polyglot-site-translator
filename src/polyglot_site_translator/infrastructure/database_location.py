@@ -15,7 +15,16 @@ DEFAULT_DATABASE_FILENAME = "site_registry.sqlite3"
 
 @dataclass(frozen=True)
 class SQLiteDatabaseLocation:
-    """Resolved SQLite database location used by the site registry."""
+    """Resolved SQLite database location used by the site registry.
+
+    Attributes:
+        directory:
+            Documented attribute exposed by this type.
+        filename:
+            Documented attribute exposed by this type.
+        database_path:
+            Documented attribute exposed by this type.
+    """
 
     directory: Path
     filename: str
@@ -23,7 +32,20 @@ class SQLiteDatabaseLocation:
 
 
 def normalize_database_filename(filename: str) -> str:
-    """Return a normalized SQLite database filename."""
+    """Return a normalized SQLite database filename.
+
+    Args:
+        filename:
+            Value supplied to this callable.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+
+    Raises:
+        SiteRegistryConfigurationError:
+            Raised when this callable hits the corresponding error path.
+    """
     normalized_filename = filename.strip()
     if not normalized_filename:
         msg = "Database filename must not be empty."
@@ -37,7 +59,20 @@ def normalize_database_filename(filename: str) -> str:
 
 
 def validate_database_directory(directory: str) -> Path:
-    """Return the normalized SQLite database directory."""
+    """Return the normalized SQLite database directory.
+
+    Args:
+        directory:
+            Value supplied to this callable.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+
+    Raises:
+        SiteRegistryConfigurationError:
+            Raised when this callable hits the corresponding error path.
+    """
     normalized_directory = directory.strip()
     if not normalized_directory:
         msg = "Database directory must not be empty."
@@ -48,7 +83,16 @@ def validate_database_directory(directory: str) -> Path:
 def resolve_sqlite_database_location(
     app_settings: AppSettingsViewModel,
 ) -> SQLiteDatabaseLocation:
-    """Resolve the physical SQLite database location from app settings."""
+    """Resolve the physical SQLite database location from app settings.
+
+    Args:
+        app_settings:
+            Value supplied to this callable.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
     directory = validate_database_directory(app_settings.database_directory)
     filename = normalize_database_filename(app_settings.database_filename)
     return SQLiteDatabaseLocation(
