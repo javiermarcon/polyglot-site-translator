@@ -3,13 +3,10 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from importlib import import_module
 from typing import Any, cast
 
 from pytest import MonkeyPatch
-
-from polyglot_site_translator.presentation.kivy.widgets.ssh_host_key_trust_dialog import (
-    open_ssh_host_key_trust_confirmation,
-)
 
 
 @dataclass
@@ -17,12 +14,18 @@ class _FakeTrustPopup:
     """Test helper for FakeTrustPopup.
 
     Attributes:
-        title (str): Documented attribute exposed by this type.
-        size_hint (tuple[float, float] | None): Documented attribute exposed by this type.
-        auto_dismiss (bool): Documented attribute exposed by this type.
-        content (object | None): Documented attribute exposed by this type.
-        opened (bool): Documented attribute exposed by this type.
-        dismissed (bool): Documented attribute exposed by this type.
+        title:
+            Documented attribute exposed by this type.
+        size_hint:
+            Documented attribute exposed by this type.
+        auto_dismiss:
+            Documented attribute exposed by this type.
+        content:
+            Documented attribute exposed by this type.
+        opened:
+            Documented attribute exposed by this type.
+        dismissed:
+            Documented attribute exposed by this type.
     """
 
     title: str = ""
@@ -35,16 +38,26 @@ class _FakeTrustPopup:
     def open(self) -> None:
         """Handle open.
 
+        Args:
+            self:
+                Value supplied to this callable.
+
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         self.opened = True
 
     def dismiss(self) -> None:
         """Handle dismiss.
 
+        Args:
+            self:
+                Value supplied to this callable.
+
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         self.dismissed = True
 
@@ -55,10 +68,12 @@ def test_open_ssh_host_key_trust_confirmation_builds_modal(
     """Verify open ssh host key trust confirmation builds modal.
 
     Args:
-        monkeypatch (MonkeyPatch): Value supplied to this callable.
+        monkeypatch:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     built: list[_FakeTrustPopup] = []
 
@@ -71,12 +86,16 @@ def test_open_ssh_host_key_trust_confirmation_builds_modal(
         """Handle build popup.
 
         Args:
-            title (str): Value supplied to this callable.
-            size_hint (tuple[float, float]): Value supplied to this callable.
-            auto_dismiss (bool): Value supplied to this callable.
+            title:
+                Value supplied to this callable.
+            size_hint:
+                Value supplied to this callable.
+            auto_dismiss:
+                Value supplied to this callable.
 
         Returns:
-            Any: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         popup = _FakeTrustPopup(
             title=title,
@@ -91,7 +110,9 @@ def test_open_ssh_host_key_trust_confirmation_builds_modal(
         build_popup,
     )
 
-    open_ssh_host_key_trust_confirmation(on_trust=lambda: None, purpose="connection_test")
+    open_ssh_host_key_trust_confirmation(
+        on_trust=lambda: None, purpose="connection_test"
+    )
 
     assert len(built) == 1
     assert built[0].title == "Trust SSH Host Key?"
@@ -104,10 +125,12 @@ def test_open_ssh_host_key_trust_confirmation_callbacks_work(
     """Verify open ssh host key trust confirmation callbacks work.
 
     Args:
-        monkeypatch (MonkeyPatch): Value supplied to this callable.
+        monkeypatch:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     built: list[_FakeTrustPopup] = []
     trust_calls: list[str] = []
@@ -121,12 +144,16 @@ def test_open_ssh_host_key_trust_confirmation_callbacks_work(
         """Handle build popup.
 
         Args:
-            title (str): Value supplied to this callable.
-            size_hint (tuple[float, float]): Value supplied to this callable.
-            auto_dismiss (bool): Value supplied to this callable.
+            title:
+                Value supplied to this callable.
+            size_hint:
+                Value supplied to this callable.
+            auto_dismiss:
+                Value supplied to this callable.
 
         Returns:
-            Any: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         popup = _FakeTrustPopup(
             title=title,
@@ -159,3 +186,8 @@ def test_open_ssh_host_key_trust_confirmation_callbacks_work(
     popup.dismissed = False
     cancel_button.dispatch("on_release")
     assert popup.dismissed is True
+
+
+open_ssh_host_key_trust_confirmation = import_module(
+    "polyglot_site_translator.presentation.kivy.widgets.ssh_host_key_trust_dialog"
+).open_ssh_host_key_trust_confirmation

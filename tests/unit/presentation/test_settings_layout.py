@@ -11,7 +11,8 @@ def test_build_settings_layout_spec_uses_compact_mode_for_narrow_windows() -> No
     """Verify build settings layout spec uses compact mode for narrow windows.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     layout_spec = build_settings_layout_spec(550)
 
@@ -27,7 +28,8 @@ def test_build_settings_layout_spec_uses_wide_mode_for_desktop_windows() -> None
     """Verify build settings layout spec uses wide mode for desktop windows.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     layout_spec = build_settings_layout_spec(1280)
 

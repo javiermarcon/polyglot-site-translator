@@ -10,7 +10,8 @@ def test_navigation_menu_is_grouped_for_future_growth() -> None:
     """Verify navigation menu is grouped for future growth.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     shell = create_frontend_shell(build_seeded_services())
 

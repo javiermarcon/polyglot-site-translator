@@ -26,7 +26,8 @@ def _build_screen() -> tuple[Any, Any, Any]:
     """Handle build screen.
 
     Returns:
-        tuple[Any, Any, Any]: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
     """
     app = cast(Any, create_kivy_app(services=build_seeded_services()))
     root = app.build()
@@ -42,7 +43,8 @@ def test_project_editor_screen_renders_remote_error_card_and_retry_button() -> N
     """Verify project editor screen renders remote error card and retry button.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     _app, _root, screen = _build_screen()
     shell = screen._shell
@@ -60,7 +62,9 @@ def test_project_editor_screen_renders_remote_error_card_and_retry_button() -> N
 
     screen.refresh()
 
-    label_texts = [widget.text for widget in screen.walk(restrict=True) if hasattr(widget, "text")]
+    label_texts = [
+        widget.text for widget in screen.walk(restrict=True) if hasattr(widget, "text")
+    ]
     assert "Remote Connection Test" in label_texts
     assert "Trust SSH Host Key and Retry" in label_texts
 
@@ -79,13 +83,16 @@ def test_project_editor_screen_retests_trusted_hosts_and_tracks_test_button_stat
     """Verify project editor screen retests trusted hosts and tracks test button state.
 
     Args:
-        monkeypatch (pytest.MonkeyPatch): Value supplied to this callable.
+        monkeypatch:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
 
     Raises:
-        AssertionError: Raised when this callable hits the corresponding error path.
+        AssertionError:
+            Raised when this callable hits the corresponding error path.
     """
     _app, _root, screen = _build_screen()
     shell = screen._shell
@@ -125,11 +132,14 @@ def test_project_editor_screen_retests_trusted_hosts_and_tracks_test_button_stat
     assert captured[0].remote_verify_host is False
 
 
-def test_project_editor_screen_ignores_test_button_refresh_when_button_is_missing() -> None:
+def test_project_editor_screen_ignores_test_button_refresh_when_button_is_missing() -> (
+    None
+):
     """Verify project editor screen ignores test button refresh when button is missing.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     _app, _root, screen = _build_screen()
 
@@ -139,17 +149,22 @@ def test_project_editor_screen_ignores_test_button_refresh_when_button_is_missin
     screen._refresh_test_connection_button_state(screen._require_state())
 
 
-def test_project_editor_screen_sync_panels_cover_empty_and_custom_rule_branches() -> None:
+def test_project_editor_screen_sync_panels_cover_empty_and_custom_rule_branches() -> (
+    None
+):
     """Verify project editor screen sync panels cover empty and custom rule branches.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     _app, _root, screen = _build_screen()
     shell = screen._shell
 
     screen._select_project_editor_section("sync")
-    empty_texts = [widget.text for widget in screen.walk(restrict=True) if hasattr(widget, "text")]
+    empty_texts = [
+        widget.text for widget in screen.walk(restrict=True) if hasattr(widget, "text")
+    ]
     assert "No adapter or project sync rules are currently available." in empty_texts
 
     assert shell.project_editor_state is not None
@@ -199,10 +214,12 @@ def test_project_editor_screen_test_connection_helpers_and_back_navigation(
     """Verify project editor screen test connection helpers and back navigation.
 
     Args:
-        monkeypatch (pytest.MonkeyPatch): Value supplied to this callable.
+        monkeypatch:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     _app, root, screen = _build_screen()
     shell = screen._shell
@@ -224,10 +241,16 @@ def test_project_editor_screen_test_connection_helpers_and_back_navigation(
     assert captured and captured[0].remote_host == "ftp.example.com"
     assert screen._current_sync_rule_items(screen._require_state()) == ()
 
-    with pytest.raises(ValueError, match=r"Project editor input field is not available\."):
+    with pytest.raises(
+        ValueError, match=r"Project editor input field is not available\."
+    ):
         screen._optional_text(None)
-    with pytest.raises(ValueError, match=r"Project editor input field is not available\."):
-        screen._require_framework_value(shell.project_editor_state.framework_options, None)
+    with pytest.raises(
+        ValueError, match=r"Project editor input field is not available\."
+    ):
+        screen._require_framework_value(
+            shell.project_editor_state.framework_options, None
+        )
 
     screen._back_to_projects()
 
@@ -238,7 +261,8 @@ def test_project_editor_helper_functions_cover_information_and_rule_updates() ->
     """Verify project editor helper functions cover information and rule updates.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     card = _build_information_card(title="Project Editor", body="Nothing loaded yet.")
     item = SyncRuleEditorItemViewModel(
@@ -267,10 +291,12 @@ def test_project_editor_screen_covers_sync_rule_mutations_and_refresh_paths(
     """Verify project editor screen covers sync rule mutations and refresh paths.
 
     Args:
-        monkeypatch (pytest.MonkeyPatch): Value supplied to this callable.
+        monkeypatch:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     _app, _root, screen = _build_screen()
     shell = screen._shell
@@ -318,16 +344,20 @@ def test_project_editor_screen_covers_sync_rule_mutations_and_refresh_paths(
     assert refresh_calls == ["refresh", "refresh", "refresh", "refresh"]
 
 
-def test_project_editor_screen_covers_save_branches_and_section_switch_draft_preservation(
+def test_project_editor_screen_covers_save_branches_se_48c8(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Verify project editor screen covers save branches and section switch draft preservation.
+    """Verify project editor screen covers save branches and section switch draft.
+
+    preservation.
 
     Args:
-        monkeypatch (pytest.MonkeyPatch): Value supplied to this callable.
+        monkeypatch:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     _app, _root, screen = _build_screen()
     shell = screen._shell
@@ -363,7 +393,8 @@ def test_project_editor_screen_collect_and_helper_fallback_branches() -> None:
     """Verify project editor screen collect and helper fallback branches.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     _app, _root, screen = _build_screen()
     state = screen._require_state()
@@ -382,11 +413,14 @@ def test_project_editor_screen_collect_and_helper_fallback_branches() -> None:
     assert screen._current_sync_rule_items(state) == ()
 
 
-def test_project_editor_screen_covers_non_trust_connection_card_and_text_helpers() -> None:
+def test_project_editor_screen_covers_non_trust_connection_card_and_text_helpers() -> (
+    None
+):
     """Verify project editor screen covers non trust connection card and text helpers.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     _app, _root, screen = _build_screen()
     shell = screen._shell
@@ -403,7 +437,9 @@ def test_project_editor_screen_covers_non_trust_connection_card_and_text_helpers
     )
 
     card = screen._build_remote_connection_test_card(shell.project_editor_state)
-    card_texts = [widget.text for widget in card.walk(restrict=True) if hasattr(widget, "text")]
+    card_texts = [
+        widget.text for widget in card.walk(restrict=True) if hasattr(widget, "text")
+    ]
     assert "Remote Connection Test" in card_texts
     assert "Trust SSH Host Key and Retry" not in card_texts
 

@@ -98,7 +98,7 @@ ignore_missing_imports = true
 
 [tool.ruff]
 target-version = "py312"
-line-length = 100
+line-length = 88
 extend-exclude = [
   "build",
   "dist",

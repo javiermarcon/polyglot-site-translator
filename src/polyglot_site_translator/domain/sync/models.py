@@ -12,8 +12,10 @@ class SyncDirection(StrEnum):
     """Supported synchronization directions.
 
     Attributes:
-        REMOTE_TO_LOCAL: Documented attribute exposed by this type.
-        LOCAL_TO_REMOTE: Documented attribute exposed by this type.
+        REMOTE_TO_LOCAL:
+            Documented attribute exposed by this type.
+        LOCAL_TO_REMOTE:
+            Documented attribute exposed by this type.
     """
 
     REMOTE_TO_LOCAL = "remote_to_local"
@@ -24,15 +26,24 @@ class SyncProgressStage(StrEnum):
     """Supported progress stages reported during sync execution.
 
     Attributes:
-        PREPARING_LOCAL: Documented attribute exposed by this type.
-        PREPARING_REMOTE: Documented attribute exposed by this type.
-        LISTING_LOCAL: Documented attribute exposed by this type.
-        LISTING_REMOTE: Documented attribute exposed by this type.
-        DOWNLOADING_FILE: Documented attribute exposed by this type.
-        UPLOADING_FILE: Documented attribute exposed by this type.
-        WRITING_LOCAL_FILE: Documented attribute exposed by this type.
-        COMPLETED: Documented attribute exposed by this type.
-        FAILED: Documented attribute exposed by this type.
+        PREPARING_LOCAL:
+            Documented attribute exposed by this type.
+        PREPARING_REMOTE:
+            Documented attribute exposed by this type.
+        LISTING_LOCAL:
+            Documented attribute exposed by this type.
+        LISTING_REMOTE:
+            Documented attribute exposed by this type.
+        DOWNLOADING_FILE:
+            Documented attribute exposed by this type.
+        UPLOADING_FILE:
+            Documented attribute exposed by this type.
+        WRITING_LOCAL_FILE:
+            Documented attribute exposed by this type.
+        COMPLETED:
+            Documented attribute exposed by this type.
+        FAILED:
+            Documented attribute exposed by this type.
     """
 
     PREPARING_LOCAL = "preparing_local"
@@ -51,9 +62,12 @@ class RemoteSyncFile:
     """A file discovered in the remote workspace for synchronization.
 
     Attributes:
-        remote_path (str): Documented attribute exposed by this type.
-        relative_path (str): Documented attribute exposed by this type.
-        size_bytes (int): Documented attribute exposed by this type.
+        remote_path:
+            Documented attribute exposed by this type.
+        relative_path:
+            Documented attribute exposed by this type.
+        size_bytes:
+            Documented attribute exposed by this type.
     """
 
     remote_path: str
@@ -66,9 +80,12 @@ class LocalSyncFile:
     """A file discovered in the local workspace for synchronization.
 
     Attributes:
-        local_path (Path): Documented attribute exposed by this type.
-        relative_path (str): Documented attribute exposed by this type.
-        size_bytes (int): Documented attribute exposed by this type.
+        local_path:
+            Documented attribute exposed by this type.
+        relative_path:
+            Documented attribute exposed by this type.
+        size_bytes:
+            Documented attribute exposed by this type.
     """
 
     local_path: Path
@@ -81,15 +98,24 @@ class SyncProgressEvent:
     """Structured progress event emitted during a sync workflow.
 
     Attributes:
-        stage (SyncProgressStage): Documented attribute exposed by this type.
-        message (str): Documented attribute exposed by this type.
-        command_text (str | None): Documented attribute exposed by this type.
-        files_discovered (int | None): Documented attribute exposed by this type.
-        files_downloaded (int | None): Documented attribute exposed by this type.
-        files_uploaded (int | None): Documented attribute exposed by this type.
-        total_files (int | None): Documented attribute exposed by this type.
-        bytes_downloaded (int | None): Documented attribute exposed by this type.
-        bytes_uploaded (int | None): Documented attribute exposed by this type.
+        stage:
+            Documented attribute exposed by this type.
+        message:
+            Documented attribute exposed by this type.
+        command_text:
+            Documented attribute exposed by this type.
+        files_discovered:
+            Documented attribute exposed by this type.
+        files_downloaded:
+            Documented attribute exposed by this type.
+        files_uploaded:
+            Documented attribute exposed by this type.
+        total_files:
+            Documented attribute exposed by this type.
+        bytes_downloaded:
+            Documented attribute exposed by this type.
+        bytes_uploaded:
+            Documented attribute exposed by this type.
     """
 
     stage: SyncProgressStage
@@ -108,12 +134,18 @@ class SyncSummary:
     """Structured counters produced by a sync execution.
 
     Attributes:
-        files_discovered (int): Documented attribute exposed by this type.
-        files_downloaded (int): Documented attribute exposed by this type.
-        directories_created (int): Documented attribute exposed by this type.
-        bytes_downloaded (int): Documented attribute exposed by this type.
-        files_uploaded (int): Documented attribute exposed by this type.
-        bytes_uploaded (int): Documented attribute exposed by this type.
+        files_discovered:
+            Documented attribute exposed by this type.
+        files_downloaded:
+            Documented attribute exposed by this type.
+        directories_created:
+            Documented attribute exposed by this type.
+        bytes_downloaded:
+            Documented attribute exposed by this type.
+        files_uploaded:
+            Documented attribute exposed by this type.
+        bytes_uploaded:
+            Documented attribute exposed by this type.
     """
 
     files_discovered: int
@@ -129,10 +161,14 @@ class SyncError:
     """Structured sync failure information.
 
     Attributes:
-        code (str): Documented attribute exposed by this type.
-        message (str): Documented attribute exposed by this type.
-        remote_path (str | None): Documented attribute exposed by this type.
-        local_path (str | None): Documented attribute exposed by this type.
+        code:
+            Documented attribute exposed by this type.
+        message:
+            Documented attribute exposed by this type.
+        remote_path:
+            Documented attribute exposed by this type.
+        local_path:
+            Documented attribute exposed by this type.
     """
 
     code: str
@@ -146,13 +182,20 @@ class SyncResult:
     """Structured result returned by a sync workflow.
 
     Attributes:
-        direction (SyncDirection): Documented attribute exposed by this type.
-        success (bool): Documented attribute exposed by this type.
-        project_id (str): Documented attribute exposed by this type.
-        connection_type (str | None): Documented attribute exposed by this type.
-        local_path (str): Documented attribute exposed by this type.
-        summary (SyncSummary): Documented attribute exposed by this type.
-        error (SyncError | None): Documented attribute exposed by this type.
+        direction:
+            Documented attribute exposed by this type.
+        success:
+            Documented attribute exposed by this type.
+        project_id:
+            Documented attribute exposed by this type.
+        connection_type:
+            Documented attribute exposed by this type.
+        local_path:
+            Documented attribute exposed by this type.
+        summary:
+            Documented attribute exposed by this type.
+        error:
+            Documented attribute exposed by this type.
     """
 
     direction: SyncDirection

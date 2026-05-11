@@ -7,7 +7,9 @@ import os
 os.environ.setdefault("KIVY_NO_FILELOG", "1")
 
 from polyglot_site_translator.bootstrap import create_frontend_shell
-from polyglot_site_translator.infrastructure.settings import build_default_settings_service
+from polyglot_site_translator.infrastructure.settings import (
+    build_default_settings_service,
+)
 from polyglot_site_translator.presentation.contracts import FrontendServices
 from polyglot_site_translator.presentation.fakes import build_default_frontend_services
 from polyglot_site_translator.presentation.kivy.app import PolyglotSiteTranslatorApp
@@ -19,10 +21,12 @@ def create_kivy_app(
     """Build the Kivy app with injectable presentation services.
 
     Args:
-        services (FrontendServices | None): Value supplied to this callable.
+        services:
+            Value supplied to this callable.
 
     Returns:
-        PolyglotSiteTranslatorApp: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
     """
     resolved_services = services or build_default_frontend_services(
         settings_service=build_default_settings_service()

@@ -10,7 +10,9 @@ from typing import Any, cast
 import polib
 import pytest
 
-from polyglot_site_translator.adapters.framework_registry import FrameworkAdapterRegistry
+from polyglot_site_translator.adapters.framework_registry import (
+    FrameworkAdapterRegistry,
+)
 from polyglot_site_translator.domain.framework_detection.errors import (
     FrameworkDetectionAmbiguityError,
 )
@@ -80,8 +82,12 @@ from polyglot_site_translator.presentation.view_models import (
     build_default_app_settings,
     build_settings_state,
 )
-from polyglot_site_translator.services.framework_detection import FrameworkDetectionService
-from polyglot_site_translator.services.framework_sync_scope import FrameworkSyncScopeService
+from polyglot_site_translator.services.framework_detection import (
+    FrameworkDetectionService,
+)
+from polyglot_site_translator.services.framework_sync_scope import (
+    FrameworkSyncScopeService,
+)
 from polyglot_site_translator.services.po_processing import POProcessingService
 from polyglot_site_translator.services.remote_connections import RemoteConnectionService
 from polyglot_site_translator.services.site_registry import SiteRegistryService
@@ -91,7 +97,7 @@ class _StubPOTranslationProvider:
     """Test helper for StubPOTranslationProvider.
 
     Attributes:
-        None: This type does not declare additional class-level attributes.
+        None: This type does not declare class-level attributes.
     """
 
     @staticmethod
@@ -99,11 +105,14 @@ class _StubPOTranslationProvider:
         """Handle translate text.
 
         Args:
-            text (str): Value supplied to this callable.
-            target_locale (str): Value supplied to this callable.
+            text:
+                Value supplied to this callable.
+            target_locale:
+                Value supplied to this callable.
 
         Returns:
-            str: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         translations = {("es_ES", "Save"): "Guardar", ("es_AR", "Save"): "Guardar"}
         return translations[(target_locale, text)]
@@ -113,7 +122,7 @@ class _PartiallyFailingPOTranslationProvider:
     """Test helper for PartiallyFailingPOTranslationProvider.
 
     Attributes:
-        None: This type does not declare additional class-level attributes.
+        None: This type does not declare class-level attributes.
     """
 
     @staticmethod
@@ -121,15 +130,18 @@ class _PartiallyFailingPOTranslationProvider:
         """Handle translate text.
 
         Args:
-            text (str): Value supplied to this callable.
-            target_locale (str): Value supplied to this callable.
+            text:
+                Value supplied to this callable.
+            target_locale:
+                Value supplied to this callable.
 
         Returns:
-            str: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
 
         Raises:
-            POProcessingTranslationError: Raised when this callable hits the corresponding error
-        path.
+            POProcessingTranslationError:
+                Raised when this callable hits the corresponding error path.
         """
         if text == "Broken":
             msg = f"translation failed for {target_locale}:{text}"
@@ -142,11 +154,14 @@ def _request(locales: str, **modes: bool) -> TranslationWorkflowRequestViewModel
     """Handle request.
 
     Args:
-        locales (str): Value supplied to this callable.
-        modes (bool): Value supplied to this callable.
+        locales:
+            Value supplied to this callable.
+        **modes:
+            Value supplied to this callable.
 
     Returns:
-        TranslationWorkflowRequestViewModel: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
     """
     resolved_modes = {
         "compile_mo": True,
@@ -168,14 +183,19 @@ class InMemorySiteRegistryRepository:
     """Test helper for InMemorySiteRegistryRepository.
 
     Attributes:
-        None: This type does not declare additional class-level attributes.
+        None: This type does not declare class-level attributes.
     """
 
     def __init__(self) -> None:
         """Initialize the test helper state.
 
+        Args:
+            self:
+                Value supplied to this callable.
+
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         self.sites: dict[str, RegisteredSite] = {}
 
@@ -183,10 +203,14 @@ class InMemorySiteRegistryRepository:
         """Handle create site.
 
         Args:
-            site (RegisteredSite): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            site:
+                Value supplied to this callable.
 
         Returns:
-            RegisteredSite: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         self.sites[site.id] = site
         return site
@@ -194,8 +218,13 @@ class InMemorySiteRegistryRepository:
     def list_sites(self) -> list[RegisteredSite]:
         """Handle list sites.
 
+        Args:
+            self:
+                Value supplied to this callable.
+
         Returns:
-            list[RegisteredSite]: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         return list(self.sites.values())
 
@@ -203,13 +232,18 @@ class InMemorySiteRegistryRepository:
         """Handle get site.
 
         Args:
-            site_id (str): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            site_id:
+                Value supplied to this callable.
 
         Returns:
-            RegisteredSite: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
 
         Raises:
-            SiteRegistryNotFoundError: Raised when this callable hits the corresponding error path.
+            SiteRegistryNotFoundError:
+                Raised when this callable hits the corresponding error path.
         """
         if site_id not in self.sites:
             msg = f"Unknown site id: {site_id}"
@@ -220,13 +254,18 @@ class InMemorySiteRegistryRepository:
         """Handle update site.
 
         Args:
-            site (RegisteredSite): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            site:
+                Value supplied to this callable.
 
         Returns:
-            RegisteredSite: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
 
         Raises:
-            SiteRegistryNotFoundError: Raised when this callable hits the corresponding error path.
+            SiteRegistryNotFoundError:
+                Raised when this callable hits the corresponding error path.
         """
         if site.id not in self.sites:
             msg = f"Unknown site id: {site.id}"
@@ -238,10 +277,14 @@ class InMemorySiteRegistryRepository:
         """Handle delete site.
 
         Args:
-            site_id (str): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            site_id:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         self.sites.pop(site_id, None)
 
@@ -250,18 +293,23 @@ class PersistenceFailingRepository(InMemorySiteRegistryRepository):
     """Test helper for PersistenceFailingRepository.
 
     Attributes:
-        None: This type does not declare additional class-level attributes.
+        None: This type does not declare class-level attributes.
     """
 
     def list_sites(self) -> list[RegisteredSite]:
         """Handle list sites.
 
+        Args:
+            self:
+                Value supplied to this callable.
+
         Returns:
-            list[RegisteredSite]: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
 
         Raises:
-            SiteRegistryPersistenceError: Raised when this callable hits the corresponding error
-        path.
+            SiteRegistryPersistenceError:
+                Raised when this callable hits the corresponding error path.
         """
         msg = "SQLite site registry read failed."
         raise SiteRegistryPersistenceError(msg)
@@ -270,14 +318,18 @@ class PersistenceFailingRepository(InMemorySiteRegistryRepository):
         """Handle get site.
 
         Args:
-            site_id (str): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            site_id:
+                Value supplied to this callable.
 
         Returns:
-            RegisteredSite: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
 
         Raises:
-            SiteRegistryPersistenceError: Raised when this callable hits the corresponding error
-        path.
+            SiteRegistryPersistenceError:
+                Raised when this callable hits the corresponding error path.
         """
         msg = "SQLite site registry read failed."
         raise SiteRegistryPersistenceError(msg)
@@ -287,7 +339,8 @@ class SuccessfulSFTPProvider:
     """Test helper for SuccessfulSFTPProvider.
 
     Attributes:
-        descriptor: Documented attribute exposed by this type.
+        descriptor:
+            Documented attribute exposed by this type.
     """
 
     descriptor = RemoteConnectionTypeDescriptor(
@@ -303,10 +356,14 @@ class SuccessfulSFTPProvider:
         """Verify connection.
 
         Args:
-            config (RemoteConnectionConfigInput): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            config:
+                Value supplied to this callable.
 
         Returns:
-            RemoteConnectionTestResult: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         return RemoteConnectionTestResult(
             success=True,
@@ -327,13 +384,18 @@ class SuccessfulSFTPProvider:
         """Handle list remote files.
 
         Args:
-            config (RemoteConnectionConfig): Value supplied to this callable.
-            progress_callback (Callable[[SyncProgressEvent], None] | None): Value supplied to this
-        callable.
-            max_files (int): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            config:
+                Value supplied to this callable.
+            progress_callback:
+                Value supplied to this callable.
+            max_files:
+                Value supplied to this callable.
 
         Returns:
-            list[RemoteSyncFile]: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         return []
 
@@ -345,12 +407,14 @@ class SuccessfulSFTPProvider:
         """Handle iter remote files.
 
         Args:
-            config (RemoteConnectionConfig): Value supplied to this callable.
-            progress_callback (Callable[[SyncProgressEvent], None] | None): Value supplied to this
-        callable.
+            config:
+                Value supplied to this callable.
+            progress_callback:
+                Value supplied to this callable.
 
         Returns:
-            Iterable[RemoteSyncFile]: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         return iter(())
 
@@ -359,13 +423,16 @@ class SuccessfulSFTPProvider:
         """Handle open session.
 
         Args:
-            config (RemoteConnectionConfig): Value supplied to this callable.
+            config:
+                Value supplied to this callable.
 
         Returns:
-            Any: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
 
         Raises:
-            AssertionError: Raised when this callable hits the corresponding error path.
+            AssertionError:
+                Raised when this callable hits the corresponding error path.
         """
         msg = f"open_session not used in this test for {config.connection_type}"
         raise AssertionError(msg)
@@ -379,16 +446,22 @@ class SuccessfulSFTPProvider:
         """Handle download file.
 
         Args:
-            config (RemoteConnectionConfig): Value supplied to this callable.
-            remote_path (str): Value supplied to this callable.
-            progress_callback (Callable[[SyncProgressEvent], None] | None): Value supplied to this
-        callable.
+            self:
+                Value supplied to this callable.
+            config:
+                Value supplied to this callable.
+            remote_path:
+                Value supplied to this callable.
+            progress_callback:
+                Value supplied to this callable.
 
         Returns:
-            bytes: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
 
         Raises:
-            AssertionError: Raised when this callable hits the corresponding error path.
+            AssertionError:
+                Raised when this callable hits the corresponding error path.
         """
         msg = f"download not used in this test for {remote_path}"
         raise AssertionError(msg)
@@ -402,16 +475,20 @@ class SuccessfulSFTPProvider:
         """Handle ensure remote directory.
 
         Args:
-            config (RemoteConnectionConfig): Value supplied to this callable.
-            remote_path (str): Value supplied to this callable.
-            progress_callback (Callable[[SyncProgressEvent], None] | None): Value supplied to this
-        callable.
+            config:
+                Value supplied to this callable.
+            remote_path:
+                Value supplied to this callable.
+            progress_callback:
+                Value supplied to this callable.
 
         Returns:
-            int: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
 
         Raises:
-            AssertionError: Raised when this callable hits the corresponding error path.
+            AssertionError:
+                Raised when this callable hits the corresponding error path.
         """
         msg = f"ensure_remote_directory not used in this test for {remote_path}"
         raise AssertionError(msg)
@@ -426,17 +503,22 @@ class SuccessfulSFTPProvider:
         """Handle upload file.
 
         Args:
-            config (RemoteConnectionConfig): Value supplied to this callable.
-            remote_path (str): Value supplied to this callable.
-            contents (bytes): Value supplied to this callable.
-            progress_callback (Callable[[SyncProgressEvent], None] | None): Value supplied to this
-        callable.
+            config:
+                Value supplied to this callable.
+            remote_path:
+                Value supplied to this callable.
+            contents:
+                Value supplied to this callable.
+            progress_callback:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
 
         Raises:
-            AssertionError: Raised when this callable hits the corresponding error path.
+            AssertionError:
+                Raised when this callable hits the corresponding error path.
         """
         msg = f"upload not used in this test for {remote_path}"
         raise AssertionError(msg)
@@ -446,7 +528,7 @@ class SyncStub:
     """Test helper for SyncStub.
 
     Attributes:
-        None: This type does not declare additional class-level attributes.
+        None: This type does not declare class-level attributes.
     """
 
     def sync_remote_to_local(
@@ -457,19 +539,25 @@ class SyncStub:
         """Handle sync remote to local.
 
         Args:
-            site (RegisteredSite): Value supplied to this callable.
-            progress_callback (Callable[[SyncProgressEvent], None] | None): Value supplied to this
-        callable.
+            self:
+                Value supplied to this callable.
+            site:
+                Value supplied to this callable.
+            progress_callback:
+                Value supplied to this callable.
 
         Returns:
-            SyncResult: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         return SyncResult(
             direction=SyncDirection.REMOTE_TO_LOCAL,
             success=True,
             project_id=site.id,
             connection_type=(
-                site.remote_connection.connection_type if site.remote_connection else None
+                site.remote_connection.connection_type
+                if site.remote_connection
+                else None
             ),
             local_path=site.local_path,
             summary=SyncSummary(
@@ -489,19 +577,23 @@ class SyncStub:
         """Handle sync local to remote.
 
         Args:
-            site (RegisteredSite): Value supplied to this callable.
-            progress_callback (Callable[[SyncProgressEvent], None] | None): Value supplied to this
-        callable.
+            site:
+                Value supplied to this callable.
+            progress_callback:
+                Value supplied to this callable.
 
         Returns:
-            SyncResult: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         return SyncResult(
             direction=SyncDirection.LOCAL_TO_REMOTE,
             success=True,
             project_id=site.id,
             connection_type=(
-                site.remote_connection.connection_type if site.remote_connection else None
+                site.remote_connection.connection_type
+                if site.remote_connection
+                else None
             ),
             local_path=site.local_path,
             summary=SyncSummary(
@@ -520,7 +612,7 @@ class FailingFrameworkSyncScopeService:
     """Test helper for FailingFrameworkSyncScopeService.
 
     Attributes:
-        None: This type does not declare additional class-level attributes.
+        None: This type does not declare class-level attributes.
     """
 
     @staticmethod
@@ -533,15 +625,20 @@ class FailingFrameworkSyncScopeService:
         """Handle resolve for framework.
 
         Args:
-            framework_type (str): Value supplied to this callable.
-            project_path (Path | str): Value supplied to this callable.
-            project_rule_overrides (tuple[object, ...]): Value supplied to this callable.
+            framework_type:
+                Value supplied to this callable.
+            project_path:
+                Value supplied to this callable.
+            project_rule_overrides:
+                Value supplied to this callable.
 
         Returns:
-            Any: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
 
         Raises:
-            SyncConfigurationError: Raised when this callable hits the corresponding error path.
+            SyncConfigurationError:
+                Raised when this callable hits the corresponding error path.
         """
         msg = "broken sync scope"
         raise SyncConfigurationError(msg)
@@ -551,7 +648,8 @@ def test_catalog_service_maps_project_summaries_and_detail() -> None:
     """Verify catalog service maps project summaries and detail.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     repository = InMemorySiteRegistryRepository()
     service = _build_domain_service(repository)
@@ -573,10 +671,12 @@ def test_management_service_preserves_filtered_sync_preference_in_payloads(
     """Verify management service preserves filtered sync preference in payloads.
 
     Args:
-        tmp_path (Path): Value supplied to this callable.
+        tmp_path:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     settings_service = TomlSettingsService(tmp_path / "settings.toml")
     settings_service.reset_settings()
@@ -600,27 +700,36 @@ def test_catalog_service_wraps_controlled_errors() -> None:
     """Verify catalog service wraps controlled errors.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     catalog = SiteRegistryPresentationCatalogService(
         SiteRegistryService(repository=PersistenceFailingRepository())
     )
 
-    with pytest.raises(ControlledServiceError, match=r"SQLite site registry read failed\."):
+    with pytest.raises(
+        ControlledServiceError, match=r"SQLite site registry read failed\."
+    ):
         catalog.list_projects()
 
-    with pytest.raises(ControlledServiceError, match=r"SQLite site registry read failed\."):
+    with pytest.raises(
+        ControlledServiceError, match=r"SQLite site registry read failed\."
+    ):
         catalog.get_project_detail("missing-site")
 
 
-def test_management_service_builds_create_and_edit_editor_states(tmp_path: Path) -> None:
+def test_management_service_builds_create_and_edit_editor_states(
+    tmp_path: Path,
+) -> None:
     """Verify management service builds create and edit editor states.
 
     Args:
-        tmp_path (Path): Value supplied to this callable.
+        tmp_path:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     settings_service = TomlSettingsService(tmp_path / "settings.toml")
     settings_service.reset_settings()
@@ -659,10 +768,12 @@ def test_management_service_builds_create_state_from_translation_defaults(
     """Verify management service builds create state from translation defaults.
 
     Args:
-        tmp_path (Path): Value supplied to this callable.
+        tmp_path:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     settings_service = TomlSettingsService(tmp_path / "settings.toml")
     settings_service.save_settings(
@@ -687,10 +798,12 @@ def test_management_service_builds_create_state_from_translation_compile_default
     """Verify management service builds create state from translation compile defaults.
 
     Args:
-        tmp_path (Path): Value supplied to this callable.
+        tmp_path:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     settings_service = TomlSettingsService(tmp_path / "settings.toml")
     settings_service.save_settings(
@@ -709,16 +822,20 @@ def test_management_service_builds_create_state_from_translation_compile_default
     assert create_state.editor.compile_mo is False
 
 
-def test_management_service_builds_create_state_from_translation_external_translator_defaults(
+def test_manageme_service_builds_create_state_translat_2fbd(
     tmp_path: Path,
 ) -> None:
-    """Verify management service builds create state from translation external translator….
+    """Verify management service builds create state from translation external.
+
+    translator….
 
     Args:
-        tmp_path (Path): Value supplied to this callable.
+        tmp_path:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     settings_service = TomlSettingsService(tmp_path / "settings.toml")
     settings_service.save_settings(
@@ -740,13 +857,17 @@ def test_management_service_builds_create_state_from_translation_external_transl
 def test_management_service_builds_edit_state_for_projects_without_remote_connection(
     tmp_path: Path,
 ) -> None:
-    """Verify management service builds edit state for projects without remote connection.
+    """Verify management service builds edit state for projects without remote.
+
+    connection.
 
     Args:
-        tmp_path (Path): Value supplied to this callable.
+        tmp_path:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     settings_service = TomlSettingsService(tmp_path / "settings.toml")
     settings_service.reset_settings()
@@ -772,17 +893,21 @@ def test_management_service_builds_edit_state_for_projects_without_remote_connec
 
     assert edit_state.editor.connection_type == "none"
     assert edit_state.editor.remote_host == ""
-    assert "locale" in [item.relative_path for item in edit_state.editor.sync_rule_items]
+    assert "locale" in [
+        item.relative_path for item in edit_state.editor.sync_rule_items
+    ]
 
 
 def test_management_service_wraps_build_edit_errors(tmp_path: Path) -> None:
     """Verify management service wraps build edit errors.
 
     Args:
-        tmp_path (Path): Value supplied to this callable.
+        tmp_path:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     settings_service = TomlSettingsService(tmp_path / "settings.toml")
     settings_service.reset_settings()
@@ -795,28 +920,37 @@ def test_management_service_wraps_build_edit_errors(tmp_path: Path) -> None:
         management.build_edit_project_editor("missing-site")
 
 
-def test_management_service_wraps_build_create_configuration_errors(tmp_path: Path) -> None:
+def test_management_service_wraps_build_create_configuration_errors(
+    tmp_path: Path,
+) -> None:
     """Verify management service wraps build create configuration errors.
 
     Args:
-        tmp_path (Path): Value supplied to this callable.
+        tmp_path:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
 
     class InvalidSettingsService(TomlSettingsService):
         """Test helper for InvalidSettingsService.
 
         Attributes:
-            None: This type does not declare additional class-level attributes.
+            None: This type does not declare class-level attributes.
         """
 
         def load_settings(self) -> SettingsStateViewModel:
             """Handle load settings.
 
+            Args:
+                self:
+                    Value supplied to this callable.
+
             Returns:
-                SettingsStateViewModel: Structured value returned by this callable.
+                value:
+                    Structured value returned by this callable.
             """
             return build_settings_state(
                 app_settings=replace(
@@ -832,7 +966,9 @@ def test_management_service_wraps_build_create_configuration_errors(tmp_path: Pa
         settings_service=InvalidSettingsService(tmp_path / "settings.toml"),
     )
 
-    with pytest.raises(ControlledServiceError, match=r"Database filename must not be empty\."):
+    with pytest.raises(
+        ControlledServiceError, match=r"Database filename must not be empty\."
+    ):
         management.build_create_project_editor()
 
 
@@ -842,31 +978,39 @@ def test_management_service_wraps_settings_load_errors_for_create_editor(
     """Verify management service wraps settings load errors for create editor.
 
     Args:
-        tmp_path (Path): Value supplied to this callable.
+        tmp_path:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
 
     Raises:
-        SiteRegistryPersistenceError: Raised when this callable hits the corresponding error path.
+        SiteRegistryPersistenceError:
+            Raised when this callable hits the corresponding error path.
     """
 
     class FailingSettingsService(TomlSettingsService):
         """Test helper for FailingSettingsService.
 
         Attributes:
-            None: This type does not declare additional class-level attributes.
+            None: This type does not declare class-level attributes.
         """
 
         def load_settings(self) -> SettingsStateViewModel:
             """Handle load settings.
 
+            Args:
+                self:
+                    Value supplied to this callable.
+
             Returns:
-                SettingsStateViewModel: Structured value returned by this callable.
+                value:
+                    Structured value returned by this callable.
 
             Raises:
-                SiteRegistryPersistenceError: Raised when this callable hits the corresponding error
-            path.
+                SiteRegistryPersistenceError:
+                    Raised when this callable hits the corresponding error path.
             """
             msg = "SQLite settings read failed."
             raise SiteRegistryPersistenceError(msg)
@@ -880,14 +1024,18 @@ def test_management_service_wraps_settings_load_errors_for_create_editor(
         management.build_create_project_editor()
 
 
-def test_management_service_wraps_invalid_editor_payloads_and_missing_sites(tmp_path: Path) -> None:
+def test_management_service_wraps_invalid_editor_payloads_and_missing_sites(
+    tmp_path: Path,
+) -> None:
     """Verify management service wraps invalid editor payloads and missing sites.
 
     Args:
-        tmp_path (Path): Value supplied to this callable.
+        tmp_path:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     settings_service = TomlSettingsService(tmp_path / "settings.toml")
     settings_service.reset_settings()
@@ -910,13 +1058,16 @@ def test_management_service_wraps_domain_conflicts(tmp_path: Path) -> None:
     """Verify management service wraps domain conflicts.
 
     Args:
-        tmp_path (Path): Value supplied to this callable.
+        tmp_path:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
 
     Raises:
-        SiteRegistryConflictError: Raised when this callable hits the corresponding error path.
+        SiteRegistryConflictError:
+            Raised when this callable hits the corresponding error path.
     """
     settings_service = TomlSettingsService(tmp_path / "settings.toml")
     settings_service.reset_settings()
@@ -927,21 +1078,25 @@ def test_management_service_wraps_domain_conflicts(tmp_path: Path) -> None:
         """Test helper for ConflictRepository.
 
         Attributes:
-            None: This type does not declare additional class-level attributes.
+            None: This type does not declare class-level attributes.
         """
 
         def create_site(self, site: RegisteredSite) -> RegisteredSite:
             """Handle create site.
 
             Args:
-                site (RegisteredSite): Value supplied to this callable.
+                self:
+                    Value supplied to this callable.
+                site:
+                    Value supplied to this callable.
 
             Returns:
-                RegisteredSite: Structured value returned by this callable.
+                value:
+                    Structured value returned by this callable.
 
             Raises:
-                SiteRegistryConflictError: Raised when this callable hits the corresponding error
-            path.
+                SiteRegistryConflictError:
+                    Raised when this callable hits the corresponding error path.
             """
             msg = "A site with the name 'Marketing Site' already exists."
             raise SiteRegistryConflictError(msg)
@@ -962,10 +1117,12 @@ def test_management_service_updates_projects_successfully(tmp_path: Path) -> Non
     """Verify management service updates projects successfully.
 
     Args:
-        tmp_path (Path): Value supplied to this callable.
+        tmp_path:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     settings_service = TomlSettingsService(tmp_path / "settings.toml")
     settings_service.reset_settings()
@@ -986,14 +1143,18 @@ def test_management_service_updates_projects_successfully(tmp_path: Path) -> Non
     assert detail.project.local_path == "/workspace/marketing-site-v2"
 
 
-def test_management_service_tests_remote_connections_successfully(tmp_path: Path) -> None:
+def test_management_service_tests_remote_connections_successfully(
+    tmp_path: Path,
+) -> None:
     """Verify management service tests remote connections successfully.
 
     Args:
-        tmp_path (Path): Value supplied to this callable.
+        tmp_path:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     settings_service = TomlSettingsService(tmp_path / "settings.toml")
     settings_service.reset_settings()
@@ -1014,10 +1175,12 @@ def test_management_service_wraps_remote_connection_test_payload_errors(
     """Verify management service wraps remote connection test payload errors.
 
     Args:
-        tmp_path (Path): Value supplied to this callable.
+        tmp_path:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     settings_service = TomlSettingsService(tmp_path / "settings.toml")
     settings_service.reset_settings()
@@ -1027,7 +1190,9 @@ def test_management_service_wraps_remote_connection_test_payload_errors(
     )
 
     with pytest.raises(ControlledServiceError, match=r"invalid literal for int"):
-        management.test_remote_connection(replace(_build_editor(), remote_port="invalid-port"))
+        management.test_remote_connection(
+            replace(_build_editor(), remote_port="invalid-port")
+        )
 
 
 def test_management_service_preserves_remote_host_verification_choice(
@@ -1036,10 +1201,12 @@ def test_management_service_preserves_remote_host_verification_choice(
     """Verify management service preserves remote host verification choice.
 
     Args:
-        tmp_path (Path): Value supplied to this callable.
+        tmp_path:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     settings_service = TomlSettingsService(tmp_path / "settings.toml")
     settings_service.reset_settings()
@@ -1050,7 +1217,9 @@ def test_management_service_preserves_remote_host_verification_choice(
         framework_sync_scope_service=_build_framework_sync_scope_service(),
     )
 
-    created_project = management.create_project(replace(_build_editor(), remote_verify_host=False))
+    created_project = management.create_project(
+        replace(_build_editor(), remote_verify_host=False)
+    )
 
     persisted_site = domain_service.get_site(created_project.project.id)
     assert persisted_site.remote_connection is not None
@@ -1063,10 +1232,12 @@ def test_management_service_previews_resolved_scope_and_project_rules(
     """Verify management service previews resolved scope and project rules.
 
     Args:
-        tmp_path (Path): Value supplied to this callable.
+        tmp_path:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     settings_service = TomlSettingsService(tmp_path / "settings.toml")
     settings_service.reset_settings()
@@ -1101,7 +1272,9 @@ def test_management_service_previews_resolved_scope_and_project_rules(
     assert preview.sync_scope_status == "filtered"
     assert "locale" in [item.relative_path for item in preview.editor.sync_rule_items]
     assert ".venv" in [item.relative_path for item in preview.editor.sync_rule_items]
-    assert "locale_custom" in [item.relative_path for item in preview.editor.sync_rule_items]
+    assert "locale_custom" in [
+        item.relative_path for item in preview.editor.sync_rule_items
+    ]
 
 
 def test_management_service_keeps_editor_usable_when_sync_scope_resolution_fails(
@@ -1110,10 +1283,12 @@ def test_management_service_keeps_editor_usable_when_sync_scope_resolution_fails
     """Verify management service keeps editor usable when sync scope resolution fails.
 
     Args:
-        tmp_path (Path): Value supplied to this callable.
+        tmp_path:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     settings_service = TomlSettingsService(tmp_path / "settings.toml")
     settings_service.reset_settings()
@@ -1124,7 +1299,9 @@ def test_management_service_keeps_editor_usable_when_sync_scope_resolution_fails
     )
 
     preview = management.preview_project_editor(
-        replace(_build_editor(), framework_type="django", use_adapter_sync_filters=True),
+        replace(
+            _build_editor(), framework_type="django", use_adapter_sync_filters=True
+        ),
         mode="create",
     )
 
@@ -1141,10 +1318,12 @@ def test_management_service_persists_project_sync_rule_overrides(
     """Verify management service persists project sync rule overrides.
 
     Args:
-        tmp_path (Path): Value supplied to this callable.
+        tmp_path:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     settings_service = TomlSettingsService(tmp_path / "settings.toml")
     settings_service.reset_settings()
@@ -1246,10 +1425,12 @@ def test_management_service_wraps_invalid_sync_rule_preview_payloads(
     """Verify management service wraps invalid sync rule preview payloads.
 
     Args:
-        tmp_path (Path): Value supplied to this callable.
+        tmp_path:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     settings_service = TomlSettingsService(tmp_path / "settings.toml")
     settings_service.reset_settings()
@@ -1259,7 +1440,9 @@ def test_management_service_wraps_invalid_sync_rule_preview_payloads(
         framework_sync_scope_service=_build_framework_sync_scope_service(),
     )
 
-    with pytest.raises(ControlledServiceError, match=r"Sync rule paths must not be blank\."):
+    with pytest.raises(
+        ControlledServiceError, match=r"Sync rule paths must not be blank\."
+    ):
         management.preview_project_editor(
             replace(
                 _build_editor(),
@@ -1287,10 +1470,12 @@ def test_management_service_wraps_duplicate_sync_rule_payloads(
     """Verify management service wraps duplicate sync rule payloads.
 
     Args:
-        tmp_path (Path): Value supplied to this callable.
+        tmp_path:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     settings_service = TomlSettingsService(tmp_path / "settings.toml")
     settings_service.reset_settings()
@@ -1327,13 +1512,17 @@ def test_management_service_wraps_duplicate_sync_rule_payloads(
 def test_management_service_preview_without_scope_service_keeps_existing_rule_catalog(
     tmp_path: Path,
 ) -> None:
-    """Verify management service preview without scope service keeps existing rule catalog.
+    """Verify management service preview without scope service keeps existing rule.
+
+    catalog.
 
     Args:
-        tmp_path (Path): Value supplied to this callable.
+        tmp_path:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     settings_service = TomlSettingsService(tmp_path / "settings.toml")
     settings_service.reset_settings()
@@ -1360,14 +1549,18 @@ def test_management_service_preview_without_scope_service_keeps_existing_rule_ca
 
     assert preview.sync_scope_status == "adapter_unavailable"
     assert preview.editor.sync_rule_items[0].rule_key == "exclude:directory:__pycache__"
-    assert preview.editor.sync_rule_items[0].target_rule_key == "exclude:directory:__pycache__"
+    assert (
+        preview.editor.sync_rule_items[0].target_rule_key
+        == "exclude:directory:__pycache__"
+    )
 
 
 def test_framework_aware_workflow_service_builds_audit_preview_from_detection() -> None:
     """Verify framework aware workflow service builds audit preview from detection.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     repository = InMemorySiteRegistryRepository()
     service = _build_domain_service(repository)
@@ -1388,10 +1581,12 @@ def test_workflow_service_builds_po_processing_preview(tmp_path: Path) -> None:
     """Verify workflow service builds po processing preview.
 
     Args:
-        tmp_path (Path): Value supplied to this callable.
+        tmp_path:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     repository = InMemorySiteRegistryRepository()
     site_service = _build_domain_service(repository)
@@ -1399,7 +1594,9 @@ def test_workflow_service_builds_po_processing_preview(tmp_path: Path) -> None:
     workflow = SiteRegistryPresentationWorkflowService(
         service=site_service,
         project_sync_service=SyncStub(),
-        po_processing_service=POProcessingService(repository=PolibPOCatalogRepository()),
+        po_processing_service=POProcessingService(
+            repository=PolibPOCatalogRepository()
+        ),
     )
 
     preview = workflow.start_po_processing(site.id)
@@ -1422,14 +1619,18 @@ def test_workflow_service_builds_po_processing_preview(tmp_path: Path) -> None:
     assert "Translation cache: enabled" in preview.summary
 
 
-def test_workflow_service_processes_po_variants_from_site_workspace(tmp_path: Path) -> None:
+def test_workflow_service_processes_po_variants_from_site_workspace(
+    tmp_path: Path,
+) -> None:
     """Verify workflow service processes po variants from site workspace.
 
     Args:
-        tmp_path (Path): Value supplied to this callable.
+        tmp_path:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     locale_dir = tmp_path / "locale"
     locale_dir.mkdir(parents=True, exist_ok=True)
@@ -1458,7 +1659,9 @@ def test_workflow_service_processes_po_variants_from_site_workspace(tmp_path: Pa
     workflow = SiteRegistryPresentationWorkflowService(
         service=site_service,
         project_sync_service=SyncStub(),
-        po_processing_service=POProcessingService(repository=PolibPOCatalogRepository()),
+        po_processing_service=POProcessingService(
+            repository=PolibPOCatalogRepository()
+        ),
     )
 
     preview = workflow.start_po_processing(site.id)
@@ -1474,14 +1677,18 @@ def test_workflow_service_processes_po_variants_from_site_workspace(tmp_path: Pa
     assert "Compiled MO files: 2" in preview.summary
 
 
-def test_workflow_service_processes_po_variants_from_selected_locales(tmp_path: Path) -> None:
+def test_workflow_service_processes_po_variants_from_selected_locales(
+    tmp_path: Path,
+) -> None:
     """Verify workflow service processes po variants from selected locales.
 
     Args:
-        tmp_path (Path): Value supplied to this callable.
+        tmp_path:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     locale_dir = tmp_path / "locale"
     locale_dir.mkdir(parents=True, exist_ok=True)
@@ -1510,7 +1717,9 @@ def test_workflow_service_processes_po_variants_from_selected_locales(tmp_path: 
     workflow = SiteRegistryPresentationWorkflowService(
         service=site_service,
         project_sync_service=SyncStub(),
-        po_processing_service=POProcessingService(repository=PolibPOCatalogRepository()),
+        po_processing_service=POProcessingService(
+            repository=PolibPOCatalogRepository()
+        ),
     )
 
     preview = workflow.start_po_processing(site.id, _request("pt_BR"))
@@ -1526,14 +1735,18 @@ def test_workflow_service_processes_po_variants_from_selected_locales(tmp_path: 
     assert "Compiled MO files: 2" in preview.summary
 
 
-def test_workflow_service_reports_translated_entries_when_provider_is_used(tmp_path: Path) -> None:
+def test_workflow_service_reports_translated_entries_when_provider_is_used(
+    tmp_path: Path,
+) -> None:
     """Verify workflow service reports translated entries when provider is used.
 
     Args:
-        tmp_path (Path): Value supplied to this callable.
+        tmp_path:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     locale_dir = tmp_path / "locale"
     locale_dir.mkdir(parents=True, exist_ok=True)
@@ -1578,14 +1791,18 @@ def test_workflow_service_reports_translated_entries_when_provider_is_used(tmp_p
     assert "Compiled MO files: 2" in preview.summary
 
 
-def test_workflow_service_reports_partial_po_translation_failures(tmp_path: Path) -> None:
+def test_workflow_service_reports_partial_po_translation_failures(
+    tmp_path: Path,
+) -> None:
     """Verify workflow service reports partial po translation failures.
 
     Args:
-        tmp_path (Path): Value supplied to this callable.
+        tmp_path:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     locale_dir = tmp_path / "locale"
     locale_dir.mkdir(parents=True, exist_ok=True)
@@ -1635,13 +1852,16 @@ def test_workflow_service_reports_mo_compilation_failures_as_completed_with_erro
     """Verify workflow service reports mo compilation failures as completed with errors.
 
     Args:
-        tmp_path (Path): Value supplied to this callable.
+        tmp_path:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
 
     Raises:
-        POProcessingCompilationError: Raised when this callable hits the corresponding error path.
+        POProcessingCompilationError:
+            Raised when this callable hits the corresponding error path.
     """
     locale_dir = tmp_path / "locale"
     locale_dir.mkdir(parents=True, exist_ok=True)
@@ -1652,21 +1872,25 @@ def test_workflow_service_reports_mo_compilation_failures_as_completed_with_erro
         """Test helper for FailingCompileRepository.
 
         Attributes:
-            None: This type does not declare additional class-level attributes.
+            None: This type does not declare class-level attributes.
         """
 
         def compile_mo_file(self, file_data: POFileData) -> None:
             """Handle compile mo file.
 
             Args:
-                file_data (POFileData): Value supplied to this callable.
+                self:
+                    Value supplied to this callable.
+                file_data:
+                    Value supplied to this callable.
 
             Returns:
-                None: This callable does not return a value.
+                value:
+                    Structured value returned by this callable.
 
             Raises:
-                POProcessingCompilationError: Raised when this callable hits the corresponding error
-            path.
+                POProcessingCompilationError:
+                    Raised when this callable hits the corresponding error path.
             """
             if file_data.locale == "es_AR":
                 msg = "MO file compilation failed for es_AR."
@@ -1695,7 +1919,9 @@ def test_workflow_service_reports_mo_compilation_failures_as_completed_with_erro
     workflow = SiteRegistryPresentationWorkflowService(
         service=site_service,
         project_sync_service=SyncStub(),
-        po_processing_service=POProcessingService(repository=_FailingCompileRepository()),
+        po_processing_service=POProcessingService(
+            repository=_FailingCompileRepository()
+        ),
     )
 
     preview = workflow.start_po_processing(site.id)
@@ -1709,10 +1935,12 @@ def test_workflow_service_summarizes_dry_run_and_stats_only(tmp_path: Path) -> N
     """Verify workflow service summarizes dry run and stats only.
 
     Args:
-        tmp_path (Path): Value supplied to this callable.
+        tmp_path:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     locale_dir = tmp_path / "locale"
     locale_dir.mkdir(parents=True, exist_ok=True)
@@ -1762,14 +1990,18 @@ def test_workflow_service_summarizes_dry_run_and_stats_only(tmp_path: Path) -> N
     assert "Written PO files: 0" in preview.summary
 
 
-def test_workflow_service_summarizes_translation_inconsistencies(tmp_path: Path) -> None:
+def test_workflow_service_summarizes_translation_inconsistencies(
+    tmp_path: Path,
+) -> None:
     """Verify workflow service summarizes translation inconsistencies.
 
     Args:
-        tmp_path (Path): Value supplied to this callable.
+        tmp_path:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     locale_dir = tmp_path / "locale"
     locale_dir.mkdir(parents=True, exist_ok=True)
@@ -1797,7 +2029,9 @@ def test_workflow_service_summarizes_translation_inconsistencies(tmp_path: Path)
     workflow = SiteRegistryPresentationWorkflowService(
         service=site_service,
         project_sync_service=SyncStub(),
-        po_processing_service=POProcessingService(repository=PolibPOCatalogRepository()),
+        po_processing_service=POProcessingService(
+            repository=PolibPOCatalogRepository()
+        ),
     )
 
     preview = workflow.start_po_processing(
@@ -1818,10 +2052,12 @@ def test_workflow_service_reports_zero_translation_inconsistencies_when_enabled(
     """Verify workflow service reports zero translation inconsistencies when enabled.
 
     Args:
-        tmp_path (Path): Value supplied to this callable.
+        tmp_path:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     locale_dir = tmp_path / "locale"
     locale_dir.mkdir(parents=True, exist_ok=True)
@@ -1849,7 +2085,9 @@ def test_workflow_service_reports_zero_translation_inconsistencies_when_enabled(
     workflow = SiteRegistryPresentationWorkflowService(
         service=site_service,
         project_sync_service=SyncStub(),
-        po_processing_service=POProcessingService(repository=PolibPOCatalogRepository()),
+        po_processing_service=POProcessingService(
+            repository=PolibPOCatalogRepository()
+        ),
     )
 
     preview = workflow.start_po_processing(
@@ -1869,10 +2107,12 @@ def test_workflow_service_reports_reused_translations_from_other_variants(
     """Verify workflow service reports reused translations from other variants.
 
     Args:
-        tmp_path (Path): Value supplied to this callable.
+        tmp_path:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     first_dir = tmp_path / "plugin_a"
     second_dir = tmp_path / "plugin_b"
@@ -1904,7 +2144,9 @@ def test_workflow_service_reports_reused_translations_from_other_variants(
     workflow = SiteRegistryPresentationWorkflowService(
         service=site_service,
         project_sync_service=SyncStub(),
-        po_processing_service=POProcessingService(repository=PolibPOCatalogRepository()),
+        po_processing_service=POProcessingService(
+            repository=PolibPOCatalogRepository()
+        ),
     )
 
     preview = workflow.start_po_processing(site.id)
@@ -1918,12 +2160,15 @@ def test_workflow_service_wraps_po_processing_lookup_errors() -> None:
     """Verify workflow service wraps po processing lookup errors.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     workflow = SiteRegistryPresentationWorkflowService(
         service=_build_domain_service(InMemorySiteRegistryRepository()),
         project_sync_service=SyncStub(),
-        po_processing_service=POProcessingService(repository=PolibPOCatalogRepository()),
+        po_processing_service=POProcessingService(
+            repository=PolibPOCatalogRepository()
+        ),
     )
 
     with pytest.raises(ControlledServiceError, match="Unknown site id: missing-site"):
@@ -1934,11 +2179,14 @@ def test_workflow_service_reports_unconfigured_po_processing_service() -> None:
     """Verify workflow service reports unconfigured po processing service.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     repository = InMemorySiteRegistryRepository()
     site_service = _build_domain_service(repository)
-    site = site_service.create_site(_build_registration(local_path="/workspace/marketing-site"))
+    site = site_service.create_site(
+        _build_registration(local_path="/workspace/marketing-site")
+    )
     workflow = SiteRegistryPresentationWorkflowService(
         service=site_service,
         project_sync_service=SyncStub(),
@@ -1955,7 +2203,8 @@ def test_workflow_service_runs_sync_in_both_directions() -> None:
     """Verify workflow service runs sync in both directions.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     repository = InMemorySiteRegistryRepository()
     site_service = _build_domain_service(repository)
@@ -1976,7 +2225,8 @@ def test_workflow_service_wraps_sync_lookup_errors_for_both_directions() -> None
     """Verify workflow service wraps sync lookup errors for both directions.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     workflow = SiteRegistryPresentationWorkflowService(
         service=_build_domain_service(InMemorySiteRegistryRepository()),
@@ -1994,17 +2244,19 @@ def test_workflow_service_wraps_po_processing_service_errors() -> None:
     """Verify workflow service wraps po processing service errors.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
 
     Raises:
-        POProcessingTranslationError: Raised when this callable hits the corresponding error path.
+        POProcessingTranslationError:
+            Raised when this callable hits the corresponding error path.
     """
 
     class _ExplodingPOService:
         """Test helper for ExplodingPOService.
 
         Attributes:
-            None: This type does not declare additional class-level attributes.
+            None: This type does not declare class-level attributes.
         """
 
         @staticmethod
@@ -2016,25 +2268,29 @@ def test_workflow_service_wraps_po_processing_service_errors() -> None:
             """Handle process site.
 
             Args:
-                site (RegisteredSite): Value supplied to this callable.
-                cache_settings (POProcessingCacheSettings | None): Value supplied to this callable.
-                progress_callback (Callable[[POProcessingProgress], None] | None): Value supplied to
-            this
-                callable.
+                site:
+                    Value supplied to this callable.
+                cache_settings:
+                    Value supplied to this callable.
+                progress_callback:
+                    Value supplied to this callable.
 
             Returns:
-                object: Structured value returned by this callable.
+                value:
+                    Structured value returned by this callable.
 
             Raises:
-                POProcessingTranslationError: Raised when this callable hits the corresponding error
-            path.
+                POProcessingTranslationError:
+                    Raised when this callable hits the corresponding error path.
             """
             msg = "PO workflow exploded."
             raise POProcessingTranslationError(msg)
 
     repository = InMemorySiteRegistryRepository()
     site_service = _build_domain_service(repository)
-    site = site_service.create_site(_build_registration(local_path="/workspace/marketing-site"))
+    site = site_service.create_site(
+        _build_registration(local_path="/workspace/marketing-site")
+    )
     workflow = SiteRegistryPresentationWorkflowService(
         service=site_service,
         project_sync_service=SyncStub(),
@@ -2049,17 +2305,19 @@ def test_workflow_service_wraps_cache_settings_load_errors() -> None:
     """Verify workflow service wraps cache settings load errors.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
 
     Raises:
-        ControlledServiceError: Raised when this callable hits the corresponding error path.
+        ControlledServiceError:
+            Raised when this callable hits the corresponding error path.
     """
 
     class FailingSettingsService:
         """Test helper for FailingSettingsService.
 
         Attributes:
-            None: This type does not declare additional class-level attributes.
+            None: This type does not declare class-level attributes.
         """
 
         @staticmethod
@@ -2067,17 +2325,21 @@ def test_workflow_service_wraps_cache_settings_load_errors() -> None:
             """Handle load settings.
 
             Returns:
-                SettingsStateViewModel: Structured value returned by this callable.
+                value:
+                    Structured value returned by this callable.
 
             Raises:
-                ControlledServiceError: Raised when this callable hits the corresponding error path.
+                ControlledServiceError:
+                    Raised when this callable hits the corresponding error path.
             """
             msg = "Settings load failed."
             raise ControlledServiceError(msg)
 
     repository = InMemorySiteRegistryRepository()
     site_service = _build_domain_service(repository)
-    site = site_service.create_site(_build_registration(local_path="/workspace/marketing-site"))
+    site = site_service.create_site(
+        _build_registration(local_path="/workspace/marketing-site")
+    )
     workflow = SiteRegistryPresentationWorkflowService(
         service=site_service,
         project_sync_service=SyncStub(),
@@ -2093,7 +2355,8 @@ def test_workflow_service_trusts_remote_host_key_with_explicit_confirmation() ->
     """Verify workflow service trusts remote host key with explicit confirmation.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     repository = InMemorySiteRegistryRepository()
     service = _build_domain_service(repository)
@@ -2113,7 +2376,8 @@ def test_workflow_service_wraps_host_key_trust_without_remote_connection() -> No
     """Verify workflow service wraps host key trust without remote connection.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     repository = InMemorySiteRegistryRepository()
     service = _build_domain_service(repository)
@@ -2139,16 +2403,18 @@ def test_workflow_service_wraps_host_key_trust_without_remote_connection() -> No
         workflow.trust_remote_host_key(created.id)
 
 
-def test_workflow_service_raises_if_remote_connection_disappears_after_host_key_validation(
+def test_workflow_service_raises_if_remote_connecti_di_312a(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Verify workflow service raises if remote connection disappears after host key validation.
+    """Verify workflow service raises if remote connection disappears after host key.
 
     Args:
-        monkeypatch (pytest.MonkeyPatch): Value supplied to this callable.
+        monkeypatch:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     repository = InMemorySiteRegistryRepository()
     service = _build_domain_service(repository)
@@ -2163,10 +2429,12 @@ def test_workflow_service_raises_if_remote_connection_disappears_after_host_key_
         """Handle site without remote.
 
         Args:
-            site_id (str): Value supplied to this callable.
+            site_id:
+                Value supplied to this callable.
 
         Returns:
-            RegisteredSite: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         return replace(original_get_site(site_id), remote_connection=None)
 
@@ -2183,14 +2451,18 @@ def test_workflow_service_raises_if_remote_connection_disappears_after_host_key_
         workflow.trust_remote_host_key(created.id)
 
 
-def test_framework_aware_workflow_service_builds_matched_audit_preview(tmp_path: Path) -> None:
+def test_framework_aware_workflow_service_builds_matched_audit_preview(
+    tmp_path: Path,
+) -> None:
     """Verify framework aware workflow service builds matched audit preview.
 
     Args:
-        tmp_path (Path): Value supplied to this callable.
+        tmp_path:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     project_path = tmp_path / "wordpress-site"
     project_path.mkdir()
@@ -2224,7 +2496,8 @@ def test_framework_aware_workflow_service_wraps_lookup_errors() -> None:
     """Verify framework aware workflow service wraps lookup errors.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     workflow = SiteRegistryPresentationWorkflowService(
         service=SiteRegistryService(repository=InMemorySiteRegistryRepository()),
@@ -2239,7 +2512,8 @@ def test_workflow_service_wraps_local_to_remote_lookup_errors() -> None:
     """Verify workflow service wraps local to remote lookup errors.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     workflow = SiteRegistryPresentationWorkflowService(
         service=SiteRegistryService(repository=InMemorySiteRegistryRepository()),
@@ -2254,7 +2528,8 @@ def test_build_sync_status_covers_empty_upload_and_download_summaries() -> None:
     """Verify build sync status covers empty upload and download summaries.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     upload_status = _build_sync_status(
         SyncResult(
@@ -2295,11 +2570,14 @@ def test_build_sync_status_covers_empty_upload_and_download_summaries() -> None:
     assert download_status.summary == "Downloaded 1 files into /workspace/site-1."
 
 
-def test_build_sync_status_covers_non_empty_upload_empty_download_and_failed_fallback() -> None:
-    """Verify build sync status covers non empty upload empty download and failed fallback.
+def test_build_sync_status_covers_non_empty_upload_71ef() -> None:
+    """Verify build sync status covers non empty upload empty download and failed.
+
+    fallback.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     upload_status = _build_sync_status(
         SyncResult(
@@ -2356,7 +2634,10 @@ def test_build_sync_status_covers_non_empty_upload_empty_download_and_failed_fal
         upload_status.summary
         == "Uploaded 2 files from /workspace/site-1 into the remote workspace."
     )
-    assert empty_download_status.summary == "Remote workspace is empty. No files were downloaded."
+    assert (
+        empty_download_status.summary
+        == "Remote workspace is empty. No files were downloaded."
+    )
     assert failed_status.error_code == "sync_failed"
     assert "but no detailed sync error was provided" in failed_status.summary
 
@@ -2365,7 +2646,8 @@ def test_build_sync_status_uses_explicit_error_details_when_present() -> None:
     """Verify build sync status uses explicit error details when present.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     failed_status = _build_sync_status(
         SyncResult(
@@ -2392,7 +2674,8 @@ def test_build_project_detail_without_detection_keeps_base_metadata_only() -> No
     """Verify build project detail without detection keeps base metadata only.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     detail = _build_project_detail(
         RegisteredSite(
@@ -2427,7 +2710,8 @@ def test_build_project_detail_without_remote_connection_is_explicit() -> None:
     """Verify build project detail without remote connection is explicit.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     detail = _build_project_detail(
         RegisteredSite(
@@ -2451,14 +2735,18 @@ def test_build_project_detail_without_remote_connection_is_explicit() -> None:
         "Report inconsistencies: disabled | "
         "Remote connection: None"
     )
-    assert detail.metadata_summary == "Framework: Django | Remote connection: none configured"
+    assert (
+        detail.metadata_summary
+        == "Framework: Django | Remote connection: none configured"
+    )
 
 
 def test_build_project_detail_includes_matched_framework_evidence() -> None:
     """Verify build project detail includes matched framework evidence.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     detail = _build_project_detail(
         RegisteredSite(
@@ -2501,7 +2789,8 @@ def test_build_project_rule_overrides_backfills_missing_target_rule_key() -> Non
     """Verify build project rule overrides backfills missing target rule key.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     overrides = _build_project_rule_overrides(
         (
@@ -2526,11 +2815,12 @@ def test_catalog_service_wraps_framework_detection_ambiguity() -> None:
     """Verify catalog service wraps framework detection ambiguity.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
 
     Raises:
-        FrameworkDetectionAmbiguityError: Raised when this callable hits the corresponding error
-    path.
+        FrameworkDetectionAmbiguityError:
+            Raised when this callable hits the corresponding error path.
     """
     repository = InMemorySiteRegistryRepository()
 
@@ -2538,23 +2828,30 @@ def test_catalog_service_wraps_framework_detection_ambiguity() -> None:
         """Test helper for AmbiguousDetectionService.
 
         Attributes:
-            None: This type does not declare additional class-level attributes.
+            None: This type does not declare class-level attributes.
         """
 
         def detect_framework(self, project_path: str) -> FrameworkDetectionResult:
             """Handle detect framework.
 
             Args:
-                project_path (str): Value supplied to this callable.
+                self:
+                    Value supplied to this callable.
+                project_path:
+                    Value supplied to this callable.
 
             Returns:
-                FrameworkDetectionResult: Structured value returned by this callable.
+                value:
+                    Structured value returned by this callable.
 
             Raises:
-                FrameworkDetectionAmbiguityError: Raised when this callable hits the corresponding
-            error path.
+                FrameworkDetectionAmbiguityError:
+                    Raised when this callable hits the corresponding error path.
             """
-            msg = "Multiple framework adapters matched the project path with the same confidence."
+            msg = (
+                "Multiple framework adapters matched the project path with "
+                "the same confidence."
+            )
             raise FrameworkDetectionAmbiguityError(msg)
 
     service = AmbiguousDetectionService(repository=repository)
@@ -2563,19 +2860,26 @@ def test_catalog_service_wraps_framework_detection_ambiguity() -> None:
 
     with pytest.raises(
         ControlledServiceError,
-        match=r"Multiple framework adapters matched the project path with the same confidence\.",
+        match=(
+            r"Multiple framework adapters matched the project path with "
+            r"the same confidence\."
+        ),
     ):
         catalog.get_project_detail(created.id)
 
 
-def _build_domain_service(repository: InMemorySiteRegistryRepository) -> SiteRegistryService:
+def _build_domain_service(
+    repository: InMemorySiteRegistryRepository,
+) -> SiteRegistryService:
     """Handle build domain service.
 
     Args:
-        repository (InMemorySiteRegistryRepository): Value supplied to this callable.
+        repository:
+            Value supplied to this callable.
 
     Returns:
-        SiteRegistryService: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
     """
     return SiteRegistryService(
         repository=repository,
@@ -2590,19 +2894,25 @@ def _build_framework_sync_scope_service() -> FrameworkSyncScopeService:
     """Handle build framework sync scope service.
 
     Returns:
-        FrameworkSyncScopeService: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
     """
-    return FrameworkSyncScopeService(registry=FrameworkAdapterRegistry.discover_installed())
+    return FrameworkSyncScopeService(
+        registry=FrameworkAdapterRegistry.discover_installed()
+    )
 
 
 def _build_remote_connection_service() -> RemoteConnectionService:
     """Handle build remote connection service.
 
     Returns:
-        RemoteConnectionService: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
     """
     return RemoteConnectionService(
-        registry=RemoteConnectionRegistry.default_registry(providers=[SuccessfulSFTPProvider()])
+        registry=RemoteConnectionRegistry.default_registry(
+            providers=[SuccessfulSFTPProvider()]
+        )
     )
 
 
@@ -2614,11 +2924,14 @@ def _build_registration(
     """Handle build registration.
 
     Args:
-        framework_type (str): Value supplied to this callable.
-        local_path (str): Value supplied to this callable.
+        framework_type:
+            Value supplied to this callable.
+        local_path:
+            Value supplied to this callable.
 
     Returns:
-        SiteRegistrationInput: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
     """
     return SiteRegistrationInput(
         name="Marketing Site",
@@ -2641,7 +2954,8 @@ def _build_editor() -> SiteEditorViewModel:
     """Handle build editor.
 
     Returns:
-        SiteEditorViewModel: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
     """
     return SiteEditorViewModel(
         site_id=None,
@@ -2664,11 +2978,14 @@ def _write_po_file(path: Path, entries: list[tuple[str, str]]) -> None:
     """Handle write po file.
 
     Args:
-        path (Path): Value supplied to this callable.
-        entries (list[tuple[str, str]]): Value supplied to this callable.
+        path:
+            Value supplied to this callable.
+        entries:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     po_file = polib.POFile()
     po_file.metadata = {"Language": path.stem.split("-")[-1]}

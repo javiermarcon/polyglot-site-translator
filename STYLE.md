@@ -12,6 +12,9 @@ The repository should also remain compatible with:
 - mypy for static type checking
 - pytest for tests
 
+Python source lines must stay within 88 characters so the formatter and linter enforce the same
+explicit limit across the repository.
+
 All new and modified code must explicitly satisfy those standards. Do not rely on accidental
 compatibility or on whichever subset a tool happens to be checking by default.
 

@@ -39,7 +39,8 @@ class SFTPRemoteConnectionProvider(BaseRemoteConnectionProvider):
     """Provider for SFTP connectivity tests and downloads.
 
     Attributes:
-        descriptor: Documented attribute exposed by this type.
+        descriptor:
+            Documented attribute exposed by this type.
     """
 
     descriptor = RemoteConnectionTypeDescriptor(
@@ -55,10 +56,14 @@ class SFTPRemoteConnectionProvider(BaseRemoteConnectionProvider):
         """Run a short-lived SFTP connectivity check.
 
         Args:
-            config (RemoteConnectionConfigInput): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            config:
+                Value supplied to this callable.
 
         Returns:
-            RemoteConnectionTestResult: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         return _test_ssh_connection(config, "Connected successfully using SFTP.")
 
@@ -69,10 +74,14 @@ class SFTPRemoteConnectionProvider(BaseRemoteConnectionProvider):
         """Build a reusable SFTP-backed remote session.
 
         Args:
-            config (RemoteConnectionConfig): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            config:
+                Value supplied to this callable.
 
         Returns:
-            _SshRemoteConnectionSession: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         return _SshRemoteConnectionSession(config=config, transport_label="SFTP")
 
@@ -81,7 +90,8 @@ class SCPRemoteConnectionProvider(BaseRemoteConnectionProvider):
     """Provider for SCP connectivity tests over SSH.
 
     Attributes:
-        descriptor: Documented attribute exposed by this type.
+        descriptor:
+            Documented attribute exposed by this type.
     """
 
     descriptor = RemoteConnectionTypeDescriptor(
@@ -97,10 +107,14 @@ class SCPRemoteConnectionProvider(BaseRemoteConnectionProvider):
         """Run a short-lived SCP-over-SSH connectivity check.
 
         Args:
-            config (RemoteConnectionConfigInput): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            config:
+                Value supplied to this callable.
 
         Returns:
-            RemoteConnectionTestResult: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         return _test_ssh_connection(config, "Connected successfully using SCP.")
 
@@ -111,10 +125,14 @@ class SCPRemoteConnectionProvider(BaseRemoteConnectionProvider):
         """Build a reusable SCP-backed remote session.
 
         Args:
-            config (RemoteConnectionConfig): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            config:
+                Value supplied to this callable.
 
         Returns:
-            _SshRemoteConnectionSession: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         return _SshRemoteConnectionSession(config=config, transport_label="SCP")
 
@@ -123,7 +141,7 @@ class _SshRemoteConnectionSession(BaseRemoteConnectionSession):
     """Reusable SSH-backed session for SFTP/SCP listing and downloads.
 
     Attributes:
-        None: This type does not declare additional class-level attributes.
+        None: This type does not declare class-level attributes.
     """
 
     def __init__(
@@ -135,11 +153,16 @@ class _SshRemoteConnectionSession(BaseRemoteConnectionSession):
         """Initialize this object and store its runtime dependencies.
 
         Args:
-            config (RemoteConnectionConfig): Value supplied to this callable.
-            transport_label (str): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            config:
+                Value supplied to this callable.
+            transport_label:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         super().__init__(config)
         self._transport_label = transport_label
@@ -150,13 +173,18 @@ class _SshRemoteConnectionSession(BaseRemoteConnectionSession):
         """Handle connect.
 
         Args:
-            progress_callback (SyncProgressCallback | None): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            progress_callback:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
 
         Raises:
-            _normalize_ssh_error: Raised when this callable hits the corresponding error path.
+            _normalize_ssh_error:
+                Raised when this callable hits the corresponding error path.
         """
         _emit_progress(
             progress_callback,
@@ -183,15 +211,20 @@ class _SshRemoteConnectionSession(BaseRemoteConnectionSession):
         """Iterate through remote files.
 
         Args:
-            progress_callback (SyncProgressCallback | None): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            progress_callback:
+                Value supplied to this callable.
 
         Returns:
-            Iterator[RemoteSyncFile]: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
 
         Raises:
-            RemoteConnectionOperationError: Raised when this callable hits the corresponding error
-        path.
-            _normalize_ssh_error: Raised when this callable hits the corresponding error path.
+            RemoteConnectionOperationError:
+                Raised when this callable hits the corresponding error path.
+            _normalize_ssh_error:
+                Raised when this callable hits the corresponding error path.
         """
         if self._sftp_client is None:
             msg = "SFTP client is not open."
@@ -208,7 +241,9 @@ class _SshRemoteConnectionSession(BaseRemoteConnectionSession):
                 progress_callback=progress_callback,
             )
         except _ssh_runtime_error_types() as error:
-            raise _normalize_ssh_error(error, default_code="remote_listing_failed") from error
+            raise _normalize_ssh_error(
+                error, default_code="remote_listing_failed"
+            ) from error
 
     def _download_file(
         self,
@@ -218,17 +253,22 @@ class _SshRemoteConnectionSession(BaseRemoteConnectionSession):
         """Handle download file.
 
         Args:
-            remote_path (str): Value supplied to this callable.
-            progress_callback (SyncProgressCallback | None): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            remote_path:
+                Value supplied to this callable.
+            progress_callback:
+                Value supplied to this callable.
 
         Returns:
-            bytes: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
 
         Raises:
-            RemoteConnectionOperationError: Raised when this callable hits the corresponding error
-        path.
-            _normalize_ssh_operation_error: Raised when this callable hits the corresponding error
-        path.
+            RemoteConnectionOperationError:
+                Raised when this callable hits the corresponding error path.
+            _normalize_ssh_operation_error:
+                Raised when this callable hits the corresponding error path.
         """
         if self._sftp_client is None:
             msg = "SFTP client is not open."
@@ -266,17 +306,22 @@ class _SshRemoteConnectionSession(BaseRemoteConnectionSession):
         """Handle ensure remote directory.
 
         Args:
-            remote_path (str): Value supplied to this callable.
-            progress_callback (SyncProgressCallback | None): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            remote_path:
+                Value supplied to this callable.
+            progress_callback:
+                Value supplied to this callable.
 
         Returns:
-            int: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
 
         Raises:
-            RemoteConnectionOperationError: Raised when this callable hits the corresponding error
-        path.
-            _normalize_ssh_operation_error: Raised when this callable hits the corresponding error
-        path.
+            RemoteConnectionOperationError:
+                Raised when this callable hits the corresponding error path.
+            _normalize_ssh_operation_error:
+                Raised when this callable hits the corresponding error path.
         """
         if self._sftp_client is None:
             msg = "SFTP client is not open."
@@ -290,7 +335,9 @@ class _SshRemoteConnectionSession(BaseRemoteConnectionSession):
         created_segments = 0
         current_path = ""
         for segment in [part for part in normalized_path.split("/") if part]:
-            current_path = f"{current_path}/{segment}" if current_path else f"/{segment}"
+            current_path = (
+                f"{current_path}/{segment}" if current_path else f"/{segment}"
+            )
             try:
                 self._sftp_client.stat(current_path)
             except _ssh_runtime_error_types():
@@ -300,7 +347,9 @@ class _SshRemoteConnectionSession(BaseRemoteConnectionSession):
                         SyncProgressEvent(
                             stage=SyncProgressStage.PREPARING_REMOTE,
                             message=f"Creating remote directory {current_path}.",
-                            command_text=f"{self._transport_label} MKDIR {current_path}",
+                            command_text=(
+                                f"{self._transport_label} MKDIR {current_path}"
+                            ),
                         ),
                     )
                     self._sftp_client.mkdir(current_path)
@@ -323,18 +372,24 @@ class _SshRemoteConnectionSession(BaseRemoteConnectionSession):
         """Handle upload file.
 
         Args:
-            remote_path (str): Value supplied to this callable.
-            contents (bytes): Value supplied to this callable.
-            progress_callback (SyncProgressCallback | None): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            remote_path:
+                Value supplied to this callable.
+            contents:
+                Value supplied to this callable.
+            progress_callback:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
 
         Raises:
-            RemoteConnectionOperationError: Raised when this callable hits the corresponding error
-        path.
-            _normalize_ssh_operation_error: Raised when this callable hits the corresponding error
-        path.
+            RemoteConnectionOperationError:
+                Raised when this callable hits the corresponding error path.
+            _normalize_ssh_operation_error:
+                Raised when this callable hits the corresponding error path.
         """
         if self._sftp_client is None:
             msg = "SFTP client is not open."
@@ -368,10 +423,14 @@ class _SshRemoteConnectionSession(BaseRemoteConnectionSession):
         """Handle close.
 
         Args:
-            progress_callback (SyncProgressCallback | None): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            progress_callback:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         _emit_progress(
             progress_callback,
@@ -389,8 +448,13 @@ class _SshRemoteConnectionSession(BaseRemoteConnectionSession):
     def _reset_after_failed_connect(self) -> None:
         """Reset after failed connect.
 
+        Args:
+            self:
+                Value supplied to this callable.
+
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         _close_sftp_client(self._sftp_client)
         _close_ssh_client(self._ssh_client)
@@ -405,11 +469,14 @@ def _test_ssh_connection(
     """Handle test ssh connection.
 
     Args:
-        config (RemoteConnectionConfigInput): Value supplied to this callable.
-        success_message (str): Value supplied to this callable.
+        config:
+            Value supplied to this callable.
+        success_message:
+            Value supplied to this callable.
 
     Returns:
-        RemoteConnectionTestResult: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
     """
     ssh_client: Any | None = None
     sftp_client: Any | None = None
@@ -459,11 +526,12 @@ def _build_ssh_client() -> Any:
     """Build ssh client.
 
     Returns:
-        Any: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
 
     Raises:
-        RemoteConnectionDependencyError: Raised when this callable hits the corresponding error
-    path.
+        RemoteConnectionDependencyError:
+            Raised when this callable hits the corresponding error path.
     """
     try:
         paramiko = import_module("paramiko")
@@ -482,16 +550,18 @@ def _connect_ssh_client(
     """Handle connect ssh client.
 
     Args:
-        config (RemoteConnectionConfig | RemoteConnectionConfigInput): Value supplied to this
-    callable.
+        config:
+            Value supplied to this callable.
 
     Returns:
-        Any: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
 
     Raises:
-        RemoteConnectionDependencyError: Raised when this callable hits the corresponding error
-    path.
-        _normalize_ssh_error: Raised when this callable hits the corresponding error path.
+        RemoteConnectionDependencyError:
+            Raised when this callable hits the corresponding error path.
+        _normalize_ssh_error:
+            Raised when this callable hits the corresponding error path.
     """
     try:
         ssh_client = _build_ssh_client()
@@ -528,7 +598,9 @@ def _connect_ssh_client(
         ) from error
     except (OSError, TimeoutError, EOFError, ssh_exception_type) as error:
         ssh_client.close()
-        raise _normalize_ssh_error(error, default_code="ssh_connection_failed") from error
+        raise _normalize_ssh_error(
+            error, default_code="ssh_connection_failed"
+        ) from error
     return ssh_client
 
 
@@ -536,7 +608,8 @@ def _load_paramiko_module_if_available() -> Any | None:
     """Load paramiko module if available.
 
     Returns:
-        Any | None: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
     """
     try:
         return import_module("paramiko")
@@ -548,7 +621,8 @@ def _ssh_runtime_error_types() -> tuple[type[BaseException], ...]:
     """Handle ssh runtime error types.
 
     Returns:
-        tuple[type[BaseException], ...]: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
     """
     paramiko_module = _load_paramiko_module_if_available()
     if paramiko_module is None:
@@ -570,13 +644,16 @@ def _configure_host_key_policy(
     """Handle configure host key policy.
 
     Args:
-        ssh_client (Any): Value supplied to this callable.
-        config (RemoteConnectionConfig | RemoteConnectionConfigInput): Value supplied to this
-    callable.
-        paramiko_module (Any | None): Value supplied to this callable.
+        ssh_client:
+            Value supplied to this callable.
+        config:
+            Value supplied to this callable.
+        paramiko_module:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     ssh_client.load_system_host_keys()
     if config.flags.verify_host:
@@ -592,7 +669,8 @@ def _ensure_user_known_hosts_file() -> Path:
     """Handle ensure user known hosts file.
 
     Returns:
-        Path: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
     """
     known_hosts_path = Path.home() / ".ssh" / "known_hosts"
     known_hosts_path.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
@@ -607,14 +685,18 @@ def _iter_ssh_files(
     """Iterate through ssh files.
 
     Args:
-        config (RemoteConnectionConfig): Value supplied to this callable.
-        progress_callback (SyncProgressCallback | None): Value supplied to this callable.
+        config:
+            Value supplied to this callable.
+        progress_callback:
+            Value supplied to this callable.
 
     Returns:
-        Iterator[RemoteSyncFile]: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
 
     Raises:
-        _normalize_ssh_error: Raised when this callable hits the corresponding error path.
+        _normalize_ssh_error:
+            Raised when this callable hits the corresponding error path.
     """
     _emit_progress(
         progress_callback,
@@ -629,7 +711,9 @@ def _iter_ssh_files(
         sftp_client = ssh_client.open_sftp()
     except _ssh_runtime_error_types() as error:
         ssh_client.close()
-        raise _normalize_ssh_error(error, default_code="ssh_connection_failed") from error
+        raise _normalize_ssh_error(
+            error, default_code="ssh_connection_failed"
+        ) from error
     try:
         normalized_root = posixpath.normpath(config.remote_path)
         yield from _walk_sftp_directory(
@@ -639,7 +723,9 @@ def _iter_ssh_files(
             progress_callback=progress_callback,
         )
     except _ssh_runtime_error_types() as error:
-        raise _normalize_ssh_error(error, default_code="remote_listing_failed") from error
+        raise _normalize_ssh_error(
+            error, default_code="remote_listing_failed"
+        ) from error
     finally:
         sftp_client.close()
         ssh_client.close()
@@ -654,17 +740,24 @@ def _download_ssh_file(
     """Handle download ssh file.
 
     Args:
-        config (RemoteConnectionConfig): Value supplied to this callable.
-        remote_path (str): Value supplied to this callable.
-        progress_callback (SyncProgressCallback | None): Value supplied to this callable.
-        transport_label (str): Value supplied to this callable.
+        config:
+            Value supplied to this callable.
+        remote_path:
+            Value supplied to this callable.
+        progress_callback:
+            Value supplied to this callable.
+        transport_label:
+            Value supplied to this callable.
 
     Returns:
-        bytes: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
 
     Raises:
-        _normalize_ssh_error: Raised when this callable hits the corresponding error path.
-        _normalize_ssh_operation_error: Raised when this callable hits the corresponding error path.
+        _normalize_ssh_error:
+            Raised when this callable hits the corresponding error path.
+        _normalize_ssh_operation_error:
+            Raised when this callable hits the corresponding error path.
     """
     _emit_progress(
         progress_callback,
@@ -679,7 +772,9 @@ def _download_ssh_file(
         sftp_client = ssh_client.open_sftp()
     except _ssh_runtime_error_types() as error:
         ssh_client.close()
-        raise _normalize_ssh_error(error, default_code="ssh_connection_failed") from error
+        raise _normalize_ssh_error(
+            error, default_code="ssh_connection_failed"
+        ) from error
     try:
         _emit_progress(
             progress_callback,
@@ -710,10 +805,12 @@ def _close_sftp_client(sftp_client: Any | None) -> None:
     """Close sftp client.
 
     Args:
-        sftp_client (Any | None): Value supplied to this callable.
+        sftp_client:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     if sftp_client is None:
         return
@@ -729,10 +826,12 @@ def _close_ssh_client(ssh_client: Any | None) -> None:
     """Close ssh client.
 
     Args:
-        ssh_client (Any | None): Value supplied to this callable.
+        ssh_client:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     if ssh_client is None:
         return
@@ -752,11 +851,14 @@ def _normalize_ssh_error(
     """Normalize ssh error.
 
     Args:
-        error (BaseException): Value supplied to this callable.
-        default_code (str): Value supplied to this callable.
+        error:
+            Value supplied to this callable.
+        default_code:
+            Value supplied to this callable.
 
     Returns:
-        RemoteConnectionOperationError: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
     """
     error_message = str(error).strip() or default_code.replace("_", " ")
     normalized_message = error_message.lower()
@@ -795,7 +897,9 @@ def _normalize_ssh_error(
         ["no such file", "missing remote path", "not found"],
     ):
         error_code = "remote_path_not_found"
-    elif _matches_any(normalized_message, ["channel", "connection reset", "broken pipe"]):
+    elif _matches_any(
+        normalized_message, ["channel", "connection reset", "broken pipe"]
+    ):
         error_code = "transport_io_failed"
     error_type = _ssh_error_type_for(error_code=error_code, default_code=default_code)
     return error_type(
@@ -814,22 +918,28 @@ def _normalize_ssh_operation_error(
     """Normalize ssh operation error.
 
     Args:
-        error (BaseException): Value supplied to this callable.
-        default_code (str): Value supplied to this callable.
-        operation (str): Value supplied to this callable.
-        remote_path (str): Value supplied to this callable.
+        error:
+            Value supplied to this callable.
+        default_code:
+            Value supplied to this callable.
+        operation:
+            Value supplied to this callable.
+        remote_path:
+            Value supplied to this callable.
 
     Returns:
-        RemoteConnectionOperationError: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
     """
     normalized_error = _normalize_ssh_error(error, default_code=default_code)
     reason = str(normalized_error).strip()
     message = f"Failed to {operation} '{remote_path}'. SSH/SFTP reported: {reason}."
     if reason.lower() == "failure":
         message = (
-            f"Failed to {operation} '{remote_path}'. The server returned a generic SFTP "
-            "failure without details. The path may be a directory, symlink, special file, "
-            "or a file blocked by server permissions. Verify the remote path type and "
+            f"Failed to {operation} '{remote_path}'. The server returned a "
+            "generic SFTP failure without details. The path may be a "
+            "directory, symlink, special file, or a file blocked by server "
+            "permissions. Verify the remote path type and "
             "read permissions on the server."
         )
     error_type = _ssh_error_type_for(
@@ -850,11 +960,14 @@ def _ssh_error_type_for(
     """Handle ssh error type for.
 
     Args:
-        error_code (str): Value supplied to this callable.
-        default_code (str): Value supplied to this callable.
+        error_code:
+            Value supplied to this callable.
+        default_code:
+            Value supplied to this callable.
 
     Returns:
-        type[RemoteConnectionOperationError]: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
     """
     error_type: type[RemoteConnectionOperationError] = RemoteConnectionOperationError
     if error_code == "missing_dependency":
@@ -892,11 +1005,14 @@ def _format_connection_test_error(
     """Format connection test error.
 
     Args:
-        config (RemoteConnectionConfigInput): Value supplied to this callable.
-        error (RemoteConnectionOperationError): Value supplied to this callable.
+        config:
+            Value supplied to this callable.
+        error:
+            Value supplied to this callable.
 
     Returns:
-        str: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
     """
     return (
         f"SSH connection test failed for {config.connection_type} "
@@ -909,11 +1025,14 @@ def _matches_any(message: str, patterns: list[str]) -> bool:
     """Handle matches any.
 
     Args:
-        message (str): Value supplied to this callable.
-        patterns (list[str]): Value supplied to this callable.
+        message:
+            Value supplied to this callable.
+        patterns:
+            Value supplied to this callable.
 
     Returns:
-        bool: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
     """
     return any(pattern in message for pattern in patterns)
 
@@ -928,13 +1047,18 @@ def _walk_sftp_directory(
     """Walk sftp directory.
 
     Args:
-        sftp_client (Any): Value supplied to this callable.
-        base_remote_path (str): Value supplied to this callable.
-        current_remote_path (str): Value supplied to this callable.
-        progress_callback (SyncProgressCallback | None): Value supplied to this callable.
+        sftp_client:
+            Value supplied to this callable.
+        base_remote_path:
+            Value supplied to this callable.
+        current_remote_path:
+            Value supplied to this callable.
+        progress_callback:
+            Value supplied to this callable.
 
     Returns:
-        Iterator[RemoteSyncFile]: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
     """
     _emit_progress(
         progress_callback,
@@ -961,7 +1085,8 @@ def _walk_sftp_directory(
                 SyncProgressEvent(
                     stage=SyncProgressStage.LISTING_REMOTE,
                     message=(
-                        f"Skipping remote path {remote_path} because it is not a regular file."
+                        f"Skipping remote path {remote_path} because it is not "
+                        "a regular file."
                     ),
                     command_text=f"SFTP SKIP {remote_path}",
                 ),
@@ -978,11 +1103,14 @@ def _join_remote_path(base_path: str, name: str) -> str:
     """Handle join remote path.
 
     Args:
-        base_path (str): Value supplied to this callable.
-        name (str): Value supplied to this callable.
+        base_path:
+            Value supplied to this callable.
+        name:
+            Value supplied to this callable.
 
     Returns:
-        str: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
     """
     if base_path == "/":
         return f"/{name}"
@@ -996,11 +1124,14 @@ def _emit_progress(
     """Emit progress.
 
     Args:
-        progress_callback (SyncProgressCallback | None): Value supplied to this callable.
-        event (SyncProgressEvent): Value supplied to this callable.
+        progress_callback:
+            Value supplied to this callable.
+        event:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     if progress_callback is None:
         return

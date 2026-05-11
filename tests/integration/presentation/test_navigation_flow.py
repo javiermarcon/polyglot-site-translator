@@ -11,7 +11,8 @@ def test_navigation_flow_keeps_selected_project_context() -> None:
     """Verify navigation flow keeps selected project context.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     shell = create_frontend_shell(build_seeded_services())
 

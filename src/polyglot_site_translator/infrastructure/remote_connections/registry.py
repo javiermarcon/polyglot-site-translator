@@ -26,7 +26,8 @@ class RemoteConnectionRegistry:
     """Resolve remote connection providers by discoverable connection type.
 
     Attributes:
-        providers (list[RemoteConnectionProvider]): Documented attribute exposed by this type.
+        providers:
+            Documented attribute exposed by this type.
     """
 
     providers: list[RemoteConnectionProvider]
@@ -40,10 +41,14 @@ class RemoteConnectionRegistry:
         """Build a registry from an explicit provider list.
 
         Args:
-            providers (list[RemoteConnectionProvider]): Value supplied to this callable.
+            cls:
+                Value supplied to this callable.
+            providers:
+                Value supplied to this callable.
 
         Returns:
-            RemoteConnectionRegistry: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         return cls(providers=list(providers))
 
@@ -51,8 +56,13 @@ class RemoteConnectionRegistry:
     def discover_installed(cls) -> RemoteConnectionRegistry:
         """Discover installed remote connection providers dynamically.
 
+        Args:
+            cls:
+                Value supplied to this callable.
+
         Returns:
-            RemoteConnectionRegistry: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         providers: list[RemoteConnectionProvider] = []
         for module_info in pkgutil.iter_modules(remote_connections_package_path):
@@ -74,8 +84,13 @@ class RemoteConnectionRegistry:
     def list_connection_descriptors(self) -> list[RemoteConnectionTypeDescriptor]:
         """Return connection descriptors preserving registration order.
 
+        Args:
+            self:
+                Value supplied to this callable.
+
         Returns:
-            list[RemoteConnectionTypeDescriptor]: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         return [provider.descriptor for provider in self.providers]
 
@@ -83,13 +98,18 @@ class RemoteConnectionRegistry:
         """Return a provider for the given connection type.
 
         Args:
-            connection_type (str): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            connection_type:
+                Value supplied to this callable.
 
         Returns:
-            RemoteConnectionProvider: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
 
         Raises:
-            LookupError: Raised when this callable hits the corresponding error path.
+            LookupError:
+                Raised when this callable hits the corresponding error path.
         """
         for provider in self.providers:
             if provider.descriptor.connection_type == connection_type:

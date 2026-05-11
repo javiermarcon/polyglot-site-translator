@@ -7,7 +7,9 @@ from typing import Any, cast
 from pytest import MonkeyPatch
 
 from polyglot_site_translator.app import create_kivy_app
-from polyglot_site_translator.presentation.kivy.screens.base import _route_to_screen_name
+from polyglot_site_translator.presentation.kivy.screens.base import (
+    _route_to_screen_name,
+)
 from polyglot_site_translator.presentation.view_models import (
     POProcessingSummaryViewModel,
     SyncStatusViewModel,
@@ -21,7 +23,8 @@ def test_dashboard_screen_buttons_navigate_to_projects_and_settings() -> None:
     """Verify dashboard screen buttons navigate to projects and settings.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     app = cast(Any, create_kivy_app(services=build_seeded_services()))
     root = app.build()
@@ -36,11 +39,14 @@ def test_dashboard_screen_buttons_navigate_to_projects_and_settings() -> None:
     assert root.current == "settings"
 
 
-def test_projects_screen_refresh_and_navigation_cover_empty_and_populated_states() -> None:
+def test_projects_screen_refresh_and_navigation_cover_empty_and_populated_states() -> (
+    None
+):
     """Verify projects screen refresh and navigation cover empty and populated states.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     app = cast(Any, create_kivy_app(services=build_seeded_services()))
     root = app.build()
@@ -74,7 +80,8 @@ def test_project_detail_screen_refresh_edit_sync_and_audit_actions_navigate() ->
     """Verify project detail screen refresh edit sync and audit actions navigate.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     app = cast(Any, create_kivy_app(services=build_seeded_services()))
     root = app.build()
@@ -132,7 +139,8 @@ def test_project_detail_screen_po_processing_and_back_navigation() -> None:
     """Verify project detail screen po processing and back navigation.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     app = cast(Any, create_kivy_app(services=build_seeded_services()))
     root = app.build()
@@ -170,7 +178,8 @@ def test_workflow_screens_render_empty_and_loaded_states_and_return_to_detail() 
     """Verify workflow screens render empty and loaded states and return to detail.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     app = cast(Any, create_kivy_app(services=build_seeded_services()))
     root = app.build()
@@ -219,7 +228,8 @@ def test_sync_and_audit_screens_back_navigation_without_selected_project() -> No
     """Verify sync and audit screens back navigation without selected project.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     app = cast(Any, create_kivy_app(services=build_seeded_services()))
     root = app.build()
@@ -241,7 +251,8 @@ def test_sync_screen_refresh_includes_error_code_when_present() -> None:
     """Verify sync screen refresh includes error code when present.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     app = cast(Any, create_kivy_app(services=build_seeded_services()))
     root = app.build()
@@ -263,7 +274,8 @@ def test_po_processing_screen_shows_current_file_and_entry() -> None:
     """Verify po processing screen shows current file and entry.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     app = cast(Any, create_kivy_app(services=build_seeded_services()))
     root = app.build()
@@ -293,10 +305,12 @@ def test_po_processing_screen_refresh_loop_and_back_navigation_branches(
     """Verify po processing screen refresh loop and back navigation branches.
 
     Args:
-        monkeypatch (MonkeyPatch): Value supplied to this callable.
+        monkeypatch:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     app = cast(Any, create_kivy_app(services=build_seeded_services()))
     root = app.build()
@@ -311,22 +325,32 @@ def test_po_processing_screen_refresh_loop_and_back_navigation_branches(
         """Test helper for FakeEvent.
 
         Attributes:
-            None: This type does not declare additional class-level attributes.
+            None: This type does not declare class-level attributes.
         """
 
         def __init__(self) -> None:
             """Initialize the test helper state.
 
+            Args:
+                self:
+                    Value supplied to this callable.
+
             Returns:
-                None: This callable does not return a value.
+                value:
+                    Structured value returned by this callable.
             """
             self.cancelled = False
 
         def cancel(self) -> None:
             """Handle cancel.
 
+            Args:
+                self:
+                    Value supplied to this callable.
+
             Returns:
-                None: This callable does not return a value.
+                value:
+                    Structured value returned by this callable.
             """
             self.cancelled = True
 
@@ -334,11 +358,14 @@ def test_po_processing_screen_refresh_loop_and_back_navigation_branches(
         """Handle schedule interval.
 
         Args:
-            callback (object): Value supplied to this callable.
-            _interval (float): Value supplied to this callable.
+            callback:
+                Value supplied to this callable.
+            _interval:
+                Value supplied to this callable.
 
         Returns:
-            _FakeEvent: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         event = _FakeEvent()
         scheduled.append(event)
@@ -386,7 +413,8 @@ def test_po_processing_screen_on_leave_cancels_manual_refresh_event() -> None:
     """Verify po processing screen on leave cancels manual refresh event.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     app = cast(Any, create_kivy_app(services=build_seeded_services()))
     root = app.build()
@@ -396,22 +424,32 @@ def test_po_processing_screen_on_leave_cancels_manual_refresh_event() -> None:
         """Test helper for ManualEvent.
 
         Attributes:
-            None: This type does not declare additional class-level attributes.
+            None: This type does not declare class-level attributes.
         """
 
         def __init__(self) -> None:
             """Initialize the test helper state.
 
+            Args:
+                self:
+                    Value supplied to this callable.
+
             Returns:
-                None: This callable does not return a value.
+                value:
+                    Structured value returned by this callable.
             """
             self.cancelled = False
 
         def cancel(self) -> None:
             """Handle cancel.
 
+            Args:
+                self:
+                    Value supplied to this callable.
+
             Returns:
-                None: This callable does not return a value.
+                value:
+                    Structured value returned by this callable.
             """
             self.cancelled = True
 
@@ -428,10 +466,12 @@ def test_base_screen_helpers_cover_menu_building_copy_updates_and_route_mapping(
     """Verify base screen helpers cover menu building copy updates and route mapping.
 
     Args:
-        monkeypatch (MonkeyPatch): Value supplied to this callable.
+        monkeypatch:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     app = cast(Any, create_kivy_app(services=build_seeded_services()))
     root = app.build()
@@ -447,7 +487,8 @@ def test_base_screen_helpers_cover_menu_building_copy_updates_and_route_mapping(
         """Handle record refresh.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         refresh_calls.append("refresh")
 
@@ -465,16 +506,18 @@ def test_base_screen_helpers_cover_menu_building_copy_updates_and_route_mapping(
     assert _route_to_screen_name("po-processing") == "po_processing"
 
 
-def test_base_screen_menu_opens_when_parent_window_exists_and_route_opens_without_dropdown(
+def test_base_screen_menu_opens_parent_window_exists_3372(
     monkeypatch: MonkeyPatch,
 ) -> None:
-    """Verify base screen menu opens when parent window exists and route opens without dropdown.
+    """Verify base screen menu opens when parent window exists and route opens without.
 
     Args:
-        monkeypatch (MonkeyPatch): Value supplied to this callable.
+        monkeypatch:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     app = cast(Any, create_kivy_app(services=build_seeded_services()))
     root = app.build()
@@ -485,17 +528,21 @@ def test_base_screen_menu_opens_when_parent_window_exists_and_route_opens_withou
         """Test helper for FakeDropdown.
 
         Attributes:
-            None: This type does not declare additional class-level attributes.
+            None: This type does not declare class-level attributes.
         """
 
         def __init__(self, **_kwargs: object) -> None:
             """Initialize the test helper state.
 
             Args:
-                _kwargs (object): Value supplied to this callable.
+                self:
+                    Value supplied to this callable.
+                **_kwargs:
+                    Value supplied to this callable.
 
             Returns:
-                None: This callable does not return a value.
+                value:
+                    Structured value returned by this callable.
             """
             self.children: list[object] = []
 
@@ -503,10 +550,14 @@ def test_base_screen_menu_opens_when_parent_window_exists_and_route_opens_withou
             """Handle add widget.
 
             Args:
-                widget (object): Value supplied to this callable.
+                self:
+                    Value supplied to this callable.
+                widget:
+                    Value supplied to this callable.
 
             Returns:
-                None: This callable does not return a value.
+                value:
+                    Structured value returned by this callable.
             """
             self.children.append(widget)
 
@@ -515,10 +566,12 @@ def test_base_screen_menu_opens_when_parent_window_exists_and_route_opens_withou
             """Handle open.
 
             Args:
-                widget (object): Value supplied to this callable.
+                widget:
+                    Value supplied to this callable.
 
             Returns:
-                None: This callable does not return a value.
+                value:
+                    Structured value returned by this callable.
             """
             open_calls.append(widget)
 
@@ -527,7 +580,8 @@ def test_base_screen_menu_opens_when_parent_window_exists_and_route_opens_withou
             """Handle dismiss.
 
             Returns:
-                None: This callable does not return a value.
+                value:
+                    Structured value returned by this callable.
             """
             open_calls.append("dismissed")
 
@@ -535,7 +589,8 @@ def test_base_screen_menu_opens_when_parent_window_exists_and_route_opens_withou
         """Handle parent window.
 
         Returns:
-            object: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         return object()
 
@@ -558,14 +613,18 @@ def test_base_screen_menu_opens_when_parent_window_exists_and_route_opens_withou
     assert root.current == "settings"
 
 
-def test_base_screen_apply_theme_delegates_to_widget_tree(monkeypatch: MonkeyPatch) -> None:
+def test_base_screen_apply_theme_delegates_to_widget_tree(
+    monkeypatch: MonkeyPatch,
+) -> None:
     """Verify base screen apply theme delegates to widget tree.
 
     Args:
-        monkeypatch (MonkeyPatch): Value supplied to this callable.
+        monkeypatch:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     app = cast(Any, create_kivy_app(services=build_seeded_services()))
     root = app.build()
@@ -576,10 +635,12 @@ def test_base_screen_apply_theme_delegates_to_widget_tree(monkeypatch: MonkeyPat
         """Handle apply theme.
 
         Args:
-            widget (object): Value supplied to this callable.
+            widget:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         calls.append(widget)
 

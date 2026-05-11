@@ -21,9 +21,12 @@ class WordPressFrameworkAdapter(BaseFrameworkAdapter):
     """Detect WordPress project layouts.
 
     Attributes:
-        framework_type (str): Documented attribute exposed by this type.
-        adapter_name (str): Documented attribute exposed by this type.
-        display_name (str): Documented attribute exposed by this type.
+        framework_type:
+            Documented attribute exposed by this type.
+        adapter_name:
+            Documented attribute exposed by this type.
+        display_name:
+            Documented attribute exposed by this type.
     """
 
     framework_type: str = "wordpress"
@@ -34,10 +37,14 @@ class WordPressFrameworkAdapter(BaseFrameworkAdapter):
         """Return the default WordPress sync scope.
 
         Args:
-            project_path (Path): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            project_path:
+                Value supplied to this callable.
 
         Returns:
-            AdapterSyncScope: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         return AdapterSyncScope(
             filters=(
@@ -63,10 +70,14 @@ class WordPressFrameworkAdapter(BaseFrameworkAdapter):
         """Inspect a local path for WordPress markers.
 
         Args:
-            project_path (Path): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            project_path:
+                Value supplied to this callable.
 
         Returns:
-            FrameworkDetectionResult: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         wp_config = project_path / "wp-config.php"
         wp_content = project_path / "wp-content"

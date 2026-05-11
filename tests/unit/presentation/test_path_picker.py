@@ -28,11 +28,14 @@ def test_initial_browse_directory_empty_uses_home(
     """Verify initial browse directory empty uses home.
 
     Args:
-        monkeypatch (pytest.MonkeyPatch): Value supplied to this callable.
-        tmp_path (Path): Value supplied to this callable.
+        monkeypatch:
+            Value supplied to this callable.
+        tmp_path:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     home = str(tmp_path)
     monkeypatch.setenv("HOME", home)
@@ -43,10 +46,12 @@ def test_initial_browse_directory_existing_dir(tmp_path: Path) -> None:
     """Verify initial browse directory existing dir.
 
     Args:
-        tmp_path (Path): Value supplied to this callable.
+        tmp_path:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     assert initial_browse_directory(str(tmp_path)) == str(tmp_path.resolve())
 
@@ -55,10 +60,12 @@ def test_initial_browse_directory_file_returns_parent(tmp_path: Path) -> None:
     """Verify initial browse directory file returns parent.
 
     Args:
-        tmp_path (Path): Value supplied to this callable.
+        tmp_path:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     file_path = tmp_path / "data.sqlite"
     file_path.write_text("x", encoding="utf-8")
@@ -69,10 +76,12 @@ def test_initial_browse_directory_walks_up_to_existing_parent(tmp_path: Path) ->
     """Verify initial browse directory walks up to existing parent.
 
     Args:
-        tmp_path (Path): Value supplied to this callable.
+        tmp_path:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     nested = tmp_path / "a" / "b" / "c"
     assert initial_browse_directory(str(nested)) == str(tmp_path.resolve())
@@ -85,11 +94,14 @@ def test_initial_browse_whitespace_only_uses_home(
     """Verify initial browse whitespace only uses home.
 
     Args:
-        monkeypatch (pytest.MonkeyPatch): Value supplied to this callable.
-        tmp_path (Path): Value supplied to this callable.
+        monkeypatch:
+            Value supplied to this callable.
+        tmp_path:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     home = str(tmp_path)
     monkeypatch.setenv("HOME", home)
@@ -103,11 +115,14 @@ def test_initial_browse_directory_expands_user(
     """Verify initial browse directory expands user.
 
     Args:
-        monkeypatch (pytest.MonkeyPatch): Value supplied to this callable.
-        tmp_path (Path): Value supplied to this callable.
+        monkeypatch:
+            Value supplied to this callable.
+        tmp_path:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     home = str(tmp_path)
     monkeypatch.setenv("HOME", home)
@@ -118,10 +133,12 @@ def test_initial_browse_directory_joined_missing_path(tmp_path: Path) -> None:
     """Verify initial browse directory joined missing path.
 
     Args:
-        tmp_path (Path): Value supplied to this callable.
+        tmp_path:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     base = tmp_path / "proj"
     base.mkdir()
@@ -136,11 +153,14 @@ def test_initial_browse_directory_handles_file_without_directory_parent(
     """Verify initial browse directory handles file without directory parent.
 
     Args:
-        monkeypatch (pytest.MonkeyPatch): Value supplied to this callable.
-        tmp_path (Path): Value supplied to this callable.
+        monkeypatch:
+            Value supplied to this callable.
+        tmp_path:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     home = str(tmp_path)
     monkeypatch.setenv("HOME", home)
@@ -151,16 +171,26 @@ def test_initial_browse_directory_handles_file_without_directory_parent(
     def _fake_is_file(self: Path) -> bool:
         """Handle fake is file.
 
+        Args:
+            self:
+                Value supplied to this callable.
+
         Returns:
-            bool: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         return str(self) == "/virtual/file.txt" or original_is_file(self)
 
     def _fake_is_dir(self: Path) -> bool:
         """Handle fake is dir.
 
+        Args:
+            self:
+                Value supplied to this callable.
+
         Returns:
-            bool: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         if str(self) in {"/virtual", "/virtual/file.txt"}:
             return False
@@ -179,11 +209,14 @@ def test_initial_browse_directory_falls_back_to_home_when_parent_chain_stops(
     """Verify initial browse directory falls back to home when parent chain stops.
 
     Args:
-        monkeypatch (pytest.MonkeyPatch): Value supplied to this callable.
-        tmp_path (Path): Value supplied to this callable.
+        monkeypatch:
+            Value supplied to this callable.
+        tmp_path:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     home = str(tmp_path)
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
@@ -192,7 +225,8 @@ def test_initial_browse_directory_falls_back_to_home_when_parent_chain_stops(
         """Test helper for FakeResolvedPath.
 
         Attributes:
-            parent (_FakeResolvedPath): Documented attribute exposed by this type.
+            parent:
+                Documented attribute exposed by this type.
         """
 
         parent: _FakeResolvedPath
@@ -200,8 +234,13 @@ def test_initial_browse_directory_falls_back_to_home_when_parent_chain_stops(
         def __init__(self) -> None:
             """Initialize the test helper state.
 
+            Args:
+                self:
+                    Value supplied to this callable.
+
             Returns:
-                None: This callable does not return a value.
+                value:
+                    Structured value returned by this callable.
             """
             self.parent = self
 
@@ -210,7 +249,8 @@ def test_initial_browse_directory_falls_back_to_home_when_parent_chain_stops(
             """Handle is dir.
 
             Returns:
-                bool: Structured value returned by this callable.
+                value:
+                    Structured value returned by this callable.
             """
             return False
 
@@ -220,7 +260,7 @@ def test_initial_browse_directory_falls_back_to_home_when_parent_chain_stops(
         """Test helper for FakeExpandedPath.
 
         Attributes:
-            None: This type does not declare additional class-level attributes.
+            None: This type does not declare class-level attributes.
         """
 
         @staticmethod
@@ -228,7 +268,8 @@ def test_initial_browse_directory_falls_back_to_home_when_parent_chain_stops(
             """Handle is dir.
 
             Returns:
-                bool: Structured value returned by this callable.
+                value:
+                    Structured value returned by this callable.
             """
             return False
 
@@ -237,7 +278,8 @@ def test_initial_browse_directory_falls_back_to_home_when_parent_chain_stops(
             """Handle is file.
 
             Returns:
-                bool: Structured value returned by this callable.
+                value:
+                    Structured value returned by this callable.
             """
             return False
 
@@ -246,7 +288,8 @@ def test_initial_browse_directory_falls_back_to_home_when_parent_chain_stops(
             """Handle resolve.
 
             Returns:
-                _FakeResolvedPath: Structured value returned by this callable.
+                value:
+                    Structured value returned by this callable.
             """
             return fake_resolved
 
@@ -259,10 +302,12 @@ def test_directory_only_listing_filter_accepts_directory(tmp_path: Path) -> None
     """Verify directory only listing filter accepts directory.
 
     Args:
-        tmp_path (Path): Value supplied to this callable.
+        tmp_path:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     sub = tmp_path / "d"
     sub.mkdir()
@@ -273,37 +318,50 @@ def test_directory_only_listing_filter_rejects_file(tmp_path: Path) -> None:
     """Verify directory only listing filter rejects file.
 
     Args:
-        tmp_path (Path): Value supplied to this callable.
+        tmp_path:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     file_path = tmp_path / "f.txt"
     file_path.write_text("x", encoding="utf-8")
     assert directory_only_listing_filter(str(tmp_path), str(file_path)) is False
 
 
-def test_directory_only_listing_filter_handles_os_errors(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_directory_only_listing_filter_handles_os_errors(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """Verify directory only listing filter handles os errors.
 
     Args:
-        monkeypatch (pytest.MonkeyPatch): Value supplied to this callable.
+        monkeypatch:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
 
     Raises:
-        OSError: Raised when this callable hits the corresponding error path.
+        OSError:
+            Raised when this callable hits the corresponding error path.
     """
 
     def _raise_os_error(self: Path) -> bool:
         """Handle raise os error.
 
+        Args:
+            self:
+                Value supplied to this callable.
+
         Returns:
-            bool: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
 
         Raises:
-            OSError: Raised when this callable hits the corresponding error path.
+            OSError:
+                Raised when this callable hits the corresponding error path.
         """
         msg = "broken filesystem"
         raise OSError(msg)
@@ -313,15 +371,20 @@ def test_directory_only_listing_filter_handles_os_errors(monkeypatch: pytest.Mon
     assert directory_only_listing_filter("/tmp", "/broken") is False
 
 
-def test_disable_directory_mode_aux_fields_handles_missing_and_present_widgets() -> None:
+def test_disable_directory_mode_aux_fields_handles_missing_and_present_widgets() -> (
+    None
+):
     """Verify disable directory mode aux fields handles missing and present widgets.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     file_text = SimpleNamespace(disabled=False)
     filt_text = SimpleNamespace(disabled=False)
-    browser = SimpleNamespace(ids=SimpleNamespace(file_text=file_text, filt_text=filt_text))
+    browser = SimpleNamespace(
+        ids=SimpleNamespace(file_text=file_text, filt_text=filt_text)
+    )
 
     _disable_directory_mode_aux_fields(browser)
 
@@ -338,10 +401,12 @@ def test_resolve_file_browser_selection_covers_directory_and_file_modes(
     """Verify resolve file browser selection covers directory and file modes.
 
     Args:
-        tmp_path (Path): Value supplied to this callable.
+        tmp_path:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     directory = tmp_path / "dir"
     directory.mkdir()
@@ -349,21 +414,28 @@ def test_resolve_file_browser_selection_covers_directory_and_file_modes(
     file_path.write_text("ok", encoding="utf-8")
 
     directory_browser = SimpleNamespace(selection=[str(directory)], path=str(tmp_path))
-    assert _resolve_file_browser_selection(directory_browser, mode="directory") == str(directory)
+    assert _resolve_file_browser_selection(directory_browser, mode="directory") == str(
+        directory
+    )
 
     file_browser = SimpleNamespace(selection=[str(file_path)], path=str(tmp_path))
     assert _resolve_file_browser_selection(file_browser, mode="file") == str(file_path)
 
-    wrong_directory_browser = SimpleNamespace(selection=[str(file_path)], path=str(tmp_path))
-    assert _resolve_file_browser_selection(wrong_directory_browser, mode="directory") is None
+    wrong_directory_browser = SimpleNamespace(
+        selection=[str(file_path)], path=str(tmp_path)
+    )
+    assert (
+        _resolve_file_browser_selection(wrong_directory_browser, mode="directory")
+        is None
+    )
 
     wrong_file_browser = SimpleNamespace(selection=[str(directory)], path=str(tmp_path))
     assert _resolve_file_browser_selection(wrong_file_browser, mode="file") is None
 
     fallback_directory_browser = SimpleNamespace(selection=[], path=str(tmp_path))
-    assert _resolve_file_browser_selection(fallback_directory_browser, mode="directory") == str(
-        tmp_path
-    )
+    assert _resolve_file_browser_selection(
+        fallback_directory_browser, mode="directory"
+    ) == str(tmp_path)
 
     fallback_file_browser = SimpleNamespace(selection=[], path=str(tmp_path))
     assert _resolve_file_browser_selection(fallback_file_browser, mode="file") is None
@@ -373,7 +445,7 @@ class _FakeBrowser:
     """Test helper for FakeBrowser.
 
     Attributes:
-        None: This type does not declare additional class-level attributes.
+        None: This type does not declare class-level attributes.
     """
 
     def __init__(
@@ -387,13 +459,20 @@ class _FakeBrowser:
         """Initialize the test helper state.
 
         Args:
-            path (str): Value supplied to this callable.
-            dirselect (bool): Value supplied to this callable.
-            select_string (str): Value supplied to this callable.
-            cancel_string (str): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            path:
+                Value supplied to this callable.
+            dirselect:
+                Value supplied to this callable.
+            select_string:
+                Value supplied to this callable.
+            cancel_string:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         self.path = path
         self.dirselect = dirselect
@@ -412,10 +491,14 @@ class _FakeBrowser:
         """Handle bind.
 
         Args:
-            kwargs (Any): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            **kwargs:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         self._bound.update(kwargs)
 
@@ -424,7 +507,8 @@ class _FakePopup:
     """Test helper for FakePopup.
 
     Attributes:
-        instances (ClassVar[list[_FakePopup]]): Documented attribute exposed by this type.
+        instances:
+            Documented attribute exposed by this type.
     """
 
     instances: ClassVar[list[_FakePopup]] = []
@@ -440,13 +524,20 @@ class _FakePopup:
         """Initialize the test helper state.
 
         Args:
-            title (str): Value supplied to this callable.
-            content (object): Value supplied to this callable.
-            size_hint (tuple[float, float]): Value supplied to this callable.
-            auto_dismiss (bool): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            title:
+                Value supplied to this callable.
+            content:
+                Value supplied to this callable.
+            size_hint:
+                Value supplied to this callable.
+            auto_dismiss:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         self.title = title
         self.content = content
@@ -459,16 +550,26 @@ class _FakePopup:
     def open(self) -> None:
         """Handle open.
 
+        Args:
+            self:
+                Value supplied to this callable.
+
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         self.opened = True
 
     def dismiss(self) -> None:
         """Handle dismiss.
 
+        Args:
+            self:
+                Value supplied to this callable.
+
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         self.dismissed = True
 
@@ -477,14 +578,19 @@ def test_show_path_picker_popup_directory_mode_updates_target_and_disables_aux_f
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
-    """Verify show path picker popup directory mode updates target and disables aux fields.
+    """Verify show path picker popup directory mode updates target and disables aux.
+
+    fields.
 
     Args:
-        monkeypatch (pytest.MonkeyPatch): Value supplied to this callable.
-        tmp_path (Path): Value supplied to this callable.
+        monkeypatch:
+            Value supplied to this callable.
+        tmp_path:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     _FakePopup.instances.clear()
     scheduled_callbacks: list[Any] = []
@@ -493,11 +599,14 @@ def test_show_path_picker_popup_directory_mode_updates_target_and_disables_aux_f
         """Handle schedule once.
 
         Args:
-            callback (Any): Value supplied to this callable.
-            _timeout (float): Value supplied to this callable.
+            callback:
+                Value supplied to this callable.
+            _timeout:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         scheduled_callbacks.append(callback)
 
@@ -543,14 +652,19 @@ def test_show_path_picker_popup_file_mode_updates_target_and_handles_empty_selec
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
-    """Verify show path picker popup file mode updates target and handles empty selection.
+    """Verify show path picker popup file mode updates target and handles empty.
+
+    selection.
 
     Args:
-        monkeypatch (pytest.MonkeyPatch): Value supplied to this callable.
-        tmp_path (Path): Value supplied to this callable.
+        monkeypatch:
+            Value supplied to this callable.
+        tmp_path:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     _FakePopup.instances.clear()
     monkeypatch.setattr(
@@ -605,11 +719,14 @@ def test_show_path_picker_popup_cancel_keeps_existing_value(
     """Verify show path picker popup cancel keeps existing value.
 
     Args:
-        monkeypatch (pytest.MonkeyPatch): Value supplied to this callable.
-        tmp_path (Path): Value supplied to this callable.
+        monkeypatch:
+            Value supplied to this callable.
+        tmp_path:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     _FakePopup.instances.clear()
     monkeypatch.setattr(
@@ -641,10 +758,12 @@ def test_build_path_input_row_and_labeled_field_bind_browse_action(
     """Verify build path input row and labeled field bind browse action.
 
     Args:
-        monkeypatch (pytest.MonkeyPatch): Value supplied to this callable.
+        monkeypatch:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     captured_calls: list[dict[str, object]] = []
 
@@ -652,10 +771,12 @@ def test_build_path_input_row_and_labeled_field_bind_browse_action(
         """Handle fake show path picker popup.
 
         Args:
-            kwargs (object): Value supplied to this callable.
+            **kwargs:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         captured_calls.append(kwargs)
 
@@ -683,5 +804,7 @@ def test_build_path_input_row_and_labeled_field_bind_browse_action(
 
     labeled_field = TextInput(text="")
     card = build_labeled_path_field("Database", labeled_field, picker)
-    label_texts = [widget.text for widget in card.walk(restrict=True) if hasattr(widget, "text")]
+    label_texts = [
+        widget.text for widget in card.walk(restrict=True) if hasattr(widget, "text")
+    ]
     assert "Database" in label_texts

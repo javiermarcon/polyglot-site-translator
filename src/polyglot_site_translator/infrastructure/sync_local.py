@@ -12,20 +12,25 @@ class LocalSyncWorkspace:
     """Prepare, inspect, and write the local workspace for sync workflows.
 
     Attributes:
-        None: This type does not declare additional class-level attributes.
+        None: This type does not declare class-level attributes.
     """
 
     def ensure_directory(self, path: Path) -> int:
         """Create a directory and return how many path segments were created.
 
         Args:
-            path (Path): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            path:
+                Value supplied to this callable.
 
         Returns:
-            int: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
 
         Raises:
-            OSError: Raised when this callable hits the corresponding error path.
+            OSError:
+                Raised when this callable hits the corresponding error path.
         """
         if path.exists():
             if path.is_dir():
@@ -47,11 +52,16 @@ class LocalSyncWorkspace:
         """Persist downloaded bytes in the local workspace.
 
         Args:
-            target_path (Path): Value supplied to this callable.
-            contents (bytes): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            target_path:
+                Value supplied to this callable.
+            contents:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         target_path.write_bytes(contents)
 
@@ -60,10 +70,12 @@ class LocalSyncWorkspace:
         """Read a local file before uploading it to the remote workspace.
 
         Args:
-            source_path (Path): Value supplied to this callable.
+            source_path:
+                Value supplied to this callable.
 
         Returns:
-            bytes: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         return source_path.read_bytes()
 
@@ -71,13 +83,18 @@ class LocalSyncWorkspace:
         """Yield regular files under the local workspace in a stable order.
 
         Args:
-            local_root (Path): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            local_root:
+                Value supplied to this callable.
 
         Returns:
-            Iterable[LocalSyncFile]: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
 
         Raises:
-            OSError: Raised when this callable hits the corresponding error path.
+            OSError:
+                Raised when this callable hits the corresponding error path.
         """
         normalized_root = local_root.resolve()
         if not normalized_root.exists():
@@ -92,10 +109,12 @@ class LocalSyncWorkspace:
         """Iterate through local files.
 
         Args:
-            local_root (Path): Value supplied to this callable.
+            local_root:
+                Value supplied to this callable.
 
         Returns:
-            Iterable[LocalSyncFile]: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         for path in sorted(local_root.rglob("*")):
             if not path.is_file():

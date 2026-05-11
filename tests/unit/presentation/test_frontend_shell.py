@@ -11,7 +11,10 @@ from pytest import MonkeyPatch
 
 from polyglot_site_translator.bootstrap import create_frontend_shell
 from polyglot_site_translator.domain.po_processing.models import POProcessingProgress
-from polyglot_site_translator.domain.sync.models import SyncProgressEvent, SyncProgressStage
+from polyglot_site_translator.domain.sync.models import (
+    SyncProgressEvent,
+    SyncProgressStage,
+)
 from polyglot_site_translator.presentation.contracts import FrontendServices
 from polyglot_site_translator.presentation.errors import ControlledServiceError
 from polyglot_site_translator.presentation.frontend_shell import FrontendShell
@@ -41,8 +44,10 @@ class _BlockingWorkflowService:
     """Test helper for BlockingWorkflowService.
 
     Attributes:
-        started (Event): Documented attribute exposed by this type.
-        release (Event): Documented attribute exposed by this type.
+        started:
+            Documented attribute exposed by this type.
+        release:
+            Documented attribute exposed by this type.
     """
 
     started: Event
@@ -56,12 +61,16 @@ class _BlockingWorkflowService:
         """Handle start sync.
 
         Args:
-            project_id (str): Value supplied to this callable.
-            progress_callback (Callable[[SyncProgressEvent], None] | None): Value supplied to this
-        callable.
+            self:
+                Value supplied to this callable.
+            project_id:
+                Value supplied to this callable.
+            progress_callback:
+                Value supplied to this callable.
 
         Returns:
-            SyncStatusViewModel: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         if progress_callback is not None:
             progress_callback(
@@ -85,10 +94,12 @@ class _BlockingWorkflowService:
         """Handle trust remote host key.
 
         Args:
-            project_id (str): Value supplied to this callable.
+            project_id:
+                Value supplied to this callable.
 
         Returns:
-            RemoteConnectionTestResultViewModel: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         return build_seeded_services().workflows.trust_remote_host_key(project_id)
 
@@ -100,12 +111,16 @@ class _BlockingWorkflowService:
         """Handle start sync to remote.
 
         Args:
-            project_id (str): Value supplied to this callable.
-            progress_callback (Callable[[SyncProgressEvent], None] | None): Value supplied to this
-        callable.
+            self:
+                Value supplied to this callable.
+            project_id:
+                Value supplied to this callable.
+            progress_callback:
+                Value supplied to this callable.
 
         Returns:
-            SyncStatusViewModel: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         if progress_callback is not None:
             progress_callback(
@@ -128,10 +143,14 @@ class _BlockingWorkflowService:
         """Handle start audit.
 
         Args:
-            project_id (str): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            project_id:
+                Value supplied to this callable.
 
         Returns:
-            AuditSummaryViewModel: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         return build_seeded_services().workflows.start_audit(project_id)
 
@@ -144,14 +163,18 @@ class _BlockingWorkflowService:
         """Handle start po processing.
 
         Args:
-            project_id (str): Value supplied to this callable.
-            request (TranslationWorkflowRequestViewModel | None): Value supplied to this callable.
-            progress_callback (Callable[[POProcessingProgress], None] | None): Value supplied to
-        this
-            callable.
+            self:
+                Value supplied to this callable.
+            project_id:
+                Value supplied to this callable.
+            request:
+                Value supplied to this callable.
+            progress_callback:
+                Value supplied to this callable.
 
         Returns:
-            POProcessingSummaryViewModel: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         return build_seeded_services().workflows.start_po_processing(
             project_id,
@@ -165,7 +188,7 @@ class _FailingBackgroundWorkflowService:
     """Test helper for FailingBackgroundWorkflowService.
 
     Attributes:
-        None: This type does not declare additional class-level attributes.
+        None: This type does not declare class-level attributes.
     """
 
     @staticmethod
@@ -176,15 +199,18 @@ class _FailingBackgroundWorkflowService:
         """Handle start sync.
 
         Args:
-            project_id (str): Value supplied to this callable.
-            progress_callback (Callable[[SyncProgressEvent], None] | None): Value supplied to this
-        callable.
+            project_id:
+                Value supplied to this callable.
+            progress_callback:
+                Value supplied to this callable.
 
         Returns:
-            SyncStatusViewModel: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
 
         Raises:
-            AttributeError: Raised when this callable hits the corresponding error path.
+            AttributeError:
+                Raised when this callable hits the corresponding error path.
         """
         if progress_callback is not None:
             progress_callback(
@@ -202,10 +228,12 @@ class _FailingBackgroundWorkflowService:
         """Handle trust remote host key.
 
         Args:
-            project_id (str): Value supplied to this callable.
+            project_id:
+                Value supplied to this callable.
 
         Returns:
-            RemoteConnectionTestResultViewModel: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         return build_seeded_services().workflows.trust_remote_host_key(project_id)
 
@@ -217,15 +245,18 @@ class _FailingBackgroundWorkflowService:
         """Handle start sync to remote.
 
         Args:
-            project_id (str): Value supplied to this callable.
-            progress_callback (Callable[[SyncProgressEvent], None] | None): Value supplied to this
-        callable.
+            project_id:
+                Value supplied to this callable.
+            progress_callback:
+                Value supplied to this callable.
 
         Returns:
-            SyncStatusViewModel: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
 
         Raises:
-            AttributeError: Raised when this callable hits the corresponding error path.
+            AttributeError:
+                Raised when this callable hits the corresponding error path.
         """
         if progress_callback is not None:
             progress_callback(
@@ -243,10 +274,12 @@ class _FailingBackgroundWorkflowService:
         """Handle start audit.
 
         Args:
-            project_id (str): Value supplied to this callable.
+            project_id:
+                Value supplied to this callable.
 
         Returns:
-            AuditSummaryViewModel: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         return build_seeded_services().workflows.start_audit(project_id)
 
@@ -259,14 +292,16 @@ class _FailingBackgroundWorkflowService:
         """Handle start po processing.
 
         Args:
-            project_id (str): Value supplied to this callable.
-            request (TranslationWorkflowRequestViewModel | None): Value supplied to this callable.
-            progress_callback (Callable[[POProcessingProgress], None] | None): Value supplied to
-        this
-            callable.
+            project_id:
+                Value supplied to this callable.
+            request:
+                Value supplied to this callable.
+            progress_callback:
+                Value supplied to this callable.
 
         Returns:
-            POProcessingSummaryViewModel: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         return build_seeded_services().workflows.start_po_processing(
             project_id,
@@ -280,16 +315,22 @@ class _BlockingPOProcessingWorkflowService:
     """Test helper for BlockingPOProcessingWorkflowService.
 
     Attributes:
-        started (Event): Documented attribute exposed by this type.
-        release (Event): Documented attribute exposed by this type.
-        requested_locales (list[str]): Documented attribute exposed by this type.
-        requested_compile_mo (list[bool | None]): Documented attribute exposed by this type.
-        requested_use_external_translator (list[bool | None]): Documented attribute exposed by this
-        type.
-        requested_dry_run (list[bool | None]): Documented attribute exposed by this type.
-        requested_stats_only (list[bool | None]): Documented attribute exposed by this type.
-        requested_report_inconsistencies (list[bool | None]): Documented attribute exposed by this
-    type.
+        started:
+            Documented attribute exposed by this type.
+        release:
+            Documented attribute exposed by this type.
+        requested_locales:
+            Documented attribute exposed by this type.
+        requested_compile_mo:
+            Documented attribute exposed by this type.
+        requested_use_external_translator:
+            Documented attribute exposed by this type.
+        requested_dry_run:
+            Documented attribute exposed by this type.
+        requested_stats_only:
+            Documented attribute exposed by this type.
+        requested_report_inconsistencies:
+            Documented attribute exposed by this type.
     """
 
     started: Event
@@ -309,24 +350,30 @@ class _BlockingPOProcessingWorkflowService:
         """Handle start sync.
 
         Args:
-            project_id (str): Value supplied to this callable.
-            progress_callback (Callable[[SyncProgressEvent], None] | None): Value supplied to this
-        callable.
+            project_id:
+                Value supplied to this callable.
+            progress_callback:
+                Value supplied to this callable.
 
         Returns:
-            SyncStatusViewModel: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
-        return build_seeded_services().workflows.start_sync(project_id, progress_callback)
+        return build_seeded_services().workflows.start_sync(
+            project_id, progress_callback
+        )
 
     @staticmethod
     def trust_remote_host_key(project_id: str) -> RemoteConnectionTestResultViewModel:
         """Handle trust remote host key.
 
         Args:
-            project_id (str): Value supplied to this callable.
+            project_id:
+                Value supplied to this callable.
 
         Returns:
-            RemoteConnectionTestResultViewModel: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         return build_seeded_services().workflows.trust_remote_host_key(project_id)
 
@@ -338,24 +385,30 @@ class _BlockingPOProcessingWorkflowService:
         """Handle start sync to remote.
 
         Args:
-            project_id (str): Value supplied to this callable.
-            progress_callback (Callable[[SyncProgressEvent], None] | None): Value supplied to this
-        callable.
+            project_id:
+                Value supplied to this callable.
+            progress_callback:
+                Value supplied to this callable.
 
         Returns:
-            SyncStatusViewModel: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
-        return build_seeded_services().workflows.start_sync_to_remote(project_id, progress_callback)
+        return build_seeded_services().workflows.start_sync_to_remote(
+            project_id, progress_callback
+        )
 
     @staticmethod
     def start_audit(project_id: str) -> AuditSummaryViewModel:
         """Handle start audit.
 
         Args:
-            project_id (str): Value supplied to this callable.
+            project_id:
+                Value supplied to this callable.
 
         Returns:
-            AuditSummaryViewModel: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         return build_seeded_services().workflows.start_audit(project_id)
 
@@ -368,22 +421,32 @@ class _BlockingPOProcessingWorkflowService:
         """Handle start po processing.
 
         Args:
-            project_id (str): Value supplied to this callable.
-            request (TranslationWorkflowRequestViewModel | None): Value supplied to this callable.
-            progress_callback (Callable[[POProcessingProgress], None] | None): Value supplied to
-        this
-            callable.
+            self:
+                Value supplied to this callable.
+            project_id:
+                Value supplied to this callable.
+            request:
+                Value supplied to this callable.
+            progress_callback:
+                Value supplied to this callable.
 
         Returns:
-            POProcessingSummaryViewModel: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         self.requested_locales.append("" if request is None else request.locales)
-        self.requested_compile_mo.append(None if request is None else request.options.compile_mo)
+        self.requested_compile_mo.append(
+            None if request is None else request.options.compile_mo
+        )
         self.requested_use_external_translator.append(
             None if request is None else request.options.use_external_translator
         )
-        self.requested_dry_run.append(None if request is None else request.options.dry_run)
-        self.requested_stats_only.append(None if request is None else request.options.stats_only)
+        self.requested_dry_run.append(
+            None if request is None else request.options.dry_run
+        )
+        self.requested_stats_only.append(
+            None if request is None else request.options.stats_only
+        )
         self.requested_report_inconsistencies.append(
             None if request is None else request.options.report_inconsistencies
         )
@@ -425,7 +488,7 @@ class _FailingPOProcessingWorkflowService:
     """Test helper for FailingPOProcessingWorkflowService.
 
     Attributes:
-        None: This type does not declare additional class-level attributes.
+        None: This type does not declare class-level attributes.
     """
 
     @staticmethod
@@ -436,24 +499,30 @@ class _FailingPOProcessingWorkflowService:
         """Handle start sync.
 
         Args:
-            project_id (str): Value supplied to this callable.
-            progress_callback (Callable[[SyncProgressEvent], None] | None): Value supplied to this
-        callable.
+            project_id:
+                Value supplied to this callable.
+            progress_callback:
+                Value supplied to this callable.
 
         Returns:
-            SyncStatusViewModel: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
-        return build_seeded_services().workflows.start_sync(project_id, progress_callback)
+        return build_seeded_services().workflows.start_sync(
+            project_id, progress_callback
+        )
 
     @staticmethod
     def trust_remote_host_key(project_id: str) -> RemoteConnectionTestResultViewModel:
         """Handle trust remote host key.
 
         Args:
-            project_id (str): Value supplied to this callable.
+            project_id:
+                Value supplied to this callable.
 
         Returns:
-            RemoteConnectionTestResultViewModel: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         return build_seeded_services().workflows.trust_remote_host_key(project_id)
 
@@ -465,24 +534,30 @@ class _FailingPOProcessingWorkflowService:
         """Handle start sync to remote.
 
         Args:
-            project_id (str): Value supplied to this callable.
-            progress_callback (Callable[[SyncProgressEvent], None] | None): Value supplied to this
-        callable.
+            project_id:
+                Value supplied to this callable.
+            progress_callback:
+                Value supplied to this callable.
 
         Returns:
-            SyncStatusViewModel: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
-        return build_seeded_services().workflows.start_sync_to_remote(project_id, progress_callback)
+        return build_seeded_services().workflows.start_sync_to_remote(
+            project_id, progress_callback
+        )
 
     @staticmethod
     def start_audit(project_id: str) -> AuditSummaryViewModel:
         """Handle start audit.
 
         Args:
-            project_id (str): Value supplied to this callable.
+            project_id:
+                Value supplied to this callable.
 
         Returns:
-            AuditSummaryViewModel: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         return build_seeded_services().workflows.start_audit(project_id)
 
@@ -495,17 +570,20 @@ class _FailingPOProcessingWorkflowService:
         """Handle start po processing.
 
         Args:
-            project_id (str): Value supplied to this callable.
-            request (TranslationWorkflowRequestViewModel | None): Value supplied to this callable.
-            progress_callback (Callable[[POProcessingProgress], None] | None): Value supplied to
-        this
-            callable.
+            project_id:
+                Value supplied to this callable.
+            request:
+                Value supplied to this callable.
+            progress_callback:
+                Value supplied to this callable.
 
         Returns:
-            POProcessingSummaryViewModel: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
 
         Raises:
-            ControlledServiceError: Raised when this callable hits the corresponding error path.
+            ControlledServiceError:
+                Raised when this callable hits the corresponding error path.
         """
         options = None if request is None else request.options
         msg = (
@@ -527,8 +605,10 @@ class _TrustHostKeyWorkflowService:
     """Test helper for TrustHostKeyWorkflowService.
 
     Attributes:
-        succeed (bool): Documented attribute exposed by this type.
-        raise_error (bool): Documented attribute exposed by this type.
+        succeed:
+            Documented attribute exposed by this type.
+        raise_error:
+            Documented attribute exposed by this type.
     """
 
     succeed: bool = True
@@ -542,26 +622,37 @@ class _TrustHostKeyWorkflowService:
         """Handle start sync.
 
         Args:
-            project_id (str): Value supplied to this callable.
-            progress_callback (Callable[[SyncProgressEvent], None] | None): Value supplied to this
-        callable.
+            project_id:
+                Value supplied to this callable.
+            progress_callback:
+                Value supplied to this callable.
 
         Returns:
-            SyncStatusViewModel: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
-        return build_seeded_services().workflows.start_sync(project_id, progress_callback)
+        return build_seeded_services().workflows.start_sync(
+            project_id, progress_callback
+        )
 
-    def trust_remote_host_key(self, project_id: str) -> RemoteConnectionTestResultViewModel:
+    def trust_remote_host_key(
+        self, project_id: str
+    ) -> RemoteConnectionTestResultViewModel:
         """Handle trust remote host key.
 
         Args:
-            project_id (str): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            project_id:
+                Value supplied to this callable.
 
         Returns:
-            RemoteConnectionTestResultViewModel: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
 
         Raises:
-            ControlledServiceError: Raised when this callable hits the corresponding error path.
+            ControlledServiceError:
+                Raised when this callable hits the corresponding error path.
         """
         if self.raise_error:
             msg = f"Unable to trust host key for {project_id}."
@@ -580,24 +671,30 @@ class _TrustHostKeyWorkflowService:
         """Handle start sync to remote.
 
         Args:
-            project_id (str): Value supplied to this callable.
-            progress_callback (Callable[[SyncProgressEvent], None] | None): Value supplied to this
-        callable.
+            project_id:
+                Value supplied to this callable.
+            progress_callback:
+                Value supplied to this callable.
 
         Returns:
-            SyncStatusViewModel: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
-        return build_seeded_services().workflows.start_sync_to_remote(project_id, progress_callback)
+        return build_seeded_services().workflows.start_sync_to_remote(
+            project_id, progress_callback
+        )
 
     @staticmethod
     def start_audit(project_id: str) -> AuditSummaryViewModel:
         """Handle start audit.
 
         Args:
-            project_id (str): Value supplied to this callable.
+            project_id:
+                Value supplied to this callable.
 
         Returns:
-            AuditSummaryViewModel: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         return build_seeded_services().workflows.start_audit(project_id)
 
@@ -610,14 +707,16 @@ class _TrustHostKeyWorkflowService:
         """Handle start po processing.
 
         Args:
-            project_id (str): Value supplied to this callable.
-            request (TranslationWorkflowRequestViewModel | None): Value supplied to this callable.
-            progress_callback (Callable[[POProcessingProgress], None] | None): Value supplied to
-        this
-            callable.
+            project_id:
+                Value supplied to this callable.
+            request:
+                Value supplied to this callable.
+            progress_callback:
+                Value supplied to this callable.
 
         Returns:
-            POProcessingSummaryViewModel: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         return build_seeded_services().workflows.start_po_processing(
             project_id,
@@ -630,7 +729,7 @@ class _FailingConnectionTestRegistry(InMemoryProjectRegistryManagementService):
     """Test helper for FailingConnectionTestRegistry.
 
     Attributes:
-        None: This type does not declare additional class-level attributes.
+        None: This type does not declare class-level attributes.
     """
 
     def test_remote_connection(
@@ -640,13 +739,18 @@ class _FailingConnectionTestRegistry(InMemoryProjectRegistryManagementService):
         """Verify remote connection.
 
         Args:
-            editor (SiteEditorViewModel): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            editor:
+                Value supplied to this callable.
 
         Returns:
-            RemoteConnectionTestResultViewModel: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
 
         Raises:
-            ControlledServiceError: Raised when this callable hits the corresponding error path.
+            ControlledServiceError:
+                Raised when this callable hits the corresponding error path.
         """
         msg = "Remote connection draft is invalid."
         raise ControlledServiceError(msg)
@@ -656,7 +760,8 @@ def test_dashboard_sections_are_available_on_startup() -> None:
     """Verify dashboard sections are available on startup.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     shell = create_frontend_shell(build_seeded_services())
 
@@ -676,7 +781,8 @@ def test_projects_screen_loads_summaries_and_empty_state() -> None:
     """Verify projects screen loads summaries and empty state.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     shell = create_frontend_shell(build_empty_services())
 
@@ -690,7 +796,8 @@ def test_selecting_project_loads_detail_and_actions() -> None:
     """Verify selecting project loads detail and actions.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     shell = create_frontend_shell(build_seeded_services())
 
@@ -711,7 +818,8 @@ def test_sync_action_uses_fake_service_and_updates_state() -> None:
     """Verify sync action uses fake service and updates state.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     shell = create_frontend_shell(build_seeded_services())
 
@@ -729,7 +837,8 @@ def test_local_to_remote_sync_action_uses_fake_service_and_updates_state() -> No
     """Verify local to remote sync action uses fake service and updates state.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     shell = create_frontend_shell(build_seeded_services())
 
@@ -747,7 +856,8 @@ def test_sync_failure_is_exposed_without_crashing() -> None:
     """Verify sync failure is exposed without crashing.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     shell = create_frontend_shell(build_failing_sync_services())
 
@@ -764,7 +874,8 @@ def test_sync_can_run_in_background_without_leaving_the_project_detail_route() -
     """Verify sync can run in background without leaving the project detail route.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     seeded_services = build_seeded_services()
     workflow = _BlockingWorkflowService(started=Event(), release=Event())
@@ -800,7 +911,8 @@ def test_background_sync_does_not_start_a_second_worker_while_running() -> None:
     """Verify background sync does not start a second worker while running.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     seeded_services = build_seeded_services()
     workflow = _BlockingWorkflowService(started=Event(), release=Event())
@@ -830,7 +942,8 @@ def test_background_sync_clears_stale_failed_sync_state_when_retry_starts() -> N
     """Verify background sync clears stale failed sync state when retry starts.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     seeded_services = build_seeded_services()
     workflow = _BlockingWorkflowService(started=Event(), release=Event())
@@ -860,11 +973,14 @@ def test_background_sync_clears_stale_failed_sync_state_when_retry_starts() -> N
     shell._active_sync_thread.join(timeout=1)
 
 
-def test_background_sync_failures_are_exposed_in_shell_state_instead_of_crashing() -> None:
+def test_background_sync_failures_are_exposed_in_shell_state_instead_of_crashing() -> (
+    None
+):
     """Verify background sync failures are exposed in shell state instead of crashing.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     seeded_services = build_seeded_services()
     shell = create_frontend_shell(
@@ -906,7 +1022,8 @@ def test_background_sync_uses_default_command_limit_when_settings_load_fails() -
     """Verify background sync uses default command limit when settings load fails.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     shell = create_frontend_shell(build_failing_settings_load_services())
     shell.open_projects()
@@ -927,7 +1044,8 @@ def test_background_sync_progress_keeps_only_the_last_configured_operations() ->
     """Verify background sync progress keeps only the last configured operations.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     seeded_services = build_seeded_services()
     shell = create_frontend_shell(seeded_services)
@@ -978,11 +1096,14 @@ def test_background_sync_progress_keeps_only_the_last_configured_operations() ->
     ]
 
 
-def test_trust_selected_project_remote_host_key_covers_success_failure_and_service_error() -> None:
-    """Verify trust selected project remote host key covers success failure and service error.
+def test_trust_selected_project_remote_host_key_covers_a18f() -> None:
+    """Verify trust selected project remote host key covers success failure and service.
+
+    error.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     seeded_services = build_seeded_services()
     shell = create_frontend_shell(
@@ -1034,7 +1155,8 @@ def test_sync_progress_event_is_ignored_when_no_progress_state_exists() -> None:
     """Verify sync progress event is ignored when no progress state exists.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     shell = create_frontend_shell(build_seeded_services())
 
@@ -1053,7 +1175,8 @@ def test_project_connection_test_failure_is_exposed_in_editor_state() -> None:
     """Verify project connection test failure is exposed in editor state.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     services = build_seeded_services()
     shell = create_frontend_shell(
@@ -1074,7 +1197,10 @@ def test_project_connection_test_failure_is_exposed_in_editor_state() -> None:
 
     assert shell.project_editor_state is not None
     assert shell.project_editor_state.status == "failed"
-    assert shell.project_editor_state.status_message == "Remote connection draft is invalid."
+    assert (
+        shell.project_editor_state.status_message
+        == "Remote connection draft is invalid."
+    )
     assert shell.project_editor_state.connection_test_enabled is False
     assert shell.latest_error == "Remote connection draft is invalid."
 
@@ -1083,10 +1209,12 @@ def _sync_state_is_cleared(shell: Any) -> bool:
     """Handle sync state is cleared.
 
     Args:
-        shell (Any): Value supplied to this callable.
+        shell:
+            Value supplied to this callable.
 
     Returns:
-        bool: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
     """
     return shell.sync_state is None
 
@@ -1094,13 +1222,17 @@ def _sync_state_is_cleared(shell: Any) -> bool:
 def test_trust_project_editor_remote_host_key_reruns_test_without_host_verification(
     monkeypatch: MonkeyPatch,
 ) -> None:
-    """Verify trust project editor remote host key reruns test without host verification.
+    """Verify trust project editor remote host key reruns test without host.
+
+    verification.
 
     Args:
-        monkeypatch (MonkeyPatch): Value supplied to this callable.
+        monkeypatch:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     captured: list[SiteEditorViewModel] = []
 
@@ -1108,11 +1240,14 @@ def test_trust_project_editor_remote_host_key_reruns_test_without_host_verificat
         """Handle fake test.
 
         Args:
-            _self (object): Value supplied to this callable.
-            editor (SiteEditorViewModel): Value supplied to this callable.
+            _self:
+                Value supplied to this callable.
+            editor:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         captured.append(editor)
 
@@ -1145,7 +1280,8 @@ def test_audit_and_po_actions_update_independent_panels() -> None:
     """Verify audit and po actions update independent panels.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     shell = create_frontend_shell(build_seeded_services())
 
@@ -1171,7 +1307,8 @@ def test_po_processing_can_run_in_background_with_selected_locales() -> None:
     """Verify po processing can run in background with selected locales.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     seeded_services = build_seeded_services()
     workflow = _BlockingPOProcessingWorkflowService(
@@ -1225,7 +1362,8 @@ def test_background_po_processing_failure_is_exposed_without_crashing() -> None:
     """Verify background po processing failure is exposed without crashing.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     seeded_services = build_seeded_services()
     shell = create_frontend_shell(

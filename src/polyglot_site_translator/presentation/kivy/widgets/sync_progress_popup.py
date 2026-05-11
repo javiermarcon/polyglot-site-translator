@@ -9,27 +9,33 @@ from kivy.uix.progressbar import ProgressBar
 from kivy.uix.scrollview import ScrollView
 
 from polyglot_site_translator.presentation.frontend_shell import FrontendShell
-from polyglot_site_translator.presentation.kivy.widgets.common import AppButton, WrappedLabel
-from polyglot_site_translator.presentation.kivy.widgets.ssh_host_key_trust_dialog import (
-    open_ssh_host_key_trust_confirmation,
+from polyglot_site_translator.presentation.kivy.widgets.common import (
+    AppButton,
+    WrappedLabel,
 )
+
+from .ssh_host_key_trust_dialog import open_ssh_host_key_trust_confirmation
 
 
 class SyncProgressPopup(Popup):  # type: ignore[misc]
     """Dedicated window that shows sync progress and transport command logs.
 
     Attributes:
-        None: This type does not declare additional class-level attributes.
+        None: This type does not declare class-level attributes.
     """
 
     def __init__(self, *, shell: FrontendShell) -> None:
         """Build the popup widgets that mirror shell-managed sync progress state.
 
         Args:
-            shell (FrontendShell): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            shell:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         super().__init__(
             title="Sync Progress",
@@ -40,7 +46,9 @@ class SyncProgressPopup(Popup):  # type: ignore[misc]
         self._refresh_event: ClockEvent | None = None
 
         container = BoxLayout(orientation="vertical", spacing=12, padding=12)
-        self._status_label = WrappedLabel(text="No sync started yet.", font_size=16, bold=True)
+        self._status_label = WrappedLabel(
+            text="No sync started yet.", font_size=16, bold=True
+        )
         self._progress_bar = ProgressBar(max=1, value=0, size_hint_y=None, height=20)
         self._message_label = WrappedLabel(text="", font_size=14)
         self._trust_host_key_button = AppButton(
@@ -56,7 +64,9 @@ class SyncProgressPopup(Popup):  # type: ignore[misc]
             font_size=13,
         )
         command_scroll.add_widget(self._command_log_label)
-        close_button = AppButton(text="Close", primary=False, size_hint_y=None, height=48)
+        close_button = AppButton(
+            text="Close", primary=False, size_hint_y=None, height=48
+        )
         close_button.bind(on_release=lambda *_args: self.dismiss())
 
         container.add_widget(self._status_label)
@@ -70,8 +80,13 @@ class SyncProgressPopup(Popup):  # type: ignore[misc]
     def open_for_sync(self) -> None:
         """Open the popup and keep it refreshed while sync state changes.
 
+        Args:
+            self:
+                Value supplied to this callable.
+
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         self.refresh()
         if self._refresh_event is None:
@@ -82,8 +97,13 @@ class SyncProgressPopup(Popup):  # type: ignore[misc]
     def refresh(self) -> None:
         """Refresh the popup contents from the shell progress state.
 
+        Args:
+            self:
+                Value supplied to this callable.
+
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         state = self._shell.sync_progress_state
         if state is None:
@@ -121,8 +141,13 @@ class SyncProgressPopup(Popup):  # type: ignore[misc]
     def on_dismiss(self) -> None:
         """Stop the automatic refresh loop when the popup is closed.
 
+        Args:
+            self:
+                Value supplied to this callable.
+
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         if self._refresh_event is not None:
             self._refresh_event.cancel()
@@ -133,10 +158,14 @@ class SyncProgressPopup(Popup):  # type: ignore[misc]
         """Refresh from clock.
 
         Args:
-            _delta (float): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            _delta:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         self.refresh()
 
@@ -144,10 +173,14 @@ class SyncProgressPopup(Popup):  # type: ignore[misc]
         """Open host key confirmation.
 
         Args:
-            _args (object): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            *_args:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         open_ssh_host_key_trust_confirmation(
             on_trust=self._run_trust_host_key_after_confirmation,
@@ -157,8 +190,13 @@ class SyncProgressPopup(Popup):  # type: ignore[misc]
     def _run_trust_host_key_after_confirmation(self) -> None:
         """Run trust host key after confirmation.
 
+        Args:
+            self:
+                Value supplied to this callable.
+
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         self._shell.trust_selected_project_remote_host_key()
         self.refresh()

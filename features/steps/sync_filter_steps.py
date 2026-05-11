@@ -9,8 +9,13 @@ from typing import TypeVar, cast
 
 import behave as behave_module  # type: ignore[import-untyped]
 
-from polyglot_site_translator.adapters.framework_registry import FrameworkAdapterRegistry
-from polyglot_site_translator.domain.site_registry.models import RegisteredSite, SiteProject
+from polyglot_site_translator.adapters.framework_registry import (
+    FrameworkAdapterRegistry,
+)
+from polyglot_site_translator.domain.site_registry.models import (
+    RegisteredSite,
+    SiteProject,
+)
 from polyglot_site_translator.domain.sync.scope import (
     AdapterSyncScopeSettings,
     ConfiguredSyncRule,
@@ -25,7 +30,9 @@ from polyglot_site_translator.services.framework_sync_scope import (
 
 StepFunction = TypeVar("StepFunction", bound=Callable[..., object])
 
-given = cast(Callable[[str], Callable[[StepFunction], StepFunction]], behave_module.given)
+given = cast(
+    Callable[[str], Callable[[StepFunction], StepFunction]], behave_module.given
+)
 when = cast(Callable[[str], Callable[[StepFunction], StepFunction]], behave_module.when)
 then = cast(Callable[[str], Callable[[StepFunction], StepFunction]], behave_module.then)
 
@@ -35,24 +42,31 @@ class SyncFilterScenarioState:
     """BDD helper for SyncFilterScenarioState.
 
     Attributes:
-        site (RegisteredSite | None): Documented attribute exposed by this type.
-        resolved_scope (ResolvedSyncScope | None): Documented attribute exposed by this type.
-        sync_scope_settings (AdapterSyncScopeSettings): Documented attribute exposed by this type.
+        site:
+            Documented attribute exposed by this type.
+        resolved_scope:
+            Documented attribute exposed by this type.
+        sync_scope_settings:
+            Documented attribute exposed by this type.
     """
 
     site: RegisteredSite | None = None
     resolved_scope: ResolvedSyncScope | None = None
-    sync_scope_settings: AdapterSyncScopeSettings = field(default_factory=AdapterSyncScopeSettings)
+    sync_scope_settings: AdapterSyncScopeSettings = field(
+        default_factory=AdapterSyncScopeSettings
+    )
 
 
 def _state(context: object) -> SyncFilterScenarioState:
     """Handle state.
 
     Args:
-        context (object): Value supplied to this callable.
+        context:
+            Value supplied to this callable.
 
     Returns:
-        SyncFilterScenarioState: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
     """
     state = getattr(context, "sync_filter_state", None)
     if isinstance(state, SyncFilterScenarioState):
@@ -67,11 +81,14 @@ def step_given_registered_project(context: object, framework_type: str) -> None:
     """Run the BDD step for given registered project.
 
     Args:
-        context (object): Value supplied to this callable.
-        framework_type (str): Value supplied to this callable.
+        context:
+            Value supplied to this callable.
+        framework_type:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     tmp_dir = Path.cwd() / ".behave-sync-filters" / framework_type
     tmp_dir.mkdir(parents=True, exist_ok=True)
@@ -95,13 +112,16 @@ def step_when_resolve_scope(context: object) -> None:
     """Run the BDD step for when resolve scope.
 
     Args:
-        context (object): Value supplied to this callable.
+        context:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
 
     Raises:
-        AssertionError: Raised when this callable hits the corresponding error path.
+        AssertionError:
+            Raised when this callable hits the corresponding error path.
     """
     state = _state(context)
     if state.site is None:
@@ -119,11 +139,14 @@ def step_given_global_sync_setting(context: object, relative_path: str) -> None:
     """Run the BDD step for given global sync setting.
 
     Args:
-        context (object): Value supplied to this callable.
-        relative_path (str): Value supplied to this callable.
+        context:
+            Value supplied to this callable.
+        relative_path:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     state = _state(context)
     state.sync_scope_settings = AdapterSyncScopeSettings(
@@ -150,12 +173,16 @@ def step_given_framework_sync_setting(
     """Run the BDD step for given framework sync setting.
 
     Args:
-        context (object): Value supplied to this callable.
-        relative_path (str): Value supplied to this callable.
-        framework_type (str): Value supplied to this callable.
+        context:
+            Value supplied to this callable.
+        relative_path:
+            Value supplied to this callable.
+        framework_type:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     state = _state(context)
     state.sync_scope_settings = AdapterSyncScopeSettings(
@@ -183,14 +210,18 @@ def step_given_project_gitignore(context: object, pattern: str) -> None:
     """Run the BDD step for given project gitignore.
 
     Args:
-        context (object): Value supplied to this callable.
-        pattern (str): Value supplied to this callable.
+        context:
+            Value supplied to this callable.
+        pattern:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
 
     Raises:
-        AssertionError: Raised when this callable hits the corresponding error path.
+        AssertionError:
+            Raised when this callable hits the corresponding error path.
     """
     state = _state(context)
     if state.site is None:
@@ -205,10 +236,12 @@ def step_given_gitignore_enabled(context: object) -> None:
     """Run the BDD step for given gitignore enabled.
 
     Args:
-        context (object): Value supplied to this callable.
+        context:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     state = _state(context)
     state.sync_scope_settings = AdapterSyncScopeSettings(
@@ -223,14 +256,18 @@ def step_then_scope_status(context: object, status: str) -> None:
     """Run the BDD step for then scope status.
 
     Args:
-        context (object): Value supplied to this callable.
-        status (str): Value supplied to this callable.
+        context:
+            Value supplied to this callable.
+        status:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
 
     Raises:
-        AssertionError: Raised when this callable hits the corresponding error path.
+        AssertionError:
+            Raised when this callable hits the corresponding error path.
     """
     state = _state(context)
     resolved_scope = state.resolved_scope
@@ -246,14 +283,18 @@ def step_then_scope_contains_filter(context: object, relative_path: str) -> None
     """Run the BDD step for then scope contains filter.
 
     Args:
-        context (object): Value supplied to this callable.
-        relative_path (str): Value supplied to this callable.
+        context:
+            Value supplied to this callable.
+        relative_path:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
 
     Raises:
-        AssertionError: Raised when this callable hits the corresponding error path.
+        AssertionError:
+            Raised when this callable hits the corresponding error path.
     """
     state = _state(context)
     resolved_scope = state.resolved_scope
@@ -270,21 +311,27 @@ def step_then_scope_contains_exclusion(context: object, relative_path: str) -> N
     """Run the BDD step for then scope contains exclusion.
 
     Args:
-        context (object): Value supplied to this callable.
-        relative_path (str): Value supplied to this callable.
+        context:
+            Value supplied to this callable.
+        relative_path:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
 
     Raises:
-        AssertionError: Raised when this callable hits the corresponding error path.
+        AssertionError:
+            Raised when this callable hits the corresponding error path.
     """
     state = _state(context)
     resolved_scope = state.resolved_scope
     if resolved_scope is None:
         msg = "The sync scope must be resolved before asserting its exclusions."
         raise AssertionError(msg)
-    if relative_path not in [sync_filter.relative_path for sync_filter in resolved_scope.excludes]:
+    if relative_path not in [
+        sync_filter.relative_path for sync_filter in resolved_scope.excludes
+    ]:
         raise AssertionError
 
 
@@ -293,21 +340,27 @@ def step_then_scope_lacks_exclusion(context: object, relative_path: str) -> None
     """Run the BDD step for then scope lacks exclusion.
 
     Args:
-        context (object): Value supplied to this callable.
-        relative_path (str): Value supplied to this callable.
+        context:
+            Value supplied to this callable.
+        relative_path:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
 
     Raises:
-        AssertionError: Raised when this callable hits the corresponding error path.
+        AssertionError:
+            Raised when this callable hits the corresponding error path.
     """
     state = _state(context)
     resolved_scope = state.resolved_scope
     if resolved_scope is None:
         msg = "The sync scope must be resolved before asserting its exclusions."
         raise AssertionError(msg)
-    if relative_path in [sync_filter.relative_path for sync_filter in resolved_scope.excludes]:
+    if relative_path in [
+        sync_filter.relative_path for sync_filter in resolved_scope.excludes
+    ]:
         raise AssertionError
 
 
@@ -316,13 +369,16 @@ def step_then_scope_has_no_filters(context: object) -> None:
     """Run the BDD step for then scope has no filters.
 
     Args:
-        context (object): Value supplied to this callable.
+        context:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
 
     Raises:
-        AssertionError: Raised when this callable hits the corresponding error path.
+        AssertionError:
+            Raised when this callable hits the corresponding error path.
     """
     state = _state(context)
     resolved_scope = state.resolved_scope

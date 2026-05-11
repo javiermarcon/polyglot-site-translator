@@ -12,18 +12,23 @@ class ShelvePOTranslationCache:
     """Persistent translation cache backed by ``shelve``.
 
     Attributes:
-        None: This type does not declare additional class-level attributes.
+        None: This type does not declare class-level attributes.
     """
 
     def __init__(self, *, cache_path: Path, enabled: bool) -> None:
         """Store cache configuration and defer opening the shelve database.
 
         Args:
-            cache_path (Path): Value supplied to this callable.
-            enabled (bool): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            cache_path:
+                Value supplied to this callable.
+            enabled:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         self._cache_path = cache_path
         self._enabled = enabled
@@ -32,11 +37,17 @@ class ShelvePOTranslationCache:
     def open(self) -> None:
         """Open the shelve database when cache support is enabled.
 
+        Args:
+            self:
+                Value supplied to this callable.
+
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
 
         Raises:
-            POProcessingCacheError: Raised when this callable hits the corresponding error path.
+            POProcessingCacheError:
+                Raised when this callable hits the corresponding error path.
         """
         if not self._enabled:
             return
@@ -50,11 +61,17 @@ class ShelvePOTranslationCache:
     def close(self) -> None:
         """Close the open shelve database if one is active.
 
+        Args:
+            self:
+                Value supplied to this callable.
+
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
 
         Raises:
-            POProcessingCacheError: Raised when this callable hits the corresponding error path.
+            POProcessingCacheError:
+                Raised when this callable hits the corresponding error path.
         """
         if self._db is None:
             return
@@ -70,14 +87,20 @@ class ShelvePOTranslationCache:
         """Return a cached translation for the requested base language and text.
 
         Args:
-            base_language (str): Value supplied to this callable.
-            text (str): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            base_language:
+                Value supplied to this callable.
+            text:
+                Value supplied to this callable.
 
         Returns:
-            str | None: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
 
         Raises:
-            POProcessingCacheError: Raised when this callable hits the corresponding error path.
+            POProcessingCacheError:
+                Raised when this callable hits the corresponding error path.
         """
         if not self._enabled or self._db is None:
             return None
@@ -95,15 +118,22 @@ class ShelvePOTranslationCache:
         """Persist one translated string in the open shelve database.
 
         Args:
-            base_language (str): Value supplied to this callable.
-            text (str): Value supplied to this callable.
-            translated_text (str): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            base_language:
+                Value supplied to this callable.
+            text:
+                Value supplied to this callable.
+            translated_text:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
 
         Raises:
-            POProcessingCacheError: Raised when this callable hits the corresponding error path.
+            POProcessingCacheError:
+                Raised when this callable hits the corresponding error path.
         """
         if not self._enabled or self._db is None:
             return
@@ -123,11 +153,14 @@ def build_shelve_translation_cache(
     """Build the default shelve-backed translation cache implementation.
 
     Args:
-        cache_path (Path): Value supplied to this callable.
-        enabled (bool): Value supplied to this callable.
+        cache_path:
+            Value supplied to this callable.
+        enabled:
+            Value supplied to this callable.
 
     Returns:
-        ShelvePOTranslationCache: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
     """
     return ShelvePOTranslationCache(cache_path=cache_path, enabled=enabled)
 
@@ -136,10 +169,13 @@ def _build_cache_key(*, base_language: str, text: str) -> str:
     """Return the stable cache key used by shelve storage.
 
     Args:
-        base_language (str): Value supplied to this callable.
-        text (str): Value supplied to this callable.
+        base_language:
+            Value supplied to this callable.
+        text:
+            Value supplied to this callable.
 
     Returns:
-        str: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
     """
     return f"{base_language}\x1f{text}"

@@ -7,7 +7,9 @@ from dataclasses import dataclass, field, replace
 from pathlib import Path
 import time
 
-from polyglot_site_translator.adapters.framework_registry import FrameworkAdapterRegistry
+from polyglot_site_translator.adapters.framework_registry import (
+    FrameworkAdapterRegistry,
+)
 from polyglot_site_translator.app import create_kivy_app
 from polyglot_site_translator.domain.remote_connections.models import (
     RemoteConnectionConfig,
@@ -26,7 +28,9 @@ from polyglot_site_translator.domain.sync.scope import ResolvedSyncScope
 from polyglot_site_translator.infrastructure.remote_connections.registry import (
     RemoteConnectionRegistry,
 )
-from polyglot_site_translator.infrastructure.settings import build_default_settings_service
+from polyglot_site_translator.infrastructure.settings import (
+    build_default_settings_service,
+)
 from polyglot_site_translator.presentation.fakes import build_default_frontend_services
 from polyglot_site_translator.presentation.kivy.screens.sync import SyncScreen
 from polyglot_site_translator.presentation.view_models import SiteEditorViewModel
@@ -41,7 +45,7 @@ class _FailingFrameworkSyncScopeService:
     """Test helper for FailingFrameworkSyncScopeService.
 
     Attributes:
-        None: This type does not declare additional class-level attributes.
+        None: This type does not declare class-level attributes.
     """
 
     @staticmethod
@@ -49,13 +53,16 @@ class _FailingFrameworkSyncScopeService:
         """Handle resolve for site.
 
         Args:
-            site (RegisteredSite): Value supplied to this callable.
+            site:
+                Value supplied to this callable.
 
         Returns:
-            ResolvedSyncScope: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
 
         Raises:
-            OSError: Raised when this callable hits the corresponding error path.
+            OSError:
+                Raised when this callable hits the corresponding error path.
         """
         msg = "broken sync scope"
         raise OSError(msg)
@@ -66,7 +73,8 @@ class StubSyncProvider:
     """Test helper for StubSyncProvider.
 
     Attributes:
-        descriptor (RemoteConnectionTypeDescriptor): Documented attribute exposed by this type.
+        descriptor:
+            Documented attribute exposed by this type.
     """
 
     descriptor: RemoteConnectionTypeDescriptor = field(
@@ -82,10 +90,12 @@ class StubSyncProvider:
         """Handle open session.
 
         Args:
-            config (RemoteConnectionConfig): Value supplied to this callable.
+            config:
+                Value supplied to this callable.
 
         Returns:
-            _StubSyncSession: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         return _StubSyncSession(config=config)
 
@@ -99,13 +109,18 @@ class StubSyncProvider:
         """Handle list remote files.
 
         Args:
-            config (RemoteConnectionConfig): Value supplied to this callable.
-            progress_callback (Callable[[SyncProgressEvent], None] | None): Value supplied to this
-        callable.
-            max_files (int): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            config:
+                Value supplied to this callable.
+            progress_callback:
+                Value supplied to this callable.
+            max_files:
+                Value supplied to this callable.
 
         Returns:
-            list[RemoteSyncFile]: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         session = self.open_session(config)
         try:
@@ -121,12 +136,16 @@ class StubSyncProvider:
         """Handle iter remote files.
 
         Args:
-            config (RemoteConnectionConfig): Value supplied to this callable.
-            progress_callback (Callable[[SyncProgressEvent], None] | None): Value supplied to this
-        callable.
+            self:
+                Value supplied to this callable.
+            config:
+                Value supplied to this callable.
+            progress_callback:
+                Value supplied to this callable.
 
         Returns:
-            Iterable[RemoteSyncFile]: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         session = self.open_session(config)
         try:
@@ -143,13 +162,18 @@ class StubSyncProvider:
         """Handle download file.
 
         Args:
-            config (RemoteConnectionConfig): Value supplied to this callable.
-            remote_path (str): Value supplied to this callable.
-            progress_callback (Callable[[SyncProgressEvent], None] | None): Value supplied to this
-        callable.
+            self:
+                Value supplied to this callable.
+            config:
+                Value supplied to this callable.
+            remote_path:
+                Value supplied to this callable.
+            progress_callback:
+                Value supplied to this callable.
 
         Returns:
-            bytes: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         session = self.open_session(config)
         try:
@@ -166,13 +190,18 @@ class StubSyncProvider:
         """Handle ensure remote directory.
 
         Args:
-            config (RemoteConnectionConfig): Value supplied to this callable.
-            remote_path (str): Value supplied to this callable.
-            progress_callback (Callable[[SyncProgressEvent], None] | None): Value supplied to this
-        callable.
+            self:
+                Value supplied to this callable.
+            config:
+                Value supplied to this callable.
+            remote_path:
+                Value supplied to this callable.
+            progress_callback:
+                Value supplied to this callable.
 
         Returns:
-            int: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         session = self.open_session(config)
         try:
@@ -190,14 +219,20 @@ class StubSyncProvider:
         """Handle upload file.
 
         Args:
-            config (RemoteConnectionConfig): Value supplied to this callable.
-            remote_path (str): Value supplied to this callable.
-            contents (bytes): Value supplied to this callable.
-            progress_callback (Callable[[SyncProgressEvent], None] | None): Value supplied to this
-        callable.
+            self:
+                Value supplied to this callable.
+            config:
+                Value supplied to this callable.
+            remote_path:
+                Value supplied to this callable.
+            contents:
+                Value supplied to this callable.
+            progress_callback:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         session = self.open_session(config)
         try:
@@ -212,10 +247,14 @@ class StubSyncProvider:
         """Verify connection.
 
         Args:
-            config (RemoteConnectionConfigInput): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            config:
+                Value supplied to this callable.
 
         Returns:
-            RemoteConnectionTestResult: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         return RemoteConnectionTestResult(
             success=True,
@@ -233,10 +272,12 @@ def _build_project_sync_service(
     """Handle build project sync service.
 
     Args:
-        remote_registry (RemoteConnectionRegistry): Value supplied to this callable.
+        remote_registry:
+            Value supplied to this callable.
 
     Returns:
-        ProjectSyncService: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
     """
     return ProjectSyncService(
         registry=remote_registry,
@@ -251,9 +292,12 @@ class _StubSyncSession:
     """Test helper for StubSyncSession.
 
     Attributes:
-        config (RemoteConnectionConfig): Documented attribute exposed by this type.
-        state (RemoteConnectionSessionState): Documented attribute exposed by this type.
-        _connect_emitted (bool): Documented attribute exposed by this type.
+        config:
+            Documented attribute exposed by this type.
+        state:
+            Documented attribute exposed by this type.
+        _connect_emitted:
+            Documented attribute exposed by this type.
     """
 
     config: RemoteConnectionConfig
@@ -267,11 +311,14 @@ class _StubSyncSession:
         """Handle emit connect if needed.
 
         Args:
-            progress_callback (Callable[[SyncProgressEvent], None] | None): Value supplied to this
-        callable.
+            self:
+                Value supplied to this callable.
+            progress_callback:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         if self._connect_emitted or progress_callback is None:
             return
@@ -291,14 +338,18 @@ class _StubSyncSession:
         """Handle iter remote files.
 
         Args:
-            progress_callback (Callable[[SyncProgressEvent], None] | None): Value supplied to this
-        callable.
+            self:
+                Value supplied to this callable.
+            progress_callback:
+                Value supplied to this callable.
 
         Returns:
-            Iterable[RemoteSyncFile]: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
 
         Raises:
-            OSError: Raised when this callable hits the corresponding error path.
+            OSError:
+                Raised when this callable hits the corresponding error path.
         """
         if progress_callback is not None:
             self._emit_connect_if_needed(progress_callback)
@@ -343,19 +394,25 @@ class _StubSyncSession:
         """Handle download file.
 
         Args:
-            remote_path (str): Value supplied to this callable.
-            progress_callback (Callable[[SyncProgressEvent], None] | None): Value supplied to this
-        callable.
+            self:
+                Value supplied to this callable.
+            remote_path:
+                Value supplied to this callable.
+            progress_callback:
+                Value supplied to this callable.
 
         Returns:
-            bytes: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         if progress_callback is not None:
             self._emit_connect_if_needed(progress_callback)
             progress_callback(
                 SyncProgressEvent(
                     stage=SyncProgressStage.DOWNLOADING_FILE,
-                    message=f"Downloading {remote_path} through the sync integration stub.",
+                    message=(
+                        f"Downloading {remote_path} through the sync integration stub."
+                    ),
                     command_text=f"SFTP GET {remote_path}",
                 )
             )
@@ -375,12 +432,16 @@ class _StubSyncSession:
         """Handle ensure remote directory.
 
         Args:
-            remote_path (str): Value supplied to this callable.
-            progress_callback (Callable[[SyncProgressEvent], None] | None): Value supplied to this
-        callable.
+            self:
+                Value supplied to this callable.
+            remote_path:
+                Value supplied to this callable.
+            progress_callback:
+                Value supplied to this callable.
 
         Returns:
-            int: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         if progress_callback is not None:
             self._emit_connect_if_needed(progress_callback)
@@ -402,20 +463,27 @@ class _StubSyncSession:
         """Handle upload file.
 
         Args:
-            remote_path (str): Value supplied to this callable.
-            contents (bytes): Value supplied to this callable.
-            progress_callback (Callable[[SyncProgressEvent], None] | None): Value supplied to this
-        callable.
+            self:
+                Value supplied to this callable.
+            remote_path:
+                Value supplied to this callable.
+            contents:
+                Value supplied to this callable.
+            progress_callback:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         if progress_callback is not None:
             self._emit_connect_if_needed(progress_callback)
             progress_callback(
                 SyncProgressEvent(
                     stage=SyncProgressStage.UPLOADING_FILE,
-                    message=f"Uploading {remote_path} through the sync integration stub.",
+                    message=(
+                        f"Uploading {remote_path} through the sync integration stub."
+                    ),
                     command_text=f"SFTP PUT {remote_path}",
                 )
             )
@@ -427,11 +495,14 @@ class _StubSyncSession:
         """Handle close.
 
         Args:
-            progress_callback (Callable[[SyncProgressEvent], None] | None): Value supplied to this
-        callable.
+            self:
+                Value supplied to this callable.
+            progress_callback:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         self.state = RemoteConnectionSessionState.CLOSED
         if progress_callback is not None:
@@ -444,17 +515,23 @@ class _StubSyncSession:
             )
 
 
-def test_real_sync_flow_downloads_files_into_the_project_workspace(tmp_path: Path) -> None:
+def test_real_sync_flow_downloads_files_into_the_project_workspace(
+    tmp_path: Path,
+) -> None:
     """Verify real sync flow downloads files into the project workspace.
 
     Args:
-        tmp_path (Path): Value supplied to this callable.
+        tmp_path:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     settings_service = build_default_settings_service(config_dir=tmp_path / "config")
-    remote_registry = RemoteConnectionRegistry.default_registry(providers=[StubSyncProvider()])
+    remote_registry = RemoteConnectionRegistry.default_registry(
+        providers=[StubSyncProvider()]
+    )
     app = create_kivy_app(
         services=build_default_frontend_services(
             settings_service=settings_service,
@@ -502,13 +579,17 @@ def test_real_sync_flow_uses_filtered_mode_when_the_project_preference_enables_i
     """Verify real sync flow uses filtered mode when the project preference enables it.
 
     Args:
-        tmp_path (Path): Value supplied to this callable.
+        tmp_path:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     settings_service = build_default_settings_service(config_dir=tmp_path / "config")
-    remote_registry = RemoteConnectionRegistry.default_registry(providers=[StubSyncProvider()])
+    remote_registry = RemoteConnectionRegistry.default_registry(
+        providers=[StubSyncProvider()]
+    )
     app = create_kivy_app(
         services=build_default_frontend_services(
             settings_service=settings_service,
@@ -546,7 +627,9 @@ def test_real_sync_flow_uses_filtered_mode_when_the_project_preference_enables_i
     assert shell.sync_state is not None
     assert shell.sync_state.status == "completed"
     assert shell.sync_state.files_synced == 1
-    assert (local_root / "wp-content" / "themes" / "theme" / "style.css").exists() is True
+    assert (
+        local_root / "wp-content" / "themes" / "theme" / "style.css"
+    ).exists() is True
     assert (local_root / "readme.html").exists() is False
 
 
@@ -556,13 +639,17 @@ def test_real_sync_flow_surfaces_scope_resolution_failures_without_crashing(
     """Verify real sync flow surfaces scope resolution failures without crashing.
 
     Args:
-        tmp_path (Path): Value supplied to this callable.
+        tmp_path:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     settings_service = build_default_settings_service(config_dir=tmp_path / "config")
-    remote_registry = RemoteConnectionRegistry.default_registry(providers=[StubSyncProvider()])
+    remote_registry = RemoteConnectionRegistry.default_registry(
+        providers=[StubSyncProvider()]
+    )
     app = create_kivy_app(
         services=build_default_frontend_services(
             settings_service=settings_service,
@@ -610,13 +697,17 @@ def test_sync_screen_renders_real_sync_results(tmp_path: Path) -> None:
     """Verify sync screen renders real sync results.
 
     Args:
-        tmp_path (Path): Value supplied to this callable.
+        tmp_path:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     settings_service = build_default_settings_service(config_dir=tmp_path / "config")
-    remote_registry = RemoteConnectionRegistry.default_registry(providers=[StubSyncProvider()])
+    remote_registry = RemoteConnectionRegistry.default_registry(
+        providers=[StubSyncProvider()]
+    )
     app = create_kivy_app(
         services=build_default_frontend_services(
             settings_service=settings_service,
@@ -662,13 +753,17 @@ def test_sync_screen_renders_structured_errors(tmp_path: Path) -> None:
     """Verify sync screen renders structured errors.
 
     Args:
-        tmp_path (Path): Value supplied to this callable.
+        tmp_path:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     settings_service = build_default_settings_service(config_dir=tmp_path / "config")
-    remote_registry = RemoteConnectionRegistry.default_registry(providers=[StubSyncProvider()])
+    remote_registry = RemoteConnectionRegistry.default_registry(
+        providers=[StubSyncProvider()]
+    )
     app = create_kivy_app(
         services=build_default_frontend_services(
             settings_service=settings_service,
@@ -716,13 +811,17 @@ def test_project_detail_sync_action_opens_a_progress_window_with_command_log(
     """Verify project detail sync action opens a progress window with command log.
 
     Args:
-        tmp_path (Path): Value supplied to this callable.
+        tmp_path:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     settings_service = build_default_settings_service(config_dir=tmp_path / "config")
-    remote_registry = RemoteConnectionRegistry.default_registry(providers=[StubSyncProvider()])
+    remote_registry = RemoteConnectionRegistry.default_registry(
+        providers=[StubSyncProvider()]
+    )
     app = create_kivy_app(
         services=build_default_frontend_services(
             settings_service=settings_service,
@@ -783,13 +882,17 @@ def test_project_detail_sync_action_reuses_a_single_remote_session(
     """Verify project detail sync action reuses a single remote session.
 
     Args:
-        tmp_path (Path): Value supplied to this callable.
+        tmp_path:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     settings_service = build_default_settings_service(config_dir=tmp_path / "config")
-    remote_registry = RemoteConnectionRegistry.default_registry(providers=[StubSyncProvider()])
+    remote_registry = RemoteConnectionRegistry.default_registry(
+        providers=[StubSyncProvider()]
+    )
     app = create_kivy_app(
         services=build_default_frontend_services(
             settings_service=settings_service,
@@ -846,15 +949,21 @@ def test_project_detail_progress_window_keeps_only_the_latest_configured_command
     """Verify project detail progress window keeps only the latest configured commands.
 
     Args:
-        tmp_path (Path): Value supplied to this callable.
+        tmp_path:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     settings_service = build_default_settings_service(config_dir=tmp_path / "config")
     initial_state = settings_service.load_settings()
-    settings_service.save_settings(replace(initial_state.app_settings, sync_progress_log_limit=2))
-    remote_registry = RemoteConnectionRegistry.default_registry(providers=[StubSyncProvider()])
+    settings_service.save_settings(
+        replace(initial_state.app_settings, sync_progress_log_limit=2)
+    )
+    remote_registry = RemoteConnectionRegistry.default_registry(
+        providers=[StubSyncProvider()]
+    )
     app = create_kivy_app(
         services=build_default_frontend_services(
             settings_service=settings_service,
@@ -897,7 +1006,9 @@ def test_project_detail_progress_window_keeps_only_the_latest_configured_command
         detail_screen._sync_progress_popup.refresh()
         command_lines = [
             line
-            for line in detail_screen._sync_progress_popup._command_log_label.text.splitlines()
+            for line in (
+                detail_screen._sync_progress_popup._command_log_label.text.splitlines()
+            )
             if line.strip()
         ]
         if len(command_lines) == 2 and "SFTP CLOSE example.test:22" in command_lines:
@@ -906,7 +1017,9 @@ def test_project_detail_progress_window_keeps_only_the_latest_configured_command
 
     command_lines = [
         line
-        for line in detail_screen._sync_progress_popup._command_log_label.text.splitlines()
+        for line in (
+            detail_screen._sync_progress_popup._command_log_label.text.splitlines()
+        )
         if line.strip()
     ]
     assert command_lines == [
@@ -915,17 +1028,23 @@ def test_project_detail_progress_window_keeps_only_the_latest_configured_command
     ]
 
 
-def test_real_sync_flow_uploads_local_files_into_the_remote_workspace(tmp_path: Path) -> None:
+def test_real_sync_flow_uploads_local_files_into_the_remote_workspace(
+    tmp_path: Path,
+) -> None:
     """Verify real sync flow uploads local files into the remote workspace.
 
     Args:
-        tmp_path (Path): Value supplied to this callable.
+        tmp_path:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     settings_service = build_default_settings_service(config_dir=tmp_path / "config")
-    remote_registry = RemoteConnectionRegistry.default_registry(providers=[StubSyncProvider()])
+    remote_registry = RemoteConnectionRegistry.default_registry(
+        providers=[StubSyncProvider()]
+    )
     app = create_kivy_app(
         services=build_default_frontend_services(
             settings_service=settings_service,

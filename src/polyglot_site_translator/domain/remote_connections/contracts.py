@@ -12,7 +12,10 @@ from polyglot_site_translator.domain.remote_connections.models import (
     RemoteConnectionTestResult,
     RemoteConnectionTypeDescriptor,
 )
-from polyglot_site_translator.domain.sync.models import RemoteSyncFile, SyncProgressCallback
+from polyglot_site_translator.domain.sync.models import (
+    RemoteSyncFile,
+    SyncProgressCallback,
+)
 
 DEFAULT_MATERIALIZED_REMOTE_FILE_LIMIT = 1000
 
@@ -21,15 +24,20 @@ class RemoteConnectionSession(Protocol):
     """Reusable remote session used for multi-step sync workflows.
 
     Attributes:
-        None: This type does not declare additional class-level attributes.
+        None: This type does not declare class-level attributes.
     """
 
     @property
     def state(self) -> RemoteConnectionSessionState:
         """Return the current session lifecycle state.
 
+        Args:
+            self:
+                Value supplied to this callable.
+
         Returns:
-            RemoteConnectionSessionState: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
 
     def iter_remote_files(
@@ -39,10 +47,14 @@ class RemoteConnectionSession(Protocol):
         """Yield remote files incrementally using the existing session.
 
         Args:
-            progress_callback (SyncProgressCallback | None): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            progress_callback:
+                Value supplied to this callable.
 
         Returns:
-            Iterable[RemoteSyncFile]: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
 
     def download_file(
@@ -53,11 +65,16 @@ class RemoteConnectionSession(Protocol):
         """Download a remote file through the existing session.
 
         Args:
-            remote_path (str): Value supplied to this callable.
-            progress_callback (SyncProgressCallback | None): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            remote_path:
+                Value supplied to this callable.
+            progress_callback:
+                Value supplied to this callable.
 
         Returns:
-            bytes: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
 
     def ensure_remote_directory(
@@ -68,11 +85,16 @@ class RemoteConnectionSession(Protocol):
         """Create a remote directory path and return how many segments were created.
 
         Args:
-            remote_path (str): Value supplied to this callable.
-            progress_callback (SyncProgressCallback | None): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            remote_path:
+                Value supplied to this callable.
+            progress_callback:
+                Value supplied to this callable.
 
         Returns:
-            int: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
 
     def upload_file(
@@ -84,12 +106,18 @@ class RemoteConnectionSession(Protocol):
         """Upload file contents through the existing session.
 
         Args:
-            remote_path (str): Value supplied to this callable.
-            contents (bytes): Value supplied to this callable.
-            progress_callback (SyncProgressCallback | None): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            remote_path:
+                Value supplied to this callable.
+            contents:
+                Value supplied to this callable.
+            progress_callback:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
 
     def close(
@@ -99,10 +127,14 @@ class RemoteConnectionSession(Protocol):
         """Close the session and release remote resources.
 
         Args:
-            progress_callback (SyncProgressCallback | None): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            progress_callback:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
 
 
@@ -110,15 +142,20 @@ class RemoteConnectionProvider(Protocol):
     """Infrastructure provider capable of validating a connection type.
 
     Attributes:
-        None: This type does not declare additional class-level attributes.
+        None: This type does not declare class-level attributes.
     """
 
     @property
     def descriptor(self) -> RemoteConnectionTypeDescriptor:
         """Return typed metadata for the provider.
 
+        Args:
+            self:
+                Value supplied to this callable.
+
         Returns:
-            RemoteConnectionTypeDescriptor: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
 
     def test_connection(
@@ -128,10 +165,14 @@ class RemoteConnectionProvider(Protocol):
         """Attempt a connection test and return a structured result.
 
         Args:
-            config (RemoteConnectionConfigInput): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            config:
+                Value supplied to this callable.
 
         Returns:
-            RemoteConnectionTestResult: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
 
     def open_session(
@@ -141,10 +182,14 @@ class RemoteConnectionProvider(Protocol):
         """Open a reusable session for listing and downloading remote files.
 
         Args:
-            config (RemoteConnectionConfig): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            config:
+                Value supplied to this callable.
 
         Returns:
-            RemoteConnectionSession: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
 
     def list_remote_files(
@@ -157,12 +202,18 @@ class RemoteConnectionProvider(Protocol):
         """Return a bounded materialized list of remote files.
 
         Args:
-            config (RemoteConnectionConfig): Value supplied to this callable.
-            progress_callback (SyncProgressCallback | None): Value supplied to this callable.
-            max_files (int): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            config:
+                Value supplied to this callable.
+            progress_callback:
+                Value supplied to this callable.
+            max_files:
+                Value supplied to this callable.
 
         Returns:
-            list[RemoteSyncFile]: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
 
     def iter_remote_files(
@@ -173,11 +224,16 @@ class RemoteConnectionProvider(Protocol):
         """Yield remote files available for synchronization incrementally.
 
         Args:
-            config (RemoteConnectionConfig): Value supplied to this callable.
-            progress_callback (SyncProgressCallback | None): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            config:
+                Value supplied to this callable.
+            progress_callback:
+                Value supplied to this callable.
 
         Returns:
-            Iterable[RemoteSyncFile]: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
 
     def download_file(
@@ -189,12 +245,18 @@ class RemoteConnectionProvider(Protocol):
         """Download a remote file and return its contents.
 
         Args:
-            config (RemoteConnectionConfig): Value supplied to this callable.
-            remote_path (str): Value supplied to this callable.
-            progress_callback (SyncProgressCallback | None): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            config:
+                Value supplied to this callable.
+            remote_path:
+                Value supplied to this callable.
+            progress_callback:
+                Value supplied to this callable.
 
         Returns:
-            bytes: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
 
     def ensure_remote_directory(
@@ -206,12 +268,18 @@ class RemoteConnectionProvider(Protocol):
         """Create a remote directory path and return how many segments were created.
 
         Args:
-            config (RemoteConnectionConfig): Value supplied to this callable.
-            remote_path (str): Value supplied to this callable.
-            progress_callback (SyncProgressCallback | None): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            config:
+                Value supplied to this callable.
+            remote_path:
+                Value supplied to this callable.
+            progress_callback:
+                Value supplied to this callable.
 
         Returns:
-            int: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
 
     def upload_file(
@@ -224,11 +292,18 @@ class RemoteConnectionProvider(Protocol):
         """Upload file contents to the remote workspace.
 
         Args:
-            config (RemoteConnectionConfig): Value supplied to this callable.
-            remote_path (str): Value supplied to this callable.
-            contents (bytes): Value supplied to this callable.
-            progress_callback (SyncProgressCallback | None): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            config:
+                Value supplied to this callable.
+            remote_path:
+                Value supplied to this callable.
+            contents:
+                Value supplied to this callable.
+            progress_callback:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """

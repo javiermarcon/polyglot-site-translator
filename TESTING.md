@@ -24,6 +24,9 @@ Validation expectations for every non-trivial change remain explicit:
 - the repository docstring audit for public and private symbols
 - pytest for the affected scope
 
+The repository uses an explicit 88-character Python line-length limit. Changes are not complete if
+they rely on a wider local wrapping style than the configured Ruff formatter/linter limit.
+
 Docstring compliance is structural, not cosmetic. For classes, functions, and methods, public or
 private:
 

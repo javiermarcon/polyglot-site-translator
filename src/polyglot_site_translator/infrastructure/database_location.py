@@ -18,9 +18,12 @@ class SQLiteDatabaseLocation:
     """Resolved SQLite database location used by the site registry.
 
     Attributes:
-        directory (Path): Documented attribute exposed by this type.
-        filename (str): Documented attribute exposed by this type.
-        database_path (Path): Documented attribute exposed by this type.
+        directory:
+            Documented attribute exposed by this type.
+        filename:
+            Documented attribute exposed by this type.
+        database_path:
+            Documented attribute exposed by this type.
     """
 
     directory: Path
@@ -32,13 +35,16 @@ def normalize_database_filename(filename: str) -> str:
     """Return a normalized SQLite database filename.
 
     Args:
-        filename (str): Value supplied to this callable.
+        filename:
+            Value supplied to this callable.
 
     Returns:
-        str: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
 
     Raises:
-        SiteRegistryConfigurationError: Raised when this callable hits the corresponding error path.
+        SiteRegistryConfigurationError:
+            Raised when this callable hits the corresponding error path.
     """
     normalized_filename = filename.strip()
     if not normalized_filename:
@@ -56,13 +62,16 @@ def validate_database_directory(directory: str) -> Path:
     """Return the normalized SQLite database directory.
 
     Args:
-        directory (str): Value supplied to this callable.
+        directory:
+            Value supplied to this callable.
 
     Returns:
-        Path: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
 
     Raises:
-        SiteRegistryConfigurationError: Raised when this callable hits the corresponding error path.
+        SiteRegistryConfigurationError:
+            Raised when this callable hits the corresponding error path.
     """
     normalized_directory = directory.strip()
     if not normalized_directory:
@@ -77,10 +86,12 @@ def resolve_sqlite_database_location(
     """Resolve the physical SQLite database location from app settings.
 
     Args:
-        app_settings (AppSettingsViewModel): Value supplied to this callable.
+        app_settings:
+            Value supplied to this callable.
 
     Returns:
-        SQLiteDatabaseLocation: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
     """
     directory = validate_database_directory(app_settings.database_directory)
     filename = normalize_database_filename(app_settings.database_filename)

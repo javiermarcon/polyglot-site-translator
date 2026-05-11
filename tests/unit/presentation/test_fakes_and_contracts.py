@@ -10,7 +10,8 @@ def test_seeded_catalog_matches_ui_contract() -> None:
     """Verify seeded catalog matches ui contract.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     services = build_seeded_services()
 
@@ -27,7 +28,8 @@ def test_empty_catalog_returns_no_projects() -> None:
     """Verify empty catalog returns no projects.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     services = build_empty_services()
 

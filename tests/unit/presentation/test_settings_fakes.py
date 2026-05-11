@@ -10,7 +10,8 @@ def test_fake_settings_service_matches_contract() -> None:
     """Verify fake settings service matches contract.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     services = build_seeded_services()
 

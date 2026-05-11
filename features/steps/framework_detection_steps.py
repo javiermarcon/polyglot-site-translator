@@ -10,14 +10,18 @@ from typing import Protocol, TypeVar, cast
 import behave as behave_module  # type: ignore[import-untyped]
 
 from polyglot_site_translator.bootstrap import create_frontend_shell
-from polyglot_site_translator.infrastructure.settings import build_default_settings_service
+from polyglot_site_translator.infrastructure.settings import (
+    build_default_settings_service,
+)
 from polyglot_site_translator.presentation.fakes import build_default_frontend_services
 from polyglot_site_translator.presentation.frontend_shell import FrontendShell
 from polyglot_site_translator.presentation.view_models import SiteEditorViewModel
 
 StepFunction = TypeVar("StepFunction", bound=Callable[..., object])
 
-given = cast(Callable[[str], Callable[[StepFunction], StepFunction]], behave_module.given)
+given = cast(
+    Callable[[str], Callable[[StepFunction], StepFunction]], behave_module.given
+)
 when = cast(Callable[[str], Callable[[StepFunction], StepFunction]], behave_module.when)
 then = cast(Callable[[str], Callable[[StepFunction], StepFunction]], behave_module.then)
 
@@ -28,12 +32,14 @@ class BehaveFrameworkDetectionContext(Protocol):
     """BDD helper for BehaveFrameworkDetectionContext.
 
     Attributes:
-        shell (FrontendShell): Documented attribute exposed by this type.
-        project_temp_dir (tempfile.TemporaryDirectory[str]): Documented attribute exposed by this
-    type.
-        settings_temp_dir (tempfile.TemporaryDirectory[str]): Documented attribute exposed by this
-    type.
-        detected_project_path (Path): Documented attribute exposed by this type.
+        shell:
+            Documented attribute exposed by this type.
+        project_temp_dir:
+            Documented attribute exposed by this type.
+        settings_temp_dir:
+            Documented attribute exposed by this type.
+        detected_project_path:
+            Documented attribute exposed by this type.
     """
 
     shell: FrontendShell
@@ -46,25 +52,30 @@ def _context_with_shell(context: object) -> BehaveFrameworkDetectionContext:
     """Handle context with shell.
 
     Args:
-        context (object): Value supplied to this callable.
+        context:
+            Value supplied to this callable.
 
     Returns:
-        BehaveFrameworkDetectionContext: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
     """
     return cast(BehaveFrameworkDetectionContext, context)
 
 
 @given(
-    "the frontend shell is wired with framework detection and SQLite-backed site registry services"
+    "the frontend shell is wired with framework detection and "
+    "SQLite-backed site registry services"
 )
 def step_sqlite_site_registry_shell(context: object) -> None:
     """Run the BDD step for sqlite site registry shell.
 
     Args:
-        context (object): Value supplied to this callable.
+        context:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     typed_context = _context_with_shell(context)
     typed_context.settings_temp_dir = tempfile.TemporaryDirectory()
@@ -82,10 +93,12 @@ def step_local_wordpress_project(context: object) -> None:
     """Run the BDD step for local wordpress project.
 
     Args:
-        context (object): Value supplied to this callable.
+        context:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     typed_context = _context_with_shell(context)
     project_path = Path(typed_context.project_temp_dir.name) / "wordpress-site"
@@ -101,10 +114,12 @@ def step_local_django_project(context: object) -> None:
     """Run the BDD step for local django project.
 
     Args:
-        context (object): Value supplied to this callable.
+        context:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     typed_context = _context_with_shell(context)
     project_path = Path(typed_context.project_temp_dir.name) / "django-site"
@@ -122,10 +137,12 @@ def step_local_flask_project(context: object) -> None:
     """Run the BDD step for local flask project.
 
     Args:
-        context (object): Value supplied to this callable.
+        context:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     typed_context = _context_with_shell(context)
     project_path = Path(typed_context.project_temp_dir.name) / "flask-site"
@@ -144,10 +161,12 @@ def step_local_generic_project(context: object) -> None:
     """Run the BDD step for local generic project.
 
     Args:
-        context (object): Value supplied to this callable.
+        context:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     typed_context = _context_with_shell(context)
     project_path = Path(typed_context.project_temp_dir.name) / "generic-site"
@@ -161,10 +180,12 @@ def step_local_partial_wordpress_project(context: object) -> None:
     """Run the BDD step for local partial wordpress project.
 
     Args:
-        context (object): Value supplied to this callable.
+        context:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     typed_context = _context_with_shell(context)
     project_path = Path(typed_context.project_temp_dir.name) / "partial-wordpress-site"
@@ -178,10 +199,12 @@ def step_register_detected_path(context: object) -> None:
     """Run the BDD step for register detected path.
 
     Args:
-        context (object): Value supplied to this callable.
+        context:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     typed_context = _context_with_shell(context)
     typed_context.shell.open_project_editor_create()
@@ -208,10 +231,12 @@ def step_start_audit_for_detected_project(context: object) -> None:
     """Run the BDD step for start audit for detected project.
 
     Args:
-        context (object): Value supplied to this callable.
+        context:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     typed_context = _context_with_shell(context)
     typed_context.shell.start_audit()
@@ -222,10 +247,12 @@ def step_open_create_project_for_framework_selection(context: object) -> None:
     """Run the BDD step for open create project for framework selection.
 
     Args:
-        context (object): Value supplied to this callable.
+        context:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     typed_context = _context_with_shell(context)
     typed_context.shell.open_project_editor_create()
@@ -236,11 +263,14 @@ def step_assert_detected_framework(context: object, framework_name: str) -> None
     """Run the BDD step for assert detected framework.
 
     Args:
-        context (object): Value supplied to this callable.
-        framework_name (str): Value supplied to this callable.
+        context:
+            Value supplied to this callable.
+        framework_name:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     typed_context = _context_with_shell(context)
     assert typed_context.shell.project_detail_state is not None
@@ -252,14 +282,19 @@ def step_assert_detection_evidence(context: object) -> None:
     """Run the BDD step for assert detection evidence.
 
     Args:
-        context (object): Value supplied to this callable.
+        context:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     typed_context = _context_with_shell(context)
     assert typed_context.shell.project_detail_state is not None
-    assert "Framework detection:" in typed_context.shell.project_detail_state.metadata_summary
+    assert (
+        "Framework detection:"
+        in typed_context.shell.project_detail_state.metadata_summary
+    )
 
 
 @then("the project detail shows that no framework was detected")
@@ -267,14 +302,19 @@ def step_assert_no_framework_detected(context: object) -> None:
     """Run the BDD step for assert no framework detected.
 
     Args:
-        context (object): Value supplied to this callable.
+        context:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     typed_context = _context_with_shell(context)
     assert typed_context.shell.project_detail_state is not None
-    assert "No framework detected" in typed_context.shell.project_detail_state.metadata_summary
+    assert (
+        "No framework detected"
+        in typed_context.shell.project_detail_state.metadata_summary
+    )
 
 
 @then("the stored project framework keeps the operator-provided value")
@@ -282,10 +322,12 @@ def step_assert_provided_framework_kept(context: object) -> None:
     """Run the BDD step for assert provided framework kept.
 
     Args:
-        context (object): Value supplied to this callable.
+        context:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     typed_context = _context_with_shell(context)
     assert typed_context.shell.project_detail_state is not None
@@ -297,10 +339,12 @@ def step_assert_detection_warnings(context: object) -> None:
     """Run the BDD step for assert detection warnings.
 
     Args:
-        context (object): Value supplied to this callable.
+        context:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     typed_context = _context_with_shell(context)
     assert typed_context.shell.project_detail_state is not None
@@ -313,10 +357,12 @@ def step_assert_zero_framework_findings(context: object) -> None:
     """Run the BDD step for assert zero framework findings.
 
     Args:
-        context (object): Value supplied to this callable.
+        context:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     typed_context = _context_with_shell(context)
     assert typed_context.shell.audit_state is not None
@@ -328,14 +374,19 @@ def step_assert_no_framework_detected_in_audit(context: object) -> None:
     """Run the BDD step for assert no framework detected in audit.
 
     Args:
-        context (object): Value supplied to this callable.
+        context:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     typed_context = _context_with_shell(context)
     assert typed_context.shell.audit_state is not None
-    assert "No supported framework was detected" in typed_context.shell.audit_state.findings_summary
+    assert (
+        "No supported framework was detected"
+        in typed_context.shell.audit_state.findings_summary
+    )
 
 
 @then("the audit preview shows matched framework findings")
@@ -343,13 +394,16 @@ def step_assert_matched_framework_findings(context: object) -> None:
     """Run the BDD step for assert matched framework findings.
 
     Args:
-        context (object): Value supplied to this callable.
+        context:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
 
     Raises:
-        AssertionError: Raised when this callable hits the corresponding error path.
+        AssertionError:
+            Raised when this callable hits the corresponding error path.
     """
     typed_context = _context_with_shell(context)
     assert typed_context.shell.audit_state is not None
@@ -362,13 +416,16 @@ def step_assert_framework_evidence_in_audit(context: object) -> None:
     """Run the BDD step for assert framework evidence in audit.
 
     Args:
-        context (object): Value supplied to this callable.
+        context:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
 
     Raises:
-        AssertionError: Raised when this callable hits the corresponding error path.
+        AssertionError:
+            Raised when this callable hits the corresponding error path.
     """
     typed_context = _context_with_shell(context)
     assert typed_context.shell.audit_state is not None
@@ -384,13 +441,16 @@ def step_assert_framework_combo_options(context: object) -> None:
     """Run the BDD step for assert framework combo options.
 
     Args:
-        context (object): Value supplied to this callable.
+        context:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     typed_context = _context_with_shell(context)
     assert typed_context.shell.project_editor_state is not None
     assert [
-        option.label for option in typed_context.shell.project_editor_state.framework_options
+        option.label
+        for option in typed_context.shell.project_editor_state.framework_options
     ] == ["Unknown", "Django", "Flask", "WordPress"]

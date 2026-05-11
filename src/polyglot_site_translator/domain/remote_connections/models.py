@@ -14,11 +14,16 @@ class BuiltinRemoteConnectionType(StrEnum):
     """Builtin remote connection types supported by the application.
 
     Attributes:
-        FTP: Documented attribute exposed by this type.
-        FTPS_EXPLICIT: Documented attribute exposed by this type.
-        FTPS_IMPLICIT: Documented attribute exposed by this type.
-        SFTP: Documented attribute exposed by this type.
-        SCP: Documented attribute exposed by this type.
+        FTP:
+            Documented attribute exposed by this type.
+        FTPS_EXPLICIT:
+            Documented attribute exposed by this type.
+        FTPS_IMPLICIT:
+            Documented attribute exposed by this type.
+        SFTP:
+            Documented attribute exposed by this type.
+        SCP:
+            Documented attribute exposed by this type.
     """
 
     FTP = "ftp"
@@ -32,9 +37,12 @@ class RemoteConnectionSessionState(StrEnum):
     """Lifecycle states for a reusable remote session.
 
     Attributes:
-        CLOSED: Documented attribute exposed by this type.
-        OPEN: Documented attribute exposed by this type.
-        FAILED: Documented attribute exposed by this type.
+        CLOSED:
+            Documented attribute exposed by this type.
+        OPEN:
+            Documented attribute exposed by this type.
+        FAILED:
+            Documented attribute exposed by this type.
     """
 
     CLOSED = "closed"
@@ -47,12 +55,14 @@ class RemoteConnectionFlags:
     """Optional remote connection flags persisted with the connection config.
 
     Attributes:
-        passive_mode (bool): Documented attribute exposed by this type.
-        verify_host (bool): Documented attribute exposed by this type.
-        use_adapter_sync_filters (bool): Documented attribute exposed by this type.
-        sync_rule_overrides (tuple[ProjectSyncRuleOverride, ...]): Documented attribute exposed by
-    this
-        type.
+        passive_mode:
+            Documented attribute exposed by this type.
+        verify_host:
+            Documented attribute exposed by this type.
+        use_adapter_sync_filters:
+            Documented attribute exposed by this type.
+        sync_rule_overrides:
+            Documented attribute exposed by this type.
     """
 
     passive_mode: bool = True
@@ -66,9 +76,12 @@ class RemoteConnectionTypeDescriptor:
     """Typed descriptor surfaced to selectors and registries.
 
     Attributes:
-        connection_type (str): Documented attribute exposed by this type.
-        display_name (str): Documented attribute exposed by this type.
-        default_port (int): Documented attribute exposed by this type.
+        connection_type:
+            Documented attribute exposed by this type.
+        display_name:
+            Documented attribute exposed by this type.
+        default_port:
+            Documented attribute exposed by this type.
     """
 
     connection_type: str
@@ -81,13 +94,20 @@ class RemoteConnectionConfigInput:
     """Validated input payload for remote connection create/update workflows.
 
     Attributes:
-        connection_type (str): Documented attribute exposed by this type.
-        host (str): Documented attribute exposed by this type.
-        port (int): Documented attribute exposed by this type.
-        username (str): Documented attribute exposed by this type.
-        password (str): Documented attribute exposed by this type.
-        remote_path (str): Documented attribute exposed by this type.
-        flags (RemoteConnectionFlags): Documented attribute exposed by this type.
+        connection_type:
+            Documented attribute exposed by this type.
+        host:
+            Documented attribute exposed by this type.
+        port:
+            Documented attribute exposed by this type.
+        username:
+            Documented attribute exposed by this type.
+        password:
+            Documented attribute exposed by this type.
+        remote_path:
+            Documented attribute exposed by this type.
+        flags:
+            Documented attribute exposed by this type.
     """
 
     connection_type: str
@@ -104,15 +124,24 @@ class RemoteConnectionConfig:
     """Persisted remote connection linked to a site project.
 
     Attributes:
-        id (str): Documented attribute exposed by this type.
-        site_project_id (str): Documented attribute exposed by this type.
-        connection_type (str): Documented attribute exposed by this type.
-        host (str): Documented attribute exposed by this type.
-        port (int): Documented attribute exposed by this type.
-        username (str): Documented attribute exposed by this type.
-        password (str): Documented attribute exposed by this type.
-        remote_path (str): Documented attribute exposed by this type.
-        flags (RemoteConnectionFlags): Documented attribute exposed by this type.
+        id:
+            Documented attribute exposed by this type.
+        site_project_id:
+            Documented attribute exposed by this type.
+        connection_type:
+            Documented attribute exposed by this type.
+        host:
+            Documented attribute exposed by this type.
+        port:
+            Documented attribute exposed by this type.
+        username:
+            Documented attribute exposed by this type.
+        password:
+            Documented attribute exposed by this type.
+        remote_path:
+            Documented attribute exposed by this type.
+        flags:
+            Documented attribute exposed by this type.
     """
 
     id: str
@@ -131,12 +160,18 @@ class RemoteConnectionTestResult:
     """Structured result returned by remote connection test operations.
 
     Attributes:
-        success (bool): Documented attribute exposed by this type.
-        connection_type (str): Documented attribute exposed by this type.
-        host (str): Documented attribute exposed by this type.
-        port (int): Documented attribute exposed by this type.
-        message (str): Documented attribute exposed by this type.
-        error_code (str | None): Documented attribute exposed by this type.
+        success:
+            Documented attribute exposed by this type.
+        connection_type:
+            Documented attribute exposed by this type.
+        host:
+            Documented attribute exposed by this type.
+        port:
+            Documented attribute exposed by this type.
+        message:
+            Documented attribute exposed by this type.
+        error_code:
+            Documented attribute exposed by this type.
     """
 
     success: bool
@@ -151,7 +186,8 @@ def no_remote_connection_descriptor() -> RemoteConnectionTypeDescriptor:
     """Return the typed descriptor used by the UI for optional remote access.
 
     Returns:
-        RemoteConnectionTypeDescriptor: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
     """
     return RemoteConnectionTypeDescriptor(
         connection_type=NO_REMOTE_CONNECTION_VALUE,

@@ -10,7 +10,8 @@ def test_run_app_launcher_imports_package_entrypoint() -> None:
     """Verify run app launcher imports package entrypoint.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     launcher_path = Path(__file__).resolve().parents[3] / "run_app.py"
     spec = importlib.util.spec_from_file_location("run_app", launcher_path)

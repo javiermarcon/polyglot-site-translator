@@ -13,18 +13,23 @@ class AuditScreen(BaseShellScreen):
     """Screen showing audit workflow state.
 
     Attributes:
-        None: This type does not declare additional class-level attributes.
+        None: This type does not declare class-level attributes.
     """
 
     def __init__(self, *, shell: FrontendShell, manager_ref: ScreenManager) -> None:
         """Build the audit summary screen and its navigation actions.
 
         Args:
-            shell (FrontendShell): Value supplied to this callable.
-            manager_ref (ScreenManager): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            shell:
+                Value supplied to this callable.
+            manager_ref:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         super().__init__(
             screen_name="audit",
@@ -42,10 +47,14 @@ class AuditScreen(BaseShellScreen):
         """Handle back to project.
 
         Args:
-            _args (object): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            *_args:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         if self._shell.project_detail_state is not None:
             self._shell.select_project(self._shell.project_detail_state.project.id)
@@ -54,8 +63,13 @@ class AuditScreen(BaseShellScreen):
     def refresh(self) -> None:
         """Refresh the audit summary from the latest workflow state.
 
+        Args:
+            self:
+                Value supplied to this callable.
+
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         state = self._shell.audit_state
         if state is None:

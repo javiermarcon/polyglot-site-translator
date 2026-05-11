@@ -19,7 +19,8 @@ def test_material_icons_font_is_bundled() -> None:
     """Verify material icons font is bundled.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     path = password_visibility._material_icons_font_path()
     assert path.name == "MaterialIcons-Regular.ttf"
@@ -31,7 +32,8 @@ def test_password_visibility_toggle_label_matches_mask_state() -> None:
     """Verify password visibility toggle label matches mask state.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     assert password_visibility_toggle_label(password_masked=True) == "\ue8f4"
     assert password_visibility_toggle_label(password_masked=False) == "\ue8f5"
@@ -43,14 +45,18 @@ def test_material_icons_font_path_raises_when_font_is_missing(
     """Verify material icons font path raises when font is missing.
 
     Args:
-        monkeypatch (pytest.MonkeyPatch): Value supplied to this callable.
+        monkeypatch:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     monkeypatch.setattr(Path, "is_file", lambda self: False)
 
-    with pytest.raises(FileNotFoundError, match="Bundled Material Icons font not found"):
+    with pytest.raises(
+        FileNotFoundError, match="Bundled Material Icons font not found"
+    ):
         password_visibility._material_icons_font_path()
 
 
@@ -58,7 +64,8 @@ def test_build_password_row_with_visibility_toggle_toggles_mask_state() -> None:
     """Verify build password row with visibility toggle toggles mask state.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     text_input = TextInput(text="secret", password=True)
 

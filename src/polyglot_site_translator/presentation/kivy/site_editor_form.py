@@ -1,14 +1,4 @@
-"""Shared Kivy widgets for the site/project editor (create and edit).
-
-The application uses a single
-:class:`~polyglot_site_translator.presentation.kivy.screens.project_editor.ProjectEditorScreen`
-for both **register new site** and **edit existing site** flows. The shell swaps
-``ProjectEditorStateViewModel`` (mode, title, submit label); this module holds the
-common labeled fields, spinners, and remote password row so both modes stay aligned
-without duplicating UI construction.
-"""
-
-from __future__ import annotations
+"""Shared Kivy widgets for the site/project editor (create and edit)."""
 
 from kivy.uix.spinner import Spinner
 from kivy.uix.textinput import TextInput
@@ -29,11 +19,14 @@ def build_site_editor_text_input(value: str, *, password: bool = False) -> TextI
     """Styled single-line ``TextInput`` for site editor fields.
 
     Args:
-        value (str): Value supplied to this callable.
-        password (bool): Value supplied to this callable.
+        value:
+            Value supplied to this callable.
+        password:
+            Value supplied to this callable.
 
     Returns:
-        TextInput: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
     """
     palette = get_active_theme()
     return TextInput(
@@ -52,11 +45,14 @@ def build_site_editor_spinner(*, values: list[str], current_label: str) -> Spinn
     """Styled ``Spinner`` for framework and connection-type options.
 
     Args:
-        values (list[str]): Value supplied to this callable.
-        current_label (str): Value supplied to this callable.
+        values:
+            Value supplied to this callable.
+        current_label:
+            Value supplied to this callable.
 
     Returns:
-        Spinner: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
     """
     palette = get_active_theme()
     return Spinner(
@@ -73,11 +69,14 @@ def build_site_editor_field_card(label: str, field: Widget) -> SurfaceBoxLayout:
     """Label plus control, matching other site editor sections.
 
     Args:
-        label (str): Value supplied to this callable.
-        field (Widget): Value supplied to this callable.
+        label:
+            Value supplied to this callable.
+        field:
+            Value supplied to this callable.
 
     Returns:
-        SurfaceBoxLayout: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
     """
     card = SurfaceBoxLayout(
         orientation="vertical",
@@ -92,14 +91,18 @@ def build_site_editor_field_card(label: str, field: Widget) -> SurfaceBoxLayout:
     return card
 
 
-def build_remote_password_field_card(initial_password: str) -> tuple[TextInput, SurfaceBoxLayout]:
+def build_remote_password_field_card(
+    initial_password: str,
+) -> tuple[TextInput, SurfaceBoxLayout]:
     """Remote password ``TextInput`` with show/hide toggle inside a labeled card.
 
     Args:
-        initial_password (str): Value supplied to this callable.
+        initial_password:
+            Value supplied to this callable.
 
     Returns:
-        tuple[TextInput, SurfaceBoxLayout]: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
     """
     text_input = build_site_editor_text_input(initial_password, password=True)
     row = build_password_row_with_visibility_toggle(text_input)
@@ -110,14 +113,18 @@ def find_option_label(options: list[SettingsOptionViewModel], value: str) -> str
     """Resolve a stored option value to its display label.
 
     Args:
-        options (list[SettingsOptionViewModel]): Value supplied to this callable.
-        value (str): Value supplied to this callable.
+        options:
+            Value supplied to this callable.
+        value:
+            Value supplied to this callable.
 
     Returns:
-        str: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
 
     Raises:
-        LookupError: Raised when this callable hits the corresponding error path.
+        LookupError:
+            Raised when this callable hits the corresponding error path.
     """
     for option in options:
         if option.value == value:
@@ -130,14 +137,18 @@ def find_option_value(options: list[SettingsOptionViewModel], label: str) -> str
     """Resolve a spinner label to its persisted option value.
 
     Args:
-        options (list[SettingsOptionViewModel]): Value supplied to this callable.
-        label (str): Value supplied to this callable.
+        options:
+            Value supplied to this callable.
+        label:
+            Value supplied to this callable.
 
     Returns:
-        str: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
 
     Raises:
-        LookupError: Raised when this callable hits the corresponding error path.
+        LookupError:
+            Raised when this callable hits the corresponding error path.
     """
     for option in options:
         if option.label == label:

@@ -1,10 +1,4 @@
-"""Audit structured docstring coverage for the repository.
-
-This script validates every class, function, and method under the repository's
-main Python roots. It enforces multi-line docstrings for public and private
-symbols and requires structured sections such as ``Args:``, ``Returns:``, and
-``Attributes:`` when the callable or class shape makes those sections relevant.
-"""
+"""Audit structured docstring coverage for the repository."""
 
 from __future__ import annotations
 
@@ -22,10 +16,14 @@ class AuditFailure:
     """Describe one docstring validation failure.
 
     Attributes:
-        path (str): Documented attribute exposed by this type.
-        lineno (int): Documented attribute exposed by this type.
-        symbol_name (str): Documented attribute exposed by this type.
-        message (str): Documented attribute exposed by this type.
+        path:
+            Documented attribute exposed by this type.
+        lineno:
+            Documented attribute exposed by this type.
+        symbol_name:
+            Documented attribute exposed by this type.
+        message:
+            Documented attribute exposed by this type.
     """
 
     path: str
@@ -38,7 +36,8 @@ def main() -> int:
     """Run the repository-wide docstring audit and return an exit code.
 
     Returns:
-        int: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
     """
     failures: list[AuditFailure] = []
     for root in ROOTS:
@@ -48,7 +47,8 @@ def main() -> int:
         return 0
     for failure in failures[:MAX_REPORTED_ERRORS]:
         print(
-            f"{failure.path}:{failure.lineno}: {failure.symbol_name}: {failure.message}",
+            f"{failure.path}:{failure.lineno}: {failure.symbol_name}: "
+            f"{failure.message}",
         )
     if len(failures) > MAX_REPORTED_ERRORS:
         remaining = len(failures) - MAX_REPORTED_ERRORS
@@ -60,10 +60,12 @@ def _audit_root(root: Path) -> list[AuditFailure]:
     """Audit every Python file under one configured root.
 
     Args:
-        root (Path): Value supplied to this callable.
+        root:
+            Value supplied to this callable.
 
     Returns:
-        list[AuditFailure]: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
     """
     failures: list[AuditFailure] = []
     for path in sorted(root.rglob("*.py")):
@@ -75,10 +77,12 @@ def _audit_file(path: Path) -> list[AuditFailure]:
     """Audit one Python source file for structured docstring compliance.
 
     Args:
-        path (Path): Value supplied to this callable.
+        path:
+            Value supplied to this callable.
 
     Returns:
-        list[AuditFailure]: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
     """
     tree = ast.parse(path.read_text(encoding="utf-8"), filename=path.as_posix())
     failures: list[AuditFailure] = []
@@ -94,11 +98,14 @@ def _audit_class(path: Path, node: ast.ClassDef) -> list[AuditFailure]:
     """Audit one class definition.
 
     Args:
-        path (Path): Value supplied to this callable.
-        node (ast.ClassDef): Value supplied to this callable.
+        path:
+            Value supplied to this callable.
+        node:
+            Value supplied to this callable.
 
     Returns:
-        list[AuditFailure]: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
     """
     failures = _audit_docstring_basics(path, node, symbol_name=node.name)
     docstring = ast.get_docstring(node) or ""
@@ -122,11 +129,14 @@ def _audit_callable(
     """Audit one function or method definition.
 
     Args:
-        path (Path): Value supplied to this callable.
-        node (ast.FunctionDef | ast.AsyncFunctionDef): Value supplied to this callable.
+        path:
+            Value supplied to this callable.
+        node:
+            Value supplied to this callable.
 
     Returns:
-        list[AuditFailure]: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
     """
     failures = _audit_docstring_basics(path, node, symbol_name=node.name)
     docstring = ast.get_docstring(node) or ""
@@ -170,13 +180,16 @@ def _audit_docstring_basics(
     """Validate docstring presence and multi-line structure for one symbol.
 
     Args:
-        path (Path): Value supplied to this callable.
-        node (ast.ClassDef | ast.FunctionDef | ast.AsyncFunctionDef): Value supplied to this
-    callable.
-        symbol_name (str): Value supplied to this callable.
+        path:
+            Value supplied to this callable.
+        node:
+            Value supplied to this callable.
+        symbol_name:
+            Value supplied to this callable.
 
     Returns:
-        list[AuditFailure]: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
     """
     docstring = ast.get_docstring(node)
     if docstring is None:
@@ -206,15 +219,19 @@ def _documented_parameter_names(
     """Return parameter names that must appear under an ``Args:`` section.
 
     Args:
-        node (ast.FunctionDef | ast.AsyncFunctionDef): Value supplied to this callable.
+        node:
+            Value supplied to this callable.
 
     Returns:
-        list[str]: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
     """
     names = [
         argument.arg
         for argument in (
-            list(node.args.posonlyargs) + list(node.args.args) + list(node.args.kwonlyargs)
+            list(node.args.posonlyargs)
+            + list(node.args.args)
+            + list(node.args.kwonlyargs)
         )
         if argument.arg not in SELF_NAMES
     ]
@@ -229,10 +246,12 @@ def _requires_returns_section(node: ast.FunctionDef | ast.AsyncFunctionDef) -> b
     """Return whether the callable must document a return value.
 
     Args:
-        node (ast.FunctionDef | ast.AsyncFunctionDef): Value supplied to this callable.
+        node:
+            Value supplied to this callable.
 
     Returns:
-        bool: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
     """
     if node.returns is None:
         return True
@@ -243,10 +262,12 @@ def _class_attribute_names(node: ast.ClassDef) -> list[str]:
     """Collect documented class attribute names from the class body.
 
     Args:
-        node (ast.ClassDef): Value supplied to this callable.
+        node:
+            Value supplied to this callable.
 
     Returns:
-        list[str]: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
     """
     names: list[str] = []
     for child in node.body:
@@ -263,10 +284,12 @@ def _raised_exception_names(node: ast.FunctionDef | ast.AsyncFunctionDef) -> set
     """Collect statically visible exception names raised by one callable.
 
     Args:
-        node (ast.FunctionDef | ast.AsyncFunctionDef): Value supplied to this callable.
+        node:
+            Value supplied to this callable.
 
     Returns:
-        set[str]: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
     """
     names: set[str] = set()
     for child in ast.walk(node):
@@ -282,10 +305,12 @@ def _exception_name_from_expression(expression: ast.expr) -> str | None:
     """Resolve a readable exception name from a raised expression.
 
     Args:
-        expression (ast.expr): Value supplied to this callable.
+        expression:
+            Value supplied to this callable.
 
     Returns:
-        str | None: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
     """
     if isinstance(expression, ast.Call):
         return _exception_name_from_expression(expression.func)

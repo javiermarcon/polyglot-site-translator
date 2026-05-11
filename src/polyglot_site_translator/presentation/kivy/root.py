@@ -9,9 +9,15 @@ from kivy.uix.screenmanager import NoTransition, ScreenManager
 from polyglot_site_translator.presentation.frontend_shell import FrontendShell
 from polyglot_site_translator.presentation.kivy.screens.audit import AuditScreen
 from polyglot_site_translator.presentation.kivy.screens.dashboard import DashboardScreen
-from polyglot_site_translator.presentation.kivy.screens.po_processing import POProcessingScreen
-from polyglot_site_translator.presentation.kivy.screens.project_detail import ProjectDetailScreen
-from polyglot_site_translator.presentation.kivy.screens.project_editor import ProjectEditorScreen
+from polyglot_site_translator.presentation.kivy.screens.po_processing import (
+    POProcessingScreen,
+)
+from polyglot_site_translator.presentation.kivy.screens.project_detail import (
+    ProjectDetailScreen,
+)
+from polyglot_site_translator.presentation.kivy.screens.project_editor import (
+    ProjectEditorScreen,
+)
 from polyglot_site_translator.presentation.kivy.screens.projects import ProjectsScreen
 from polyglot_site_translator.presentation.kivy.screens.settings import SettingsScreen
 from polyglot_site_translator.presentation.kivy.screens.sync import SyncScreen
@@ -26,13 +32,14 @@ def build_root_widget(
     """Create the ScreenManager used by the Kivy app.
 
     Args:
-        shell (FrontendShell): Value supplied to this callable.
-        apply_runtime_settings (Callable[[AppSettingsViewModel], None] | None): Value supplied to
-    this
-        callable.
+        shell:
+            Value supplied to this callable.
+        apply_runtime_settings:
+            Value supplied to this callable.
 
     Returns:
-        ScreenManager: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
     """
     manager = ScreenManager(transition=NoTransition())
     screens = [
@@ -59,10 +66,12 @@ def _resolve_initial_screen_name(shell: FrontendShell) -> str:
     """Map the shell route to the corresponding screen name.
 
     Args:
-        shell (FrontendShell): Value supplied to this callable.
+        shell:
+            Value supplied to this callable.
 
     Returns:
-        str: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
     """
     route_name = shell.router.current.name
     if route_name is RouteName.PROJECT_DETAIL:

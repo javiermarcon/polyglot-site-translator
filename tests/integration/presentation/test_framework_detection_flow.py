@@ -5,7 +5,9 @@ from __future__ import annotations
 from pathlib import Path
 
 from polyglot_site_translator.app import create_kivy_app
-from polyglot_site_translator.infrastructure.settings import build_default_settings_service
+from polyglot_site_translator.infrastructure.settings import (
+    build_default_settings_service,
+)
 from polyglot_site_translator.presentation.fakes import build_default_frontend_services
 from polyglot_site_translator.presentation.frontend_shell import FrontendShell
 from polyglot_site_translator.presentation.view_models import SiteEditorViewModel
@@ -15,10 +17,12 @@ def test_project_flow_detects_wordpress_and_enriches_detail(tmp_path: Path) -> N
     """Verify project flow detects wordpress and enriches detail.
 
     Args:
-        tmp_path (Path): Value supplied to this callable.
+        tmp_path:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     project_path = tmp_path / "wordpress-site"
     project_path.mkdir()
@@ -50,14 +54,18 @@ def test_project_flow_detects_wordpress_and_enriches_detail(tmp_path: Path) -> N
     assert "Framework detection:" in shell.project_detail_state.metadata_summary
 
 
-def test_project_flow_reports_no_framework_detected_for_generic_paths(tmp_path: Path) -> None:
+def test_project_flow_reports_no_framework_detected_for_generic_paths(
+    tmp_path: Path,
+) -> None:
     """Verify project flow reports no framework detected for generic paths.
 
     Args:
-        tmp_path (Path): Value supplied to this callable.
+        tmp_path:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     project_path = tmp_path / "generic-site"
     project_path.mkdir()
@@ -93,10 +101,12 @@ def test_framework_aware_audit_preview_reports_zero_findings_for_generic_paths(
     """Verify framework aware audit preview reports zero findings for generic paths.
 
     Args:
-        tmp_path (Path): Value supplied to this callable.
+        tmp_path:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     project_path = tmp_path / "generic-site"
     project_path.mkdir()
@@ -131,10 +141,12 @@ def _build_runtime_shell(tmp_path: Path) -> FrontendShell:
     """Handle build runtime shell.
 
     Args:
-        tmp_path (Path): Value supplied to this callable.
+        tmp_path:
+            Value supplied to this callable.
 
     Returns:
-        FrontendShell: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
     """
     settings_service = build_default_settings_service(config_dir=tmp_path / "config")
     services = build_default_frontend_services(settings_service=settings_service)

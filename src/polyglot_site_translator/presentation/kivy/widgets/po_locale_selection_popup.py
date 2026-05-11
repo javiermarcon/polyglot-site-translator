@@ -13,7 +13,9 @@ from kivy.uix.widget import Widget
 from polyglot_site_translator.domain.site_registry.errors import (
     SiteRegistryValidationError,
 )
-from polyglot_site_translator.domain.site_registry.locales import normalize_default_locale
+from polyglot_site_translator.domain.site_registry.locales import (
+    normalize_default_locale,
+)
 from polyglot_site_translator.presentation.kivy.site_editor_form import (
     build_site_editor_field_card,
     build_site_editor_text_input,
@@ -33,7 +35,7 @@ class POLocaleSelectionPopup(Popup):  # type: ignore[misc]
     """Modal dialog for selecting the locales used by PO processing.
 
     Attributes:
-        None: This type does not declare additional class-level attributes.
+        None: This type does not declare class-level attributes.
     """
 
     def __init__(
@@ -46,14 +48,18 @@ class POLocaleSelectionPopup(Popup):  # type: ignore[misc]
         """Build the translation-options modal from project defaults and a callback.
 
         Args:
-            default_locales (str): Value supplied to this callable.
-            default_options (TranslationOptionsViewModel): Value supplied to this callable.
-            on_confirm (Callable[[TranslationWorkflowRequestViewModel], None]): Value supplied to
-        this
-            callable.
+            self:
+                Value supplied to this callable.
+            default_locales:
+                Value supplied to this callable.
+            default_options:
+                Value supplied to this callable.
+            on_confirm:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         super().__init__(
             title="Translate Project",
@@ -110,7 +116,9 @@ class POLocaleSelectionPopup(Popup):  # type: ignore[misc]
             size_hint_y=None,
             padding=(0, 0, 0, 4),
         )
-        self._options_container.bind(minimum_height=self._options_container.setter("height"))
+        self._options_container.bind(
+            minimum_height=self._options_container.setter("height")
+        )
         self._options_container.add_widget(
             WrappedLabel(
                 text=(
@@ -126,22 +134,30 @@ class POLocaleSelectionPopup(Popup):  # type: ignore[misc]
         self._toggle_rows = (
             self._build_toggle_row(
                 title="Compile MO Files",
-                description="Compile gettext MO files after successful translation runs.",
+                description=(
+                    "Compile gettext MO files after successful translation runs."
+                ),
                 toggle=self._compile_mo_switch,
             ),
             self._build_toggle_row(
                 title="Use External Translator",
-                description="Call the configured external translator for missing strings.",
+                description=(
+                    "Call the configured external translator for missing strings."
+                ),
                 toggle=self._use_external_translator_switch,
             ),
             self._build_toggle_row(
                 title="Use Translation Cache",
-                description="Reuse cached external translations before calling the provider.",
+                description=(
+                    "Reuse cached external translations before calling the provider."
+                ),
                 toggle=self._use_translation_cache_switch,
             ),
             self._build_toggle_row(
                 title="Only Fuzzy Entries",
-                description="Restrict translation attempts to gettext entries flagged as fuzzy.",
+                description=(
+                    "Restrict translation attempts to gettext entries flagged as fuzzy."
+                ),
                 toggle=self._only_fuzzy_switch,
             ),
             self._build_toggle_row(
@@ -151,7 +167,9 @@ class POLocaleSelectionPopup(Popup):  # type: ignore[misc]
             ),
             self._build_toggle_row(
                 title="Stats Only",
-                description="Collect translation metrics without writing PO or MO files.",
+                description=(
+                    "Collect translation metrics without writing PO or MO files."
+                ),
                 toggle=self._stats_only_switch,
             ),
             self._build_toggle_row(
@@ -164,7 +182,9 @@ class POLocaleSelectionPopup(Popup):  # type: ignore[misc]
             self._options_container.add_widget(row)
         container.add_widget(self._options_container)
         container.add_widget(self._error_label)
-        actions = BoxLayout(orientation="horizontal", spacing=12, size_hint_y=None, height=48)
+        actions = BoxLayout(
+            orientation="horizontal", spacing=12, size_hint_y=None, height=48
+        )
         cancel_button = AppButton(text="Cancel", primary=False)
         process_button = AppButton(text="Translate", primary=True)
         cancel_button.bind(on_release=lambda *_args: self.dismiss())
@@ -184,12 +204,16 @@ class POLocaleSelectionPopup(Popup):  # type: ignore[misc]
         """Build toggle row.
 
         Args:
-            title (str): Value supplied to this callable.
-            description (str): Value supplied to this callable.
-            toggle (Switch): Value supplied to this callable.
+            title:
+                Value supplied to this callable.
+            description:
+                Value supplied to this callable.
+            toggle:
+                Value supplied to this callable.
 
         Returns:
-            SurfaceBoxLayout: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         row = SurfaceBoxLayout(
             orientation="horizontal",
@@ -212,8 +236,13 @@ class POLocaleSelectionPopup(Popup):  # type: ignore[misc]
     def _submit(self) -> None:
         """Handle submit.
 
+        Args:
+            self:
+                Value supplied to this callable.
+
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         try:
             normalized_locales = normalize_default_locale(

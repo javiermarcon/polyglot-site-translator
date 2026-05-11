@@ -9,7 +9,9 @@ from typing import Any, cast
 
 import pytest
 
-from polyglot_site_translator.adapters.framework_registry import FrameworkAdapterRegistry
+from polyglot_site_translator.adapters.framework_registry import (
+    FrameworkAdapterRegistry,
+)
 from polyglot_site_translator.adapters.wordpress import WordPressFrameworkAdapter
 from polyglot_site_translator.domain.remote_connections.models import (
     RemoteConnectionConfig,
@@ -17,12 +19,17 @@ from polyglot_site_translator.domain.remote_connections.models import (
     RemoteConnectionTestResult,
     RemoteConnectionTypeDescriptor,
 )
-from polyglot_site_translator.domain.site_registry.errors import SiteRegistryValidationError
+from polyglot_site_translator.domain.site_registry.errors import (
+    SiteRegistryValidationError,
+)
 from polyglot_site_translator.domain.site_registry.models import (
     RegisteredSite,
     SiteRegistrationInput,
 )
-from polyglot_site_translator.domain.sync.models import RemoteSyncFile, SyncProgressEvent
+from polyglot_site_translator.domain.sync.models import (
+    RemoteSyncFile,
+    SyncProgressEvent,
+)
 from polyglot_site_translator.infrastructure.remote_connections.registry import (
     RemoteConnectionRegistry,
 )
@@ -38,7 +45,8 @@ class InMemorySiteRegistryRepository:
     """Test helper for InMemorySiteRegistryRepository.
 
     Attributes:
-        sites (dict[str, RegisteredSite]): Documented attribute exposed by this type.
+        sites:
+            Documented attribute exposed by this type.
     """
 
     sites: dict[str, RegisteredSite]
@@ -47,13 +55,18 @@ class InMemorySiteRegistryRepository:
         """Handle create site.
 
         Args:
-            site (RegisteredSite): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            site:
+                Value supplied to this callable.
 
         Returns:
-            RegisteredSite: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
 
         Raises:
-            ValueError: Raised when this callable hits the corresponding error path.
+            ValueError:
+                Raised when this callable hits the corresponding error path.
         """
         if site.name in {saved.name for saved in self.sites.values()}:
             msg = f"A site with the name '{site.name}' already exists."
@@ -64,8 +77,13 @@ class InMemorySiteRegistryRepository:
     def list_sites(self) -> list[RegisteredSite]:
         """Handle list sites.
 
+        Args:
+            self:
+                Value supplied to this callable.
+
         Returns:
-            list[RegisteredSite]: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         return list(self.sites.values())
 
@@ -73,10 +91,14 @@ class InMemorySiteRegistryRepository:
         """Handle get site.
 
         Args:
-            site_id (str): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            site_id:
+                Value supplied to this callable.
 
         Returns:
-            RegisteredSite: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         return self.sites[site_id]
 
@@ -84,10 +106,14 @@ class InMemorySiteRegistryRepository:
         """Handle update site.
 
         Args:
-            site (RegisteredSite): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            site:
+                Value supplied to this callable.
 
         Returns:
-            RegisteredSite: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         self.sites[site.id] = site
         return site
@@ -96,10 +122,14 @@ class InMemorySiteRegistryRepository:
         """Handle delete site.
 
         Args:
-            site_id (str): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            site_id:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         del self.sites[site_id]
 
@@ -112,7 +142,8 @@ class StubSFTPProvider:
     """Test helper for StubSFTPProvider.
 
     Attributes:
-        descriptor (RemoteConnectionTypeDescriptor): Documented attribute exposed by this type.
+        descriptor:
+            Documented attribute exposed by this type.
     """
 
     descriptor: RemoteConnectionTypeDescriptor = field(
@@ -130,10 +161,14 @@ class StubSFTPProvider:
         """Verify connection.
 
         Args:
-            config (RemoteConnectionConfigInput): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            config:
+                Value supplied to this callable.
 
         Returns:
-            RemoteConnectionTestResult: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         return RemoteConnectionTestResult(
             success=True,
@@ -154,13 +189,18 @@ class StubSFTPProvider:
         """Handle list remote files.
 
         Args:
-            config (RemoteConnectionConfig): Value supplied to this callable.
-            progress_callback (Callable[[SyncProgressEvent], None] | None): Value supplied to this
-        callable.
-            max_files (int): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            config:
+                Value supplied to this callable.
+            progress_callback:
+                Value supplied to this callable.
+            max_files:
+                Value supplied to this callable.
 
         Returns:
-            list[RemoteSyncFile]: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         return []
 
@@ -172,12 +212,14 @@ class StubSFTPProvider:
         """Handle iter remote files.
 
         Args:
-            config (RemoteConnectionConfig): Value supplied to this callable.
-            progress_callback (Callable[[SyncProgressEvent], None] | None): Value supplied to this
-        callable.
+            config:
+                Value supplied to this callable.
+            progress_callback:
+                Value supplied to this callable.
 
         Returns:
-            Iterable[RemoteSyncFile]: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         return iter(())
 
@@ -186,13 +228,16 @@ class StubSFTPProvider:
         """Handle open session.
 
         Args:
-            config (RemoteConnectionConfig): Value supplied to this callable.
+            config:
+                Value supplied to this callable.
 
         Returns:
-            Any: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
 
         Raises:
-            AssertionError: Raised when this callable hits the corresponding error path.
+            AssertionError:
+                Raised when this callable hits the corresponding error path.
         """
         msg = f"open_session not used in this test for {config.connection_type}"
         raise AssertionError(msg)
@@ -206,16 +251,22 @@ class StubSFTPProvider:
         """Handle download file.
 
         Args:
-            config (RemoteConnectionConfig): Value supplied to this callable.
-            remote_path (str): Value supplied to this callable.
-            progress_callback (Callable[[SyncProgressEvent], None] | None): Value supplied to this
-        callable.
+            self:
+                Value supplied to this callable.
+            config:
+                Value supplied to this callable.
+            remote_path:
+                Value supplied to this callable.
+            progress_callback:
+                Value supplied to this callable.
 
         Returns:
-            bytes: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
 
         Raises:
-            AssertionError: Raised when this callable hits the corresponding error path.
+            AssertionError:
+                Raised when this callable hits the corresponding error path.
         """
         msg = f"download not used in this test for {remote_path}"
         raise AssertionError(msg)
@@ -229,16 +280,20 @@ class StubSFTPProvider:
         """Handle ensure remote directory.
 
         Args:
-            config (RemoteConnectionConfig): Value supplied to this callable.
-            remote_path (str): Value supplied to this callable.
-            progress_callback (Callable[[SyncProgressEvent], None] | None): Value supplied to this
-        callable.
+            config:
+                Value supplied to this callable.
+            remote_path:
+                Value supplied to this callable.
+            progress_callback:
+                Value supplied to this callable.
 
         Returns:
-            int: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
 
         Raises:
-            AssertionError: Raised when this callable hits the corresponding error path.
+            AssertionError:
+                Raised when this callable hits the corresponding error path.
         """
         msg = f"ensure_remote_directory not used in this test for {remote_path}"
         raise AssertionError(msg)
@@ -253,17 +308,22 @@ class StubSFTPProvider:
         """Handle upload file.
 
         Args:
-            config (RemoteConnectionConfig): Value supplied to this callable.
-            remote_path (str): Value supplied to this callable.
-            contents (bytes): Value supplied to this callable.
-            progress_callback (Callable[[SyncProgressEvent], None] | None): Value supplied to this
-        callable.
+            config:
+                Value supplied to this callable.
+            remote_path:
+                Value supplied to this callable.
+            contents:
+                Value supplied to this callable.
+            progress_callback:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
 
         Raises:
-            AssertionError: Raised when this callable hits the corresponding error path.
+            AssertionError:
+                Raised when this callable hits the corresponding error path.
         """
         msg = f"upload not used in this test for {remote_path}"
         raise AssertionError(msg)
@@ -273,7 +333,8 @@ def test_site_registry_service_creates_and_lists_sites() -> None:
     """Verify site registry service creates and lists sites.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     service = _build_service()
 
@@ -288,7 +349,8 @@ def test_site_registry_service_allows_projects_without_remote_connections() -> N
     """Verify site registry service allows projects without remote connections.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     service = _build_service()
 
@@ -297,11 +359,14 @@ def test_site_registry_service_allows_projects_without_remote_connections() -> N
     assert created_site.remote_connection is None
 
 
-def test_site_registry_service_rejects_remote_connection_tests_without_remote_settings() -> None:
-    """Verify site registry service rejects remote connection tests without remote settings.
+def test_site_registry_service_rejects_remote_connecti_ae12() -> None:
+    """Verify site registry service rejects remote connection tests without remote.
+
+    settings.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     service = _build_service()
 
@@ -316,11 +381,14 @@ def test_site_registry_service_normalizes_comma_separated_default_locales() -> N
     """Verify site registry service normalizes comma separated default locales.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     service = _build_service()
 
-    created_site = service.create_site(_build_registration(default_locale="es_ES, es_AR"))
+    created_site = service.create_site(
+        _build_registration(default_locale="es_ES, es_AR")
+    )
 
     assert created_site.default_locale == "es_ES,es_AR"
 
@@ -329,7 +397,8 @@ def test_site_registry_service_preserves_compile_mo_preference() -> None:
     """Verify site registry service preserves compile mo preference.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     service = _build_service()
 
@@ -342,11 +411,14 @@ def test_site_registry_service_preserves_external_translator_preference() -> Non
     """Verify site registry service preserves external translator preference.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     service = _build_service()
 
-    created_site = service.create_site(_build_registration(use_external_translator=False))
+    created_site = service.create_site(
+        _build_registration(use_external_translator=False)
+    )
 
     assert created_site.project.use_external_translator is False
 
@@ -355,7 +427,8 @@ def test_site_registry_service_lists_and_gets_sites_from_the_repository() -> Non
     """Verify site registry service lists and gets sites from the repository.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     service = _build_service()
     created_site = service.create_site(_build_registration())
@@ -368,7 +441,8 @@ def test_site_registry_service_updates_a_site() -> None:
     """Verify site registry service updates a site.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     service = _build_service()
     created_site = service.create_site(_build_registration())
@@ -401,10 +475,12 @@ def test_site_registry_service_detects_and_persists_supported_frameworks(
     """Verify site registry service detects and persists supported frameworks.
 
     Args:
-        tmp_path (Path): Value supplied to this callable.
+        tmp_path:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     project_path = tmp_path / "wordpress-site"
     project_path.mkdir()
@@ -431,11 +507,14 @@ def test_site_registry_service_detects_and_persists_supported_frameworks(
     assert created_site.framework_type == "wordpress"
 
 
-def test_site_registry_service_delete_and_detection_fallback_behave_as_expected() -> None:
+def test_site_registry_service_delete_and_detection_fallback_behave_as_expected() -> (
+    None
+):
     """Verify site registry service delete and detection fallback behave as expected.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     repository = InMemorySiteRegistryRepository(sites={})
     service = SiteRegistryService(repository=repository)
@@ -448,11 +527,14 @@ def test_site_registry_service_delete_and_detection_fallback_behave_as_expected(
     assert repository.sites == {}
 
 
-def test_site_registry_service_lists_unknown_framework_when_detection_is_missing() -> None:
+def test_site_registry_service_lists_unknown_framework_when_detection_is_missing() -> (
+    None
+):
     """Verify site registry service lists unknown framework when detection is missing.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     service = SiteRegistryService(repository=InMemorySiteRegistryRepository(sites={}))
 
@@ -461,18 +543,24 @@ def test_site_registry_service_lists_unknown_framework_when_detection_is_missing
     assert [framework.framework_type for framework in frameworks] == ["unknown"]
 
 
-def test_site_registry_service_handles_missing_remote_connection_service_branches() -> None:
+def test_site_registry_service_handles_missing_remote_connection_service_branches() -> (
+    None
+):
     """Verify site registry service handles missing remote connection service branches.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     service = SiteRegistryService(repository=InMemorySiteRegistryRepository(sites={}))
     created_site = service.create_site(_build_registration())
 
     assert created_site.remote_connection is None
     assert service.list_supported_connection_types() == []
-    assert service.can_test_remote_connection(_build_registration(remote_connection=None)) is False
+    assert (
+        service.can_test_remote_connection(_build_registration(remote_connection=None))
+        is False
+    )
     with pytest.raises(
         ValueError,
         match=r"Remote connection testing is not configured\.",
@@ -484,7 +572,8 @@ def test_site_registry_service_lists_supported_connection_types() -> None:
     """Verify site registry service lists supported connection types.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     service = _build_service()
 
@@ -496,11 +585,14 @@ def test_site_registry_service_lists_supported_connection_types() -> None:
     ]
 
 
-def test_site_registry_service_lists_supported_frameworks_when_detection_is_configured() -> None:
-    """Verify site registry service lists supported frameworks when detection is configured.
+def test_site_registry_service_lists_supporte_framewor_b7d6() -> None:
+    """Verify site registry service lists supported frameworks when detection is.
+
+    configured.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     service = SiteRegistryService(
         repository=InMemorySiteRegistryRepository(sites={}),
@@ -510,7 +602,9 @@ def test_site_registry_service_lists_supported_frameworks_when_detection_is_conf
         remote_connection_service=_build_remote_connection_service(),
     )
 
-    assert [framework.framework_type for framework in service.list_supported_frameworks()] == [
+    assert [
+        framework.framework_type for framework in service.list_supported_frameworks()
+    ] == [
         "unknown",
         "django",
         "flask",
@@ -522,7 +616,8 @@ def test_site_registry_service_can_test_and_runs_a_remote_connection() -> None:
     """Verify site registry service can test and runs a remote connection.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     service = _build_service()
     registration = _build_registration()
@@ -534,16 +629,20 @@ def test_site_registry_service_can_test_and_runs_a_remote_connection() -> None:
     assert result.message == "Connected successfully."
 
 
-def test_site_registry_service_keeps_the_operator_framework_when_detection_does_not_match(
+def test_site_registry_service_keeps_operator_framewor_e41f(
     tmp_path: Path,
 ) -> None:
-    """Verify site registry service keeps the operator framework when detection does not match.
+    """Verify site registry service keeps the operator framework on no match.
+
+    match.
 
     Args:
-        tmp_path (Path): Value supplied to this callable.
+        tmp_path:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     project_path = tmp_path / "generic-site"
     project_path.mkdir()
@@ -568,7 +667,13 @@ def test_site_registry_service_keeps_the_operator_framework_when_detection_does_
 @pytest.mark.parametrize(
     ("name", "local_path", "default_locale", "remote_connection", "expected_message"),
     [
-        ("", "/workspace/marketing-site", "en_US", None, r"Site name must not be empty\."),
+        (
+            "",
+            "/workspace/marketing-site",
+            "en_US",
+            None,
+            r"Site name must not be empty\.",
+        ),
         ("Marketing Site", "", "en_US", None, r"Local path must not be empty\."),
         (
             "Marketing Site",
@@ -592,7 +697,10 @@ def test_site_registry_service_keeps_the_operator_framework_when_detection_does_
             "/workspace/marketing-site",
             "es_ES,,es_AR",
             None,
-            r"Default locale must be a valid locale or a comma-separated list of valid locales\.",
+            (
+                r"Default locale must be a valid locale or a comma-separated "
+                r"list of valid locales\."
+            ),
         ),
         (
             "Marketing Site",
@@ -620,14 +728,20 @@ def test_site_registry_service_rejects_invalid_input(
     """Verify site registry service rejects invalid input.
 
     Args:
-        name (str): Value supplied to this callable.
-        local_path (str): Value supplied to this callable.
-        default_locale (str): Value supplied to this callable.
-        remote_connection (RemoteConnectionConfigInput | None): Value supplied to this callable.
-        expected_message (str): Value supplied to this callable.
+        name:
+            Value supplied to this callable.
+        local_path:
+            Value supplied to this callable.
+        default_locale:
+            Value supplied to this callable.
+        remote_connection:
+            Value supplied to this callable.
+        expected_message:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     service = _build_service()
 
@@ -646,7 +760,8 @@ def _build_service() -> SiteRegistryService:
     """Handle build service.
 
     Returns:
-        SiteRegistryService: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
     """
     return SiteRegistryService(
         repository=InMemorySiteRegistryRepository(sites={}),
@@ -658,10 +773,13 @@ def _build_remote_connection_service() -> RemoteConnectionService:
     """Handle build remote connection service.
 
     Returns:
-        RemoteConnectionService: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
     """
     return RemoteConnectionService(
-        registry=RemoteConnectionRegistry.default_registry(providers=[StubSFTPProvider()])
+        registry=RemoteConnectionRegistry.default_registry(
+            providers=[StubSFTPProvider()]
+        )
     )
 
 
@@ -679,18 +797,26 @@ def _build_registration(  # noqa: PLR0913
     """Handle build registration.
 
     Args:
-        name (str): Value supplied to this callable.
-        framework_type (str): Value supplied to this callable.
-        local_path (str): Value supplied to this callable.
-        default_locale (str): Value supplied to this callable.
-        remote_connection (RemoteConnectionConfigInput | object | None): Value supplied to this
-        callable.
-        is_active (bool): Value supplied to this callable.
-        compile_mo (bool): Value supplied to this callable.
-        use_external_translator (bool): Value supplied to this callable.
+        name:
+            Value supplied to this callable.
+        framework_type:
+            Value supplied to this callable.
+        local_path:
+            Value supplied to this callable.
+        default_locale:
+            Value supplied to this callable.
+        remote_connection:
+            Value supplied to this callable.
+        is_active:
+            Value supplied to this callable.
+        compile_mo:
+            Value supplied to this callable.
+        use_external_translator:
+            Value supplied to this callable.
 
     Returns:
-        SiteRegistrationInput: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
     """
     resolved_remote_connection = remote_connection
     if resolved_remote_connection is _DEFAULT_REMOTE:
@@ -707,7 +833,9 @@ def _build_registration(  # noqa: PLR0913
         framework_type=framework_type,
         local_path=local_path,
         default_locale=default_locale,
-        remote_connection=cast(RemoteConnectionConfigInput | None, resolved_remote_connection),
+        remote_connection=cast(
+            RemoteConnectionConfigInput | None, resolved_remote_connection
+        ),
         is_active=is_active,
         compile_mo=compile_mo,
         use_external_translator=use_external_translator,

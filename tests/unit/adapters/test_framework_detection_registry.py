@@ -7,7 +7,9 @@ from pathlib import Path
 
 import pytest
 
-from polyglot_site_translator.adapters.framework_registry import FrameworkAdapterRegistry
+from polyglot_site_translator.adapters.framework_registry import (
+    FrameworkAdapterRegistry,
+)
 from polyglot_site_translator.domain.framework_detection.errors import (
     FrameworkDetectionAmbiguityError,
 )
@@ -23,10 +25,14 @@ class FakeAdapter:
     """Test helper for FakeAdapter.
 
     Attributes:
-        framework_type (str): Documented attribute exposed by this type.
-        adapter_name (str): Documented attribute exposed by this type.
-        display_name (str): Documented attribute exposed by this type.
-        result (FrameworkDetectionResult): Documented attribute exposed by this type.
+        framework_type:
+            Documented attribute exposed by this type.
+        adapter_name:
+            Documented attribute exposed by this type.
+        display_name:
+            Documented attribute exposed by this type.
+        result:
+            Documented attribute exposed by this type.
     """
 
     framework_type: str
@@ -38,10 +44,14 @@ class FakeAdapter:
         """Handle detect.
 
         Args:
-            project_path (Path): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            project_path:
+                Value supplied to this callable.
 
         Returns:
-            FrameworkDetectionResult: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         return self.result
 
@@ -50,10 +60,12 @@ class FakeAdapter:
         """Handle get sync filters.
 
         Args:
-            project_path (Path): Value supplied to this callable.
+            project_path:
+                Value supplied to this callable.
 
         Returns:
-            tuple[SyncFilterSpec, ...]: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         return ()
 
@@ -62,10 +74,12 @@ class FakeAdapter:
         """Handle get sync scope.
 
         Args:
-            project_path (Path): Value supplied to this callable.
+            project_path:
+                Value supplied to this callable.
 
         Returns:
-            AdapterSyncScope: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         return AdapterSyncScope()
 
@@ -74,7 +88,8 @@ def test_framework_detection_result_unmatched_factory_preserves_warnings() -> No
     """Verify framework detection result unmatched factory preserves warnings.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     result = FrameworkDetectionResult.unmatched(
         project_path="/workspace/unknown-project",
@@ -91,7 +106,8 @@ def test_framework_adapter_registry_iterates_registered_adapters_in_order() -> N
     """Verify framework adapter registry iterates registered adapters in order.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     first = FakeAdapter(
         framework_type="wordpress",
@@ -113,11 +129,14 @@ def test_framework_adapter_registry_iterates_registered_adapters_in_order() -> N
     ]
 
 
-def test_framework_adapter_registry_returns_unmatched_result_when_no_adapter_applies() -> None:
-    """Verify framework adapter registry returns unmatched result when no adapter applies.
+def test_framewor_adapter_registry_returns_unmatche_re_deae() -> None:
+    """Verify framework adapter registry returns unmatched result when no adapter.
+
+    applies.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     registry = FrameworkAdapterRegistry(
         adapters=[
@@ -125,7 +144,9 @@ def test_framework_adapter_registry_returns_unmatched_result_when_no_adapter_app
                 framework_type="wordpress",
                 adapter_name="wordpress_adapter",
                 display_name="WordPress",
-                result=FrameworkDetectionResult.unmatched(project_path="/workspace/site"),
+                result=FrameworkDetectionResult.unmatched(
+                    project_path="/workspace/site"
+                ),
             )
         ]
     )
@@ -140,7 +161,8 @@ def test_framework_adapter_registry_returns_the_highest_confidence_match() -> No
     """Verify framework adapter registry returns the highest confidence match.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     registry = FrameworkAdapterRegistry(
         adapters=[
@@ -187,7 +209,8 @@ def test_framework_adapter_registry_raises_for_ambiguous_top_matches() -> None:
     """Verify framework adapter registry raises for ambiguous top matches.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     registry = FrameworkAdapterRegistry(
         adapters=[
@@ -235,7 +258,8 @@ def test_framework_adapter_registry_can_discover_installed_adapters() -> None:
     """Verify framework adapter registry can discover installed adapters.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     registry = FrameworkAdapterRegistry.discover_installed()
 
@@ -250,7 +274,8 @@ def test_framework_adapter_registry_exposes_framework_descriptors() -> None:
     """Verify framework adapter registry exposes framework descriptors.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     registry = FrameworkAdapterRegistry.discover_installed()
 

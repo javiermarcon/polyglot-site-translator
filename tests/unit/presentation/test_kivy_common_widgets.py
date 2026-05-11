@@ -16,7 +16,8 @@ def test_app_button_allows_overriding_height_and_size_hint() -> None:
     """Verify app button allows overriding height and size hint.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     button = AppButton(
         text="Settings Section",
@@ -33,7 +34,8 @@ def test_wrapped_label_and_surface_layout_support_explicit_colors() -> None:
     """Verify wrapped label and surface layout support explicit colors.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     surface = SurfaceBoxLayout(
         background_color=(0.1, 0.2, 0.3, 1.0),
@@ -56,7 +58,8 @@ def test_app_button_apply_theme_covers_themed_and_explicit_color_branches() -> N
     """Verify app button apply theme covers themed and explicit color branches.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     themed_button = AppButton(text="Themed")
     themed_button.apply_theme()
@@ -80,7 +83,8 @@ def test_apply_theme_to_widget_tree_calls_theme_aware_widgets_recursively() -> N
     """Verify apply theme to widget tree calls theme aware widgets recursively.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     parent = SurfaceBoxLayout()
     child = WrappedLabel(text="Nested label")
@@ -88,7 +92,9 @@ def test_apply_theme_to_widget_tree_calls_theme_aware_widgets_recursively() -> N
 
     apply_theme_to_widget_tree(parent)
 
-    assert tuple(parent._background_instruction.rgba) == tuple(parent._background_instruction.rgba)
+    assert tuple(parent._background_instruction.rgba) == tuple(
+        parent._background_instruction.rgba
+    )
     assert tuple(child.color) == tuple(child.color)
 
 
@@ -96,7 +102,8 @@ def test_apply_theme_to_widget_tree_skips_widgets_without_apply_theme() -> None:
     """Verify apply theme to widget tree skips widgets without apply theme.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     root = Widget()
     root.add_widget(WrappedLabel(text="Child"))

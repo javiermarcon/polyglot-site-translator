@@ -14,7 +14,8 @@ def main() -> None:
     """Start the Kivy application.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     cast(Any, create_kivy_app()).run()
 

@@ -8,8 +8,13 @@ from threading import Lock, Thread
 from types import TracebackType
 
 from polyglot_site_translator.domain.po_processing.models import POProcessingProgress
-from polyglot_site_translator.domain.site_registry.locales import normalize_default_locale
-from polyglot_site_translator.domain.sync.models import SyncProgressEvent, SyncProgressStage
+from polyglot_site_translator.domain.site_registry.locales import (
+    normalize_default_locale,
+)
+from polyglot_site_translator.domain.sync.models import (
+    SyncProgressEvent,
+    SyncProgressStage,
+)
 from polyglot_site_translator.presentation.contracts import FrontendServices
 from polyglot_site_translator.presentation.errors import ControlledServiceError
 from polyglot_site_translator.presentation.router import FrontendRouter, RouteName
@@ -43,7 +48,8 @@ def _build_dashboard_state() -> DashboardStateViewModel:
     """Build dashboard state.
 
     Returns:
-        DashboardStateViewModel: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
     """
     return DashboardStateViewModel(
         sections=[
@@ -55,22 +61,31 @@ def _build_dashboard_state() -> DashboardStateViewModel:
             DashboardSectionViewModel(
                 key="sync",
                 title="Sync",
-                description="Run a remote synchronization workflow through service contracts.",
+                description=(
+                    "Run a remote synchronization workflow through service contracts."
+                ),
             ),
             DashboardSectionViewModel(
                 key="audit",
                 title="Audit",
-                description="Review upcoming localization scans and findings summaries.",
+                description=(
+                    "Review upcoming localization scans and findings summaries."
+                ),
             ),
             DashboardSectionViewModel(
                 key="po-processing",
                 title="Translation",
-                description="Prepare translation workflows behind injectable service interfaces.",
+                description=(
+                    "Prepare translation workflows behind injectable service "
+                    "interfaces."
+                ),
             ),
             DashboardSectionViewModel(
                 key="settings",
                 title="Settings",
-                description="Configure frontend behavior through extensible settings sections.",
+                description=(
+                    "Configure frontend behavior through extensible settings sections."
+                ),
             ),
         ]
     )
@@ -81,27 +96,32 @@ class FrontendShell:
     """Stateful UI orchestrator consumed by screens and tests.
 
     Attributes:
-        router (FrontendRouter): Documented attribute exposed by this type.
-        services (FrontendServices): Documented attribute exposed by this type.
-        dashboard_state (DashboardStateViewModel): Documented attribute exposed by this type.
-        projects_state (ProjectsStateViewModel): Documented attribute exposed by this type.
-        project_detail_state (ProjectDetailStateViewModel | None): Documented attribute exposed by
-    this
-        type.
-        sync_state (SyncStatusViewModel | None): Documented attribute exposed by this type.
-        audit_state (AuditSummaryViewModel | None): Documented attribute exposed by this type.
-        po_processing_state (POProcessingSummaryViewModel | None): Documented attribute exposed by
-    this
-        type.
-        settings_state (SettingsStateViewModel | None): Documented attribute exposed by this type.
-        project_editor_state (ProjectEditorStateViewModel | None): Documented attribute exposed by
-    this
-        type.
-        sync_progress_state (SyncProgressStateViewModel | None): Documented attribute exposed by
-    this
-        type.
-        navigation_menu (NavigationMenuStateViewModel): Documented attribute exposed by this type.
-        latest_error (str | None): Documented attribute exposed by this type.
+        router:
+            Documented attribute exposed by this type.
+        services:
+            Documented attribute exposed by this type.
+        dashboard_state:
+            Documented attribute exposed by this type.
+        projects_state:
+            Documented attribute exposed by this type.
+        project_detail_state:
+            Documented attribute exposed by this type.
+        sync_state:
+            Documented attribute exposed by this type.
+        audit_state:
+            Documented attribute exposed by this type.
+        po_processing_state:
+            Documented attribute exposed by this type.
+        settings_state:
+            Documented attribute exposed by this type.
+        project_editor_state:
+            Documented attribute exposed by this type.
+        sync_progress_state:
+            Documented attribute exposed by this type.
+        navigation_menu:
+            Documented attribute exposed by this type.
+        latest_error:
+            Documented attribute exposed by this type.
     """
 
     router: FrontendRouter
@@ -122,11 +142,16 @@ class FrontendShell:
         """Initialize shell state, service dependencies, and workflow locks.
 
         Args:
-            router (FrontendRouter): Value supplied to this callable.
-            services (FrontendServices): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            router:
+                Value supplied to this callable.
+            services:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         self.router = router
         self.services = services
@@ -153,8 +178,13 @@ class FrontendShell:
     def open_dashboard(self) -> None:
         """Open the dashboard route.
 
+        Args:
+            self:
+                Value supplied to this callable.
+
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         self.latest_error = None
         self._set_route(RouteName.DASHBOARD)
@@ -162,8 +192,13 @@ class FrontendShell:
     def open_projects(self) -> None:
         """Load project summaries and open the projects route.
 
+        Args:
+            self:
+                Value supplied to this callable.
+
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         try:
             projects = self.services.catalog.list_projects()
@@ -187,10 +222,14 @@ class FrontendShell:
         """Load a project detail and open its route.
 
         Args:
-            project_id (str): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            project_id:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         try:
             detail = self.services.catalog.get_project_detail(project_id)
@@ -216,8 +255,13 @@ class FrontendShell:
     def start_sync(self) -> None:
         """Trigger sync through the workflow contract.
 
+        Args:
+            self:
+                Value supplied to this callable.
+
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         project_id = self._require_project_id()
         self._run_sync(
@@ -230,8 +274,13 @@ class FrontendShell:
     def start_sync_to_remote(self) -> None:
         """Trigger local-to-remote sync through the workflow contract.
 
+        Args:
+            self:
+                Value supplied to this callable.
+
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         project_id = self._require_project_id()
         self._run_sync(
@@ -244,8 +293,13 @@ class FrontendShell:
     def start_sync_async(self) -> None:
         """Trigger sync in a background thread for popup-based progress rendering.
 
+        Args:
+            self:
+                Value supplied to this callable.
+
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         self._start_sync_async_with_message(
             run_workflow=self.services.workflows.start_sync,
@@ -255,8 +309,13 @@ class FrontendShell:
     def start_sync_to_remote_async(self) -> None:
         """Trigger local-to-remote sync in a background thread for popup rendering.
 
+        Args:
+            self:
+                Value supplied to this callable.
+
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         self._start_sync_async_with_message(
             run_workflow=self.services.workflows.start_sync_to_remote,
@@ -275,19 +334,26 @@ class FrontendShell:
         """Initialize background sync state and start the worker thread.
 
         Args:
-            self: Shell instance that coordinates the sync popup state.
-            run_workflow: Value supplied to this callable.
-            initial_message (str): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            run_workflow:
+                Value supplied to this callable.
+            initial_message:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         project_id = self._require_project_id()
         project_name = project_id
         if self.project_detail_state is not None:
             project_name = self.project_detail_state.project.name
         with self._sync_state_lock:
-            if self._active_sync_thread is not None and self._active_sync_thread.is_alive():
+            if (
+                self._active_sync_thread is not None
+                and self._active_sync_thread.is_alive()
+            ):
                 return
             self.sync_state = None
             self.sync_progress_state = SyncProgressStateViewModel(
@@ -313,8 +379,13 @@ class FrontendShell:
     def trust_selected_project_remote_host_key(self) -> None:
         """Trust the selected project's SSH host key and retry sync.
 
+        Args:
+            self:
+                Value supplied to this callable.
+
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         project_id = self._require_project_id()
         try:
@@ -343,8 +414,13 @@ class FrontendShell:
     def start_audit(self) -> None:
         """Trigger audit through the workflow contract.
 
+        Args:
+            self:
+                Value supplied to this callable.
+
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         project_id = self._require_project_id()
         try:
@@ -363,10 +439,14 @@ class FrontendShell:
         """Trigger PO processing through the workflow contract.
 
         Args:
-            locales (str | None): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            locales:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         project_id = self._require_project_id()
         request = None if locales is None else self._build_translation_request(locales)
@@ -399,11 +479,16 @@ class FrontendShell:
         """Trigger PO processing in a background thread after translation selection.
 
         Args:
-            locales (str): Value supplied to this callable.
-            options (TranslationOptionsViewModel | None): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            locales:
+                Value supplied to this callable.
+            options:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         project_id = self._require_project_id()
         request = self._build_translation_request(locales, options=options)
@@ -435,8 +520,13 @@ class FrontendShell:
     def open_settings(self) -> None:
         """Load settings and open the settings route.
 
+        Args:
+            self:
+                Value supplied to this callable.
+
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         try:
             self.settings_state = self.services.settings.load_settings()
@@ -453,8 +543,13 @@ class FrontendShell:
     def open_application_menu(self) -> None:
         """Mark the application menu as open for the current route context.
 
+        Args:
+            self:
+                Value supplied to this callable.
+
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         self._refresh_navigation_menu(is_open=True)
 
@@ -462,13 +557,18 @@ class FrontendShell:
         """Open a route selected from the grouped application menu.
 
         Args:
-            route_key (str): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            route_key:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
 
         Raises:
-            ValueError: Raised when this callable hits the corresponding error path.
+            ValueError:
+                Raised when this callable hits the corresponding error path.
         """
         action_map: dict[str, Callable[[], None]] = {
             RouteName.DASHBOARD.value: self.open_dashboard,
@@ -490,13 +590,18 @@ class FrontendShell:
         """Update the draft theme mode.
 
         Args:
-            theme_mode (str): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            theme_mode:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
 
         Raises:
-            ValueError: Raised when this callable hits the corresponding error path.
+            ValueError:
+                Raised when this callable hits the corresponding error path.
         """
         state = self._require_settings_state()
         allowed_theme_modes = {"system", "light", "dark"}
@@ -513,8 +618,13 @@ class FrontendShell:
     def toggle_remember_last_screen(self) -> None:
         """Toggle remember-last-screen behavior in the draft settings.
 
+        Args:
+            self:
+                Value supplied to this callable.
+
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         state = self._require_settings_state()
         self.settings_state = replace(
@@ -530,8 +640,13 @@ class FrontendShell:
     def toggle_developer_mode(self) -> None:
         """Toggle developer-mode behavior in the draft settings.
 
+        Args:
+            self:
+                Value supplied to this callable.
+
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         state = self._require_settings_state()
         self.settings_state = replace(
@@ -548,14 +663,20 @@ class FrontendShell:
         """Update the draft default window size.
 
         Args:
-            width (int): Value supplied to this callable.
-            height (int): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            width:
+                Value supplied to this callable.
+            height:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
 
         Raises:
-            ValueError: Raised when this callable hits the corresponding error path.
+            ValueError:
+                Raised when this callable hits the corresponding error path.
         """
         if width <= 0 or height <= 0:
             msg = "Window dimensions must be positive integers."
@@ -576,13 +697,18 @@ class FrontendShell:
         """Update the draft UI language.
 
         Args:
-            ui_language (str): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            ui_language:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
 
         Raises:
-            ValueError: Raised when this callable hits the corresponding error path.
+            ValueError:
+                Raised when this callable hits the corresponding error path.
         """
         state = self._require_settings_state()
         allowed_languages = {"en", "es"}
@@ -600,10 +726,14 @@ class FrontendShell:
         """Update the default project locale used by new project drafts.
 
         Args:
-            default_project_locale (str): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            default_project_locale:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         state = self._require_settings_state()
         self.settings_state = replace(
@@ -620,10 +750,14 @@ class FrontendShell:
         """Update the default MO-compilation preference for new project drafts.
 
         Args:
-            default_compile_mo (bool): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            default_compile_mo:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         state = self._require_settings_state()
         self.settings_state = replace(
@@ -643,10 +777,14 @@ class FrontendShell:
         """Update the default external-translation preference for new project drafts.
 
         Args:
-            default_use_external_translator (bool): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            default_use_external_translator:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         state = self._require_settings_state()
         self.settings_state = replace(
@@ -666,10 +804,14 @@ class FrontendShell:
         """Update the default translation-cache preference for new project drafts.
 
         Args:
-            default_use_translation_cache (bool): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            default_use_translation_cache:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         state = self._require_settings_state()
         self.settings_state = replace(
@@ -686,15 +828,21 @@ class FrontendShell:
         """Update the default only-fuzzy preference for new project drafts.
 
         Args:
-            default_only_fuzzy (bool): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            default_only_fuzzy:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         state = self._require_settings_state()
         self.settings_state = replace(
             state,
-            app_settings=replace(state.app_settings, default_only_fuzzy=default_only_fuzzy),
+            app_settings=replace(
+                state.app_settings, default_only_fuzzy=default_only_fuzzy
+            ),
             status="editing",
             status_message="Settings draft updated.",
         )
@@ -703,10 +851,14 @@ class FrontendShell:
         """Update the draft translation cache path.
 
         Args:
-            translation_cache_path (str): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            translation_cache_path:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         state = self._require_settings_state()
         self.settings_state = replace(
@@ -723,10 +875,14 @@ class FrontendShell:
         """Update the default dry-run preference for new project drafts.
 
         Args:
-            default_dry_run (bool): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            default_dry_run:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         state = self._require_settings_state()
         self.settings_state = replace(
@@ -740,15 +896,21 @@ class FrontendShell:
         """Update the default stats-only preference for new project drafts.
 
         Args:
-            default_stats_only (bool): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            default_stats_only:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         state = self._require_settings_state()
         self.settings_state = replace(
             state,
-            app_settings=replace(state.app_settings, default_stats_only=default_stats_only),
+            app_settings=replace(
+                state.app_settings, default_stats_only=default_stats_only
+            ),
             status="editing",
             status_message="Settings draft updated.",
         )
@@ -760,10 +922,14 @@ class FrontendShell:
         """Update the default inconsistency-reporting preference for new project drafts.
 
         Args:
-            default_report_inconsistencies (bool): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            default_report_inconsistencies:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         state = self._require_settings_state()
         self.settings_state = replace(
@@ -780,15 +946,21 @@ class FrontendShell:
         """Update the draft SQLite database directory.
 
         Args:
-            database_directory (str): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            database_directory:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         state = self._require_settings_state()
         self.settings_state = replace(
             state,
-            app_settings=replace(state.app_settings, database_directory=database_directory),
+            app_settings=replace(
+                state.app_settings, database_directory=database_directory
+            ),
             status="editing",
             status_message="Settings draft updated.",
         )
@@ -797,15 +969,21 @@ class FrontendShell:
         """Update the draft SQLite database filename.
 
         Args:
-            database_filename (str): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            database_filename:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         state = self._require_settings_state()
         self.settings_state = replace(
             state,
-            app_settings=replace(state.app_settings, database_filename=database_filename),
+            app_settings=replace(
+                state.app_settings, database_filename=database_filename
+            ),
             status="editing",
             status_message="Settings draft updated.",
         )
@@ -814,10 +992,14 @@ class FrontendShell:
         """Replace the current settings draft with a full form snapshot.
 
         Args:
-            app_settings (AppSettingsViewModel): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            app_settings:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         state = self._require_settings_state()
         self.settings_state = build_settings_state(
@@ -831,10 +1013,14 @@ class FrontendShell:
         """Change the selected settings section without bypassing the shell.
 
         Args:
-            section_key (str): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            section_key:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         state = self._require_settings_state()
         next_state = build_settings_state(
@@ -846,14 +1032,21 @@ class FrontendShell:
         if next_state.selected_section_is_available:
             status_message = f"{next_state.selected_section_title} are ready to edit."
         else:
-            status_message = f"{next_state.selected_section_title} will be available later."
+            status_message = (
+                f"{next_state.selected_section_title} will be available later."
+            )
         self.settings_state = replace(next_state, status_message=status_message)
 
     def save_settings(self) -> None:
         """Persist the current draft settings through the settings contract.
 
+        Args:
+            self:
+                Value supplied to this callable.
+
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         state = self._require_settings_state()
         try:
@@ -877,8 +1070,13 @@ class FrontendShell:
     def restore_default_settings(self) -> None:
         """Restore settings defaults through the settings contract.
 
+        Args:
+            self:
+                Value supplied to this callable.
+
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         state = self._require_settings_state()
         try:
@@ -902,11 +1100,18 @@ class FrontendShell:
     def open_project_editor_create(self) -> None:
         """Open the create-project editor workflow.
 
+        Args:
+            self:
+                Value supplied to this callable.
+
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         try:
-            self.project_editor_state = self.services.registry.build_create_project_editor()
+            self.project_editor_state = (
+                self.services.registry.build_create_project_editor()
+            )
             self.latest_error = None
         except ControlledServiceError as error:
             self.project_editor_state = None
@@ -917,13 +1122,19 @@ class FrontendShell:
         """Open the edit-project editor workflow.
 
         Args:
-            project_id (str): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            project_id:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         try:
-            self.project_editor_state = self.services.registry.build_edit_project_editor(project_id)
+            self.project_editor_state = (
+                self.services.registry.build_edit_project_editor(project_id)
+            )
             self.latest_error = None
         except ControlledServiceError as error:
             self.project_editor_state = None
@@ -934,22 +1145,32 @@ class FrontendShell:
         """Change the selected project-editor section.
 
         Args:
-            section_key (str): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            section_key:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         state = self._require_project_editor_state()
-        self.project_editor_state = select_project_editor_section(state, section_key=section_key)
+        self.project_editor_state = select_project_editor_section(
+            state, section_key=section_key
+        )
 
     def save_new_project(self, editor: SiteEditorViewModel) -> None:
         """Create a project registry record from the editor draft.
 
         Args:
-            editor (SiteEditorViewModel): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            editor:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         try:
             detail = self.services.registry.create_project(editor)
@@ -984,11 +1205,16 @@ class FrontendShell:
         """Update a project registry record from the editor draft.
 
         Args:
-            project_id (str): Value supplied to this callable.
-            editor (SiteEditorViewModel): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            project_id:
+                Value supplied to this callable.
+            editor:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         try:
             detail = self.services.registry.update_project(project_id, editor)
@@ -1023,14 +1249,20 @@ class FrontendShell:
         """Run a remote connection test for the current editor draft.
 
         Args:
-            editor (SiteEditorViewModel): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            editor:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         state = self._require_project_editor_state()
         try:
-            connection_test_result = self.services.registry.test_remote_connection(editor)
+            connection_test_result = self.services.registry.test_remote_connection(
+                editor
+            )
             next_state = replace(
                 state,
                 editor=editor,
@@ -1061,13 +1293,19 @@ class FrontendShell:
         self._set_route(RouteName.PROJECT_EDITOR, project_id=editor.site_id)
 
     def trust_project_editor_remote_host_key(self, editor: SiteEditorViewModel) -> None:
-        """Re-run the connection test after confirmation (Paramiko TOFU adds the host key).
+        """Re-run the connection test after confirmation (Paramiko TOFU adds the host.
+
+        key).
 
         Args:
-            editor (SiteEditorViewModel): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            editor:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         trusted_editor = replace(editor, remote_verify_host=False)
         self.test_project_connection(trusted_editor)
@@ -1076,10 +1314,14 @@ class FrontendShell:
         """Rebuild the current project-editor draft without persisting changes.
 
         Args:
-            editor (SiteEditorViewModel): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            editor:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         state = self._require_project_editor_state()
         try:
@@ -1109,11 +1351,17 @@ class FrontendShell:
     def _require_project_id(self) -> str:
         """Validate and return project id.
 
+        Args:
+            self:
+                Value supplied to this callable.
+
         Returns:
-            str: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
 
         Raises:
-            ValueError: Raised when this callable hits the corresponding error path.
+            ValueError:
+                Raised when this callable hits the corresponding error path.
         """
         route = self.router.current
         project_id = route.project_id
@@ -1138,15 +1386,20 @@ class FrontendShell:
         """Run sync.
 
         Args:
-            self: Shell instance that updates sync state during execution.
-            project_id (str): Value supplied to this callable.
-            route_to_sync (bool): Value supplied to this callable.
-            progress_callback (Callable[[SyncProgressEvent], None] | None): Value
-                supplied to this callable.
-            run_workflow: Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            project_id:
+                Value supplied to this callable.
+            route_to_sync:
+                Value supplied to this callable.
+            progress_callback:
+                Value supplied to this callable.
+            run_workflow:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         try:
             self.sync_state = run_workflow(project_id, progress_callback)
@@ -1173,12 +1426,16 @@ class FrontendShell:
         """Run sync in background.
 
         Args:
-            self: Shell instance that owns the background worker state.
-            project_id (str): Value supplied to this callable.
-            run_workflow: Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            project_id:
+                Value supplied to this callable.
+            run_workflow:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         try:
             self._run_sync(
@@ -1187,7 +1444,13 @@ class FrontendShell:
                 progress_callback=self._record_sync_progress_event,
                 run_workflow=run_workflow,
             )
-        except (AttributeError, LookupError, OSError, RuntimeError, ValueError) as error:
+        except (
+            AttributeError,
+            LookupError,
+            OSError,
+            RuntimeError,
+            ValueError,
+        ) as error:
             self._surface_background_sync_failure(error)
         with self._sync_state_lock:
             current_state = self.sync_progress_state
@@ -1199,7 +1462,9 @@ class FrontendShell:
                 status=self.sync_state.status,
                 message=self.sync_state.summary,
                 progress_current=self.sync_state.files_synced,
-                progress_total=max(current_state.progress_total, self.sync_state.files_synced),
+                progress_total=max(
+                    current_state.progress_total, self.sync_state.files_synced
+                ),
                 progress_is_indeterminate=False,
             )
             self._active_sync_thread = None
@@ -1212,11 +1477,16 @@ class FrontendShell:
         """Run po processing in background.
 
         Args:
-            project_id (str): Value supplied to this callable.
-            request (TranslationWorkflowRequestViewModel): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            project_id:
+                Value supplied to this callable.
+            request:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         try:
             self.po_processing_state = self.services.workflows.start_po_processing(
@@ -1250,11 +1520,16 @@ class FrontendShell:
         """Build translation request.
 
         Args:
-            locales (str): Value supplied to this callable.
-            options (TranslationOptionsViewModel | None): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            locales:
+                Value supplied to this callable.
+            options:
+                Value supplied to this callable.
 
         Returns:
-            TranslationWorkflowRequestViewModel: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         normalized_locales = normalize_default_locale(locales, label="Selected locales")
         detail = self.project_detail_state
@@ -1278,10 +1553,14 @@ class FrontendShell:
         """Handle record po processing progress.
 
         Args:
-            event (POProcessingProgress): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            event:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         current_state = self.po_processing_state
         if current_state is None:
@@ -1314,17 +1593,25 @@ class FrontendShell:
         """Convert an unhandled runtime error into visible UI state.
 
         Args:
-            error (BaseException): Value supplied to this callable.
-            context (str): Value supplied to this callable.
-            thread_name (str | None): Value supplied to this callable.
-            traceback (TracebackType | None): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            error:
+                Value supplied to this callable.
+            context:
+                Value supplied to this callable.
+            thread_name:
+                Value supplied to this callable.
+            traceback:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         cause = str(error).strip() or error.__class__.__name__
         error_message = (
-            f"Unhandled runtime error in {context}. Cause: {error.__class__.__name__}: {cause}"
+            f"Unhandled runtime error in {context}. Cause: "
+            f"{error.__class__.__name__}: {cause}"
         )
         self.latest_error = error_message
 
@@ -1344,10 +1631,14 @@ class FrontendShell:
         """Handle surface unhandled po processing error.
 
         Args:
-            error_message (str): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            error_message:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         current_state = self.po_processing_state
         if current_state is None:
@@ -1373,10 +1664,14 @@ class FrontendShell:
         """Handle surface unhandled sync error.
 
         Args:
-            error_message (str): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            error_message:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         self.sync_state = SyncStatusViewModel(
             status="failed",
@@ -1396,10 +1691,14 @@ class FrontendShell:
         """Handle surface unhandled route error.
 
         Args:
-            error_message (str): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            error_message:
+                Value supplied to this callable.
 
         Returns:
-            bool: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         current_route = self.router.current.name
         if current_route is RouteName.AUDIT:
@@ -1419,7 +1718,10 @@ class FrontendShell:
                 status_message=error_message,
             )
             return True
-        if current_route is RouteName.PROJECT_EDITOR and self.project_editor_state is not None:
+        if (
+            current_route is RouteName.PROJECT_EDITOR
+            and self.project_editor_state is not None
+        ):
             self.project_editor_state = replace(
                 self.project_editor_state,
                 status="failed",
@@ -1435,12 +1737,14 @@ class FrontendShell:
         """Handle surface background sync failure.
 
         Args:
-            error (AttributeError | LookupError | OSError | RuntimeError | ValueError): Value
-        supplied to
-            this callable.
+            self:
+                Value supplied to this callable.
+            error:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         project_id = (
             self.project_detail_state.project.id
@@ -1470,10 +1774,14 @@ class FrontendShell:
         """Handle record sync progress event.
 
         Args:
-            event (SyncProgressEvent): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            event:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         with self._sync_state_lock:
             current_state = self.sync_progress_state
@@ -1512,8 +1820,13 @@ class FrontendShell:
     def _resolve_sync_progress_log_limit(self) -> int:
         """Resolve sync progress log limit.
 
+        Args:
+            self:
+                Value supplied to this callable.
+
         Returns:
-            int: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         state = self.settings_state
         if state is not None and state.status != "failed":
@@ -1527,11 +1840,17 @@ class FrontendShell:
     def _require_settings_state(self) -> SettingsStateViewModel:
         """Validate and return settings state.
 
+        Args:
+            self:
+                Value supplied to this callable.
+
         Returns:
-            SettingsStateViewModel: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
 
         Raises:
-            ValueError: Raised when this callable hits the corresponding error path.
+            ValueError:
+                Raised when this callable hits the corresponding error path.
         """
         state = self.settings_state
         if state is None:
@@ -1542,11 +1861,17 @@ class FrontendShell:
     def _require_project_editor_state(self) -> ProjectEditorStateViewModel:
         """Validate and return project editor state.
 
+        Args:
+            self:
+                Value supplied to this callable.
+
         Returns:
-            ProjectEditorStateViewModel: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
 
         Raises:
-            ValueError: Raised when this callable hits the corresponding error path.
+            ValueError:
+                Raised when this callable hits the corresponding error path.
         """
         state = self.project_editor_state
         if state is None:
@@ -1558,11 +1883,16 @@ class FrontendShell:
         """Set route.
 
         Args:
-            route_name (RouteName): Value supplied to this callable.
-            project_id (str | None): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            route_name:
+                Value supplied to this callable.
+            project_id:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         self.router.go_to(route_name, project_id=project_id)
         self._refresh_navigation_menu(is_open=False)
@@ -1572,10 +1902,14 @@ class FrontendShell:
         """Refresh navigation menu.
 
         Args:
-            is_open (bool): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            is_open:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         self.navigation_menu = build_navigation_menu_state(
             active_route_key=self.router.current.name.value,
@@ -1586,8 +1920,13 @@ class FrontendShell:
     def _has_project_context(self) -> bool:
         """Handle has project context.
 
+        Args:
+            self:
+                Value supplied to this callable.
+
         Returns:
-            bool: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         if self.project_detail_state is not None:
             return True
@@ -1597,10 +1936,14 @@ class FrontendShell:
         """Persist the last opened screen when the preference is enabled.
 
         Args:
-            route_name (RouteName): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            route_name:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         settings_state = self.settings_state
         if settings_state is None or settings_state.status == "failed":
@@ -1624,10 +1967,12 @@ def _build_project_actions(
     """Return stable action descriptors for the detail screen.
 
     Args:
-        actions (list[ProjectActionViewModel]): Value supplied to this callable.
+        actions:
+            Value supplied to this callable.
 
     Returns:
-        list[ProjectActionViewModel]: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
     """
     return [
         ProjectActionViewModel(

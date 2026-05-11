@@ -41,11 +41,16 @@ class _ListBackedSession:
     """Test helper for ListBackedSession.
 
     Attributes:
-        files (list[RemoteSyncFile]): Documented attribute exposed by this type.
-        state (RemoteConnectionSessionState): Documented attribute exposed by this type.
-        close_calls (int): Documented attribute exposed by this type.
-        uploaded_files (dict[str, bytes] | None): Documented attribute exposed by this type.
-        created_directories (list[str] | None): Documented attribute exposed by this type.
+        files:
+            Documented attribute exposed by this type.
+        state:
+            Documented attribute exposed by this type.
+        close_calls:
+            Documented attribute exposed by this type.
+        uploaded_files:
+            Documented attribute exposed by this type.
+        created_directories:
+            Documented attribute exposed by this type.
     """
 
     files: list[RemoteSyncFile]
@@ -54,14 +59,20 @@ class _ListBackedSession:
     uploaded_files: dict[str, bytes] | None = None
     created_directories: list[str] | None = None
 
-    def iter_remote_files(self, progress_callback: Any = None) -> Iterator[RemoteSyncFile]:
+    def iter_remote_files(
+        self, progress_callback: Any = None
+    ) -> Iterator[RemoteSyncFile]:
         """Handle iter remote files.
 
         Args:
-            progress_callback (Any): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            progress_callback:
+                Value supplied to this callable.
 
         Returns:
-            Iterator[RemoteSyncFile]: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         return iter(self.files)
 
@@ -70,27 +81,38 @@ class _ListBackedSession:
         """Handle download file.
 
         Args:
-            remote_path (str): Value supplied to this callable.
-            progress_callback (Any): Value supplied to this callable.
+            remote_path:
+                Value supplied to this callable.
+            progress_callback:
+                Value supplied to this callable.
 
         Returns:
-            bytes: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
 
         Raises:
-            AssertionError: Raised when this callable hits the corresponding error path.
+            AssertionError:
+                Raised when this callable hits the corresponding error path.
         """
         msg = f"download not used in this test for {remote_path}"
         raise AssertionError(msg)
 
-    def ensure_remote_directory(self, remote_path: str, progress_callback: Any = None) -> int:
+    def ensure_remote_directory(
+        self, remote_path: str, progress_callback: Any = None
+    ) -> int:
         """Handle ensure remote directory.
 
         Args:
-            remote_path (str): Value supplied to this callable.
-            progress_callback (Any): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            remote_path:
+                Value supplied to this callable.
+            progress_callback:
+                Value supplied to this callable.
 
         Returns:
-            int: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         if self.created_directories is None:
             self.created_directories = []
@@ -106,12 +128,18 @@ class _ListBackedSession:
         """Handle upload file.
 
         Args:
-            remote_path (str): Value supplied to this callable.
-            contents (bytes): Value supplied to this callable.
-            progress_callback (Any): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            remote_path:
+                Value supplied to this callable.
+            contents:
+                Value supplied to this callable.
+            progress_callback:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         if self.uploaded_files is None:
             self.uploaded_files = {}
@@ -121,10 +149,14 @@ class _ListBackedSession:
         """Handle close.
 
         Args:
-            progress_callback (Any): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            progress_callback:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         self.close_calls += 1
         self.state = RemoteConnectionSessionState.CLOSED
@@ -134,7 +166,7 @@ class _ControlledBaseSession(BaseRemoteConnectionSession):
     """Test helper for ControlledBaseSession.
 
     Attributes:
-        None: This type does not declare additional class-level attributes.
+        None: This type does not declare class-level attributes.
     """
 
     def __init__(
@@ -148,14 +180,20 @@ class _ControlledBaseSession(BaseRemoteConnectionSession):
         """Initialize the test helper state.
 
         Args:
-            config (RemoteConnectionConfig): Value supplied to this callable.
-            connect_errors (list[RemoteConnectionOperationError] | None): Value supplied to this
-        callable.
-            close_error (RemoteConnectionOperationError | None): Value supplied to this callable.
-            max_connect_attempts (int): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            config:
+                Value supplied to this callable.
+            connect_errors:
+                Value supplied to this callable.
+            close_error:
+                Value supplied to this callable.
+            max_connect_attempts:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         super().__init__(config, max_connect_attempts=max_connect_attempts)
         self.connect_errors = connect_errors or []
@@ -168,26 +206,37 @@ class _ControlledBaseSession(BaseRemoteConnectionSession):
         """Handle connect.
 
         Args:
-            progress_callback (Any): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            progress_callback:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
 
         Raises:
-            pop: Raised when this callable hits the corresponding error path.
+            pop:
+                Raised when this callable hits the corresponding error path.
         """
         self.connect_calls += 1
         if self.connect_errors:
             raise self.connect_errors.pop(0)
 
-    def _iter_remote_files(self, progress_callback: Any = None) -> Iterator[RemoteSyncFile]:
+    def _iter_remote_files(
+        self, progress_callback: Any = None
+    ) -> Iterator[RemoteSyncFile]:
         """Handle iter remote files.
 
         Args:
-            progress_callback (Any): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            progress_callback:
+                Value supplied to this callable.
 
         Returns:
-            Iterator[RemoteSyncFile]: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         yield RemoteSyncFile(
             remote_path="/srv/app/messages.po",
@@ -199,23 +248,35 @@ class _ControlledBaseSession(BaseRemoteConnectionSession):
         """Handle download file.
 
         Args:
-            remote_path (str): Value supplied to this callable.
-            progress_callback (Any): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            remote_path:
+                Value supplied to this callable.
+            progress_callback:
+                Value supplied to this callable.
 
         Returns:
-            bytes: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         return remote_path.encode()
 
-    def _ensure_remote_directory(self, remote_path: str, progress_callback: Any = None) -> int:
+    def _ensure_remote_directory(
+        self, remote_path: str, progress_callback: Any = None
+    ) -> int:
         """Handle ensure remote directory.
 
         Args:
-            remote_path (str): Value supplied to this callable.
-            progress_callback (Any): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            remote_path:
+                Value supplied to this callable.
+            progress_callback:
+                Value supplied to this callable.
 
         Returns:
-            int: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         return 1
 
@@ -228,12 +289,18 @@ class _ControlledBaseSession(BaseRemoteConnectionSession):
         """Handle upload file.
 
         Args:
-            remote_path (str): Value supplied to this callable.
-            contents (bytes): Value supplied to this callable.
-            progress_callback (Any): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            remote_path:
+                Value supplied to this callable.
+            contents:
+                Value supplied to this callable.
+            progress_callback:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         return
 
@@ -241,13 +308,18 @@ class _ControlledBaseSession(BaseRemoteConnectionSession):
         """Handle close.
 
         Args:
-            progress_callback (Any): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            progress_callback:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
 
         Raises:
-            close_error: Raised when this callable hits the corresponding error path.
+            close_error:
+                Raised when this callable hits the corresponding error path.
         """
         self.close_calls += 1
         if self.close_error is not None:
@@ -256,8 +328,13 @@ class _ControlledBaseSession(BaseRemoteConnectionSession):
     def _reset_after_failed_connect(self) -> None:
         """Handle reset after failed connect.
 
+        Args:
+            self:
+                Value supplied to this callable.
+
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         self.reset_calls += 1
 
@@ -266,10 +343,12 @@ def _build_ftp_config(connection_type: str = "ftp") -> RemoteConnectionConfig:
     """Handle build ftp config.
 
     Args:
-        connection_type (str): Value supplied to this callable.
+        connection_type:
+            Value supplied to this callable.
 
     Returns:
-        RemoteConnectionConfig: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
     """
     return RemoteConnectionConfig(
         id="remote-1",
@@ -287,10 +366,12 @@ def _build_ssh_config(connection_type: str = "sftp") -> RemoteConnectionConfig:
     """Handle build ssh config.
 
     Args:
-        connection_type (str): Value supplied to this callable.
+        connection_type:
+            Value supplied to this callable.
 
     Returns:
-        RemoteConnectionConfig: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
     """
     return RemoteConnectionConfig(
         id="remote-1",
@@ -309,12 +390,16 @@ class _FakeFtpClient:
     """Test helper for FakeFtpClient.
 
     Attributes:
-        actions (list[str]): Documented attribute exposed by this type.
-        listing (dict[str, list[tuple[str, dict[str, str]]]]): Documented attribute exposed by this
-        type.
-        file_bytes (dict[str, bytes]): Documented attribute exposed by this type.
-        fail_on_retrbinary (str | None): Documented attribute exposed by this type.
-        existing_directories (set[str] | None): Documented attribute exposed by this type.
+        actions:
+            Documented attribute exposed by this type.
+        listing:
+            Documented attribute exposed by this type.
+        file_bytes:
+            Documented attribute exposed by this type.
+        fail_on_retrbinary:
+            Documented attribute exposed by this type.
+        existing_directories:
+            Documented attribute exposed by this type.
     """
 
     actions: list[str]
@@ -326,8 +411,13 @@ class _FakeFtpClient:
     def __post_init__(self) -> None:
         """Handle post init.
 
+        Args:
+            self:
+                Value supplied to this callable.
+
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         if self.existing_directories is None:
             self.existing_directories = set()
@@ -342,12 +432,18 @@ class _FakeFtpClient:
         """Handle connect.
 
         Args:
-            host (str): Value supplied to this callable.
-            port (int): Value supplied to this callable.
-            timeout (int): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            host:
+                Value supplied to this callable.
+            port:
+                Value supplied to this callable.
+            timeout:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         self.actions.append(f"connect:{host}:{port}:{timeout}")
 
@@ -355,11 +451,16 @@ class _FakeFtpClient:
         """Handle login.
 
         Args:
-            user (str): Value supplied to this callable.
-            passwd (str): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            user:
+                Value supplied to this callable.
+            passwd:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         self.actions.append(f"login:{user}:{passwd}")
 
@@ -367,16 +468,24 @@ class _FakeFtpClient:
         """Handle cwd.
 
         Args:
-            remote_path (str): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            remote_path:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
 
         Raises:
-            OSError: Raised when this callable hits the corresponding error path.
+            OSError:
+                Raised when this callable hits the corresponding error path.
         """
         self.actions.append(f"cwd:{remote_path}")
-        if self.existing_directories is None or remote_path not in self.existing_directories:
+        if (
+            self.existing_directories is None
+            or remote_path not in self.existing_directories
+        ):
             msg = f"missing directory {remote_path}"
             raise OSError(msg)
 
@@ -384,10 +493,14 @@ class _FakeFtpClient:
         """Handle mlsd.
 
         Args:
-            remote_path (str): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            remote_path:
+                Value supplied to this callable.
 
         Returns:
-            list[tuple[str, dict[str, str]]]: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         self.actions.append(f"mlsd:{remote_path}")
         return list(self.listing.get(remote_path, []))
@@ -396,14 +509,20 @@ class _FakeFtpClient:
         """Handle retrbinary.
 
         Args:
-            command (str): Value supplied to this callable.
-            callback (Any): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            command:
+                Value supplied to this callable.
+            callback:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
 
         Raises:
-            OSError: Raised when this callable hits the corresponding error path.
+            OSError:
+                Raised when this callable hits the corresponding error path.
         """
         self.actions.append(f"retrbinary:{command}")
         remote_path = command.replace("RETR ", "", 1)
@@ -416,10 +535,14 @@ class _FakeFtpClient:
         """Handle mkd.
 
         Args:
-            remote_path (str): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            remote_path:
+                Value supplied to this callable.
 
         Returns:
-            str: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         self.actions.append(f"mkd:{remote_path}")
         if self.existing_directories is None:
@@ -431,11 +554,16 @@ class _FakeFtpClient:
         """Handle storbinary.
 
         Args:
-            command (str): Value supplied to this callable.
-            payload (Any): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            command:
+                Value supplied to this callable.
+            payload:
+                Value supplied to this callable.
 
         Returns:
-            str: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         self.actions.append(f"storbinary:{command}")
         remote_path = command.replace("STOR ", "", 1)
@@ -445,16 +573,26 @@ class _FakeFtpClient:
     def quit(self) -> None:
         """Handle quit.
 
+        Args:
+            self:
+                Value supplied to this callable.
+
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         self.actions.append("quit")
 
     def close(self) -> None:
         """Handle close.
 
+        Args:
+            self:
+                Value supplied to this callable.
+
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         self.actions.append("close")
 
@@ -465,10 +603,12 @@ def test_ftp_provider_lists_remote_files_recursively(
     """Verify ftp provider lists remote files recursively.
 
     Args:
-        monkeypatch (pytest.MonkeyPatch): Value supplied to this callable.
+        monkeypatch:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     actions: list[str] = []
     fake_client = _FakeFtpClient(
@@ -508,9 +648,12 @@ def test_base_remote_session_rejects_invalid_retry_attempts() -> None:
     """Verify base remote session rejects invalid retry attempts.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
-    with pytest.raises(ValueError, match="max_connect_attempts must be a positive integer"):
+    with pytest.raises(
+        ValueError, match="max_connect_attempts must be a positive integer"
+    ):
         _ControlledBaseSession(_build_ssh_config(), max_connect_attempts=0)
 
 
@@ -518,7 +661,8 @@ def test_base_remote_session_retries_retryable_connect_failures() -> None:
     """Verify base remote session retries retryable connect failures.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     session = _ControlledBaseSession(
         _build_ssh_config(),
@@ -532,7 +676,9 @@ def test_base_remote_session_retries_retryable_connect_failures() -> None:
 
     remote_files = list(session.iter_remote_files())
 
-    assert [remote_file.relative_path for remote_file in remote_files] == ["messages.po"]
+    assert [remote_file.relative_path for remote_file in remote_files] == [
+        "messages.po"
+    ]
     assert session.connect_calls == 2
     assert session.reset_calls == 1
     assert session.state is RemoteConnectionSessionState.OPEN
@@ -542,7 +688,8 @@ def test_base_remote_session_close_is_noop_before_open() -> None:
     """Verify base remote session close is noop before open.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     session = _ControlledBaseSession(_build_ssh_config())
 
@@ -556,7 +703,8 @@ def test_base_remote_session_exhausts_retryable_connect_failures() -> None:
     """Verify base remote session exhausts retryable connect failures.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     session = _ControlledBaseSession(
         _build_ssh_config(),
@@ -580,11 +728,14 @@ def test_base_remote_session_exhausts_retryable_connect_failures() -> None:
     assert session.state is RemoteConnectionSessionState.FAILED
 
 
-def test_base_remote_session_fails_without_retry_for_non_retryable_connect_errors() -> None:
+def test_base_remote_session_fails_without_retry_for_non_retryable_connect_errors() -> (
+    None
+):
     """Verify base remote session fails without retry for non retryable connect errors.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     session = _ControlledBaseSession(
         _build_ssh_config(),
@@ -602,7 +753,9 @@ def test_base_remote_session_fails_without_retry_for_non_retryable_connect_error
     assert session.connect_calls == 1
     assert session.reset_calls == 1
     assert session.state is RemoteConnectionSessionState.FAILED
-    with pytest.raises(RemoteConnectionOperationError, match="Remote session is in a failed state"):
+    with pytest.raises(
+        RemoteConnectionOperationError, match="Remote session is in a failed state"
+    ):
         session.download_file("/srv/app/messages.po")
 
 
@@ -610,7 +763,8 @@ def test_base_remote_session_marks_failed_when_close_fails() -> None:
     """Verify base remote session marks failed when close fails.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     session = _ControlledBaseSession(
         _build_ssh_config(),
@@ -632,14 +786,16 @@ def test_base_remote_provider_materializes_a_bounded_remote_file_list() -> None:
     """Verify base remote provider materializes a bounded remote file list.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
 
     class _IteratorBackedProvider(BaseRemoteConnectionProvider):
         """Test helper for IteratorBackedProvider.
 
         Attributes:
-            descriptor: Documented attribute exposed by this type.
+            descriptor:
+                Documented attribute exposed by this type.
         """
 
         descriptor = RemoteConnectionTypeDescriptor(
@@ -655,10 +811,14 @@ def test_base_remote_provider_materializes_a_bounded_remote_file_list() -> None:
             """Verify connection.
 
             Args:
-                config (RemoteConnectionConfigInput): Value supplied to this callable.
+                self:
+                    Value supplied to this callable.
+                config:
+                    Value supplied to this callable.
 
             Returns:
-                RemoteConnectionTestResult: Structured value returned by this callable.
+                value:
+                    Structured value returned by this callable.
             """
             return RemoteConnectionTestResult(
                 success=True,
@@ -672,8 +832,13 @@ def test_base_remote_provider_materializes_a_bounded_remote_file_list() -> None:
         def __init__(self) -> None:
             """Initialize the test helper state.
 
+            Args:
+                self:
+                    Value supplied to this callable.
+
             Returns:
-                None: This callable does not return a value.
+                value:
+                    Structured value returned by this callable.
             """
             self.session = _ListBackedSession(
                 files=[
@@ -699,10 +864,14 @@ def test_base_remote_provider_materializes_a_bounded_remote_file_list() -> None:
             """Handle open session.
 
             Args:
-                config (RemoteConnectionConfig): Value supplied to this callable.
+                self:
+                    Value supplied to this callable.
+                config:
+                    Value supplied to this callable.
 
             Returns:
-                _ListBackedSession: Structured value returned by this callable.
+                value:
+                    Structured value returned by this callable.
             """
             return self.session
 
@@ -717,18 +886,20 @@ def test_base_remote_provider_materializes_a_bounded_remote_file_list() -> None:
     assert provider.session.close_calls == 1
 
 
-def test_base_remote_provider_closes_the_session_when_materialization_is_truncated() -> None:
+def test_base_remote_provider_closes_session_material__5808() -> None:
     """Verify base remote provider closes the session when materialization is truncated.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
 
     class _IteratorBackedProvider(BaseRemoteConnectionProvider):
         """Test helper for IteratorBackedProvider.
 
         Attributes:
-            descriptor: Documented attribute exposed by this type.
+            descriptor:
+                Documented attribute exposed by this type.
         """
 
         descriptor = RemoteConnectionTypeDescriptor(
@@ -740,8 +911,13 @@ def test_base_remote_provider_closes_the_session_when_materialization_is_truncat
         def __init__(self) -> None:
             """Initialize the test helper state.
 
+            Args:
+                self:
+                    Value supplied to this callable.
+
             Returns:
-                None: This callable does not return a value.
+                value:
+                    Structured value returned by this callable.
             """
             self.session = _ListBackedSession(
                 files=[
@@ -765,10 +941,14 @@ def test_base_remote_provider_closes_the_session_when_materialization_is_truncat
             """Verify connection.
 
             Args:
-                config (RemoteConnectionConfigInput): Value supplied to this callable.
+                self:
+                    Value supplied to this callable.
+                config:
+                    Value supplied to this callable.
 
             Returns:
-                RemoteConnectionTestResult: Structured value returned by this callable.
+                value:
+                    Structured value returned by this callable.
             """
             return RemoteConnectionTestResult(
                 success=True,
@@ -783,10 +963,14 @@ def test_base_remote_provider_closes_the_session_when_materialization_is_truncat
             """Handle open session.
 
             Args:
-                config (RemoteConnectionConfig): Value supplied to this callable.
+                self:
+                    Value supplied to this callable.
+                config:
+                    Value supplied to this callable.
 
             Returns:
-                _ListBackedSession: Structured value returned by this callable.
+                value:
+                    Structured value returned by this callable.
             """
             return self.session
 
@@ -794,7 +978,9 @@ def test_base_remote_provider_closes_the_session_when_materialization_is_truncat
 
     remote_files = provider.list_remote_files(_build_ssh_config(), max_files=1)
 
-    assert [remote_file.relative_path for remote_file in remote_files] == ["messages-1.po"]
+    assert [remote_file.relative_path for remote_file in remote_files] == [
+        "messages-1.po"
+    ]
     assert provider.session.close_calls == 1
     assert provider.session.state is RemoteConnectionSessionState.CLOSED
 
@@ -803,14 +989,16 @@ def test_base_remote_provider_iter_remote_files_closes_the_session() -> None:
     """Verify base remote provider iter remote files closes the session.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
 
     class _IteratorBackedProvider(BaseRemoteConnectionProvider):
         """Test helper for IteratorBackedProvider.
 
         Attributes:
-            descriptor: Documented attribute exposed by this type.
+            descriptor:
+                Documented attribute exposed by this type.
         """
 
         descriptor = RemoteConnectionTypeDescriptor(
@@ -822,8 +1010,13 @@ def test_base_remote_provider_iter_remote_files_closes_the_session() -> None:
         def __init__(self) -> None:
             """Initialize the test helper state.
 
+            Args:
+                self:
+                    Value supplied to this callable.
+
             Returns:
-                None: This callable does not return a value.
+                value:
+                    Structured value returned by this callable.
             """
             self.session = _ListBackedSession(
                 files=[
@@ -842,10 +1035,14 @@ def test_base_remote_provider_iter_remote_files_closes_the_session() -> None:
             """Verify connection.
 
             Args:
-                config (RemoteConnectionConfigInput): Value supplied to this callable.
+                self:
+                    Value supplied to this callable.
+                config:
+                    Value supplied to this callable.
 
             Returns:
-                RemoteConnectionTestResult: Structured value returned by this callable.
+                value:
+                    Structured value returned by this callable.
             """
             return RemoteConnectionTestResult(
                 success=True,
@@ -860,10 +1057,14 @@ def test_base_remote_provider_iter_remote_files_closes_the_session() -> None:
             """Handle open session.
 
             Args:
-                config (RemoteConnectionConfig): Value supplied to this callable.
+                self:
+                    Value supplied to this callable.
+                config:
+                    Value supplied to this callable.
 
             Returns:
-                _ListBackedSession: Structured value returned by this callable.
+                value:
+                    Structured value returned by this callable.
             """
             return self.session
 
@@ -871,7 +1072,9 @@ def test_base_remote_provider_iter_remote_files_closes_the_session() -> None:
 
     remote_files = list(provider.iter_remote_files(_build_ssh_config()))
 
-    assert [remote_file.relative_path for remote_file in remote_files] == ["messages.po"]
+    assert [remote_file.relative_path for remote_file in remote_files] == [
+        "messages.po"
+    ]
     assert provider.session.close_calls == 1
 
 
@@ -879,14 +1082,16 @@ def test_base_remote_provider_rejects_non_positive_materialization_limits() -> N
     """Verify base remote provider rejects non positive materialization limits.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
 
     class _IteratorBackedProvider(BaseRemoteConnectionProvider):
         """Test helper for IteratorBackedProvider.
 
         Attributes:
-            descriptor: Documented attribute exposed by this type.
+            descriptor:
+                Documented attribute exposed by this type.
         """
 
         descriptor = RemoteConnectionTypeDescriptor(
@@ -902,10 +1107,14 @@ def test_base_remote_provider_rejects_non_positive_materialization_limits() -> N
             """Verify connection.
 
             Args:
-                config (RemoteConnectionConfigInput): Value supplied to this callable.
+                self:
+                    Value supplied to this callable.
+                config:
+                    Value supplied to this callable.
 
             Returns:
-                RemoteConnectionTestResult: Structured value returned by this callable.
+                value:
+                    Structured value returned by this callable.
             """
             return RemoteConnectionTestResult(
                 success=True,
@@ -920,10 +1129,14 @@ def test_base_remote_provider_rejects_non_positive_materialization_limits() -> N
             """Handle open session.
 
             Args:
-                config (RemoteConnectionConfig): Value supplied to this callable.
+                self:
+                    Value supplied to this callable.
+                config:
+                    Value supplied to this callable.
 
             Returns:
-                _ListBackedSession: Structured value returned by this callable.
+                value:
+                    Structured value returned by this callable.
             """
             return _ListBackedSession(
                 files=[
@@ -947,10 +1160,12 @@ def test_ftp_provider_reuses_one_session_for_listing_and_multiple_downloads(
     """Verify ftp provider reuses one session for listing and multiple downloads.
 
     Args:
-        monkeypatch (pytest.MonkeyPatch): Value supplied to this callable.
+        monkeypatch:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     actions: list[str] = []
     fake_client = _FakeFtpClient(
@@ -971,7 +1186,9 @@ def test_ftp_provider_reuses_one_session_for_listing_and_multiple_downloads(
 
     session = provider.open_session(_build_ftp_config())
     remote_files = list(session.iter_remote_files())
-    payloads = [session.download_file(remote_file.remote_path) for remote_file in remote_files]
+    payloads = [
+        session.download_file(remote_file.remote_path) for remote_file in remote_files
+    ]
     session.close()
 
     assert [remote_file.relative_path for remote_file in remote_files] == [
@@ -995,13 +1212,16 @@ def test_ftp_session_wraps_connect_failures_and_resets_client(
     """Verify ftp session wraps connect failures and resets client.
 
     Args:
-        monkeypatch (pytest.MonkeyPatch): Value supplied to this callable.
+        monkeypatch:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
 
     Raises:
-        OSError: Raised when this callable hits the corresponding error path.
+        OSError:
+            Raised when this callable hits the corresponding error path.
     """
     clients = [
         _FakeFtpClient(actions=[], listing={}, file_bytes={}),
@@ -1015,15 +1235,18 @@ def test_ftp_session_wraps_connect_failures_and_resets_client(
         """Handle failing connect.
 
         Args:
-            client (Any): Value supplied to this callable.
-            config (RemoteConnectionConfig | RemoteConnectionConfigInput): Value supplied to this
-        callable.
+            client:
+                Value supplied to this callable.
+            config:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
 
         Raises:
-            OSError: Raised when this callable hits the corresponding error path.
+            OSError:
+                Raised when this callable hits the corresponding error path.
         """
         msg = "login failed"
         raise OSError(msg)
@@ -1048,7 +1271,8 @@ def test_ftp_normalizes_empty_error_messages_to_default_code() -> None:
     """Verify ftp normalizes empty error messages to default code.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     error = ftp._normalize_ftp_error(OSError(), default_code="download_failed")
 
@@ -1062,10 +1286,12 @@ def test_sftp_provider_reuses_one_session_for_listing_and_multiple_downloads(
     """Verify sftp provider reuses one session for listing and multiple downloads.
 
     Args:
-        monkeypatch (pytest.MonkeyPatch): Value supplied to this callable.
+        monkeypatch:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     sftp_client = _FakeSftpClient(
         listing={
@@ -1085,7 +1311,9 @@ def test_sftp_provider_reuses_one_session_for_listing_and_multiple_downloads(
 
     session = provider.open_session(_build_ssh_config())
     remote_files = list(session.iter_remote_files())
-    payloads = [session.download_file(remote_file.remote_path) for remote_file in remote_files]
+    payloads = [
+        session.download_file(remote_file.remote_path) for remote_file in remote_files
+    ]
     session.close()
 
     assert [remote_file.relative_path for remote_file in remote_files] == [
@@ -1111,10 +1339,12 @@ def test_sftp_provider_creates_remote_directories_and_uploads_bytes(
     """Verify sftp provider creates remote directories and uploads bytes.
 
     Args:
-        monkeypatch (pytest.MonkeyPatch): Value supplied to this callable.
+        monkeypatch:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     sftp_client = _FakeSftpClient(
         listing={"/srv/app": []},
@@ -1135,7 +1365,9 @@ def test_sftp_provider_creates_remote_directories_and_uploads_bytes(
     )
 
     assert directories_created == 2
-    assert sftp_client._file_bytes["/srv/app/locale/es/messages.po"] == b'msgid "hola"\n'
+    assert (
+        sftp_client._file_bytes["/srv/app/locale/es/messages.po"] == b'msgid "hola"\n'
+    )
     assert "mkdir:/srv/app/locale" in sftp_client.actions
     assert "mkdir:/srv/app/locale/es" in sftp_client.actions
     assert "file:/srv/app/locale/es/messages.po:wb" in sftp_client.actions
@@ -1145,30 +1377,39 @@ def test_sftp_session_wraps_open_sftp_failures(monkeypatch: pytest.MonkeyPatch) 
     """Verify sftp session wraps open sftp failures.
 
     Args:
-        monkeypatch (pytest.MonkeyPatch): Value supplied to this callable.
+        monkeypatch:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
 
     Raises:
-        OSError: Raised when this callable hits the corresponding error path.
+        OSError:
+            Raised when this callable hits the corresponding error path.
     """
 
     class _OpenSftpFailingSshClient(_FakeSshClient):
         """Test helper for OpenSftpFailingSshClient.
 
         Attributes:
-            None: This type does not declare additional class-level attributes.
+            None: This type does not declare class-level attributes.
         """
 
         def open_sftp(self) -> _FakeSftpClient:
             """Handle open sftp.
 
+            Args:
+                self:
+                    Value supplied to this callable.
+
             Returns:
-                _FakeSftpClient: Structured value returned by this callable.
+                value:
+                    Structured value returned by this callable.
 
             Raises:
-                OSError: Raised when this callable hits the corresponding error path.
+                OSError:
+                    Raised when this callable hits the corresponding error path.
             """
             msg = "Broken pipe"
             raise OSError(msg)
@@ -1188,7 +1429,8 @@ def test_sftp_session_rejects_listing_without_open_client() -> None:
     """Verify sftp session rejects listing without open client.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     session = ssh.SFTPRemoteConnectionProvider().open_session(_build_ssh_config())
 
@@ -1200,7 +1442,8 @@ def test_sftp_session_rejects_download_without_open_client() -> None:
     """Verify sftp session rejects download without open client.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     session = ssh.SFTPRemoteConnectionProvider().open_session(_build_ssh_config())
 
@@ -1212,7 +1455,8 @@ def test_sftp_session_rejects_remote_directory_creation_without_open_client() ->
     """Verify sftp session rejects remote directory creation without open client.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     session = ssh.SFTPRemoteConnectionProvider().open_session(_build_ssh_config())
 
@@ -1224,7 +1468,8 @@ def test_sftp_session_rejects_upload_without_open_client() -> None:
     """Verify sftp session rejects upload without open client.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     session = ssh.SFTPRemoteConnectionProvider().open_session(_build_ssh_config())
 
@@ -1238,33 +1483,41 @@ def test_sftp_session_wraps_incremental_listing_errors(
     """Verify sftp session wraps incremental listing errors.
 
     Args:
-        monkeypatch (pytest.MonkeyPatch): Value supplied to this callable.
+        monkeypatch:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
 
     Raises:
-        OSError: Raised when this callable hits the corresponding error path.
+        OSError:
+            Raised when this callable hits the corresponding error path.
     """
 
     class _ListingFailingSftpClient(_FakeSftpClient):
         """Test helper for ListingFailingSftpClient.
 
         Attributes:
-            None: This type does not declare additional class-level attributes.
+            None: This type does not declare class-level attributes.
         """
 
         def listdir_attr(self, remote_path: str) -> list[_FakeSftpEntry]:
             """Handle listdir attr.
 
             Args:
-                remote_path (str): Value supplied to this callable.
+                self:
+                    Value supplied to this callable.
+                remote_path:
+                    Value supplied to this callable.
 
             Returns:
-                list[_FakeSftpEntry]: Structured value returned by this callable.
+                value:
+                    Structured value returned by this callable.
 
             Raises:
-                OSError: Raised when this callable hits the corresponding error path.
+                OSError:
+                    Raised when this callable hits the corresponding error path.
             """
             msg = "No such file"
             raise OSError(msg)
@@ -1285,34 +1538,43 @@ def test_sftp_session_wraps_incremental_download_errors(
     """Verify sftp session wraps incremental download errors.
 
     Args:
-        monkeypatch (pytest.MonkeyPatch): Value supplied to this callable.
+        monkeypatch:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
 
     Raises:
-        OSError: Raised when this callable hits the corresponding error path.
+        OSError:
+            Raised when this callable hits the corresponding error path.
     """
 
     class _DownloadFailingSftpClient(_FakeSftpClient):
         """Test helper for DownloadFailingSftpClient.
 
         Attributes:
-            None: This type does not declare additional class-level attributes.
+            None: This type does not declare class-level attributes.
         """
 
         def file(self, remote_path: str, *, mode: str) -> _FakeRemoteFile:
             """Handle file.
 
             Args:
-                remote_path (str): Value supplied to this callable.
-                mode (str): Value supplied to this callable.
+                self:
+                    Value supplied to this callable.
+                remote_path:
+                    Value supplied to this callable.
+                mode:
+                    Value supplied to this callable.
 
             Returns:
-                _FakeRemoteFile: Structured value returned by this callable.
+                value:
+                    Structured value returned by this callable.
 
             Raises:
-                OSError: Raised when this callable hits the corresponding error path.
+                OSError:
+                    Raised when this callable hits the corresponding error path.
             """
             msg = "Broken pipe"
             raise OSError(msg)
@@ -1333,26 +1595,32 @@ def test_sftp_session_wraps_missing_paramiko_as_dependency_error(
     """Verify sftp session wraps missing paramiko as dependency error.
 
     Args:
-        monkeypatch (pytest.MonkeyPatch): Value supplied to this callable.
+        monkeypatch:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
 
     Raises:
-        ModuleNotFoundError: Raised when this callable hits the corresponding error path.
+        ModuleNotFoundError:
+            Raised when this callable hits the corresponding error path.
     """
 
     def _missing_paramiko(name: str) -> Any:
         """Handle missing paramiko.
 
         Args:
-            name (str): Value supplied to this callable.
+            name:
+                Value supplied to this callable.
 
         Returns:
-            Any: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
 
         Raises:
-            ModuleNotFoundError: Raised when this callable hits the corresponding error path.
+            ModuleNotFoundError:
+                Raised when this callable hits the corresponding error path.
         """
         assert name == "paramiko"
         msg = "No module named 'paramiko'"
@@ -1371,18 +1639,21 @@ def test_ssh_close_helpers_ignore_missing_and_failing_clients() -> None:
     """Verify ssh close helpers ignore missing and failing clients.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
 
     Raises:
-        AttributeError: Raised when this callable hits the corresponding error path.
-        OSError: Raised when this callable hits the corresponding error path.
+        OSError:
+            Raised when this callable hits the corresponding error path.
+        AttributeError:
+            Raised when this callable hits the corresponding error path.
     """
 
     class _FailingCloseClient:
         """Test helper for FailingCloseClient.
 
         Attributes:
-            None: This type does not declare additional class-level attributes.
+            None: This type does not declare class-level attributes.
         """
 
         @staticmethod
@@ -1390,10 +1661,12 @@ def test_ssh_close_helpers_ignore_missing_and_failing_clients() -> None:
             """Handle close.
 
             Returns:
-                None: This callable does not return a value.
+                value:
+                    Structured value returned by this callable.
 
             Raises:
-                OSError: Raised when this callable hits the corresponding error path.
+                OSError:
+                    Raised when this callable hits the corresponding error path.
             """
             msg = "close failed"
             raise OSError(msg)
@@ -1402,7 +1675,7 @@ def test_ssh_close_helpers_ignore_missing_and_failing_clients() -> None:
         """Test helper for AttributeFailingCloseClient.
 
         Attributes:
-            None: This type does not declare additional class-level attributes.
+            None: This type does not declare class-level attributes.
         """
 
         @staticmethod
@@ -1410,10 +1683,12 @@ def test_ssh_close_helpers_ignore_missing_and_failing_clients() -> None:
             """Handle close.
 
             Returns:
-                None: This callable does not return a value.
+                value:
+                    Structured value returned by this callable.
 
             Raises:
-                AttributeError: Raised when this callable hits the corresponding error path.
+                AttributeError:
+                    Raised when this callable hits the corresponding error path.
             """
             msg = "close unavailable"
             raise AttributeError(msg)
@@ -1426,14 +1701,18 @@ def test_ssh_close_helpers_ignore_missing_and_failing_clients() -> None:
     ssh._close_ssh_client(_AttributeFailingCloseClient())
 
 
-def test_ftp_provider_downloads_remote_file_bytes(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_ftp_provider_downloads_remote_file_bytes(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """Verify ftp provider downloads remote file bytes.
 
     Args:
-        monkeypatch (pytest.MonkeyPatch): Value supplied to this callable.
+        monkeypatch:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     actions: list[str] = []
     fake_client = _FakeFtpClient(
@@ -1461,10 +1740,12 @@ def test_ftp_provider_creates_remote_directories_and_uploads_bytes(
     """Verify ftp provider creates remote directories and uploads bytes.
 
     Args:
-        monkeypatch (pytest.MonkeyPatch): Value supplied to this callable.
+        monkeypatch:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     actions: list[str] = []
     fake_client = _FakeFtpClient(
@@ -1498,10 +1779,12 @@ def test_ftp_session_returns_zero_for_root_remote_directories(
     """Verify ftp session returns zero for root remote directories.
 
     Args:
-        monkeypatch (pytest.MonkeyPatch): Value supplied to this callable.
+        monkeypatch:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     fake_client = _FakeFtpClient(actions=[], listing={"/": []}, file_bytes={})
     provider = ftp.FTPRemoteConnectionProvider()
@@ -1519,10 +1802,12 @@ def test_sftp_session_returns_zero_for_root_remote_directories(
     """Verify sftp session returns zero for root remote directories.
 
     Args:
-        monkeypatch (pytest.MonkeyPatch): Value supplied to this callable.
+        monkeypatch:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     sftp_client = _FakeSftpClient(listing={"/": []}, file_bytes={})
     ssh_client = _FakeSshClient(sftp_client)
@@ -1540,10 +1825,12 @@ def test_ftp_provider_wraps_download_failures_as_os_errors(
     """Verify ftp provider wraps download failures as os errors.
 
     Args:
-        monkeypatch (pytest.MonkeyPatch): Value supplied to this callable.
+        monkeypatch:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     fake_client = _FakeFtpClient(
         actions=[],
@@ -1561,14 +1848,18 @@ def test_ftp_provider_wraps_download_failures_as_os_errors(
         provider.download_file(_build_ftp_config(), "/srv/app/messages.po")
 
 
-def test_explicit_ftps_provider_lists_remote_files(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_explicit_ftps_provider_lists_remote_files(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """Verify explicit ftps provider lists remote files.
 
     Args:
-        monkeypatch (pytest.MonkeyPatch): Value supplied to this callable.
+        monkeypatch:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     fake_client = _FakeFtpClient(
         actions=[],
@@ -1577,21 +1868,29 @@ def test_explicit_ftps_provider_lists_remote_files(monkeypatch: pytest.MonkeyPat
     )
     provider = ftp.ExplicitFTPSRemoteConnectionProvider()
     monkeypatch.setattr(provider, "_build_client", lambda: fake_client)
-    monkeypatch.setattr(ftp, "_connect_explicit_ftps_client", lambda client, config: None)
+    monkeypatch.setattr(
+        ftp, "_connect_explicit_ftps_client", lambda client, config: None
+    )
 
     remote_files = provider.list_remote_files(_build_ftp_config("ftps_explicit"))
 
-    assert [remote_file.remote_path for remote_file in remote_files] == ["/srv/app/messages.po"]
+    assert [remote_file.remote_path for remote_file in remote_files] == [
+        "/srv/app/messages.po"
+    ]
 
 
-def test_implicit_ftps_provider_downloads_remote_file(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_implicit_ftps_provider_downloads_remote_file(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """Verify implicit ftps provider downloads remote file.
 
     Args:
-        monkeypatch (pytest.MonkeyPatch): Value supplied to this callable.
+        monkeypatch:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     fake_client = _FakeFtpClient(
         actions=[],
@@ -1600,9 +1899,13 @@ def test_implicit_ftps_provider_downloads_remote_file(monkeypatch: pytest.Monkey
     )
     provider = ftp.ImplicitFTPSRemoteConnectionProvider()
     monkeypatch.setattr(provider, "_build_client", lambda: fake_client)
-    monkeypatch.setattr(ftp, "_connect_implicit_ftps_client", lambda client, config: None)
+    monkeypatch.setattr(
+        ftp, "_connect_implicit_ftps_client", lambda client, config: None
+    )
 
-    file_bytes = provider.download_file(_build_ftp_config("ftps_implicit"), "/srv/app/messages.po")
+    file_bytes = provider.download_file(
+        _build_ftp_config("ftps_implicit"), "/srv/app/messages.po"
+    )
 
     assert file_bytes == b"payload"
 
@@ -1613,33 +1916,41 @@ def test_ftp_provider_wraps_listing_failures_as_os_errors(
     """Verify ftp provider wraps listing failures as os errors.
 
     Args:
-        monkeypatch (pytest.MonkeyPatch): Value supplied to this callable.
+        monkeypatch:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
 
     Raises:
-        OSError: Raised when this callable hits the corresponding error path.
+        OSError:
+            Raised when this callable hits the corresponding error path.
     """
 
     class _ListingFailingFtpClient(_FakeFtpClient):
         """Test helper for ListingFailingFtpClient.
 
         Attributes:
-            None: This type does not declare additional class-level attributes.
+            None: This type does not declare class-level attributes.
         """
 
         def mlsd(self, remote_path: str) -> list[tuple[str, dict[str, str]]]:
             """Handle mlsd.
 
             Args:
-                remote_path (str): Value supplied to this callable.
+                self:
+                    Value supplied to this callable.
+                remote_path:
+                    Value supplied to this callable.
 
             Returns:
-                list[tuple[str, dict[str, str]]]: Structured value returned by this callable.
+                value:
+                    Structured value returned by this callable.
 
             Raises:
-                OSError: Raised when this callable hits the corresponding error path.
+                OSError:
+                    Raised when this callable hits the corresponding error path.
             """
             msg = f"listing failed for {remote_path}"
             raise OSError(msg)
@@ -1648,7 +1959,9 @@ def test_ftp_provider_wraps_listing_failures_as_os_errors(
     provider = ftp.FTPRemoteConnectionProvider()
     monkeypatch.setattr(provider, "_build_client", lambda: fake_client)
 
-    with pytest.raises(RemoteConnectionListingError, match=r"listing failed for /srv/app"):
+    with pytest.raises(
+        RemoteConnectionListingError, match=r"listing failed for /srv/app"
+    ):
         provider.list_remote_files(_build_ftp_config())
 
 
@@ -1658,14 +1971,18 @@ def test_ftp_provider_wraps_malformed_listing_sizes(
     """Verify ftp provider wraps malformed listing sizes.
 
     Args:
-        monkeypatch (pytest.MonkeyPatch): Value supplied to this callable.
+        monkeypatch:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     fake_client = _FakeFtpClient(
         actions=[],
-        listing={"/srv/app": [("messages.po", {"type": "file", "size": "not-a-number"})]},
+        listing={
+            "/srv/app": [("messages.po", {"type": "file", "size": "not-a-number"})]
+        },
         file_bytes={},
     )
     provider = ftp.FTPRemoteConnectionProvider()
@@ -1682,17 +1999,19 @@ def test_close_ftp_client_ignores_quit_failures_from_half_open_connections() -> 
     """Verify close ftp client ignores quit failures from half open connections.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
 
     Raises:
-        AttributeError: Raised when this callable hits the corresponding error path.
+        AttributeError:
+            Raised when this callable hits the corresponding error path.
     """
 
     class _HalfOpenFtpClient:
         """Test helper for HalfOpenFtpClient.
 
         Attributes:
-            None: This type does not declare additional class-level attributes.
+            None: This type does not declare class-level attributes.
         """
 
         @staticmethod
@@ -1700,10 +2019,12 @@ def test_close_ftp_client_ignores_quit_failures_from_half_open_connections() -> 
             """Handle quit.
 
             Returns:
-                None: This callable does not return a value.
+                value:
+                    Structured value returned by this callable.
 
             Raises:
-                AttributeError: Raised when this callable hits the corresponding error path.
+                AttributeError:
+                    Raised when this callable hits the corresponding error path.
             """
             msg = "socket is not connected"
             raise AttributeError(msg)
@@ -1713,7 +2034,8 @@ def test_close_ftp_client_ignores_quit_failures_from_half_open_connections() -> 
             """Handle close.
 
             Returns:
-                None: This callable does not return a value.
+                value:
+                    Structured value returned by this callable.
             """
             return
 
@@ -1724,18 +2046,21 @@ def test_close_ftp_client_ignores_close_failures_after_quit_errors() -> None:
     """Verify close ftp client ignores close failures after quit errors.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
 
     Raises:
-        AttributeError: Raised when this callable hits the corresponding error path.
-        OSError: Raised when this callable hits the corresponding error path.
+        AttributeError:
+            Raised when this callable hits the corresponding error path.
+        OSError:
+            Raised when this callable hits the corresponding error path.
     """
 
     class _CloseFailingFtpClient:
         """Test helper for CloseFailingFtpClient.
 
         Attributes:
-            None: This type does not declare additional class-level attributes.
+            None: This type does not declare class-level attributes.
         """
 
         @staticmethod
@@ -1743,10 +2068,12 @@ def test_close_ftp_client_ignores_close_failures_after_quit_errors() -> None:
             """Handle quit.
 
             Returns:
-                None: This callable does not return a value.
+                value:
+                    Structured value returned by this callable.
 
             Raises:
-                AttributeError: Raised when this callable hits the corresponding error path.
+                AttributeError:
+                    Raised when this callable hits the corresponding error path.
             """
             msg = "socket is not connected"
             raise AttributeError(msg)
@@ -1756,10 +2083,12 @@ def test_close_ftp_client_ignores_close_failures_after_quit_errors() -> None:
             """Handle close.
 
             Returns:
-                None: This callable does not return a value.
+                value:
+                    Structured value returned by this callable.
 
             Raises:
-                OSError: Raised when this callable hits the corresponding error path.
+                OSError:
+                    Raised when this callable hits the corresponding error path.
             """
             msg = "close failed"
             raise OSError(msg)
@@ -1771,18 +2100,21 @@ def test_close_ftp_client_ignores_library_close_failures_after_os_errors() -> No
     """Verify close ftp client ignores library close failures after os errors.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
 
     Raises:
-        EOFError: Raised when this callable hits the corresponding error path.
-        OSError: Raised when this callable hits the corresponding error path.
+        OSError:
+            Raised when this callable hits the corresponding error path.
+        EOFError:
+            Raised when this callable hits the corresponding error path.
     """
 
     class _LibraryCloseFailingFtpClient:
         """Test helper for LibraryCloseFailingFtpClient.
 
         Attributes:
-            None: This type does not declare additional class-level attributes.
+            None: This type does not declare class-level attributes.
         """
 
         @staticmethod
@@ -1790,10 +2122,12 @@ def test_close_ftp_client_ignores_library_close_failures_after_os_errors() -> No
             """Handle quit.
 
             Returns:
-                None: This callable does not return a value.
+                value:
+                    Structured value returned by this callable.
 
             Raises:
-                OSError: Raised when this callable hits the corresponding error path.
+                OSError:
+                    Raised when this callable hits the corresponding error path.
             """
             msg = "network down"
             raise OSError(msg)
@@ -1803,10 +2137,12 @@ def test_close_ftp_client_ignores_library_close_failures_after_os_errors() -> No
             """Handle close.
 
             Returns:
-                None: This callable does not return a value.
+                value:
+                    Structured value returned by this callable.
 
             Raises:
-                EOFError: Raised when this callable hits the corresponding error path.
+                EOFError:
+                    Raised when this callable hits the corresponding error path.
             """
             msg = "close failed"
             raise EOFError(msg)
@@ -1818,7 +2154,8 @@ def test_ftp_emit_progress_ignores_missing_callbacks() -> None:
     """Verify ftp emit progress ignores missing callbacks.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     ftp._emit_progress(None, cast(Any, object()))
 
@@ -1827,7 +2164,8 @@ def test_walk_ftp_directory_skips_navigation_and_unknown_entries() -> None:
     """Verify walk ftp directory skips navigation and unknown entries.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     remote_files = ftp._walk_ftp_directory(
         client=cast(
@@ -1850,14 +2188,17 @@ def test_walk_ftp_directory_skips_navigation_and_unknown_entries() -> None:
         current_remote_path="/",
     )
 
-    assert [remote_file.relative_path for remote_file in remote_files] == ["tmp/messages.po"]
+    assert [remote_file.relative_path for remote_file in remote_files] == [
+        "tmp/messages.po"
+    ]
 
 
 def test_ftp_remote_path_helpers_normalize_and_join_root_paths() -> None:
     """Verify ftp remote path helpers normalize and join root paths.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     assert ftp._normalize_remote_path(".") == "/"
     assert ftp._join_remote_path("/", "messages.po") == "/messages.po"
@@ -1868,9 +2209,12 @@ class _FakeSftpEntry:
     """Test helper for FakeSftpEntry.
 
     Attributes:
-        filename (str): Documented attribute exposed by this type.
-        st_mode (int): Documented attribute exposed by this type.
-        st_size (int): Documented attribute exposed by this type.
+        filename:
+            Documented attribute exposed by this type.
+        st_mode:
+            Documented attribute exposed by this type.
+        st_size:
+            Documented attribute exposed by this type.
     """
 
     filename: str
@@ -1882,7 +2226,7 @@ class _FakeRemoteFile:
     """Test helper for FakeRemoteFile.
 
     Attributes:
-        None: This type does not declare additional class-level attributes.
+        None: This type does not declare class-level attributes.
     """
 
     def __init__(
@@ -1895,12 +2239,18 @@ class _FakeRemoteFile:
         """Initialize the test helper state.
 
         Args:
-            payload (bytes): Value supplied to this callable.
-            writable (bool): Value supplied to this callable.
-            on_close (Callable[[bytes], None] | None): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            payload:
+                Value supplied to this callable.
+            writable:
+                Value supplied to this callable.
+            on_close:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         self._payload = payload
         self._writable = writable
@@ -1910,8 +2260,13 @@ class _FakeRemoteFile:
     def read(self) -> bytes:
         """Handle read.
 
+        Args:
+            self:
+                Value supplied to this callable.
+
         Returns:
-            bytes: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         return self._payload
 
@@ -1919,13 +2274,18 @@ class _FakeRemoteFile:
         """Handle write.
 
         Args:
-            payload (bytes): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            payload:
+                Value supplied to this callable.
 
         Returns:
-            int: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
 
         Raises:
-            OSError: Raised when this callable hits the corresponding error path.
+            OSError:
+                Raised when this callable hits the corresponding error path.
         """
         if not self._writable:
             msg = "remote file opened as read-only"
@@ -1936,8 +2296,13 @@ class _FakeRemoteFile:
     def close(self) -> None:
         """Handle close.
 
+        Args:
+            self:
+                Value supplied to this callable.
+
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         self.closed = True
         if self._on_close is not None:
@@ -1948,7 +2313,7 @@ class _FakeSftpClient:
     """Test helper for FakeSftpClient.
 
     Attributes:
-        None: This type does not declare additional class-level attributes.
+        None: This type does not declare class-level attributes.
     """
 
     def __init__(
@@ -1959,11 +2324,16 @@ class _FakeSftpClient:
         """Initialize the test helper state.
 
         Args:
-            listing (dict[str, list[_FakeSftpEntry]]): Value supplied to this callable.
-            file_bytes (dict[str, bytes]): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            listing:
+                Value supplied to this callable.
+            file_bytes:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         self._listing = listing
         self._file_bytes = file_bytes
@@ -1979,10 +2349,14 @@ class _FakeSftpClient:
         """Handle listdir attr.
 
         Args:
-            remote_path (str): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            remote_path:
+                Value supplied to this callable.
 
         Returns:
-            list[_FakeSftpEntry]: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         self.actions.append(f"listdir_attr:{remote_path}")
         return list(self._listing.get(remote_path, []))
@@ -1991,17 +2365,24 @@ class _FakeSftpClient:
         """Handle file.
 
         Args:
-            remote_path (str): Value supplied to this callable.
-            mode (str): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            remote_path:
+                Value supplied to this callable.
+            mode:
+                Value supplied to this callable.
 
         Returns:
-            _FakeRemoteFile: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         self.actions.append(f"file:{remote_path}:{mode}")
         if mode == "wb":
             return _FakeRemoteFile(
                 writable=True,
-                on_close=lambda payload: self._file_bytes.__setitem__(remote_path, payload),
+                on_close=lambda payload: self._file_bytes.__setitem__(
+                    remote_path, payload
+                ),
             )
         return _FakeRemoteFile(self._file_bytes[remote_path])
 
@@ -2009,10 +2390,14 @@ class _FakeSftpClient:
         """Handle chdir.
 
         Args:
-            remote_path (str): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            remote_path:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         self.actions.append(f"chdir:{remote_path}")
 
@@ -2020,13 +2405,18 @@ class _FakeSftpClient:
         """Handle stat.
 
         Args:
-            remote_path (str): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            remote_path:
+                Value supplied to this callable.
 
         Returns:
-            _FakeSftpEntry: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
 
         Raises:
-            OSError: Raised when this callable hits the corresponding error path.
+            OSError:
+                Raised when this callable hits the corresponding error path.
         """
         self.actions.append(f"stat:{remote_path}")
         if remote_path not in self._directories:
@@ -2038,10 +2428,14 @@ class _FakeSftpClient:
         """Handle mkdir.
 
         Args:
-            remote_path (str): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            remote_path:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         self.actions.append(f"mkdir:{remote_path}")
         self._directories.add(remote_path)
@@ -2050,8 +2444,13 @@ class _FakeSftpClient:
     def close(self) -> None:
         """Handle close.
 
+        Args:
+            self:
+                Value supplied to this callable.
+
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         self.actions.append("sftp_close")
 
@@ -2060,17 +2459,21 @@ class _FakeSshClient:
     """Test helper for FakeSshClient.
 
     Attributes:
-        None: This type does not declare additional class-level attributes.
+        None: This type does not declare class-level attributes.
     """
 
     def __init__(self, sftp_client: _FakeSftpClient) -> None:
         """Initialize the test helper state.
 
         Args:
-            sftp_client (_FakeSftpClient): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            sftp_client:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         self._sftp_client = sftp_client
         self.actions: list[str] = []
@@ -2078,8 +2481,13 @@ class _FakeSshClient:
     def load_system_host_keys(self) -> None:
         """Handle load system host keys.
 
+        Args:
+            self:
+                Value supplied to this callable.
+
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         self.actions.append("load_system_host_keys")
 
@@ -2095,22 +2503,37 @@ class _FakeSshClient:
         """Handle connect.
 
         Args:
-            hostname (str): Value supplied to this callable.
-            port (int): Value supplied to this callable.
-            username (str): Value supplied to this callable.
-            password (str): Value supplied to this callable.
-            timeout (int): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            hostname:
+                Value supplied to this callable.
+            port:
+                Value supplied to this callable.
+            username:
+                Value supplied to this callable.
+            password:
+                Value supplied to this callable.
+            timeout:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
-        self.actions.append(f"connect:{hostname}:{port}:{username}:{password}:{timeout}")
+        self.actions.append(
+            f"connect:{hostname}:{port}:{username}:{password}:{timeout}"
+        )
 
     def open_sftp(self) -> _FakeSftpClient:
         """Handle open sftp.
 
+        Args:
+            self:
+                Value supplied to this callable.
+
         Returns:
-            _FakeSftpClient: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         self.actions.append("open_sftp")
         return self._sftp_client
@@ -2118,8 +2541,13 @@ class _FakeSshClient:
     def close(self) -> None:
         """Handle close.
 
+        Args:
+            self:
+                Value supplied to this callable.
+
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         self.actions.append("ssh_close")
 
@@ -2130,10 +2558,12 @@ def test_sftp_provider_lists_remote_files_recursively(
     """Verify sftp provider lists remote files recursively.
 
     Args:
-        monkeypatch (pytest.MonkeyPatch): Value supplied to this callable.
+        monkeypatch:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     sftp_client = _FakeSftpClient(
         listing={
@@ -2174,10 +2604,12 @@ def test_sftp_provider_skips_symlinks_and_special_files_during_listing(
     """Verify sftp provider skips symlinks and special files during listing.
 
     Args:
-        monkeypatch (pytest.MonkeyPatch): Value supplied to this callable.
+        monkeypatch:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     sftp_client = _FakeSftpClient(
         listing={
@@ -2195,22 +2627,30 @@ def test_sftp_provider_skips_symlinks_and_special_files_during_listing(
 
     remote_files = ssh.SFTPRemoteConnectionProvider().list_remote_files(
         _build_ssh_config(),
-        progress_callback=lambda event: progress_events.append(event.command_text or ""),
+        progress_callback=lambda event: progress_events.append(
+            event.command_text or ""
+        ),
     )
 
-    assert [remote_file.relative_path for remote_file in remote_files] == ["messages.po"]
+    assert [remote_file.relative_path for remote_file in remote_files] == [
+        "messages.po"
+    ]
     assert "SFTP SKIP /srv/app/venv-lib64" in progress_events
     assert "SFTP SKIP /srv/app/socket" in progress_events
 
 
-def test_sftp_provider_downloads_remote_file_bytes(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_sftp_provider_downloads_remote_file_bytes(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """Verify sftp provider downloads remote file bytes.
 
     Args:
-        monkeypatch (pytest.MonkeyPatch): Value supplied to this callable.
+        monkeypatch:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     sftp_client = _FakeSftpClient(
         listing={},
@@ -2237,10 +2677,12 @@ def test_scp_provider_lists_remote_files(monkeypatch: pytest.MonkeyPatch) -> Non
     """Verify scp provider lists remote files.
 
     Args:
-        monkeypatch (pytest.MonkeyPatch): Value supplied to this callable.
+        monkeypatch:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     sftp_client = _FakeSftpClient(
         listing={"/srv/app": [_FakeSftpEntry("messages.po", 0o100644, 8)]},
@@ -2249,19 +2691,27 @@ def test_scp_provider_lists_remote_files(monkeypatch: pytest.MonkeyPatch) -> Non
     ssh_client = _FakeSshClient(sftp_client)
     monkeypatch.setattr(ssh, "_connect_ssh_client", lambda config: ssh_client)
 
-    remote_files = ssh.SCPRemoteConnectionProvider().list_remote_files(_build_ssh_config("scp"))
+    remote_files = ssh.SCPRemoteConnectionProvider().list_remote_files(
+        _build_ssh_config("scp")
+    )
 
-    assert [remote_file.relative_path for remote_file in remote_files] == ["messages.po"]
+    assert [remote_file.relative_path for remote_file in remote_files] == [
+        "messages.po"
+    ]
 
 
-def test_scp_provider_downloads_remote_file_bytes(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_scp_provider_downloads_remote_file_bytes(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """Verify scp provider downloads remote file bytes.
 
     Args:
-        monkeypatch (pytest.MonkeyPatch): Value supplied to this callable.
+        monkeypatch:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     sftp_client = _FakeSftpClient(
         listing={},
@@ -2282,27 +2732,35 @@ def test_iter_ssh_files_wraps_listing_errors(monkeypatch: pytest.MonkeyPatch) ->
     """Verify iter ssh files wraps listing errors.
 
     Args:
-        monkeypatch (pytest.MonkeyPatch): Value supplied to this callable.
+        monkeypatch:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
 
     Raises:
-        OSError: Raised when this callable hits the corresponding error path.
+        OSError:
+            Raised when this callable hits the corresponding error path.
     """
 
     class _ListingFailingSftpClient(_FakeSftpClient):
         """Test helper for ListingFailingSftpClient.
 
         Attributes:
-            None: This type does not declare additional class-level attributes.
+            None: This type does not declare class-level attributes.
         """
 
         def __init__(self) -> None:
             """Initialize the test helper state.
 
+            Args:
+                self:
+                    Value supplied to this callable.
+
             Returns:
-                None: This callable does not return a value.
+                value:
+                    Structured value returned by this callable.
             """
             super().__init__(listing={}, file_bytes={})
 
@@ -2310,13 +2768,18 @@ def test_iter_ssh_files_wraps_listing_errors(monkeypatch: pytest.MonkeyPatch) ->
             """Handle listdir attr.
 
             Args:
-                remote_path (str): Value supplied to this callable.
+                self:
+                    Value supplied to this callable.
+                remote_path:
+                    Value supplied to this callable.
 
             Returns:
-                list[_FakeSftpEntry]: Structured value returned by this callable.
+                value:
+                    Structured value returned by this callable.
 
             Raises:
-                OSError: Raised when this callable hits the corresponding error path.
+                OSError:
+                    Raised when this callable hits the corresponding error path.
             """
             msg = "No such file"
             raise OSError(msg)
@@ -2330,31 +2793,41 @@ def test_iter_ssh_files_wraps_listing_errors(monkeypatch: pytest.MonkeyPatch) ->
     assert error.value.error_code == "remote_path_not_found"
 
 
-def test_download_ssh_file_wraps_transport_errors(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_download_ssh_file_wraps_transport_errors(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """Verify download ssh file wraps transport errors.
 
     Args:
-        monkeypatch (pytest.MonkeyPatch): Value supplied to this callable.
+        monkeypatch:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
 
     Raises:
-        OSError: Raised when this callable hits the corresponding error path.
+        OSError:
+            Raised when this callable hits the corresponding error path.
     """
 
     class _DownloadFailingSftpClient(_FakeSftpClient):
         """Test helper for DownloadFailingSftpClient.
 
         Attributes:
-            None: This type does not declare additional class-level attributes.
+            None: This type does not declare class-level attributes.
         """
 
         def __init__(self) -> None:
             """Initialize the test helper state.
 
+            Args:
+                self:
+                    Value supplied to this callable.
+
             Returns:
-                None: This callable does not return a value.
+                value:
+                    Structured value returned by this callable.
             """
             super().__init__(listing={}, file_bytes={})
 
@@ -2362,14 +2835,20 @@ def test_download_ssh_file_wraps_transport_errors(monkeypatch: pytest.MonkeyPatc
             """Handle file.
 
             Args:
-                remote_path (str): Value supplied to this callable.
-                mode (str): Value supplied to this callable.
+                self:
+                    Value supplied to this callable.
+                remote_path:
+                    Value supplied to this callable.
+                mode:
+                    Value supplied to this callable.
 
             Returns:
-                _FakeRemoteFile: Structured value returned by this callable.
+                value:
+                    Structured value returned by this callable.
 
             Raises:
-                OSError: Raised when this callable hits the corresponding error path.
+                OSError:
+                    Raised when this callable hits the corresponding error path.
             """
             msg = "Broken pipe"
             raise OSError(msg)
@@ -2381,7 +2860,9 @@ def test_download_ssh_file_wraps_transport_errors(monkeypatch: pytest.MonkeyPatc
         RemoteConnectionDownloadError,
         match=r"Failed to download remote file '/srv/app/messages\.po'.*Broken pipe",
     ) as error:
-        ssh._download_ssh_file(_build_ssh_config(), "/srv/app/messages.po", None, "SFTP")
+        ssh._download_ssh_file(
+            _build_ssh_config(), "/srv/app/messages.po", None, "SFTP"
+        )
 
     assert error.value.error_code == "transport_io_failed"
 
@@ -2392,27 +2873,35 @@ def test_download_ssh_file_explains_generic_sftp_failures(
     """Verify download ssh file explains generic sftp failures.
 
     Args:
-        monkeypatch (pytest.MonkeyPatch): Value supplied to this callable.
+        monkeypatch:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
 
     Raises:
-        OSError: Raised when this callable hits the corresponding error path.
+        OSError:
+            Raised when this callable hits the corresponding error path.
     """
 
     class _DownloadFailingSftpClient(_FakeSftpClient):
         """Test helper for DownloadFailingSftpClient.
 
         Attributes:
-            None: This type does not declare additional class-level attributes.
+            None: This type does not declare class-level attributes.
         """
 
         def __init__(self) -> None:
             """Initialize the test helper state.
 
+            Args:
+                self:
+                    Value supplied to this callable.
+
             Returns:
-                None: This callable does not return a value.
+                value:
+                    Structured value returned by this callable.
             """
             super().__init__(listing={}, file_bytes={})
 
@@ -2420,14 +2909,20 @@ def test_download_ssh_file_explains_generic_sftp_failures(
             """Handle file.
 
             Args:
-                remote_path (str): Value supplied to this callable.
-                mode (str): Value supplied to this callable.
+                self:
+                    Value supplied to this callable.
+                remote_path:
+                    Value supplied to this callable.
+                mode:
+                    Value supplied to this callable.
 
             Returns:
-                _FakeRemoteFile: Structured value returned by this callable.
+                value:
+                    Structured value returned by this callable.
 
             Raises:
-                OSError: Raised when this callable hits the corresponding error path.
+                OSError:
+                    Raised when this callable hits the corresponding error path.
             """
             msg = "Failure"
             raise OSError(msg)
@@ -2444,14 +2939,18 @@ def test_download_ssh_file_explains_generic_sftp_failures(
     assert error.value.error_code == "download_failed"
 
 
-def test_download_ssh_file_reads_and_closes_remote_file(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_download_ssh_file_reads_and_closes_remote_file(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """Verify download ssh file reads and closes remote file.
 
     Args:
-        monkeypatch (pytest.MonkeyPatch): Value supplied to this callable.
+        monkeypatch:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     sftp_client = _FakeSftpClient(
         listing={},
@@ -2460,7 +2959,9 @@ def test_download_ssh_file_reads_and_closes_remote_file(monkeypatch: pytest.Monk
     ssh_client = _FakeSshClient(sftp_client)
     monkeypatch.setattr(ssh, "_connect_ssh_client", lambda config: ssh_client)
 
-    payload = ssh._download_ssh_file(_build_ssh_config(), "/srv/app/messages.po", None, "SFTP")
+    payload = ssh._download_ssh_file(
+        _build_ssh_config(), "/srv/app/messages.po", None, "SFTP"
+    )
 
     assert payload == b"payload"
     assert sftp_client.actions == [
@@ -2477,7 +2978,8 @@ def test_ssh_emit_progress_ignores_missing_callbacks() -> None:
     """Verify ssh emit progress ignores missing callbacks.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     ssh._emit_progress(None, cast(Any, object()))
 
@@ -2486,7 +2988,8 @@ def test_ssh_emit_progress_calls_callback() -> None:
     """Verify ssh emit progress calls callback.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     events: list[object] = []
 
@@ -2495,24 +2998,29 @@ def test_ssh_emit_progress_calls_callback() -> None:
     assert len(events) == 1
 
 
-def test_connect_ssh_client_wraps_paramiko_ssh_exceptions(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_connect_ssh_client_wraps_paramiko_ssh_exceptions(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """Verify connect ssh client wraps paramiko ssh exceptions.
 
     Args:
-        monkeypatch (pytest.MonkeyPatch): Value supplied to this callable.
+        monkeypatch:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
 
     Raises:
-        _FakeSshError: Raised when this callable hits the corresponding error path.
+        _FakeSshError:
+            Raised when this callable hits the corresponding error path.
     """
 
     class _FakeSshError(OSError):
         """Test helper for FakeSshError.
 
         Attributes:
-            None: This type does not declare additional class-level attributes.
+            None: This type does not declare class-level attributes.
         """
 
         pass
@@ -2521,7 +3029,7 @@ def test_connect_ssh_client_wraps_paramiko_ssh_exceptions(monkeypatch: pytest.Mo
         """Test helper for FailingSshClient.
 
         Attributes:
-            None: This type does not declare additional class-level attributes.
+            None: This type does not declare class-level attributes.
         """
 
         def connect(
@@ -2536,17 +3044,26 @@ def test_connect_ssh_client_wraps_paramiko_ssh_exceptions(monkeypatch: pytest.Mo
             """Handle connect.
 
             Args:
-                hostname (str): Value supplied to this callable.
-                port (int): Value supplied to this callable.
-                username (str): Value supplied to this callable.
-                password (str): Value supplied to this callable.
-                timeout (int): Value supplied to this callable.
+                self:
+                    Value supplied to this callable.
+                hostname:
+                    Value supplied to this callable.
+                port:
+                    Value supplied to this callable.
+                username:
+                    Value supplied to this callable.
+                password:
+                    Value supplied to this callable.
+                timeout:
+                    Value supplied to this callable.
 
             Returns:
-                None: This callable does not return a value.
+                value:
+                    Structured value returned by this callable.
 
             Raises:
-                _FakeSshError: Raised when this callable hits the corresponding error path.
+                _FakeSshError:
+                    Raised when this callable hits the corresponding error path.
             """
             msg = "ssh transport failed"
             raise _FakeSshError(msg)
@@ -2570,37 +3087,47 @@ def test_ssh_remote_path_helper_joins_root_paths() -> None:
     """Verify ssh remote path helper joins root paths.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     assert ssh._join_remote_path("/", "messages.po") == "/messages.po"
 
 
-def test_build_ssh_client_uses_paramiko_factory(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_build_ssh_client_uses_paramiko_factory(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """Verify build ssh client uses paramiko factory.
 
     Args:
-        monkeypatch (pytest.MonkeyPatch): Value supplied to this callable.
+        monkeypatch:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     sentinel = object()
     monkeypatch.setattr(
         ssh,
         "import_module",
         lambda module_name: (
-            SimpleNamespace(SSHClient=lambda: sentinel) if module_name == "paramiko" else None
+            SimpleNamespace(SSHClient=lambda: sentinel)
+            if module_name == "paramiko"
+            else None
         ),
     )
 
     assert ssh._build_ssh_client() is sentinel
 
 
-def test_base_remote_provider_short_lived_operations_delegate_and_close_sessions() -> None:
+def test_base_remote_provider_short_lived_operations_delegate_and_close_sessions() -> (
+    None
+):
     """Verify base remote provider short lived operations delegate and close sessions.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
 
     @dataclass
@@ -2608,7 +3135,7 @@ def test_base_remote_provider_short_lived_operations_delegate_and_close_sessions
         """Test helper for DownloadSession.
 
         Attributes:
-            None: This type does not declare additional class-level attributes.
+            None: This type does not declare class-level attributes.
         """
 
         @staticmethod
@@ -2616,11 +3143,14 @@ def test_base_remote_provider_short_lived_operations_delegate_and_close_sessions
             """Handle download file.
 
             Args:
-                remote_path (str): Value supplied to this callable.
-                progress_callback (Any): Value supplied to this callable.
+                remote_path:
+                    Value supplied to this callable.
+                progress_callback:
+                    Value supplied to this callable.
 
             Returns:
-                bytes: Structured value returned by this callable.
+                value:
+                    Structured value returned by this callable.
             """
             return b"payload"
 
@@ -2628,7 +3158,8 @@ def test_base_remote_provider_short_lived_operations_delegate_and_close_sessions
         """Test helper for OperationBackedProvider.
 
         Attributes:
-            descriptor: Documented attribute exposed by this type.
+            descriptor:
+                Documented attribute exposed by this type.
         """
 
         descriptor = RemoteConnectionTypeDescriptor(
@@ -2640,8 +3171,13 @@ def test_base_remote_provider_short_lived_operations_delegate_and_close_sessions
         def __init__(self) -> None:
             """Initialize the test helper state.
 
+            Args:
+                self:
+                    Value supplied to this callable.
+
             Returns:
-                None: This callable does not return a value.
+                value:
+                    Structured value returned by this callable.
             """
             self.download_session = _DownloadSession(files=[])
             self.ensure_session = _ListBackedSession(files=[])
@@ -2659,10 +3195,14 @@ def test_base_remote_provider_short_lived_operations_delegate_and_close_sessions
             """Verify connection.
 
             Args:
-                config (RemoteConnectionConfigInput): Value supplied to this callable.
+                self:
+                    Value supplied to this callable.
+                config:
+                    Value supplied to this callable.
 
             Returns:
-                RemoteConnectionTestResult: Structured value returned by this callable.
+                value:
+                    Structured value returned by this callable.
             """
             return RemoteConnectionTestResult(
                 success=True,
@@ -2677,17 +3217,23 @@ def test_base_remote_provider_short_lived_operations_delegate_and_close_sessions
             """Handle open session.
 
             Args:
-                config (RemoteConnectionConfig): Value supplied to this callable.
+                self:
+                    Value supplied to this callable.
+                config:
+                    Value supplied to this callable.
 
             Returns:
-                _ListBackedSession: Structured value returned by this callable.
+                value:
+                    Structured value returned by this callable.
             """
             return self._opened_sessions.pop(0)
 
     provider = _OperationBackedProvider()
 
     payload = provider.download_file(_build_ssh_config(), "/srv/app/messages.po")
-    created_segments = provider.ensure_remote_directory(_build_ssh_config(), "/srv/app/locale")
+    created_segments = provider.ensure_remote_directory(
+        _build_ssh_config(), "/srv/app/locale"
+    )
     provider.upload_file(_build_ssh_config(), "/srv/app/messages.po", b"hola")
 
     assert payload == b"payload"
@@ -2704,39 +3250,49 @@ def test_ftp_session_wraps_remote_directory_creation_failures(
     """Verify ftp session wraps remote directory creation failures.
 
     Args:
-        monkeypatch (pytest.MonkeyPatch): Value supplied to this callable.
+        monkeypatch:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
 
     Raises:
-        OSError: Raised when this callable hits the corresponding error path.
+        OSError:
+            Raised when this callable hits the corresponding error path.
     """
 
     class _DirectoryFailingFtpClient(_FakeFtpClient):
         """Test helper for DirectoryFailingFtpClient.
 
         Attributes:
-            None: This type does not declare additional class-level attributes.
+            None: This type does not declare class-level attributes.
         """
 
         def mkd(self, remote_path: str) -> str:
             """Handle mkd.
 
             Args:
-                remote_path (str): Value supplied to this callable.
+                self:
+                    Value supplied to this callable.
+                remote_path:
+                    Value supplied to this callable.
 
             Returns:
-                str: Structured value returned by this callable.
+                value:
+                    Structured value returned by this callable.
 
             Raises:
-                OSError: Raised when this callable hits the corresponding error path.
+                OSError:
+                    Raised when this callable hits the corresponding error path.
             """
             self.actions.append(f"mkd:{remote_path}")
             msg = f"cannot create {remote_path}"
             raise OSError(msg)
 
-    fake_client = _DirectoryFailingFtpClient(actions=[], listing={"/srv/app": []}, file_bytes={})
+    fake_client = _DirectoryFailingFtpClient(
+        actions=[], listing={"/srv/app": []}, file_bytes={}
+    )
     provider = ftp.FTPRemoteConnectionProvider()
     monkeypatch.setattr(provider, "_build_client", lambda: fake_client)
     session = provider.open_session(_build_ftp_config())
@@ -2756,40 +3312,51 @@ def test_ftp_provider_wraps_upload_failures_as_os_errors(
     """Verify ftp provider wraps upload failures as os errors.
 
     Args:
-        monkeypatch (pytest.MonkeyPatch): Value supplied to this callable.
+        monkeypatch:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
 
     Raises:
-        OSError: Raised when this callable hits the corresponding error path.
+        OSError:
+            Raised when this callable hits the corresponding error path.
     """
 
     class _UploadFailingFtpClient(_FakeFtpClient):
         """Test helper for UploadFailingFtpClient.
 
         Attributes:
-            None: This type does not declare additional class-level attributes.
+            None: This type does not declare class-level attributes.
         """
 
         def storbinary(self, command: str, payload: Any) -> str:
             """Handle storbinary.
 
             Args:
-                command (str): Value supplied to this callable.
-                payload (Any): Value supplied to this callable.
+                self:
+                    Value supplied to this callable.
+                command:
+                    Value supplied to this callable.
+                payload:
+                    Value supplied to this callable.
 
             Returns:
-                str: Structured value returned by this callable.
+                value:
+                    Structured value returned by this callable.
 
             Raises:
-                OSError: Raised when this callable hits the corresponding error path.
+                OSError:
+                    Raised when this callable hits the corresponding error path.
             """
             self.actions.append(f"storbinary:{command}")
             msg = "upload failed for remote file"
             raise OSError(msg)
 
-    fake_client = _UploadFailingFtpClient(actions=[], listing={"/srv/app": []}, file_bytes={})
+    fake_client = _UploadFailingFtpClient(
+        actions=[], listing={"/srv/app": []}, file_bytes={}
+    )
     provider = ftp.FTPRemoteConnectionProvider()
     monkeypatch.setattr(provider, "_build_client", lambda: fake_client)
 
@@ -2806,17 +3373,19 @@ def test_close_ftp_client_ignores_socket_close_failures_after_quit_os_error() ->
     """Verify close ftp client ignores socket close failures after quit os error.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
 
     Raises:
-        OSError: Raised when this callable hits the corresponding error path.
+        OSError:
+            Raised when this callable hits the corresponding error path.
     """
 
     class _SocketCloseFailingFtpClient:
         """Test helper for SocketCloseFailingFtpClient.
 
         Attributes:
-            None: This type does not declare additional class-level attributes.
+            None: This type does not declare class-level attributes.
         """
 
         @staticmethod
@@ -2824,10 +3393,12 @@ def test_close_ftp_client_ignores_socket_close_failures_after_quit_os_error() ->
             """Handle quit.
 
             Returns:
-                None: This callable does not return a value.
+                value:
+                    Structured value returned by this callable.
 
             Raises:
-                OSError: Raised when this callable hits the corresponding error path.
+                OSError:
+                    Raised when this callable hits the corresponding error path.
             """
             msg = "network down"
             raise OSError(msg)
@@ -2837,10 +3408,12 @@ def test_close_ftp_client_ignores_socket_close_failures_after_quit_os_error() ->
             """Handle close.
 
             Returns:
-                None: This callable does not return a value.
+                value:
+                    Structured value returned by this callable.
 
             Raises:
-                OSError: Raised when this callable hits the corresponding error path.
+                OSError:
+                    Raised when this callable hits the corresponding error path.
             """
             msg = "socket close failed"
             raise OSError(msg)
@@ -2852,17 +3425,19 @@ def test_close_ftp_socket_ignores_attribute_errors() -> None:
     """Verify close ftp socket ignores attribute errors.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
 
     Raises:
-        AttributeError: Raised when this callable hits the corresponding error path.
+        AttributeError:
+            Raised when this callable hits the corresponding error path.
     """
 
     class _AttributeFailingFtpSocket:
         """Test helper for AttributeFailingFtpSocket.
 
         Attributes:
-            None: This type does not declare additional class-level attributes.
+            None: This type does not declare class-level attributes.
         """
 
         @staticmethod
@@ -2870,10 +3445,12 @@ def test_close_ftp_socket_ignores_attribute_errors() -> None:
             """Handle close.
 
             Returns:
-                None: This callable does not return a value.
+                value:
+                    Structured value returned by this callable.
 
             Raises:
-                AttributeError: Raised when this callable hits the corresponding error path.
+                AttributeError:
+                    Raised when this callable hits the corresponding error path.
             """
             msg = "close unavailable"
             raise AttributeError(msg)
@@ -2885,7 +3462,8 @@ def test_ftp_emit_progress_calls_callback() -> None:
     """Verify ftp emit progress calls callback.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     events: list[object] = []
 
@@ -2898,7 +3476,8 @@ def test_ftp_error_type_helpers_cover_directory_upload_and_default_cases() -> No
     """Verify ftp error type helpers cover directory upload and default cases.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     assert (
         ftp._ftp_error_type_for(
@@ -2929,33 +3508,41 @@ def test_sftp_session_wraps_remote_directory_creation_failures(
     """Verify sftp session wraps remote directory creation failures.
 
     Args:
-        monkeypatch (pytest.MonkeyPatch): Value supplied to this callable.
+        monkeypatch:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
 
     Raises:
-        OSError: Raised when this callable hits the corresponding error path.
+        OSError:
+            Raised when this callable hits the corresponding error path.
     """
 
     class _DirectoryFailingSftpClient(_FakeSftpClient):
         """Test helper for DirectoryFailingSftpClient.
 
         Attributes:
-            None: This type does not declare additional class-level attributes.
+            None: This type does not declare class-level attributes.
         """
 
         def mkdir(self, remote_path: str) -> None:
             """Handle mkdir.
 
             Args:
-                remote_path (str): Value supplied to this callable.
+                self:
+                    Value supplied to this callable.
+                remote_path:
+                    Value supplied to this callable.
 
             Returns:
-                None: This callable does not return a value.
+                value:
+                    Structured value returned by this callable.
 
             Raises:
-                OSError: Raised when this callable hits the corresponding error path.
+                OSError:
+                    Raised when this callable hits the corresponding error path.
             """
             self.actions.append(f"mkdir:{remote_path}")
             msg = f"cannot create {remote_path}"
@@ -2981,34 +3568,43 @@ def test_sftp_session_wraps_upload_errors(
     """Verify sftp session wraps upload errors.
 
     Args:
-        monkeypatch (pytest.MonkeyPatch): Value supplied to this callable.
+        monkeypatch:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
 
     Raises:
-        OSError: Raised when this callable hits the corresponding error path.
+        OSError:
+            Raised when this callable hits the corresponding error path.
     """
 
     class _UploadFailingSftpClient(_FakeSftpClient):
         """Test helper for UploadFailingSftpClient.
 
         Attributes:
-            None: This type does not declare additional class-level attributes.
+            None: This type does not declare class-level attributes.
         """
 
         def file(self, remote_path: str, *, mode: str) -> _FakeRemoteFile:
             """Handle file.
 
             Args:
-                remote_path (str): Value supplied to this callable.
-                mode (str): Value supplied to this callable.
+                self:
+                    Value supplied to this callable.
+                remote_path:
+                    Value supplied to this callable.
+                mode:
+                    Value supplied to this callable.
 
             Returns:
-                _FakeRemoteFile: Structured value returned by this callable.
+                value:
+                    Structured value returned by this callable.
 
             Raises:
-                OSError: Raised when this callable hits the corresponding error path.
+                OSError:
+                    Raised when this callable hits the corresponding error path.
             """
             msg = "Broken pipe"
             raise OSError(msg)
@@ -3024,34 +3620,45 @@ def test_sftp_session_wraps_upload_errors(
     assert error.value.error_code == "transport_io_failed"
 
 
-def test_iter_ssh_files_wraps_open_sftp_failures(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_iter_ssh_files_wraps_open_sftp_failures(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """Verify iter ssh files wraps open sftp failures.
 
     Args:
-        monkeypatch (pytest.MonkeyPatch): Value supplied to this callable.
+        monkeypatch:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
 
     Raises:
-        OSError: Raised when this callable hits the corresponding error path.
+        OSError:
+            Raised when this callable hits the corresponding error path.
     """
 
     class _OpenSftpFailingSshClient(_FakeSshClient):
         """Test helper for OpenSftpFailingSshClient.
 
         Attributes:
-            None: This type does not declare additional class-level attributes.
+            None: This type does not declare class-level attributes.
         """
 
         def open_sftp(self) -> _FakeSftpClient:
             """Handle open sftp.
 
+            Args:
+                self:
+                    Value supplied to this callable.
+
             Returns:
-                _FakeSftpClient: Structured value returned by this callable.
+                value:
+                    Structured value returned by this callable.
 
             Raises:
-                OSError: Raised when this callable hits the corresponding error path.
+                OSError:
+                    Raised when this callable hits the corresponding error path.
             """
             self.actions.append("open_sftp")
             msg = "Broken pipe"
@@ -3067,34 +3674,45 @@ def test_iter_ssh_files_wraps_open_sftp_failures(monkeypatch: pytest.MonkeyPatch
     assert ssh_client.actions == ["open_sftp", "ssh_close"]
 
 
-def test_download_ssh_file_wraps_open_sftp_failures(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_download_ssh_file_wraps_open_sftp_failures(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """Verify download ssh file wraps open sftp failures.
 
     Args:
-        monkeypatch (pytest.MonkeyPatch): Value supplied to this callable.
+        monkeypatch:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
 
     Raises:
-        OSError: Raised when this callable hits the corresponding error path.
+        OSError:
+            Raised when this callable hits the corresponding error path.
     """
 
     class _OpenSftpFailingSshClient(_FakeSshClient):
         """Test helper for OpenSftpFailingSshClient.
 
         Attributes:
-            None: This type does not declare additional class-level attributes.
+            None: This type does not declare class-level attributes.
         """
 
         def open_sftp(self) -> _FakeSftpClient:
             """Handle open sftp.
 
+            Args:
+                self:
+                    Value supplied to this callable.
+
             Returns:
-                _FakeSftpClient: Structured value returned by this callable.
+                value:
+                    Structured value returned by this callable.
 
             Raises:
-                OSError: Raised when this callable hits the corresponding error path.
+                OSError:
+                    Raised when this callable hits the corresponding error path.
             """
             self.actions.append("open_sftp")
             msg = "Broken pipe"
@@ -3104,7 +3722,9 @@ def test_download_ssh_file_wraps_open_sftp_failures(monkeypatch: pytest.MonkeyPa
     monkeypatch.setattr(ssh, "_connect_ssh_client", lambda config: ssh_client)
 
     with pytest.raises(RemoteConnectionTransportError, match="Broken pipe") as error:
-        ssh._download_ssh_file(_build_ssh_config(), "/srv/app/messages.po", None, "SFTP")
+        ssh._download_ssh_file(
+            _build_ssh_config(), "/srv/app/messages.po", None, "SFTP"
+        )
 
     assert error.value.error_code == "transport_io_failed"
     assert ssh_client.actions == ["open_sftp", "ssh_close"]
@@ -3116,13 +3736,16 @@ def test_connect_ssh_client_handles_missing_paramiko_module_during_host_key_poli
     """Verify connect ssh client handles missing paramiko module during host key policy.
 
     Args:
-        monkeypatch (pytest.MonkeyPatch): Value supplied to this callable.
+        monkeypatch:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
 
     Raises:
-        ModuleNotFoundError: Raised when this callable hits the corresponding error path.
+        ModuleNotFoundError:
+            Raised when this callable hits the corresponding error path.
     """
     fake_client = _FakeSshClient(_FakeSftpClient(listing={}, file_bytes={}))
 
@@ -3130,13 +3753,16 @@ def test_connect_ssh_client_handles_missing_paramiko_module_during_host_key_poli
         """Handle missing paramiko.
 
         Args:
-            module_name (str): Value supplied to this callable.
+            module_name:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
 
         Raises:
-            ModuleNotFoundError: Raised when this callable hits the corresponding error path.
+            ModuleNotFoundError:
+                Raised when this callable hits the corresponding error path.
         """
         msg = "No module named 'paramiko'"
         raise ModuleNotFoundError(msg)
@@ -3161,30 +3787,38 @@ def test_connect_ssh_client_handles_missing_paramiko_module_during_host_key_poli
     assert fake_client.actions == ["load_system_host_keys", "ssh_close"]
 
 
-def test_load_paramiko_helpers_handle_missing_module(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_load_paramiko_helpers_handle_missing_module(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """Verify load paramiko helpers handle missing module.
 
     Args:
-        monkeypatch (pytest.MonkeyPatch): Value supplied to this callable.
+        monkeypatch:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
 
     Raises:
-        ModuleNotFoundError: Raised when this callable hits the corresponding error path.
+        ModuleNotFoundError:
+            Raised when this callable hits the corresponding error path.
     """
 
     def _missing_paramiko(module_name: str) -> None:
         """Handle missing paramiko.
 
         Args:
-            module_name (str): Value supplied to this callable.
+            module_name:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
 
         Raises:
-            ModuleNotFoundError: Raised when this callable hits the corresponding error path.
+            ModuleNotFoundError:
+                Raised when this callable hits the corresponding error path.
         """
         msg = "No module named 'paramiko'"
         raise ModuleNotFoundError(msg)
@@ -3202,11 +3836,14 @@ def test_configure_host_key_policy_imports_paramiko_when_needed(
     """Verify configure host key policy imports paramiko when needed.
 
     Args:
-        monkeypatch (pytest.MonkeyPatch): Value supplied to this callable.
-        tmp_path (Path): Value supplied to this callable.
+        monkeypatch:
+            Value supplied to this callable.
+        tmp_path:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     actions: list[str] = []
 
@@ -3214,7 +3851,7 @@ def test_configure_host_key_policy_imports_paramiko_when_needed(
         """Test helper for FakeAutoAddPolicy.
 
         Attributes:
-            None: This type does not declare additional class-level attributes.
+            None: This type does not declare class-level attributes.
         """
 
         pass
@@ -3223,7 +3860,7 @@ def test_configure_host_key_policy_imports_paramiko_when_needed(
         """Test helper for RecordingSshClient.
 
         Attributes:
-            None: This type does not declare additional class-level attributes.
+            None: This type does not declare class-level attributes.
         """
 
         @staticmethod
@@ -3231,7 +3868,8 @@ def test_configure_host_key_policy_imports_paramiko_when_needed(
             """Handle load system host keys.
 
             Returns:
-                None: This callable does not return a value.
+                value:
+                    Structured value returned by this callable.
             """
             actions.append("load_system_host_keys")
 
@@ -3240,10 +3878,12 @@ def test_configure_host_key_policy_imports_paramiko_when_needed(
             """Handle load host keys.
 
             Args:
-                filename (str): Value supplied to this callable.
+                filename:
+                    Value supplied to this callable.
 
             Returns:
-                None: This callable does not return a value.
+                value:
+                    Structured value returned by this callable.
             """
             actions.append(f"load_host_keys:{filename}")
 
@@ -3252,10 +3892,12 @@ def test_configure_host_key_policy_imports_paramiko_when_needed(
             """Handle set missing host key policy.
 
             Args:
-                policy (object): Value supplied to this callable.
+                policy:
+                    Value supplied to this callable.
 
             Returns:
-                None: This callable does not return a value.
+                value:
+                    Structured value returned by this callable.
             """
             actions.append(f"set_policy:{policy.__class__.__name__}")
 
@@ -3290,7 +3932,8 @@ def test_ssh_error_type_helpers_cover_remaining_error_categories() -> None:
     """Verify ssh error type helpers cover remaining error categories.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     assert (
         ssh._ssh_error_type_for(

@@ -23,7 +23,8 @@ def test_open_settings_loads_sections_and_defaults() -> None:
     """Verify open settings loads sections and defaults.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     shell = create_frontend_shell(build_seeded_services())
 
@@ -36,7 +37,9 @@ def test_open_settings_loads_sections_and_defaults() -> None:
     assert shell.settings_state.app_settings.remember_last_screen is False
     assert shell.settings_state.app_settings.sync_progress_log_limit == 200
     assert shell.settings_state.theme_mode_field.control_type == "choice"
-    assert [option.value for option in shell.settings_state.theme_mode_field.options] == [
+    assert [
+        option.value for option in shell.settings_state.theme_mode_field.options
+    ] == [
         "system",
         "light",
         "dark",
@@ -48,7 +51,8 @@ def test_selecting_translation_settings_section_updates_context() -> None:
     """Verify selecting translation settings section updates context.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     shell = create_frontend_shell(build_seeded_services())
 
@@ -58,14 +62,17 @@ def test_selecting_translation_settings_section_updates_context() -> None:
     assert shell.settings_state is not None
     assert shell.settings_state.selected_section_key == "translation"
     assert shell.settings_state.selected_section_is_available is True
-    assert shell.settings_state.status_message == "Translation Settings are ready to edit."
+    assert (
+        shell.settings_state.status_message == "Translation Settings are ready to edit."
+    )
 
 
 def test_update_and_save_settings_persists_fake_state() -> None:
     """Verify update and save settings persists fake state.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     shell = create_frontend_shell(build_seeded_services())
 
@@ -105,7 +112,8 @@ def test_restore_defaults_uses_settings_service() -> None:
     """Verify restore defaults uses settings service.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     shell = create_frontend_shell(build_seeded_services())
 
@@ -126,7 +134,8 @@ def test_saving_settings_preserves_the_selected_section() -> None:
     """Verify saving settings preserves the selected section.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     shell = create_frontend_shell(build_seeded_services())
 
@@ -148,7 +157,8 @@ def test_settings_load_failure_is_exposed() -> None:
     """Verify settings load failure is exposed.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     shell = create_frontend_shell(build_failing_settings_load_services())
 
@@ -163,7 +173,8 @@ def test_settings_save_failure_keeps_error_state() -> None:
     """Verify settings save failure keeps error state.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     shell = create_frontend_shell(build_failing_settings_save_services())
 
@@ -176,11 +187,12 @@ def test_settings_save_failure_keeps_error_state() -> None:
     assert shell.latest_error == "App settings could not be saved."
 
 
-def test_selecting_framework_settings_section_exposes_editable_sync_scope_controls() -> None:
+def test_selectin_framewor_settings_section_exposes_ed_57a5() -> None:
     """Verify selecting framework settings section exposes editable sync scope controls.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     shell = create_frontend_shell(build_seeded_services())
 
@@ -196,7 +208,8 @@ def test_update_and_save_settings_persists_global_and_framework_sync_rules() -> 
     """Verify update and save settings persists global and framework sync rules.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     shell = create_frontend_shell(build_seeded_services())
 
@@ -231,8 +244,13 @@ def test_update_and_save_settings_persists_global_and_framework_sync_rules() -> 
     shell.open_settings()
 
     assert shell.settings_state is not None
-    assert shell.settings_state.app_settings.sync_scope_settings.use_gitignore_rules is True
     assert (
-        shell.settings_state.app_settings.sync_scope_settings.framework_rule_sets[-1].framework_type
+        shell.settings_state.app_settings.sync_scope_settings.use_gitignore_rules
+        is True
+    )
+    assert (
+        shell.settings_state.app_settings.sync_scope_settings.framework_rule_sets[
+            -1
+        ].framework_type
         == "django"
     )

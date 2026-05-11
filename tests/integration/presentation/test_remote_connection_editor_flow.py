@@ -16,11 +16,16 @@ from polyglot_site_translator.domain.remote_connections.models import (
     RemoteConnectionTestResult,
     RemoteConnectionTypeDescriptor,
 )
-from polyglot_site_translator.domain.sync.models import RemoteSyncFile, SyncProgressEvent
+from polyglot_site_translator.domain.sync.models import (
+    RemoteSyncFile,
+    SyncProgressEvent,
+)
 from polyglot_site_translator.infrastructure.remote_connections.registry import (
     RemoteConnectionRegistry,
 )
-from polyglot_site_translator.infrastructure.settings import build_default_settings_service
+from polyglot_site_translator.infrastructure.settings import (
+    build_default_settings_service,
+)
 from polyglot_site_translator.presentation.fakes import build_default_frontend_services
 from polyglot_site_translator.services.remote_connections import RemoteConnectionService
 
@@ -30,7 +35,8 @@ class SuccessfulSFTPProvider:
     """Test helper for SuccessfulSFTPProvider.
 
     Attributes:
-        descriptor (RemoteConnectionTypeDescriptor): Documented attribute exposed by this type.
+        descriptor:
+            Documented attribute exposed by this type.
     """
 
     descriptor: RemoteConnectionTypeDescriptor = field(
@@ -48,10 +54,14 @@ class SuccessfulSFTPProvider:
         """Verify connection.
 
         Args:
-            config (RemoteConnectionConfigInput): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            config:
+                Value supplied to this callable.
 
         Returns:
-            RemoteConnectionTestResult: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         return RemoteConnectionTestResult(
             success=True,
@@ -72,13 +82,18 @@ class SuccessfulSFTPProvider:
         """Handle list remote files.
 
         Args:
-            config (RemoteConnectionConfig): Value supplied to this callable.
-            progress_callback (Callable[[SyncProgressEvent], None] | None): Value supplied to this
-        callable.
-            max_files (int): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            config:
+                Value supplied to this callable.
+            progress_callback:
+                Value supplied to this callable.
+            max_files:
+                Value supplied to this callable.
 
         Returns:
-            list[RemoteSyncFile]: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         return []
 
@@ -90,12 +105,14 @@ class SuccessfulSFTPProvider:
         """Handle iter remote files.
 
         Args:
-            config (RemoteConnectionConfig): Value supplied to this callable.
-            progress_callback (Callable[[SyncProgressEvent], None] | None): Value supplied to this
-        callable.
+            config:
+                Value supplied to this callable.
+            progress_callback:
+                Value supplied to this callable.
 
         Returns:
-            Iterable[RemoteSyncFile]: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         return iter(())
 
@@ -104,13 +121,16 @@ class SuccessfulSFTPProvider:
         """Handle open session.
 
         Args:
-            config (RemoteConnectionConfig): Value supplied to this callable.
+            config:
+                Value supplied to this callable.
 
         Returns:
-            Any: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
 
         Raises:
-            AssertionError: Raised when this callable hits the corresponding error path.
+            AssertionError:
+                Raised when this callable hits the corresponding error path.
         """
         msg = f"open_session not used in this test for {config.connection_type}"
         raise AssertionError(msg)
@@ -124,16 +144,22 @@ class SuccessfulSFTPProvider:
         """Handle download file.
 
         Args:
-            config (RemoteConnectionConfig): Value supplied to this callable.
-            remote_path (str): Value supplied to this callable.
-            progress_callback (Callable[[SyncProgressEvent], None] | None): Value supplied to this
-        callable.
+            self:
+                Value supplied to this callable.
+            config:
+                Value supplied to this callable.
+            remote_path:
+                Value supplied to this callable.
+            progress_callback:
+                Value supplied to this callable.
 
         Returns:
-            bytes: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
 
         Raises:
-            AssertionError: Raised when this callable hits the corresponding error path.
+            AssertionError:
+                Raised when this callable hits the corresponding error path.
         """
         msg = f"download not used in this test for {remote_path}"
         raise AssertionError(msg)
@@ -147,16 +173,20 @@ class SuccessfulSFTPProvider:
         """Handle ensure remote directory.
 
         Args:
-            config (RemoteConnectionConfig): Value supplied to this callable.
-            remote_path (str): Value supplied to this callable.
-            progress_callback (Callable[[SyncProgressEvent], None] | None): Value supplied to this
-        callable.
+            config:
+                Value supplied to this callable.
+            remote_path:
+                Value supplied to this callable.
+            progress_callback:
+                Value supplied to this callable.
 
         Returns:
-            int: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
 
         Raises:
-            AssertionError: Raised when this callable hits the corresponding error path.
+            AssertionError:
+                Raised when this callable hits the corresponding error path.
         """
         msg = f"ensure_remote_directory not used in this test for {remote_path}"
         raise AssertionError(msg)
@@ -171,30 +201,39 @@ class SuccessfulSFTPProvider:
         """Handle upload file.
 
         Args:
-            config (RemoteConnectionConfig): Value supplied to this callable.
-            remote_path (str): Value supplied to this callable.
-            contents (bytes): Value supplied to this callable.
-            progress_callback (Callable[[SyncProgressEvent], None] | None): Value supplied to this
-        callable.
+            config:
+                Value supplied to this callable.
+            remote_path:
+                Value supplied to this callable.
+            contents:
+                Value supplied to this callable.
+            progress_callback:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
 
         Raises:
-            AssertionError: Raised when this callable hits the corresponding error path.
+            AssertionError:
+                Raised when this callable hits the corresponding error path.
         """
         msg = f"upload not used in this test for {remote_path}"
         raise AssertionError(msg)
 
 
-def test_project_editor_exposes_dynamic_remote_connection_options(tmp_path: Path) -> None:
+def test_project_editor_exposes_dynamic_remote_connection_options(
+    tmp_path: Path,
+) -> None:
     """Verify project editor exposes dynamic remote connection options.
 
     Args:
-        tmp_path (Path): Value supplied to this callable.
+        tmp_path:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     settings_service = build_default_settings_service(config_dir=tmp_path)
     app = cast(
@@ -224,18 +263,24 @@ def test_project_editor_exposes_dynamic_remote_connection_options(tmp_path: Path
     )
 
 
-def test_project_editor_runs_connection_tests_and_surfaces_the_result(tmp_path: Path) -> None:
+def test_project_editor_runs_connection_tests_and_surfaces_the_result(
+    tmp_path: Path,
+) -> None:
     """Verify project editor runs connection tests and surfaces the result.
 
     Args:
-        tmp_path (Path): Value supplied to this callable.
+        tmp_path:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     settings_service = build_default_settings_service(config_dir=tmp_path)
     remote_connection_service = RemoteConnectionService(
-        registry=RemoteConnectionRegistry.default_registry(providers=[SuccessfulSFTPProvider()])
+        registry=RemoteConnectionRegistry.default_registry(
+            providers=[SuccessfulSFTPProvider()]
+        )
     )
     app = cast(
         Any,
@@ -271,7 +316,10 @@ def test_project_editor_runs_connection_tests_and_surfaces_the_result(tmp_path: 
     assert shell.project_editor_state is not None
     assert shell.project_editor_state.connection_test_result is not None
     assert shell.project_editor_state.connection_test_result.success is True
-    assert "Connected successfully" in shell.project_editor_state.connection_test_result.message
+    assert (
+        "Connected successfully"
+        in shell.project_editor_state.connection_test_result.message
+    )
 
 
 def test_project_editor_persists_remote_connection_data_when_editing_site(
@@ -280,10 +328,12 @@ def test_project_editor_persists_remote_connection_data_when_editing_site(
     """Verify project editor persists remote connection data when editing site.
 
     Args:
-        tmp_path (Path): Value supplied to this callable.
+        tmp_path:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     settings_service = build_default_settings_service(config_dir=tmp_path / "config")
     app = cast(
@@ -347,10 +397,12 @@ def test_project_editor_persists_filtered_sync_preference_when_editing_site(
     """Verify project editor persists filtered sync preference when editing site.
 
     Args:
-        tmp_path (Path): Value supplied to this callable.
+        tmp_path:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     settings_service = build_default_settings_service(config_dir=tmp_path / "config")
     app = cast(
@@ -399,10 +451,12 @@ def test_project_editor_persists_project_sync_rule_overrides(
     """Verify project editor persists project sync rule overrides.
 
     Args:
-        tmp_path (Path): Value supplied to this callable.
+        tmp_path:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     settings_service = build_default_settings_service(config_dir=tmp_path / "config")
     app = cast(
@@ -439,7 +493,9 @@ def test_project_editor_persists_project_sync_rule_overrides(
         for item in shell.project_editor_state.editor.sync_rule_items
         if item.relative_path == "__pycache__"
     )
-    editor_screen._toggle_sync_rule(shell.project_editor_state, cache_rule.rule_key, False)
+    editor_screen._toggle_sync_rule(
+        shell.project_editor_state, cache_rule.rule_key, False
+    )
     assert shell.project_editor_state is not None
     editor_screen._sync_rule_path_input.text = "locale_custom"
     editor_screen._sync_rule_description_input.text = "Project locale override"

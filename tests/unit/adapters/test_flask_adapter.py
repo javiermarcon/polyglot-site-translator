@@ -9,13 +9,15 @@ from polyglot_site_translator.domain.sync.scope import SyncFilterType
 
 
 def test_flask_adapter_detects_a_typical_flask_layout(tmp_path: Path) -> None:
-    """Verify flask adapter detects a typical flask layout.
+    """Verify flask adapter detects a typical Flask layout.
 
     Args:
-        tmp_path (Path): Value supplied to this callable.
+        tmp_path:
+            Temporary project root used to seed the adapter inputs.
 
     Returns:
-        None: This callable does not return a value.
+        None:
+            This callable does not return a value.
     """
     (tmp_path / "app.py").write_text(
         "from flask import Flask\napp = Flask(__name__)\n",
@@ -33,13 +35,15 @@ def test_flask_adapter_detects_a_typical_flask_layout(tmp_path: Path) -> None:
 
 
 def test_flask_adapter_detects_factory_style_wsgi_projects(tmp_path: Path) -> None:
-    """Verify flask adapter detects factory style wsgi projects.
+    """Verify flask adapter detects factory-style WSGI projects.
 
     Args:
-        tmp_path (Path): Value supplied to this callable.
+        tmp_path:
+            Temporary project root used to seed the adapter inputs.
 
     Returns:
-        None: This callable does not return a value.
+        None:
+            This callable does not return a value.
     """
     (tmp_path / "wsgi.py").write_text(
         "from app import create_app\napplication = create_app()\n",
@@ -59,14 +63,18 @@ def test_flask_adapter_detects_factory_style_wsgi_projects(tmp_path: Path) -> No
     assert result.framework_type == "flask"
 
 
-def test_flask_adapter_returns_unmatched_when_signals_are_insufficient(tmp_path: Path) -> None:
+def test_flask_adapter_returns_unmatched_when_signals_are_insufficient(
+    tmp_path: Path,
+) -> None:
     """Verify flask adapter returns unmatched when signals are insufficient.
 
     Args:
-        tmp_path (Path): Value supplied to this callable.
+        tmp_path:
+            Temporary project root used to seed the adapter inputs.
 
     Returns:
-        None: This callable does not return a value.
+        None:
+            This callable does not return a value.
     """
     (tmp_path / "app.py").write_text("print('hello')\n", encoding="utf-8")
 
@@ -79,7 +87,8 @@ def test_flask_adapter_exposes_sync_filters() -> None:
     """Verify flask adapter exposes sync filters.
 
     Returns:
-        None: This callable does not return a value.
+        None:
+            This callable does not return a value.
     """
     scope = FlaskFrameworkAdapter().get_sync_scope(Path("/workspace/site"))
 

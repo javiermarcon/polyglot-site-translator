@@ -15,15 +15,24 @@ _MATERIAL_VISIBILITY_OFF: str = "\ue8f5"
 
 
 def _material_icons_font_path() -> Path:
-    """Path to the packaged Material Icons font (Apache-2.0, see assets/fonts/NOTICE.txt).
+    """Path to the packaged Material Icons font (Apache-2.0, see.
+
+    assets/fonts/NOTICE.txt).
 
     Returns:
-        Path: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
 
     Raises:
-        FileNotFoundError: Raised when this callable hits the corresponding error path.
+        FileNotFoundError:
+            Raised when this callable hits the corresponding error path.
     """
-    path = Path(__file__).resolve().parent.parent / "assets" / "fonts" / "MaterialIcons-Regular.ttf"
+    path = (
+        Path(__file__).resolve().parent.parent
+        / "assets"
+        / "fonts"
+        / "MaterialIcons-Regular.ttf"
+    )
     if not path.is_file():
         msg = f"Bundled Material Icons font not found: {path}"
         raise FileNotFoundError(msg)
@@ -34,10 +43,12 @@ def password_visibility_toggle_label(*, password_masked: bool) -> str:
     """Glyph text for the side button using the bundled Material Icons font.
 
     Args:
-        password_masked (bool): Value supplied to this callable.
+        password_masked:
+            Value supplied to this callable.
 
     Returns:
-        str: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
     """
     return _MATERIAL_VISIBILITY if password_masked else _MATERIAL_VISIBILITY_OFF
 
@@ -46,17 +57,21 @@ def build_password_row_with_visibility_toggle(text_input: TextInput) -> BoxLayou
     """Arrange a password ``TextInput`` beside a toggle that masks or reveals the value.
 
     Args:
-        text_input (TextInput): Value supplied to this callable.
+        text_input:
+            Value supplied to this callable.
 
     Returns:
-        BoxLayout: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
     """
     row = BoxLayout(orientation="horizontal", spacing=8, size_hint_y=None, height=44)
     text_input.size_hint_x = 0.78
 
     font_path = _material_icons_font_path()
     toggle = AppButton(
-        text=password_visibility_toggle_label(password_masked=bool(text_input.password)),
+        text=password_visibility_toggle_label(
+            password_masked=bool(text_input.password)
+        ),
         primary=False,
         size_hint_x=0.22,
         font_name=str(font_path),
@@ -67,13 +82,17 @@ def build_password_row_with_visibility_toggle(text_input: TextInput) -> BoxLayou
         """Handle on toggle.
 
         Args:
-            _instance (object): Value supplied to this callable.
+            _instance:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         text_input.password = not text_input.password
-        toggle.text = password_visibility_toggle_label(password_masked=bool(text_input.password))
+        toggle.text = password_visibility_toggle_label(
+            password_masked=bool(text_input.password)
+        )
 
     toggle.bind(on_release=on_toggle)
     row.add_widget(text_input)

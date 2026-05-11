@@ -24,7 +24,8 @@ class _FakeClockEvent:
     """Test helper for FakeClockEvent.
 
     Attributes:
-        cancelled (bool): Documented attribute exposed by this type.
+        cancelled:
+            Documented attribute exposed by this type.
     """
 
     cancelled: bool = False
@@ -32,8 +33,13 @@ class _FakeClockEvent:
     def cancel(self) -> None:
         """Handle cancel.
 
+        Args:
+            self:
+                Value supplied to this callable.
+
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         self.cancelled = True
 
@@ -43,12 +49,18 @@ class _FakeConfirmationPopup:
     """Test helper for FakeConfirmationPopup.
 
     Attributes:
-        title (str): Documented attribute exposed by this type.
-        size_hint (tuple[float, float] | None): Documented attribute exposed by this type.
-        auto_dismiss (bool): Documented attribute exposed by this type.
-        content (object | None): Documented attribute exposed by this type.
-        opened (bool): Documented attribute exposed by this type.
-        dismissed (bool): Documented attribute exposed by this type.
+        title:
+            Documented attribute exposed by this type.
+        size_hint:
+            Documented attribute exposed by this type.
+        auto_dismiss:
+            Documented attribute exposed by this type.
+        content:
+            Documented attribute exposed by this type.
+        opened:
+            Documented attribute exposed by this type.
+        dismissed:
+            Documented attribute exposed by this type.
     """
 
     title: str = ""
@@ -61,16 +73,26 @@ class _FakeConfirmationPopup:
     def dismiss(self) -> None:
         """Handle dismiss.
 
+        Args:
+            self:
+                Value supplied to this callable.
+
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         self.dismissed = True
 
     def open(self) -> None:
         """Handle open.
 
+        Args:
+            self:
+                Value supplied to this callable.
+
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         self.opened = True
 
@@ -79,7 +101,8 @@ def test_sync_progress_popup_renders_empty_and_populated_states() -> None:
     """Verify sync progress popup renders empty and populated states.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     shell = create_frontend_shell(build_seeded_services())
     popup = SyncProgressPopup(shell=shell)
@@ -141,10 +164,12 @@ def test_sync_progress_popup_open_and_dismiss_manage_refresh_loop(
     """Verify sync progress popup open and dismiss manage refresh loop.
 
     Args:
-        monkeypatch (MonkeyPatch): Value supplied to this callable.
+        monkeypatch:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     shell = create_frontend_shell(build_seeded_services())
     popup = SyncProgressPopup(shell=shell)
@@ -155,11 +180,14 @@ def test_sync_progress_popup_open_and_dismiss_manage_refresh_loop(
         """Handle record schedule.
 
         Args:
-            _callback (object): Value supplied to this callable.
-            _interval (float): Value supplied to this callable.
+            _callback:
+                Value supplied to this callable.
+            _interval:
+                Value supplied to this callable.
 
         Returns:
-            _FakeClockEvent: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         event = _FakeClockEvent()
         scheduled_events.append(event)
@@ -169,7 +197,8 @@ def test_sync_progress_popup_open_and_dismiss_manage_refresh_loop(
         """Handle record open.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         open_calls.append("open")
 
@@ -194,7 +223,8 @@ def test_sync_progress_popup_on_dismiss_without_refresh_event_is_a_noop() -> Non
     """Verify sync progress popup on dismiss without refresh event is a noop.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     shell = create_frontend_shell(build_seeded_services())
     popup = SyncProgressPopup(shell=shell)
@@ -209,7 +239,8 @@ def test_sync_progress_popup_offers_host_key_trust_only_for_unknown_ssh_hosts() 
     """Verify sync progress popup offers host key trust only for unknown ssh hosts.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     shell = create_frontend_shell(build_seeded_services())
     popup = SyncProgressPopup(shell=shell)
@@ -250,7 +281,8 @@ def test_sync_progress_popup_hides_host_key_trust_while_retry_is_running() -> No
     """Verify sync progress popup hides host key trust while retry is running.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     shell = create_frontend_shell(build_seeded_services())
     popup = SyncProgressPopup(shell=shell)
@@ -284,10 +316,12 @@ def test_sync_progress_popup_trust_confirmation_delegates_to_shell(
     """Verify sync progress popup trust confirmation delegates to shell.
 
     Args:
-        monkeypatch (MonkeyPatch): Value supplied to this callable.
+        monkeypatch:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     shell = create_frontend_shell(build_seeded_services())
     popup = SyncProgressPopup(shell=shell)
@@ -297,7 +331,8 @@ def test_sync_progress_popup_trust_confirmation_delegates_to_shell(
         """Handle record trust.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         trust_calls.append("trusted")
 
@@ -314,10 +349,12 @@ def test_sync_progress_popup_opens_host_key_confirmation(
     """Verify sync progress popup opens host key confirmation.
 
     Args:
-        monkeypatch (MonkeyPatch): Value supplied to this callable.
+        monkeypatch:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     shell = create_frontend_shell(build_seeded_services())
     popup = SyncProgressPopup(shell=shell)
@@ -332,12 +369,16 @@ def test_sync_progress_popup_opens_host_key_confirmation(
         """Handle build confirmation popup.
 
         Args:
-            title (str): Value supplied to this callable.
-            size_hint (tuple[float, float]): Value supplied to this callable.
-            auto_dismiss (bool): Value supplied to this callable.
+            title:
+                Value supplied to this callable.
+            size_hint:
+                Value supplied to this callable.
+            auto_dismiss:
+                Value supplied to this callable.
 
         Returns:
-            _FakeConfirmationPopup: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         confirmation = _FakeConfirmationPopup(
             title=title,

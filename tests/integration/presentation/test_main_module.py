@@ -16,10 +16,12 @@ def test_main_function_runs_the_created_app(monkeypatch: MonkeyPatch) -> None:
     """Verify main function runs the created app.
 
     Args:
-        monkeypatch (MonkeyPatch): Value supplied to this callable.
+        monkeypatch:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     main_module = importlib.import_module("polyglot_site_translator.__main__")
 
@@ -29,14 +31,19 @@ def test_main_function_runs_the_created_app(monkeypatch: MonkeyPatch) -> None:
         """Test helper for FakeApp.
 
         Attributes:
-            None: This type does not declare additional class-level attributes.
+            None: This type does not declare class-level attributes.
         """
 
         def run(self) -> None:
             """Handle run.
 
+            Args:
+                self:
+                    Value supplied to this callable.
+
             Returns:
-                None: This callable does not return a value.
+                value:
+                    Structured value returned by this callable.
             """
             calls.append("run")
 
@@ -44,7 +51,8 @@ def test_main_function_runs_the_created_app(monkeypatch: MonkeyPatch) -> None:
         """Handle create fake app.
 
         Returns:
-            FakeApp: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         return FakeApp()
 
@@ -61,10 +69,12 @@ def test_running_module_as_main_sets_kivy_filelog_default_and_executes_main(
     """Verify running module as main sets kivy filelog default and executes main.
 
     Args:
-        monkeypatch (MonkeyPatch): Value supplied to this callable.
+        monkeypatch:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     fake_app_module = ModuleType("polyglot_site_translator.app")
     calls: list[str] = []
@@ -73,14 +83,19 @@ def test_running_module_as_main_sets_kivy_filelog_default_and_executes_main(
         """Test helper for FakeApp.
 
         Attributes:
-            None: This type does not declare additional class-level attributes.
+            None: This type does not declare class-level attributes.
         """
 
         def run(self) -> None:
             """Handle run.
 
+            Args:
+                self:
+                    Value supplied to this callable.
+
             Returns:
-                None: This callable does not return a value.
+                value:
+                    Structured value returned by this callable.
             """
             calls.append("run")
 
@@ -88,7 +103,8 @@ def test_running_module_as_main_sets_kivy_filelog_default_and_executes_main(
         """Handle create fake app.
 
         Returns:
-            FakeApp: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         return FakeApp()
 

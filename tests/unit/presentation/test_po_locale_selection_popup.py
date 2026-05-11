@@ -2,22 +2,26 @@
 
 from __future__ import annotations
 
+from importlib import import_module
+
 from pytest import MonkeyPatch
 
-from polyglot_site_translator.presentation.kivy.widgets.po_locale_selection_popup import (
-    POLocaleSelectionPopup,
-)
 from polyglot_site_translator.presentation.view_models import (
     TranslationOptionsViewModel,
     TranslationWorkflowRequestViewModel,
 )
+
+POLocaleSelectionPopup = import_module(
+    "polyglot_site_translator.presentation.kivy.widgets.po_locale_selection_popup"
+).POLocaleSelectionPopup
 
 
 def _build_options() -> TranslationOptionsViewModel:
     """Handle build options.
 
     Returns:
-        TranslationOptionsViewModel: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
     """
     return TranslationOptionsViewModel(
         compile_mo=True,
@@ -34,7 +38,8 @@ def test_po_locale_selection_popup_preloads_default_locales() -> None:
     """Verify po locale selection popup preloads default locales.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     popup = POLocaleSelectionPopup(
         default_locales="es_ES,es_AR",
@@ -63,10 +68,12 @@ def test_po_locale_selection_popup_normalizes_and_confirms_locales(
     """Verify po locale selection popup normalizes and confirms locales.
 
     Args:
-        monkeypatch (MonkeyPatch): Value supplied to this callable.
+        monkeypatch:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     popup = POLocaleSelectionPopup(
         default_locales="es_ES",
@@ -88,10 +95,12 @@ def test_po_locale_selection_popup_normalizes_and_confirms_locales(
         """Handle record confirm.
 
         Args:
-            request (TranslationWorkflowRequestViewModel): Value supplied to this callable.
+            request:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         confirmed.append(request)
 
@@ -129,7 +138,8 @@ def test_po_locale_selection_popup_keeps_open_when_locales_are_invalid() -> None
     """Verify po locale selection popup keeps open when locales are invalid.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     popup = POLocaleSelectionPopup(
         default_locales="es_ES",
@@ -150,7 +160,8 @@ def test_po_locale_selection_popup_builds_consistent_toggle_row_copy() -> None:
     """Verify po locale selection popup builds consistent toggle row copy.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     popup = POLocaleSelectionPopup(
         default_locales="es_ES",

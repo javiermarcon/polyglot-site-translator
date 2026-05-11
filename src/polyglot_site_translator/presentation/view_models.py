@@ -6,7 +6,9 @@ from collections.abc import Iterable
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from polyglot_site_translator.domain.framework_detection.models import FrameworkDescriptor
+from polyglot_site_translator.domain.framework_detection.models import (
+    FrameworkDescriptor,
+)
 from polyglot_site_translator.domain.remote_connections.models import (
     NO_REMOTE_CONNECTION_VALUE,
     RemoteConnectionTypeDescriptor,
@@ -22,10 +24,14 @@ class NavigationMenuItemViewModel:
     """A navigation target rendered in the application menu.
 
     Attributes:
-        key (str): Documented attribute exposed by this type.
-        title (str): Documented attribute exposed by this type.
-        description (str): Documented attribute exposed by this type.
-        is_enabled (bool): Documented attribute exposed by this type.
+        key:
+            Documented attribute exposed by this type.
+        title:
+            Documented attribute exposed by this type.
+        description:
+            Documented attribute exposed by this type.
+        is_enabled:
+            Documented attribute exposed by this type.
     """
 
     key: str
@@ -39,9 +45,12 @@ class NavigationMenuSectionViewModel:
     """A grouped section rendered in the application menu.
 
     Attributes:
-        key (str): Documented attribute exposed by this type.
-        title (str): Documented attribute exposed by this type.
-        items (list[NavigationMenuItemViewModel]): Documented attribute exposed by this type.
+        key:
+            Documented attribute exposed by this type.
+        title:
+            Documented attribute exposed by this type.
+        items:
+            Documented attribute exposed by this type.
     """
 
     key: str
@@ -54,9 +63,12 @@ class NavigationMenuStateViewModel:
     """Global navigation menu state for the application shell.
 
     Attributes:
-        sections (list[NavigationMenuSectionViewModel]): Documented attribute exposed by this type.
-        active_route_key (str): Documented attribute exposed by this type.
-        is_open (bool): Documented attribute exposed by this type.
+        sections:
+            Documented attribute exposed by this type.
+        active_route_key:
+            Documented attribute exposed by this type.
+        is_open:
+            Documented attribute exposed by this type.
     """
 
     sections: list[NavigationMenuSectionViewModel]
@@ -69,9 +81,12 @@ class DashboardSectionViewModel:
     """A top-level workflow entry rendered in the dashboard.
 
     Attributes:
-        key (str): Documented attribute exposed by this type.
-        title (str): Documented attribute exposed by this type.
-        description (str): Documented attribute exposed by this type.
+        key:
+            Documented attribute exposed by this type.
+        title:
+            Documented attribute exposed by this type.
+        description:
+            Documented attribute exposed by this type.
     """
 
     key: str
@@ -84,10 +99,14 @@ class SettingsSectionViewModel:
     """A settings category rendered in the settings screen.
 
     Attributes:
-        key (str): Documented attribute exposed by this type.
-        title (str): Documented attribute exposed by this type.
-        description (str): Documented attribute exposed by this type.
-        is_available (bool): Documented attribute exposed by this type.
+        key:
+            Documented attribute exposed by this type.
+        title:
+            Documented attribute exposed by this type.
+        description:
+            Documented attribute exposed by this type.
+        is_available:
+            Documented attribute exposed by this type.
     """
 
     key: str
@@ -101,9 +120,12 @@ class ProjectEditorSectionViewModel:
     """A project-editor section rendered in the create/edit workflow.
 
     Attributes:
-        key (str): Documented attribute exposed by this type.
-        title (str): Documented attribute exposed by this type.
-        description (str): Documented attribute exposed by this type.
+        key:
+            Documented attribute exposed by this type.
+        title:
+            Documented attribute exposed by this type.
+        description:
+            Documented attribute exposed by this type.
     """
 
     key: str
@@ -116,8 +138,10 @@ class SettingsOptionViewModel:
     """A selectable option rendered by a settings control.
 
     Attributes:
-        value (str): Documented attribute exposed by this type.
-        label (str): Documented attribute exposed by this type.
+        value:
+            Documented attribute exposed by this type.
+        label:
+            Documented attribute exposed by this type.
     """
 
     value: str
@@ -129,11 +153,16 @@ class SettingsFieldViewModel:
     """A typed settings field descriptor for the settings UI.
 
     Attributes:
-        key (str): Documented attribute exposed by this type.
-        label (str): Documented attribute exposed by this type.
-        help_text (str): Documented attribute exposed by this type.
-        control_type (str): Documented attribute exposed by this type.
-        options (list[SettingsOptionViewModel]): Documented attribute exposed by this type.
+        key:
+            Documented attribute exposed by this type.
+        label:
+            Documented attribute exposed by this type.
+        help_text:
+            Documented attribute exposed by this type.
+        control_type:
+            Documented attribute exposed by this type.
+        options:
+            Documented attribute exposed by this type.
     """
 
     key: str
@@ -148,26 +177,46 @@ class AppSettingsViewModel:
     """Editable frontend settings related to Kivy and UI behavior.
 
     Attributes:
-        theme_mode (str): Documented attribute exposed by this type.
-        window_width (int): Documented attribute exposed by this type.
-        window_height (int): Documented attribute exposed by this type.
-        remember_last_screen (bool): Documented attribute exposed by this type.
-        last_opened_screen (str): Documented attribute exposed by this type.
-        developer_mode (bool): Documented attribute exposed by this type.
-        ui_language (str): Documented attribute exposed by this type.
-        default_project_locale (str): Documented attribute exposed by this type.
-        default_compile_mo (bool): Documented attribute exposed by this type.
-        default_use_external_translator (bool): Documented attribute exposed by this type.
-        default_use_translation_cache (bool): Documented attribute exposed by this type.
-        default_only_fuzzy (bool): Documented attribute exposed by this type.
-        translation_cache_path (str): Documented attribute exposed by this type.
-        default_dry_run (bool): Documented attribute exposed by this type.
-        default_stats_only (bool): Documented attribute exposed by this type.
-        default_report_inconsistencies (bool): Documented attribute exposed by this type.
-        database_directory (str): Documented attribute exposed by this type.
-        database_filename (str): Documented attribute exposed by this type.
-        sync_progress_log_limit (int): Documented attribute exposed by this type.
-        sync_scope_settings (AdapterSyncScopeSettings): Documented attribute exposed by this type.
+        theme_mode:
+            Documented attribute exposed by this type.
+        window_width:
+            Documented attribute exposed by this type.
+        window_height:
+            Documented attribute exposed by this type.
+        remember_last_screen:
+            Documented attribute exposed by this type.
+        last_opened_screen:
+            Documented attribute exposed by this type.
+        developer_mode:
+            Documented attribute exposed by this type.
+        ui_language:
+            Documented attribute exposed by this type.
+        default_project_locale:
+            Documented attribute exposed by this type.
+        default_compile_mo:
+            Documented attribute exposed by this type.
+        default_use_external_translator:
+            Documented attribute exposed by this type.
+        default_use_translation_cache:
+            Documented attribute exposed by this type.
+        default_only_fuzzy:
+            Documented attribute exposed by this type.
+        translation_cache_path:
+            Documented attribute exposed by this type.
+        default_dry_run:
+            Documented attribute exposed by this type.
+        default_stats_only:
+            Documented attribute exposed by this type.
+        default_report_inconsistencies:
+            Documented attribute exposed by this type.
+        database_directory:
+            Documented attribute exposed by this type.
+        database_filename:
+            Documented attribute exposed by this type.
+        sync_progress_log_limit:
+            Documented attribute exposed by this type.
+        sync_scope_settings:
+            Documented attribute exposed by this type.
     """
 
     theme_mode: str = "system"
@@ -199,13 +248,20 @@ class TranslationOptionsViewModel:
     """Translation workflow toggles shared by settings, projects and run popups.
 
     Attributes:
-        compile_mo (bool): Documented attribute exposed by this type.
-        use_external_translator (bool): Documented attribute exposed by this type.
-        use_translation_cache (bool): Documented attribute exposed by this type.
-        only_fuzzy (bool): Documented attribute exposed by this type.
-        dry_run (bool): Documented attribute exposed by this type.
-        stats_only (bool): Documented attribute exposed by this type.
-        report_inconsistencies (bool): Documented attribute exposed by this type.
+        compile_mo:
+            Documented attribute exposed by this type.
+        use_external_translator:
+            Documented attribute exposed by this type.
+        use_translation_cache:
+            Documented attribute exposed by this type.
+        only_fuzzy:
+            Documented attribute exposed by this type.
+        dry_run:
+            Documented attribute exposed by this type.
+        stats_only:
+            Documented attribute exposed by this type.
+        report_inconsistencies:
+            Documented attribute exposed by this type.
     """
 
     compile_mo: bool = True
@@ -222,8 +278,10 @@ class TranslationWorkflowRequestViewModel:
     """Per-run translation request selected from the popup.
 
     Attributes:
-        locales (str): Documented attribute exposed by this type.
-        options (TranslationOptionsViewModel): Documented attribute exposed by this type.
+        locales:
+            Documented attribute exposed by this type.
+        options:
+            Documented attribute exposed by this type.
     """
 
     locales: str
@@ -235,11 +293,16 @@ class ProjectSummaryViewModel:
     """Summary row rendered in the projects list.
 
     Attributes:
-        id (str): Documented attribute exposed by this type.
-        name (str): Documented attribute exposed by this type.
-        framework (str): Documented attribute exposed by this type.
-        local_path (str): Documented attribute exposed by this type.
-        status (str): Documented attribute exposed by this type.
+        id:
+            Documented attribute exposed by this type.
+        name:
+            Documented attribute exposed by this type.
+        framework:
+            Documented attribute exposed by this type.
+        local_path:
+            Documented attribute exposed by this type.
+        status:
+            Documented attribute exposed by this type.
     """
 
     id: str
@@ -254,9 +317,12 @@ class ProjectActionViewModel:
     """Action available from the project detail view.
 
     Attributes:
-        key (str): Documented attribute exposed by this type.
-        label (str): Documented attribute exposed by this type.
-        description (str): Documented attribute exposed by this type.
+        key:
+            Documented attribute exposed by this type.
+        label:
+            Documented attribute exposed by this type.
+        description:
+            Documented attribute exposed by this type.
     """
 
     key: str
@@ -269,18 +335,30 @@ class ProjectDetailViewModel:
     """Detailed project information rendered by the UI.
 
     Attributes:
-        project (ProjectSummaryViewModel): Documented attribute exposed by this type.
-        default_locale (str): Documented attribute exposed by this type.
-        configuration_summary (str): Documented attribute exposed by this type.
-        metadata_summary (str): Documented attribute exposed by this type.
-        actions (list[ProjectActionViewModel]): Documented attribute exposed by this type.
-        compile_mo (bool): Documented attribute exposed by this type.
-        use_external_translator (bool): Documented attribute exposed by this type.
-        use_translation_cache (bool): Documented attribute exposed by this type.
-        only_fuzzy (bool): Documented attribute exposed by this type.
-        dry_run (bool): Documented attribute exposed by this type.
-        stats_only (bool): Documented attribute exposed by this type.
-        report_inconsistencies (bool): Documented attribute exposed by this type.
+        project:
+            Documented attribute exposed by this type.
+        default_locale:
+            Documented attribute exposed by this type.
+        configuration_summary:
+            Documented attribute exposed by this type.
+        metadata_summary:
+            Documented attribute exposed by this type.
+        actions:
+            Documented attribute exposed by this type.
+        compile_mo:
+            Documented attribute exposed by this type.
+        use_external_translator:
+            Documented attribute exposed by this type.
+        use_translation_cache:
+            Documented attribute exposed by this type.
+        only_fuzzy:
+            Documented attribute exposed by this type.
+        dry_run:
+            Documented attribute exposed by this type.
+        stats_only:
+            Documented attribute exposed by this type.
+        report_inconsistencies:
+            Documented attribute exposed by this type.
     """
 
     project: ProjectSummaryViewModel
@@ -300,8 +378,13 @@ class ProjectDetailViewModel:
     def translation_options(self) -> TranslationOptionsViewModel:
         """Return translation toggles associated with this project detail.
 
+        Args:
+            self:
+                Value supplied to this callable.
+
         Returns:
-            TranslationOptionsViewModel: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         return build_translation_options(
             compile_mo=self.compile_mo,
@@ -319,7 +402,8 @@ class DashboardStateViewModel:
     """Dashboard state consumed by the dashboard screen.
 
     Attributes:
-        sections (list[DashboardSectionViewModel]): Documented attribute exposed by this type.
+        sections:
+            Documented attribute exposed by this type.
     """
 
     sections: list[DashboardSectionViewModel]
@@ -330,16 +414,26 @@ class SettingsStateViewModel:
     """Settings state consumed by the settings screen.
 
     Attributes:
-        sections (list[SettingsSectionViewModel]): Documented attribute exposed by this type.
-        selected_section_key (str): Documented attribute exposed by this type.
-        selected_section_title (str): Documented attribute exposed by this type.
-        selected_section_description (str): Documented attribute exposed by this type.
-        selected_section_is_available (bool): Documented attribute exposed by this type.
-        app_settings (AppSettingsViewModel): Documented attribute exposed by this type.
-        theme_mode_field (SettingsFieldViewModel): Documented attribute exposed by this type.
-        ui_language_field (SettingsFieldViewModel): Documented attribute exposed by this type.
-        status (str): Documented attribute exposed by this type.
-        status_message (str | None): Documented attribute exposed by this type.
+        sections:
+            Documented attribute exposed by this type.
+        selected_section_key:
+            Documented attribute exposed by this type.
+        selected_section_title:
+            Documented attribute exposed by this type.
+        selected_section_description:
+            Documented attribute exposed by this type.
+        selected_section_is_available:
+            Documented attribute exposed by this type.
+        app_settings:
+            Documented attribute exposed by this type.
+        theme_mode_field:
+            Documented attribute exposed by this type.
+        ui_language_field:
+            Documented attribute exposed by this type.
+        status:
+            Documented attribute exposed by this type.
+        status_message:
+            Documented attribute exposed by this type.
     """
 
     sections: list[SettingsSectionViewModel]
@@ -359,8 +453,10 @@ class ProjectsStateViewModel:
     """Projects list state consumed by the projects screen.
 
     Attributes:
-        projects (list[ProjectSummaryViewModel]): Documented attribute exposed by this type.
-        empty_message (str | None): Documented attribute exposed by this type.
+        projects:
+            Documented attribute exposed by this type.
+        empty_message:
+            Documented attribute exposed by this type.
     """
 
     projects: list[ProjectSummaryViewModel]
@@ -372,18 +468,30 @@ class ProjectDetailStateViewModel:
     """Project detail state consumed by the detail screen.
 
     Attributes:
-        project (ProjectSummaryViewModel): Documented attribute exposed by this type.
-        default_locale (str): Documented attribute exposed by this type.
-        configuration_summary (str): Documented attribute exposed by this type.
-        metadata_summary (str): Documented attribute exposed by this type.
-        actions (list[ProjectActionViewModel]): Documented attribute exposed by this type.
-        compile_mo (bool): Documented attribute exposed by this type.
-        use_external_translator (bool): Documented attribute exposed by this type.
-        use_translation_cache (bool): Documented attribute exposed by this type.
-        only_fuzzy (bool): Documented attribute exposed by this type.
-        dry_run (bool): Documented attribute exposed by this type.
-        stats_only (bool): Documented attribute exposed by this type.
-        report_inconsistencies (bool): Documented attribute exposed by this type.
+        project:
+            Documented attribute exposed by this type.
+        default_locale:
+            Documented attribute exposed by this type.
+        configuration_summary:
+            Documented attribute exposed by this type.
+        metadata_summary:
+            Documented attribute exposed by this type.
+        actions:
+            Documented attribute exposed by this type.
+        compile_mo:
+            Documented attribute exposed by this type.
+        use_external_translator:
+            Documented attribute exposed by this type.
+        use_translation_cache:
+            Documented attribute exposed by this type.
+        only_fuzzy:
+            Documented attribute exposed by this type.
+        dry_run:
+            Documented attribute exposed by this type.
+        stats_only:
+            Documented attribute exposed by this type.
+        report_inconsistencies:
+            Documented attribute exposed by this type.
     """
 
     project: ProjectSummaryViewModel
@@ -403,8 +511,13 @@ class ProjectDetailStateViewModel:
     def translation_options(self) -> TranslationOptionsViewModel:
         """Return translation toggles associated with this project detail state.
 
+        Args:
+            self:
+                Value supplied to this callable.
+
         Returns:
-            TranslationOptionsViewModel: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         return build_translation_options(
             compile_mo=self.compile_mo,
@@ -422,30 +535,50 @@ class SiteEditorViewModel:
     """Editable site registry form values consumed by the project editor screen.
 
     Attributes:
-        site_id (str | None): Documented attribute exposed by this type.
-        name (str): Documented attribute exposed by this type.
-        framework_type (str): Documented attribute exposed by this type.
-        local_path (str): Documented attribute exposed by this type.
-        default_locale (str): Documented attribute exposed by this type.
-        connection_type (str): Documented attribute exposed by this type.
-        remote_host (str): Documented attribute exposed by this type.
-        remote_port (str): Documented attribute exposed by this type.
-        remote_username (str): Documented attribute exposed by this type.
-        remote_password (str): Documented attribute exposed by this type.
-        remote_path (str): Documented attribute exposed by this type.
-        is_active (bool): Documented attribute exposed by this type.
-        compile_mo (bool): Documented attribute exposed by this type.
-        use_external_translator (bool): Documented attribute exposed by this type.
-        use_translation_cache (bool): Documented attribute exposed by this type.
-        only_fuzzy (bool): Documented attribute exposed by this type.
-        dry_run (bool): Documented attribute exposed by this type.
-        stats_only (bool): Documented attribute exposed by this type.
-        report_inconsistencies (bool): Documented attribute exposed by this type.
-        remote_verify_host (bool): Documented attribute exposed by this type.
-        use_adapter_sync_filters (bool): Documented attribute exposed by this type.
-        sync_rule_items (tuple[SyncRuleEditorItemViewModel, ...]): Documented attribute exposed by
-    this
-        type.
+        site_id:
+            Documented attribute exposed by this type.
+        name:
+            Documented attribute exposed by this type.
+        framework_type:
+            Documented attribute exposed by this type.
+        local_path:
+            Documented attribute exposed by this type.
+        default_locale:
+            Documented attribute exposed by this type.
+        connection_type:
+            Documented attribute exposed by this type.
+        remote_host:
+            Documented attribute exposed by this type.
+        remote_port:
+            Documented attribute exposed by this type.
+        remote_username:
+            Documented attribute exposed by this type.
+        remote_password:
+            Documented attribute exposed by this type.
+        remote_path:
+            Documented attribute exposed by this type.
+        is_active:
+            Documented attribute exposed by this type.
+        compile_mo:
+            Documented attribute exposed by this type.
+        use_external_translator:
+            Documented attribute exposed by this type.
+        use_translation_cache:
+            Documented attribute exposed by this type.
+        only_fuzzy:
+            Documented attribute exposed by this type.
+        dry_run:
+            Documented attribute exposed by this type.
+        stats_only:
+            Documented attribute exposed by this type.
+        report_inconsistencies:
+            Documented attribute exposed by this type.
+        remote_verify_host:
+            Documented attribute exposed by this type.
+        use_adapter_sync_filters:
+            Documented attribute exposed by this type.
+        sync_rule_items:
+            Documented attribute exposed by this type.
     """
 
     site_id: str | None
@@ -475,8 +608,13 @@ class SiteEditorViewModel:
     def translation_options(self) -> TranslationOptionsViewModel:
         """Return translation toggles associated with this editor draft.
 
+        Args:
+            self:
+                Value supplied to this callable.
+
         Returns:
-            TranslationOptionsViewModel: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         return build_translation_options(
             compile_mo=self.compile_mo,
@@ -494,9 +632,12 @@ class RemoteConnectionTestResultViewModel:
     """Connection-test result rendered by the project editor.
 
     Attributes:
-        success (bool): Documented attribute exposed by this type.
-        message (str): Documented attribute exposed by this type.
-        error_code (str | None): Documented attribute exposed by this type.
+        success:
+            Documented attribute exposed by this type.
+        message:
+            Documented attribute exposed by this type.
+        error_code:
+            Documented attribute exposed by this type.
     """
 
     success: bool
@@ -509,32 +650,42 @@ class ProjectEditorStateViewModel:
     """Project editor state consumed by the project editor screen.
 
     Attributes:
-        mode (str): Documented attribute exposed by this type.
-        title (str): Documented attribute exposed by this type.
-        submit_label (str): Documented attribute exposed by this type.
-        sections (list[ProjectEditorSectionViewModel]): Documented attribute exposed by this type.
-        selected_section_key (str): Documented attribute exposed by this type.
-        selected_section_title (str): Documented attribute exposed by this type.
-        selected_section_description (str): Documented attribute exposed by this type.
-        editor (SiteEditorViewModel): Documented attribute exposed by this type.
-        framework_options (list[SettingsOptionViewModel]): Documented attribute exposed by this
-    type.
-        connection_type_options (list[SettingsOptionViewModel]): Documented attribute exposed by
-    this
-        type.
-        sync_rule_filter_type_options (list[SettingsOptionViewModel]): Documented attribute exposed
-    by
-        this type.
-        sync_rule_behavior_options (list[SettingsOptionViewModel]): Documented attribute exposed by
-    this
-        type.
-        connection_test_enabled (bool): Documented attribute exposed by this type.
-        connection_test_result (RemoteConnectionTestResultViewModel | None): Documented attribute
-        exposed by this type.
-        sync_scope_status (str): Documented attribute exposed by this type.
-        sync_scope_message (str): Documented attribute exposed by this type.
-        status (str): Documented attribute exposed by this type.
-        status_message (str | None): Documented attribute exposed by this type.
+        mode:
+            Documented attribute exposed by this type.
+        title:
+            Documented attribute exposed by this type.
+        submit_label:
+            Documented attribute exposed by this type.
+        sections:
+            Documented attribute exposed by this type.
+        selected_section_key:
+            Documented attribute exposed by this type.
+        selected_section_title:
+            Documented attribute exposed by this type.
+        selected_section_description:
+            Documented attribute exposed by this type.
+        editor:
+            Documented attribute exposed by this type.
+        framework_options:
+            Documented attribute exposed by this type.
+        connection_type_options:
+            Documented attribute exposed by this type.
+        sync_rule_filter_type_options:
+            Documented attribute exposed by this type.
+        sync_rule_behavior_options:
+            Documented attribute exposed by this type.
+        connection_test_enabled:
+            Documented attribute exposed by this type.
+        connection_test_result:
+            Documented attribute exposed by this type.
+        sync_scope_status:
+            Documented attribute exposed by this type.
+        sync_scope_message:
+            Documented attribute exposed by this type.
+        status:
+            Documented attribute exposed by this type.
+        status_message:
+            Documented attribute exposed by this type.
     """
 
     mode: str
@@ -562,15 +713,24 @@ class SyncRuleEditorItemViewModel:
     """A single sync rule rendered and edited in the project editor.
 
     Attributes:
-        rule_key (str): Documented attribute exposed by this type.
-        target_rule_key (str | None): Documented attribute exposed by this type.
-        relative_path (str): Documented attribute exposed by this type.
-        filter_type (str): Documented attribute exposed by this type.
-        behavior (str): Documented attribute exposed by this type.
-        description (str): Documented attribute exposed by this type.
-        source (str): Documented attribute exposed by this type.
-        is_enabled (bool): Documented attribute exposed by this type.
-        is_removable (bool): Documented attribute exposed by this type.
+        rule_key:
+            Documented attribute exposed by this type.
+        target_rule_key:
+            Documented attribute exposed by this type.
+        relative_path:
+            Documented attribute exposed by this type.
+        filter_type:
+            Documented attribute exposed by this type.
+        behavior:
+            Documented attribute exposed by this type.
+        description:
+            Documented attribute exposed by this type.
+        source:
+            Documented attribute exposed by this type.
+        is_enabled:
+            Documented attribute exposed by this type.
+        is_removable:
+            Documented attribute exposed by this type.
     """
 
     rule_key: str
@@ -589,10 +749,14 @@ class SyncStatusViewModel:
     """Sync panel state.
 
     Attributes:
-        status (str): Documented attribute exposed by this type.
-        files_synced (int): Documented attribute exposed by this type.
-        summary (str): Documented attribute exposed by this type.
-        error_code (str | None): Documented attribute exposed by this type.
+        status:
+            Documented attribute exposed by this type.
+        files_synced:
+            Documented attribute exposed by this type.
+        summary:
+            Documented attribute exposed by this type.
+        error_code:
+            Documented attribute exposed by this type.
     """
 
     status: str
@@ -606,8 +770,10 @@ class SyncCommandLogEntryViewModel:
     """A single sync command rendered in the progress window.
 
     Attributes:
-        command_text (str): Documented attribute exposed by this type.
-        message (str): Documented attribute exposed by this type.
+        command_text:
+            Documented attribute exposed by this type.
+        message:
+            Documented attribute exposed by this type.
     """
 
     command_text: str
@@ -619,15 +785,24 @@ class SyncProgressStateViewModel:
     """Progress state rendered while a sync runs in background.
 
     Attributes:
-        project_id (str): Documented attribute exposed by this type.
-        project_name (str): Documented attribute exposed by this type.
-        status (str): Documented attribute exposed by this type.
-        message (str): Documented attribute exposed by this type.
-        progress_current (int): Documented attribute exposed by this type.
-        progress_total (int): Documented attribute exposed by this type.
-        progress_is_indeterminate (bool): Documented attribute exposed by this type.
-        command_log_limit (int): Documented attribute exposed by this type.
-        command_log (list[SyncCommandLogEntryViewModel]): Documented attribute exposed by this type.
+        project_id:
+            Documented attribute exposed by this type.
+        project_name:
+            Documented attribute exposed by this type.
+        status:
+            Documented attribute exposed by this type.
+        message:
+            Documented attribute exposed by this type.
+        progress_current:
+            Documented attribute exposed by this type.
+        progress_total:
+            Documented attribute exposed by this type.
+        progress_is_indeterminate:
+            Documented attribute exposed by this type.
+        command_log_limit:
+            Documented attribute exposed by this type.
+        command_log:
+            Documented attribute exposed by this type.
     """
 
     project_id: str
@@ -646,9 +821,12 @@ class AuditSummaryViewModel:
     """Audit panel state.
 
     Attributes:
-        status (str): Documented attribute exposed by this type.
-        findings_count (int): Documented attribute exposed by this type.
-        findings_summary (str): Documented attribute exposed by this type.
+        status:
+            Documented attribute exposed by this type.
+        findings_count:
+            Documented attribute exposed by this type.
+        findings_summary:
+            Documented attribute exposed by this type.
     """
 
     status: str
@@ -661,14 +839,22 @@ class POProcessingSummaryViewModel:
     """PO processing panel state.
 
     Attributes:
-        status (str): Documented attribute exposed by this type.
-        processed_families (int): Documented attribute exposed by this type.
-        summary (str): Documented attribute exposed by this type.
-        progress_current (int): Documented attribute exposed by this type.
-        progress_total (int): Documented attribute exposed by this type.
-        progress_is_indeterminate (bool): Documented attribute exposed by this type.
-        current_file (str | None): Documented attribute exposed by this type.
-        current_entry (str | None): Documented attribute exposed by this type.
+        status:
+            Documented attribute exposed by this type.
+        processed_families:
+            Documented attribute exposed by this type.
+        summary:
+            Documented attribute exposed by this type.
+        progress_current:
+            Documented attribute exposed by this type.
+        progress_total:
+            Documented attribute exposed by this type.
+        progress_is_indeterminate:
+            Documented attribute exposed by this type.
+        current_file:
+            Documented attribute exposed by this type.
+        current_entry:
+            Documented attribute exposed by this type.
     """
 
     status: str
@@ -685,7 +871,8 @@ def build_settings_sections() -> list[SettingsSectionViewModel]:
     """Return the initial extensible settings sections.
 
     Returns:
-        list[SettingsSectionViewModel]: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
     """
     return [
         SettingsSectionViewModel(
@@ -703,7 +890,9 @@ def build_settings_sections() -> list[SettingsSectionViewModel]:
         SettingsSectionViewModel(
             key="frameworks",
             title="Framework / Adapter Settings",
-            description="Shared sync filters, framework rules and gitignore integration.",
+            description=(
+                "Shared sync filters, framework rules and gitignore integration."
+            ),
             is_available=True,
         ),
         SettingsSectionViewModel(
@@ -724,12 +913,16 @@ def build_navigation_menu_state(
     """Return the grouped application navigation menu.
 
     Args:
-        active_route_key (str): Value supplied to this callable.
-        operations_enabled (bool): Value supplied to this callable.
-        is_open (bool): Value supplied to this callable.
+        active_route_key:
+            Value supplied to this callable.
+        operations_enabled:
+            Value supplied to this callable.
+        is_open:
+            Value supplied to this callable.
 
     Returns:
-        NavigationMenuStateViewModel: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
     """
     return NavigationMenuStateViewModel(
         sections=[
@@ -801,11 +994,14 @@ def build_default_app_settings(
     """Return the default frontend settings.
 
     Args:
-        database_directory (str): Value supplied to this callable.
-        database_filename (str): Value supplied to this callable.
+        database_directory:
+            Value supplied to this callable.
+        database_filename:
+            Value supplied to this callable.
 
     Returns:
-        AppSettingsViewModel: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
     """
     translation_cache_path = (
         str(Path(database_directory) / ".po_translation_cache")
@@ -849,16 +1045,24 @@ def build_translation_options(  # noqa: PLR0913
     """Return translation workflow toggles for settings, projects and popups.
 
     Args:
-        compile_mo (bool): Value supplied to this callable.
-        use_external_translator (bool): Value supplied to this callable.
-        use_translation_cache (bool): Value supplied to this callable.
-        only_fuzzy (bool): Value supplied to this callable.
-        dry_run (bool): Value supplied to this callable.
-        stats_only (bool): Value supplied to this callable.
-        report_inconsistencies (bool): Value supplied to this callable.
+        compile_mo:
+            Value supplied to this callable.
+        use_external_translator:
+            Value supplied to this callable.
+        use_translation_cache:
+            Value supplied to this callable.
+        only_fuzzy:
+            Value supplied to this callable.
+        dry_run:
+            Value supplied to this callable.
+        stats_only:
+            Value supplied to this callable.
+        report_inconsistencies:
+            Value supplied to this callable.
 
     Returns:
-        TranslationOptionsViewModel: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
     """
     return TranslationOptionsViewModel(
         compile_mo=compile_mo,
@@ -879,13 +1083,20 @@ def build_default_site_editor(
     """Return the default site registry editor draft.
 
     Args:
-        default_locale (str): Value supplied to this callable.
-        translation_options (TranslationOptionsViewModel | None): Value supplied to this callable.
+        default_locale:
+            Value supplied to this callable.
+        translation_options:
+            Value supplied to this callable.
 
     Returns:
-        SiteEditorViewModel: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
     """
-    options = build_translation_options() if translation_options is None else translation_options
+    options = (
+        build_translation_options()
+        if translation_options is None
+        else translation_options
+    )
     return SiteEditorViewModel(
         site_id=None,
         name="",
@@ -931,24 +1142,36 @@ def build_project_editor_state(  # noqa: PLR0913
     """Return the project editor state for create/edit flows.
 
     Args:
-        mode (str): Value supplied to this callable.
-        editor (SiteEditorViewModel): Value supplied to this callable.
-        framework_options (list[SettingsOptionViewModel]): Value supplied to this callable.
-        connection_type_options (list[SettingsOptionViewModel]): Value supplied to this callable.
-        sync_rule_filter_type_options (list[SettingsOptionViewModel]): Value supplied to this
-    callable.
-        sync_rule_behavior_options (list[SettingsOptionViewModel]): Value supplied to this callable.
-        connection_test_enabled (bool): Value supplied to this callable.
-        connection_test_result (RemoteConnectionTestResultViewModel | None): Value supplied to this
-        callable.
-        sync_scope_status (str): Value supplied to this callable.
-        sync_scope_message (str): Value supplied to this callable.
-        status (str): Value supplied to this callable.
-        status_message (str | None): Value supplied to this callable.
-        selected_section_key (str): Value supplied to this callable.
+        mode:
+            Value supplied to this callable.
+        editor:
+            Value supplied to this callable.
+        framework_options:
+            Value supplied to this callable.
+        connection_type_options:
+            Value supplied to this callable.
+        sync_rule_filter_type_options:
+            Value supplied to this callable.
+        sync_rule_behavior_options:
+            Value supplied to this callable.
+        connection_test_enabled:
+            Value supplied to this callable.
+        connection_test_result:
+            Value supplied to this callable.
+        sync_scope_status:
+            Value supplied to this callable.
+        sync_scope_message:
+            Value supplied to this callable.
+        status:
+            Value supplied to this callable.
+        status_message:
+            Value supplied to this callable.
+        selected_section_key:
+            Value supplied to this callable.
 
     Returns:
-        ProjectEditorStateViewModel: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
     """
     selected_section = _find_project_editor_section(selected_section_key)
     if mode == "edit":
@@ -1000,10 +1223,12 @@ def build_framework_type_options_from_descriptors(
     """Return selectable framework types for the project editor.
 
     Args:
-        descriptors (Iterable[FrameworkDescriptor]): Value supplied to this callable.
+        descriptors:
+            Value supplied to this callable.
 
     Returns:
-        list[SettingsOptionViewModel]: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
     """
     return [
         SettingsOptionViewModel(
@@ -1021,10 +1246,12 @@ def build_connection_type_options(
     """Return selectable remote connection types for the project editor.
 
     Args:
-        descriptors (Iterable[RemoteConnectionTypeDescriptor]): Value supplied to this callable.
+        descriptors:
+            Value supplied to this callable.
 
     Returns:
-        list[SettingsOptionViewModel]: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
     """
     return [
         SettingsOptionViewModel(
@@ -1039,7 +1266,8 @@ def build_sync_rule_filter_type_options() -> list[SettingsOptionViewModel]:
     """Return selectable filter types for sync-rule editing.
 
     Returns:
-        list[SettingsOptionViewModel]: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
     """
     return [
         SettingsOptionViewModel(value="directory", label="Directory"),
@@ -1051,7 +1279,8 @@ def build_sync_rule_behavior_options() -> list[SettingsOptionViewModel]:
     """Return selectable include/exclude behaviors for sync-rule editing.
 
     Returns:
-        list[SettingsOptionViewModel]: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
     """
     return [
         SettingsOptionViewModel(value="include", label="Include"),
@@ -1063,7 +1292,8 @@ def build_project_editor_sections() -> list[ProjectEditorSectionViewModel]:
     """Return the logical sections rendered in the project editor.
 
     Returns:
-        list[ProjectEditorSectionViewModel]: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
     """
     return [
         ProjectEditorSectionViewModel(
@@ -1093,13 +1323,16 @@ def _find_settings_section(section_key: str) -> SettingsSectionViewModel:
     """Find settings section.
 
     Args:
-        section_key (str): Value supplied to this callable.
+        section_key:
+            Value supplied to this callable.
 
     Returns:
-        SettingsSectionViewModel: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
 
     Raises:
-        LookupError: Raised when this callable hits the corresponding error path.
+        LookupError:
+            Raised when this callable hits the corresponding error path.
     """
     for section in build_settings_sections():
         if section.key == section_key:
@@ -1112,13 +1345,16 @@ def _find_project_editor_section(section_key: str) -> ProjectEditorSectionViewMo
     """Find project editor section.
 
     Args:
-        section_key (str): Value supplied to this callable.
+        section_key:
+            Value supplied to this callable.
 
     Returns:
-        ProjectEditorSectionViewModel: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
 
     Raises:
-        LookupError: Raised when this callable hits the corresponding error path.
+        LookupError:
+            Raised when this callable hits the corresponding error path.
     """
     for section in build_project_editor_sections():
         if section.key == section_key:
@@ -1131,12 +1367,15 @@ def build_theme_mode_field() -> SettingsFieldViewModel:
     """Return metadata for the theme-mode settings control.
 
     Returns:
-        SettingsFieldViewModel: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
     """
     return SettingsFieldViewModel(
         key="theme_mode",
         label="Theme Mode",
-        help_text="Choose the visual appearance that the Kivy shell should use by default.",
+        help_text=(
+            "Choose the visual appearance that the Kivy shell should use by default."
+        ),
         control_type="choice",
         options=[
             SettingsOptionViewModel(value="system", label="System"),
@@ -1150,12 +1389,16 @@ def build_ui_language_field() -> SettingsFieldViewModel:
     """Return metadata for the UI language settings control.
 
     Returns:
-        SettingsFieldViewModel: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
     """
     return SettingsFieldViewModel(
         key="ui_language",
         label="UI Language",
-        help_text="Prepare the frontend for future localization without wiring translations yet.",
+        help_text=(
+            "Prepare the frontend for future localization without wiring "
+            "translations yet."
+        ),
         control_type="choice",
         options=[
             SettingsOptionViewModel(value="en", label="English"),
@@ -1174,13 +1417,18 @@ def build_settings_state(
     """Return the settings screen state for the current frontend configuration.
 
     Args:
-        app_settings (AppSettingsViewModel): Value supplied to this callable.
-        status (str): Value supplied to this callable.
-        status_message (str | None): Value supplied to this callable.
-        selected_section_key (str): Value supplied to this callable.
+        app_settings:
+            Value supplied to this callable.
+        status:
+            Value supplied to this callable.
+        status_message:
+            Value supplied to this callable.
+        selected_section_key:
+            Value supplied to this callable.
 
     Returns:
-        SettingsStateViewModel: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
     """
     selected_section = _find_settings_section(selected_section_key)
     return SettingsStateViewModel(
@@ -1205,11 +1453,14 @@ def select_project_editor_section(
     """Return the editor state with a different selected section.
 
     Args:
-        state (ProjectEditorStateViewModel): Value supplied to this callable.
-        section_key (str): Value supplied to this callable.
+        state:
+            Value supplied to this callable.
+        section_key:
+            Value supplied to this callable.
 
     Returns:
-        ProjectEditorStateViewModel: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
     """
     selected_section = _find_project_editor_section(section_key)
     return ProjectEditorStateViewModel(

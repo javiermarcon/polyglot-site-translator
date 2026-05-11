@@ -64,6 +64,8 @@ A task is not done unless all of the following are true:
   - PEP484
   - Ruff
   - mypy
+- Python source lines must stay within 88 characters unless a narrower, tool-supported exception is
+  explicitly justified.
 - All modules, classes, functions, and methods introduced or modified by the change, public or
   private, have clear, multi-line docstrings that explain intent, important behavior, inputs,
   outputs, and relevant side effects or failure conditions.

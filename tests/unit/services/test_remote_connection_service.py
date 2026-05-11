@@ -15,8 +15,13 @@ from polyglot_site_translator.domain.remote_connections.models import (
     RemoteConnectionTestResult,
     RemoteConnectionTypeDescriptor,
 )
-from polyglot_site_translator.domain.site_registry.errors import SiteRegistryValidationError
-from polyglot_site_translator.domain.sync.models import RemoteSyncFile, SyncProgressEvent
+from polyglot_site_translator.domain.site_registry.errors import (
+    SiteRegistryValidationError,
+)
+from polyglot_site_translator.domain.sync.models import (
+    RemoteSyncFile,
+    SyncProgressEvent,
+)
 from polyglot_site_translator.infrastructure.remote_connections.registry import (
     RemoteConnectionRegistry,
 )
@@ -28,8 +33,10 @@ class StubRemoteConnectionProvider:
     """Test helper for StubRemoteConnectionProvider.
 
     Attributes:
-        descriptor (RemoteConnectionTypeDescriptor): Documented attribute exposed by this type.
-        result (RemoteConnectionTestResult): Documented attribute exposed by this type.
+        descriptor:
+            Documented attribute exposed by this type.
+        result:
+            Documented attribute exposed by this type.
     """
 
     descriptor: RemoteConnectionTypeDescriptor
@@ -42,10 +49,14 @@ class StubRemoteConnectionProvider:
         """Verify connection.
 
         Args:
-            config (RemoteConnectionConfigInput): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            config:
+                Value supplied to this callable.
 
         Returns:
-            RemoteConnectionTestResult: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         return RemoteConnectionTestResult(
             success=self.result.success,
@@ -66,13 +77,18 @@ class StubRemoteConnectionProvider:
         """Handle list remote files.
 
         Args:
-            config (RemoteConnectionConfig): Value supplied to this callable.
-            progress_callback (Callable[[SyncProgressEvent], None] | None): Value supplied to this
-        callable.
-            max_files (int): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            config:
+                Value supplied to this callable.
+            progress_callback:
+                Value supplied to this callable.
+            max_files:
+                Value supplied to this callable.
 
         Returns:
-            list[RemoteSyncFile]: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         return []
 
@@ -84,12 +100,14 @@ class StubRemoteConnectionProvider:
         """Handle iter remote files.
 
         Args:
-            config (RemoteConnectionConfig): Value supplied to this callable.
-            progress_callback (Callable[[SyncProgressEvent], None] | None): Value supplied to this
-        callable.
+            config:
+                Value supplied to this callable.
+            progress_callback:
+                Value supplied to this callable.
 
         Returns:
-            Iterable[RemoteSyncFile]: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         return iter(())
 
@@ -98,13 +116,16 @@ class StubRemoteConnectionProvider:
         """Handle open session.
 
         Args:
-            config (RemoteConnectionConfig): Value supplied to this callable.
+            config:
+                Value supplied to this callable.
 
         Returns:
-            Any: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
 
         Raises:
-            AssertionError: Raised when this callable hits the corresponding error path.
+            AssertionError:
+                Raised when this callable hits the corresponding error path.
         """
         msg = f"open_session not used in this test for {config.connection_type}"
         raise AssertionError(msg)
@@ -118,16 +139,22 @@ class StubRemoteConnectionProvider:
         """Handle download file.
 
         Args:
-            config (RemoteConnectionConfig): Value supplied to this callable.
-            remote_path (str): Value supplied to this callable.
-            progress_callback (Callable[[SyncProgressEvent], None] | None): Value supplied to this
-        callable.
+            self:
+                Value supplied to this callable.
+            config:
+                Value supplied to this callable.
+            remote_path:
+                Value supplied to this callable.
+            progress_callback:
+                Value supplied to this callable.
 
         Returns:
-            bytes: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
 
         Raises:
-            AssertionError: Raised when this callable hits the corresponding error path.
+            AssertionError:
+                Raised when this callable hits the corresponding error path.
         """
         msg = f"download not used in this test for {remote_path}"
         raise AssertionError(msg)
@@ -141,16 +168,20 @@ class StubRemoteConnectionProvider:
         """Handle ensure remote directory.
 
         Args:
-            config (RemoteConnectionConfig): Value supplied to this callable.
-            remote_path (str): Value supplied to this callable.
-            progress_callback (Callable[[SyncProgressEvent], None] | None): Value supplied to this
-        callable.
+            config:
+                Value supplied to this callable.
+            remote_path:
+                Value supplied to this callable.
+            progress_callback:
+                Value supplied to this callable.
 
         Returns:
-            int: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
 
         Raises:
-            AssertionError: Raised when this callable hits the corresponding error path.
+            AssertionError:
+                Raised when this callable hits the corresponding error path.
         """
         msg = f"ensure_remote_directory not used in this test for {remote_path}"
         raise AssertionError(msg)
@@ -165,27 +196,35 @@ class StubRemoteConnectionProvider:
         """Handle upload file.
 
         Args:
-            config (RemoteConnectionConfig): Value supplied to this callable.
-            remote_path (str): Value supplied to this callable.
-            contents (bytes): Value supplied to this callable.
-            progress_callback (Callable[[SyncProgressEvent], None] | None): Value supplied to this
-        callable.
+            config:
+                Value supplied to this callable.
+            remote_path:
+                Value supplied to this callable.
+            contents:
+                Value supplied to this callable.
+            progress_callback:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
 
         Raises:
-            AssertionError: Raised when this callable hits the corresponding error path.
+            AssertionError:
+                Raised when this callable hits the corresponding error path.
         """
         msg = f"upload not used in this test for {remote_path}"
         raise AssertionError(msg)
 
 
-def test_remote_connection_service_lists_no_connection_and_discovered_descriptors() -> None:
+def test_remote_connection_service_lists_no_connection_and_discovered_descriptors() -> (
+    None
+):
     """Verify remote connection service lists no connection and discovered descriptors.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     service = RemoteConnectionService(
         registry=RemoteConnectionRegistry.default_registry(
@@ -221,7 +260,8 @@ def test_remote_connection_service_accepts_missing_remote_configuration() -> Non
     """Verify remote connection service accepts missing remote configuration.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     service = RemoteConnectionService(
         registry=RemoteConnectionRegistry.default_registry(providers=[])
@@ -231,13 +271,18 @@ def test_remote_connection_service_accepts_missing_remote_configuration() -> Non
     assert service.can_test_connection(None) is False
 
 
-def test_remote_connection_service_treats_no_remote_connection_as_optional_none() -> None:
+def test_remote_connection_service_treats_no_remote_connection_as_optional_none() -> (
+    None
+):
     """Verify remote connection service treats no remote connection as optional none.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
-    service = RemoteConnectionService(registry=RemoteConnectionRegistry.discover_installed())
+    service = RemoteConnectionService(
+        registry=RemoteConnectionRegistry.discover_installed()
+    )
 
     assert (
         service.validate_optional_config(
@@ -258,11 +303,16 @@ def test_remote_connection_service_rejects_incomplete_remote_configuration() -> 
     """Verify remote connection service rejects incomplete remote configuration.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
-    service = RemoteConnectionService(registry=RemoteConnectionRegistry.discover_installed())
+    service = RemoteConnectionService(
+        registry=RemoteConnectionRegistry.discover_installed()
+    )
 
-    with pytest.raises(SiteRegistryValidationError, match=r"Remote host must not be empty\."):
+    with pytest.raises(
+        SiteRegistryValidationError, match=r"Remote host must not be empty\."
+    ):
         service.validate_optional_config(
             RemoteConnectionConfigInput(
                 connection_type="ftp",
@@ -275,11 +325,14 @@ def test_remote_connection_service_rejects_incomplete_remote_configuration() -> 
         )
 
 
-def test_remote_connection_service_tests_a_valid_provider_and_returns_structured_result() -> None:
-    """Verify remote connection service tests a valid provider and returns structured result.
+def test_remote_connecti_service_tests_valid_provider__27f6() -> None:
+    """Verify remote connection service tests a valid provider and returns structured.
+
+    result.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     service = RemoteConnectionService(
         registry=RemoteConnectionRegistry.default_registry(
@@ -325,7 +378,8 @@ def test_remote_connection_service_rejects_unknown_connection_types() -> None:
     """Verify remote connection service rejects unknown connection types.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     service = RemoteConnectionService(
         registry=RemoteConnectionRegistry.default_registry(providers=[])
@@ -347,13 +401,18 @@ def test_remote_connection_service_rejects_unknown_connection_types() -> None:
         )
 
 
-def test_remote_connection_service_returns_false_for_invalid_testability_and_rejects_none() -> None:
-    """Verify remote connection service returns false for invalid testability and rejects none.
+def test_remote_connecti_service_returns_false_invalid_c8d9() -> None:
+    """Verify remote connection service returns false for invalid testability and.
+
+    rejects none.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
-    service = RemoteConnectionService(registry=RemoteConnectionRegistry.discover_installed())
+    service = RemoteConnectionService(
+        registry=RemoteConnectionRegistry.discover_installed()
+    )
 
     assert (
         service.can_test_connection(

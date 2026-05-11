@@ -20,18 +20,23 @@ class _FailingShelf:
     """Test helper for FailingShelf.
 
     Attributes:
-        None: This type does not declare additional class-level attributes.
+        None: This type does not declare class-level attributes.
     """
 
     def __init__(self, *, fail_on_get: bool = False, fail_on_set: bool = False) -> None:
         """Initialize the test helper state.
 
         Args:
-            fail_on_get (bool): Value supplied to this callable.
-            fail_on_set (bool): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            fail_on_get:
+                Value supplied to this callable.
+            fail_on_set:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         self.fail_on_get = fail_on_get
         self.fail_on_set = fail_on_set
@@ -42,14 +47,20 @@ class _FailingShelf:
         """Handle get.
 
         Args:
-            key (str): Value supplied to this callable.
-            default (object): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            key:
+                Value supplied to this callable.
+            default:
+                Value supplied to this callable.
 
         Returns:
-            object: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
 
         Raises:
-            OSError: Raised when this callable hits the corresponding error path.
+            OSError:
+                Raised when this callable hits the corresponding error path.
         """
         if self.fail_on_get:
             msg = "read failed"
@@ -60,14 +71,20 @@ class _FailingShelf:
         """Handle setitem.
 
         Args:
-            key (str): Value supplied to this callable.
-            value (str): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            key:
+                Value supplied to this callable.
+            value:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
 
         Raises:
-            OSError: Raised when this callable hits the corresponding error path.
+            OSError:
+                Raised when this callable hits the corresponding error path.
         """
         if self.fail_on_set:
             msg = "write failed"
@@ -77,8 +94,13 @@ class _FailingShelf:
     def close(self) -> None:
         """Handle close.
 
+        Args:
+            self:
+                Value supplied to this callable.
+
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         self.closed = True
 
@@ -87,10 +109,12 @@ def test_shelve_translation_cache_roundtrips_values(tmp_path: Path) -> None:
     """Verify shelve translation cache roundtrips values.
 
     Args:
-        tmp_path (Path): Value supplied to this callable.
+        tmp_path:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     cache_path = tmp_path / "translations.cache"
     cache = ShelvePOTranslationCache(cache_path=cache_path, enabled=True)
@@ -110,12 +134,16 @@ def test_shelve_translation_cache_is_noop_when_disabled(tmp_path: Path) -> None:
     """Verify shelve translation cache is noop when disabled.
 
     Args:
-        tmp_path (Path): Value supplied to this callable.
+        tmp_path:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
-    cache = ShelvePOTranslationCache(cache_path=tmp_path / "translations.cache", enabled=False)
+    cache = ShelvePOTranslationCache(
+        cache_path=tmp_path / "translations.cache", enabled=False
+    )
 
     cache.open()
     cache.set(base_language="es", text="Save", translated_text="Guardar")
@@ -132,29 +160,39 @@ def test_shelve_translation_cache_wraps_open_errors(
     """Verify shelve translation cache wraps open errors.
 
     Args:
-        tmp_path (Path): Value supplied to this callable.
-        monkeypatch (pytest.MonkeyPatch): Value supplied to this callable.
+        tmp_path:
+            Value supplied to this callable.
+        monkeypatch:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
 
     Raises:
-        OSError: Raised when this callable hits the corresponding error path.
+        OSError:
+            Raised when this callable hits the corresponding error path.
     """
-    cache = ShelvePOTranslationCache(cache_path=tmp_path / "translations.cache", enabled=True)
+    cache = ShelvePOTranslationCache(
+        cache_path=tmp_path / "translations.cache", enabled=True
+    )
 
     def _raise_open(*_args: object, **_kwargs: object) -> object:
         """Handle raise open.
 
         Args:
-            _args (object): Value supplied to this callable.
-            _kwargs (object): Value supplied to this callable.
+            *_args:
+                Value supplied to this callable.
+            **_kwargs:
+                Value supplied to this callable.
 
         Returns:
-            object: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
 
         Raises:
-            OSError: Raised when this callable hits the corresponding error path.
+            OSError:
+                Raised when this callable hits the corresponding error path.
         """
         msg = "open failed"
         raise OSError(msg)
@@ -169,31 +207,42 @@ def test_shelve_translation_cache_wraps_close_errors(tmp_path: Path) -> None:
     """Verify shelve translation cache wraps close errors.
 
     Args:
-        tmp_path (Path): Value supplied to this callable.
+        tmp_path:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
 
     Raises:
-        OSError: Raised when this callable hits the corresponding error path.
+        OSError:
+            Raised when this callable hits the corresponding error path.
     """
-    cache = ShelvePOTranslationCache(cache_path=tmp_path / "translations.cache", enabled=True)
+    cache = ShelvePOTranslationCache(
+        cache_path=tmp_path / "translations.cache", enabled=True
+    )
 
     class _CloseFailingShelf(_FailingShelf):
         """Test helper for CloseFailingShelf.
 
         Attributes:
-            None: This type does not declare additional class-level attributes.
+            None: This type does not declare class-level attributes.
         """
 
         def close(self) -> None:
             """Handle close.
 
+            Args:
+                self:
+                    Value supplied to this callable.
+
             Returns:
-                None: This callable does not return a value.
+                value:
+                    Structured value returned by this callable.
 
             Raises:
-                OSError: Raised when this callable hits the corresponding error path.
+                OSError:
+                    Raised when this callable hits the corresponding error path.
             """
             msg = "close failed"
             raise OSError(msg)
@@ -208,13 +257,19 @@ def test_shelve_translation_cache_wraps_get_and_set_errors(tmp_path: Path) -> No
     """Verify shelve translation cache wraps get and set errors.
 
     Args:
-        tmp_path (Path): Value supplied to this callable.
+        tmp_path:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
-    cache = ShelvePOTranslationCache(cache_path=tmp_path / "translations.cache", enabled=True)
-    cache._db = cast(shelve.Shelf[str], _FailingShelf(fail_on_get=True, fail_on_set=True))
+    cache = ShelvePOTranslationCache(
+        cache_path=tmp_path / "translations.cache", enabled=True
+    )
+    cache._db = cast(
+        shelve.Shelf[str], _FailingShelf(fail_on_get=True, fail_on_set=True)
+    )
 
     with pytest.raises(POProcessingCacheError, match=r"could not be read"):
         cache.get(base_language="es", text="Save")
@@ -227,10 +282,12 @@ def test_build_shelve_translation_cache_factory_and_cache_key(tmp_path: Path) ->
     """Verify build shelve translation cache factory and cache key.
 
     Args:
-        tmp_path (Path): Value supplied to this callable.
+        tmp_path:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     cache = build_shelve_translation_cache(
         cache_path=tmp_path / "translations.cache",

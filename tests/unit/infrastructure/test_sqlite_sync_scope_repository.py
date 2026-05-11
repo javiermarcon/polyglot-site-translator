@@ -38,10 +38,12 @@ def test_sqlite_sync_scope_repository_roundtrips_global_and_framework_rules(
     """Verify sqlite sync scope repository roundtrips global and framework rules.
 
     Args:
-        tmp_path (Path): Value supplied to this callable.
+        tmp_path:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     location = SQLiteDatabaseLocation(
         directory=tmp_path,
@@ -92,10 +94,12 @@ def test_sqlite_sync_scope_repository_returns_default_settings_when_empty(
     """Verify sqlite sync scope repository returns default settings when empty.
 
     Args:
-        tmp_path (Path): Value supplied to this callable.
+        tmp_path:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     location = SQLiteDatabaseLocation(
         directory=tmp_path,
@@ -105,21 +109,27 @@ def test_sqlite_sync_scope_repository_returns_default_settings_when_empty(
     repository = SqliteSyncScopeRepository(location=location)
     default_settings = build_default_sync_scope_settings()
 
-    loaded_settings = repository.load_sync_scope_settings(default_settings=default_settings)
+    loaded_settings = repository.load_sync_scope_settings(
+        default_settings=default_settings
+    )
 
     assert loaded_settings == default_settings
 
 
-def test_configured_sqlite_sync_scope_repository_falls_back_to_toml_settings_when_db_is_empty(
+def test_configur_sqlite_sync_scope_reposito_falls_bac_c8ee(
     tmp_path: Path,
 ) -> None:
-    """Verify configured sqlite sync scope repository falls back to toml settings when db is….
+    """Verify configured sqlite sync scope repository falls back to toml settings when.
+
+    db is….
 
     Args:
-        tmp_path (Path): Value supplied to this callable.
+        tmp_path:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     settings_path = tmp_path / "settings.toml"
     settings_service = TomlSettingsService(settings_path=settings_path)
@@ -168,14 +178,18 @@ def test_sqlite_sync_scope_repository_wraps_schema_read_and_write_failures(
     """Verify sqlite sync scope repository wraps schema read and write failures.
 
     Args:
-        tmp_path (Path): Value supplied to this callable.
-        monkeypatch (pytest.MonkeyPatch): Value supplied to this callable.
+        tmp_path:
+            Value supplied to this callable.
+        monkeypatch:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
 
     Raises:
-        OSError: Raised when this callable hits the corresponding error path.
+        OSError:
+            Raised when this callable hits the corresponding error path.
     """
     location = SQLiteDatabaseLocation(
         directory=tmp_path,
@@ -187,22 +201,29 @@ def test_sqlite_sync_scope_repository_wraps_schema_read_and_write_failures(
         """Handle failing mkdir.
 
         Args:
-            self (Path): Value supplied to this callable.
-            args (object): Value supplied to this callable.
-            kwargs (object): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            *args:
+                Value supplied to this callable.
+            **kwargs:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
 
         Raises:
-            OSError: Raised when this callable hits the corresponding error path.
+            OSError:
+                Raised when this callable hits the corresponding error path.
         """
         msg = "directory denied"
         raise OSError(msg)
 
     monkeypatch.setattr(Path, "mkdir", _failing_mkdir)
 
-    with pytest.raises(SyncScopePersistenceError, match="directory could not be prepared"):
+    with pytest.raises(
+        SyncScopePersistenceError, match="directory could not be prepared"
+    ):
         SqliteSyncScopeRepository(location=location)
 
 
@@ -213,14 +234,18 @@ def test_sqlite_sync_scope_repository_wraps_schema_sqlite_failures(
     """Verify sqlite sync scope repository wraps schema sqlite failures.
 
     Args:
-        tmp_path (Path): Value supplied to this callable.
-        monkeypatch (pytest.MonkeyPatch): Value supplied to this callable.
+        tmp_path:
+            Value supplied to this callable.
+        monkeypatch:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
 
     Raises:
-        OperationalError: Raised when this callable hits the corresponding error path.
+        OperationalError:
+            Raised when this callable hits the corresponding error path.
     """
     location = SQLiteDatabaseLocation(
         directory=tmp_path,
@@ -232,13 +257,16 @@ def test_sqlite_sync_scope_repository_wraps_schema_sqlite_failures(
         """Handle raise sqlite error.
 
         Args:
-            _database_path (Path): Value supplied to this callable.
+            _database_path:
+                Value supplied to this callable.
 
         Returns:
-            sqlite3.Connection: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
 
         Raises:
-            OperationalError: Raised when this callable hits the corresponding error path.
+            OperationalError:
+                Raised when this callable hits the corresponding error path.
         """
         msg = "schema failed"
         raise sqlite3.OperationalError(msg)
@@ -256,14 +284,18 @@ def test_sqlite_sync_scope_repository_wraps_sqlite_failures_for_read_and_write(
     """Verify sqlite sync scope repository wraps sqlite failures for read and write.
 
     Args:
-        tmp_path (Path): Value supplied to this callable.
-        monkeypatch (pytest.MonkeyPatch): Value supplied to this callable.
+        tmp_path:
+            Value supplied to this callable.
+        monkeypatch:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
 
     Raises:
-        OperationalError: Raised when this callable hits the corresponding error path.
+        OperationalError:
+            Raised when this callable hits the corresponding error path.
     """
     location = SQLiteDatabaseLocation(
         directory=tmp_path,
@@ -275,11 +307,17 @@ def test_sqlite_sync_scope_repository_wraps_sqlite_failures_for_read_and_write(
     def _broken_connect(self: SqliteSyncScopeRepository) -> sqlite3.Connection:
         """Handle broken connect.
 
+        Args:
+            self:
+                Value supplied to this callable.
+
         Returns:
-            sqlite3.Connection: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
 
         Raises:
-            OperationalError: Raised when this callable hits the corresponding error path.
+            OperationalError:
+                Raised when this callable hits the corresponding error path.
         """
         msg = "db broken"
         raise sqlite3.OperationalError(msg)
@@ -299,24 +337,24 @@ def test_sqlite_sync_scope_repository_helpers_cover_invalid_and_empty_cases(
     """Verify sqlite sync scope repository helpers cover invalid and empty cases.
 
     Args:
-        tmp_path (Path): Value supplied to this callable.
+        tmp_path:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     connection = sqlite3.connect(tmp_path / "sync_scope.sqlite3")
     connection.row_factory = sqlite3.Row
     connection.execute(
-        """
-        CREATE TABLE sync_scope_configuration (
+        """CREATE TABLE sync_scope_configuration (
             config_key TEXT PRIMARY KEY,
             config_value TEXT NOT NULL
         )
         """
     )
     connection.execute(
-        """
-        CREATE TABLE sync_scope_global_rules (
+        """CREATE TABLE sync_scope_global_rules (
             rule_key TEXT PRIMARY KEY,
             relative_path TEXT NOT NULL,
             filter_type TEXT NOT NULL,
@@ -327,8 +365,7 @@ def test_sqlite_sync_scope_repository_helpers_cover_invalid_and_empty_cases(
         """
     )
     connection.execute(
-        """
-        CREATE TABLE sync_scope_framework_rules (
+        """CREATE TABLE sync_scope_framework_rules (
             rule_key TEXT PRIMARY KEY,
             framework_type TEXT NOT NULL,
             relative_path TEXT NOT NULL,
@@ -347,7 +384,9 @@ def test_sqlite_sync_scope_repository_helpers_cover_invalid_and_empty_cases(
         "INSERT INTO sync_scope_configuration (config_key, config_value) VALUES (?, ?)",
         ("use_gitignore_rules", "broken"),
     )
-    with pytest.raises(SyncScopePersistenceError, match="Invalid sync scope configuration value"):
+    with pytest.raises(
+        SyncScopePersistenceError, match="Invalid sync scope configuration value"
+    ):
         _fetch_configuration_flag(connection, "use_gitignore_rules", False)
 
     connection.execute("DELETE FROM sync_scope_configuration")
@@ -358,8 +397,16 @@ def test_sqlite_sync_scope_repository_helpers_cover_invalid_and_empty_cases(
     _insert_configured_global_rules(connection, ())
     _insert_configured_framework_rules(connection, ())
 
-    assert connection.execute("SELECT COUNT(*) FROM sync_scope_global_rules").fetchone()[0] == 0
-    assert connection.execute("SELECT COUNT(*) FROM sync_scope_framework_rules").fetchone()[0] == 0
+    assert (
+        connection.execute("SELECT COUNT(*) FROM sync_scope_global_rules").fetchone()[0]
+        == 0
+    )
+    assert (
+        connection.execute(
+            "SELECT COUNT(*) FROM sync_scope_framework_rules"
+        ).fetchone()[0]
+        == 0
+    )
 
 
 def test_configured_sqlite_sync_scope_repository_save_resolves_location(
@@ -368,10 +415,12 @@ def test_configured_sqlite_sync_scope_repository_save_resolves_location(
     """Verify configured sqlite sync scope repository save resolves location.
 
     Args:
-        tmp_path (Path): Value supplied to this callable.
+        tmp_path:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     settings_path = tmp_path / "settings.toml"
     settings_service = TomlSettingsService(settings_path=settings_path)

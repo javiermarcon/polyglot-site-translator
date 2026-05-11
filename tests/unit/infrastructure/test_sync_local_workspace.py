@@ -14,14 +14,19 @@ class _RootLikePath:
     """Test helper for RootLikePath.
 
     Attributes:
-        None: This type does not declare additional class-level attributes.
+        None: This type does not declare class-level attributes.
     """
 
     def __init__(self) -> None:
         """Initialize the test helper state.
 
+        Args:
+            self:
+                Value supplied to this callable.
+
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         self.parent = self
         self.mkdir_calls: list[tuple[bool, bool]] = []
@@ -29,16 +34,26 @@ class _RootLikePath:
     def exists(self) -> bool:
         """Handle exists.
 
+        Args:
+            self:
+                Value supplied to this callable.
+
         Returns:
-            bool: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         return False
 
     def is_dir(self) -> bool:
         """Handle is dir.
 
+        Args:
+            self:
+                Value supplied to this callable.
+
         Returns:
-            bool: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         return False
 
@@ -46,11 +61,16 @@ class _RootLikePath:
         """Handle mkdir.
 
         Args:
-            parents (bool): Value supplied to this callable.
-            exist_ok (bool): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            parents:
+                Value supplied to this callable.
+            exist_ok:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         self.mkdir_calls.append((parents, exist_ok))
 
@@ -59,27 +79,35 @@ def test_local_sync_workspace_creates_missing_directories(tmp_path: Path) -> Non
     """Verify local sync workspace creates missing directories.
 
     Args:
-        tmp_path (Path): Value supplied to this callable.
+        tmp_path:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     workspace = LocalSyncWorkspace()
 
-    created_segments = workspace.ensure_directory(tmp_path / "workspace" / "site" / "locale")
+    created_segments = workspace.ensure_directory(
+        tmp_path / "workspace" / "site" / "locale"
+    )
 
     assert created_segments == 3
     assert (tmp_path / "workspace" / "site" / "locale").is_dir()
 
 
-def test_local_sync_workspace_returns_zero_when_directory_already_exists(tmp_path: Path) -> None:
+def test_local_sync_workspace_returns_zero_when_directory_already_exists(
+    tmp_path: Path,
+) -> None:
     """Verify local sync workspace returns zero when directory already exists.
 
     Args:
-        tmp_path (Path): Value supplied to this callable.
+        tmp_path:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     workspace = LocalSyncWorkspace()
     existing_directory = tmp_path / "workspace"
@@ -94,10 +122,12 @@ def test_local_sync_workspace_rejects_file_paths(tmp_path: Path) -> None:
     """Verify local sync workspace rejects file paths.
 
     Args:
-        tmp_path (Path): Value supplied to this callable.
+        tmp_path:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     workspace = LocalSyncWorkspace()
     occupied_path = tmp_path / "occupied"
@@ -111,10 +141,12 @@ def test_local_sync_workspace_writes_downloaded_file_bytes(tmp_path: Path) -> No
     """Verify local sync workspace writes downloaded file bytes.
 
     Args:
-        tmp_path (Path): Value supplied to this callable.
+        tmp_path:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     workspace = LocalSyncWorkspace()
     target_file = tmp_path / "workspace" / "site" / "locale" / "es.po"
@@ -129,7 +161,8 @@ def test_local_sync_workspace_stops_counting_at_self_parent_roots() -> None:
     """Verify local sync workspace stops counting at self parent roots.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     workspace = LocalSyncWorkspace()
     root_path = _RootLikePath()
@@ -144,17 +177,21 @@ def test_local_sync_workspace_lists_local_files_recursively(tmp_path: Path) -> N
     """Verify local sync workspace lists local files recursively.
 
     Args:
-        tmp_path (Path): Value supplied to this callable.
+        tmp_path:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     workspace = LocalSyncWorkspace()
     local_root = tmp_path / "workspace" / "site"
     workspace.ensure_directory(local_root / "locale")
     workspace.ensure_directory(local_root / "templates")
     (local_root / "locale" / "es.po").write_text("hola", encoding="utf-8")
-    (local_root / "templates" / "home.html").write_text("<h1>Hola</h1>", encoding="utf-8")
+    (local_root / "templates" / "home.html").write_text(
+        "<h1>Hola</h1>", encoding="utf-8"
+    )
 
     local_files = list(workspace.iter_local_files(local_root))
 
@@ -172,10 +209,12 @@ def test_local_sync_workspace_reads_local_file_bytes(tmp_path: Path) -> None:
     """Verify local sync workspace reads local file bytes.
 
     Args:
-        tmp_path (Path): Value supplied to this callable.
+        tmp_path:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     workspace = LocalSyncWorkspace()
     target_file = tmp_path / "workspace" / "site" / "locale" / "es.po"
@@ -187,14 +226,18 @@ def test_local_sync_workspace_reads_local_file_bytes(tmp_path: Path) -> None:
     assert payload == b'msgid "hello"\n'
 
 
-def test_local_sync_workspace_returns_no_local_files_for_missing_roots(tmp_path: Path) -> None:
+def test_local_sync_workspace_returns_no_local_files_for_missing_roots(
+    tmp_path: Path,
+) -> None:
     """Verify local sync workspace returns no local files for missing roots.
 
     Args:
-        tmp_path (Path): Value supplied to this callable.
+        tmp_path:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     workspace = LocalSyncWorkspace()
 
@@ -207,10 +250,12 @@ def test_local_sync_workspace_rejects_non_directory_roots(tmp_path: Path) -> Non
     """Verify local sync workspace rejects non directory roots.
 
     Args:
-        tmp_path (Path): Value supplied to this callable.
+        tmp_path:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     workspace = LocalSyncWorkspace()
     occupied_path = tmp_path / "not-a-directory"

@@ -27,7 +27,8 @@ def test_create_kivy_app_builds_root_with_expected_screens() -> None:
     """Verify create kivy app builds root with expected screens.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     app = cast(Any, create_kivy_app())
 
@@ -50,7 +51,8 @@ def test_apply_runtime_settings_without_built_root_still_updates_theme_mode() ->
     """Verify apply runtime settings without built root still updates theme mode.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     shell = create_frontend_shell(build_seeded_services())
     app = PolyglotSiteTranslatorApp(shell)
@@ -77,11 +79,14 @@ def test_create_kivy_app_uses_toml_settings_service_by_default(
     """Verify create kivy app uses toml settings service by default.
 
     Args:
-        monkeypatch (pytest.MonkeyPatch): Value supplied to this callable.
-        tmp_path (Path): Value supplied to this callable.
+        monkeypatch:
+            Value supplied to this callable.
+        tmp_path:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     monkeypatch.setenv("POLYGLOT_SITE_TRANSLATOR_CONFIG_DIR", str(tmp_path))
 
@@ -98,11 +103,14 @@ def test_create_kivy_app_uses_real_site_registry_services_by_default(
     """Verify create kivy app uses real site registry services by default.
 
     Args:
-        monkeypatch (pytest.MonkeyPatch): Value supplied to this callable.
-        tmp_path (Path): Value supplied to this callable.
+        monkeypatch:
+            Value supplied to this callable.
+        tmp_path:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     monkeypatch.setenv("POLYGLOT_SITE_TRANSLATOR_CONFIG_DIR", str(tmp_path))
     TomlSettingsService(tmp_path / "settings.toml").save_settings(
@@ -134,17 +142,21 @@ def test_create_kivy_app_uses_real_site_registry_services_by_default(
     )
 
     shell.open_projects()
-    assert [project.name for project in shell.projects_state.projects] == ["Marketing Site"]
+    assert [project.name for project in shell.projects_state.projects] == [
+        "Marketing Site"
+    ]
 
 
 def test_build_uses_persisted_settings_as_initial_runtime_state(tmp_path: Path) -> None:
     """Verify build uses persisted settings as initial runtime state.
 
     Args:
-        tmp_path (Path): Value supplied to this callable.
+        tmp_path:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     settings_service = TomlSettingsService(tmp_path / "settings.toml")
     settings_service.save_settings(
@@ -173,10 +185,12 @@ def test_navigation_updates_the_persisted_last_opened_screen(tmp_path: Path) -> 
     """Verify navigation updates the persisted last opened screen.
 
     Args:
-        tmp_path (Path): Value supplied to this callable.
+        tmp_path:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     settings_service = TomlSettingsService(tmp_path / "settings.toml")
     settings_service.save_settings(
@@ -195,14 +209,17 @@ def test_navigation_updates_the_persisted_last_opened_screen(tmp_path: Path) -> 
     shell.open_settings()
     shell.open_projects()
 
-    assert settings_service.load_settings().app_settings.last_opened_screen == "projects"
+    assert (
+        settings_service.load_settings().app_settings.last_opened_screen == "projects"
+    )
 
 
 def test_build_falls_back_to_dashboard_when_startup_keeps_no_settings_state() -> None:
     """Verify build falls back to dashboard when startup keeps no settings state.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     shell = create_frontend_shell(build_seeded_services())
     app = PolyglotSiteTranslatorApp(shell)
@@ -211,7 +228,8 @@ def test_build_falls_back_to_dashboard_when_startup_keeps_no_settings_state() ->
         """Handle clear settings state.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         shell.settings_state = None
 
@@ -228,10 +246,12 @@ def test_build_returns_to_dashboard_when_remember_last_screen_is_disabled(
     """Verify build returns to dashboard when remember last screen is disabled.
 
     Args:
-        tmp_path (Path): Value supplied to this callable.
+        tmp_path:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     settings_service = TomlSettingsService(tmp_path / "settings.toml")
     settings_service.save_settings(
@@ -261,10 +281,12 @@ def test_build_returns_to_dashboard_for_unsupported_safe_start_route(
     """Verify build returns to dashboard for unsupported safe start route.
 
     Args:
-        tmp_path (Path): Value supplied to this callable.
+        tmp_path:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     settings_service = TomlSettingsService(tmp_path / "settings.toml")
     settings_service.save_settings(
@@ -292,10 +314,12 @@ def test_build_uses_projects_when_the_last_screen_is_projects(tmp_path: Path) ->
     """Verify build uses projects when the last screen is projects.
 
     Args:
-        tmp_path (Path): Value supplied to this callable.
+        tmp_path:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     settings_service = TomlSettingsService(tmp_path / "settings.toml")
     settings_service.save_settings(

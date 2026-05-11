@@ -49,12 +49,14 @@ def _emit_po_processing_progress(
     """Emit one progress event when the caller provided a workflow callback.
 
     Args:
-        progress_callback (Callable[[POProcessingProgress], None] | None): Value supplied to this
-        callable.
-        event (POProcessingProgress): Value supplied to this callable.
+        progress_callback:
+            Value supplied to this callable.
+        event:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     if progress_callback is None:
         return
@@ -69,11 +71,14 @@ def _build_empty_processing_result(
     """Build the empty-result shape used when no selected PO files were discovered.
 
     Args:
-        site (RegisteredSite): Value supplied to this callable.
-        cache_settings (POProcessingCacheSettings): Value supplied to this callable.
+        site:
+            Value supplied to this callable.
+        cache_settings:
+            Value supplied to this callable.
 
     Returns:
-        POProcessingResult: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
     """
     return POProcessingResult(
         files_discovered=0,
@@ -105,11 +110,16 @@ class _FamilyProgressUpdate:
     """Provide FamilyProgressUpdate behavior for this module.
 
     Attributes:
-        synchronized_entries (int): Documented attribute exposed by this type.
-        translated_entries (int): Documented attribute exposed by this type.
-        failed_entries (int): Documented attribute exposed by this type.
-        current_file (str | None): Documented attribute exposed by this type.
-        current_entry (str | None): Documented attribute exposed by this type.
+        synchronized_entries:
+            Documented attribute exposed by this type.
+        translated_entries:
+            Documented attribute exposed by this type.
+        failed_entries:
+            Documented attribute exposed by this type.
+        current_file:
+            Documented attribute exposed by this type.
+        current_entry:
+            Documented attribute exposed by this type.
     """
 
     synchronized_entries: int
@@ -124,13 +134,14 @@ class _FamilyProcessingRuntime:
     """Provide FamilyProcessingRuntime behavior for this module.
 
     Attributes:
-        translation_provider (POTranslationProvider | None): Documented attribute exposed by this
-    type.
-        translation_cache (POTranslationCache | None): Documented attribute exposed by this type.
-        progress_callback (Callable[[_FamilyProgressUpdate], None] | None): Documented attribute
-    exposed
-        by this type.
-        only_fuzzy (bool): Documented attribute exposed by this type.
+        translation_provider:
+            Documented attribute exposed by this type.
+        translation_cache:
+            Documented attribute exposed by this type.
+        progress_callback:
+            Documented attribute exposed by this type.
+        only_fuzzy:
+            Documented attribute exposed by this type.
     """
 
     translation_provider: POTranslationProvider | None
@@ -144,13 +155,20 @@ class _FamilyProgressContext:
     """Provide FamilyProgressContext behavior for this module.
 
     Attributes:
-        processed_families (int): Documented attribute exposed by this type.
-        total_families (int): Documented attribute exposed by this type.
-        total_entries (int): Documented attribute exposed by this type.
-        files_discovered (int): Documented attribute exposed by this type.
-        synchronized_entries (int): Documented attribute exposed by this type.
-        translated_entries (int): Documented attribute exposed by this type.
-        failed_entries (int): Documented attribute exposed by this type.
+        processed_families:
+            Documented attribute exposed by this type.
+        total_families:
+            Documented attribute exposed by this type.
+        total_entries:
+            Documented attribute exposed by this type.
+        files_discovered:
+            Documented attribute exposed by this type.
+        synchronized_entries:
+            Documented attribute exposed by this type.
+        translated_entries:
+            Documented attribute exposed by this type.
+        failed_entries:
+            Documented attribute exposed by this type.
     """
 
     processed_families: int
@@ -167,13 +185,20 @@ class _TranslationPassOutcome:
     """Provide TranslationPassOutcome behavior for this module.
 
     Attributes:
-        synchronized_entries (int): Documented attribute exposed by this type.
-        reused_from_other_variant (int): Documented attribute exposed by this type.
-        translated_entries (int): Documented attribute exposed by this type.
-        translated_from_cache (int): Documented attribute exposed by this type.
-        translated_from_provider (int): Documented attribute exposed by this type.
-        skipped_sync_only (int): Documented attribute exposed by this type.
-        failures (tuple[POProcessingFailure, ...]): Documented attribute exposed by this type.
+        synchronized_entries:
+            Documented attribute exposed by this type.
+        reused_from_other_variant:
+            Documented attribute exposed by this type.
+        translated_entries:
+            Documented attribute exposed by this type.
+        translated_from_cache:
+            Documented attribute exposed by this type.
+        translated_from_provider:
+            Documented attribute exposed by this type.
+        skipped_sync_only:
+            Documented attribute exposed by this type.
+        failures:
+            Documented attribute exposed by this type.
     """
 
     synchronized_entries: int
@@ -190,15 +215,24 @@ class _FamilyProcessingOutcome:
     """Provide FamilyProcessingOutcome behavior for this module.
 
     Attributes:
-        updated_files (tuple[POFileData, ...]): Documented attribute exposed by this type.
-        synchronized_entries (int): Documented attribute exposed by this type.
-        initial_sync_entries (int): Documented attribute exposed by this type.
-        reused_from_other_variant (int): Documented attribute exposed by this type.
-        translated_entries (int): Documented attribute exposed by this type.
-        translated_from_cache (int): Documented attribute exposed by this type.
-        translated_from_provider (int): Documented attribute exposed by this type.
-        skipped_sync_only (int): Documented attribute exposed by this type.
-        failures (tuple[POProcessingFailure, ...]): Documented attribute exposed by this type.
+        updated_files:
+            Documented attribute exposed by this type.
+        synchronized_entries:
+            Documented attribute exposed by this type.
+        initial_sync_entries:
+            Documented attribute exposed by this type.
+        reused_from_other_variant:
+            Documented attribute exposed by this type.
+        translated_entries:
+            Documented attribute exposed by this type.
+        translated_from_cache:
+            Documented attribute exposed by this type.
+        translated_from_provider:
+            Documented attribute exposed by this type.
+        skipped_sync_only:
+            Documented attribute exposed by this type.
+        failures:
+            Documented attribute exposed by this type.
     """
 
     updated_files: tuple[POFileData, ...]
@@ -216,7 +250,7 @@ class POProcessingService:
     """Complete missing PO translations across selected locale variants.
 
     Attributes:
-        None: This type does not declare additional class-level attributes.
+        None: This type does not declare class-level attributes.
     """
 
     def __init__(
@@ -228,13 +262,18 @@ class POProcessingService:
         """Store repository, translation provider, and cache factory dependencies.
 
         Args:
-            repository (POCatalogRepository | None): Value supplied to this callable.
-            translation_provider (POTranslationProvider | None): Value supplied to this callable.
-            translation_cache_factory (POTranslationCacheFactory | None): Value supplied to this
-        callable.
+            self:
+                Value supplied to this callable.
+            repository:
+                Value supplied to this callable.
+            translation_provider:
+                Value supplied to this callable.
+            translation_cache_factory:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         self._repository = repository or PolibPOCatalogRepository()
         self._translation_provider = translation_provider
@@ -251,16 +290,22 @@ class POProcessingService:
         """Run the full shared PO workflow for one persisted site workspace.
 
         Args:
-            site (RegisteredSite): Value supplied to this callable.
-            cache_settings (POProcessingCacheSettings | None): Value supplied to this callable.
-            progress_callback (Callable[[POProcessingProgress], None] | None): Value supplied to
-        this
-            callable.
+            self:
+                Value supplied to this callable.
+            site:
+                Value supplied to this callable.
+            cache_settings:
+                Value supplied to this callable.
+            progress_callback:
+                Value supplied to this callable.
 
         Returns:
-            POProcessingResult: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
-        resolved_cache_settings = _resolve_cache_settings(site=site, cache_settings=cache_settings)
+        resolved_cache_settings = _resolve_cache_settings(
+            site=site, cache_settings=cache_settings
+        )
         cache = self._translation_cache_factory(
             cache_path=Path(resolved_cache_settings.cache_path),
             enabled=resolved_cache_settings.enabled,
@@ -287,15 +332,20 @@ class POProcessingService:
         """Process discovered PO files using an already-open translation cache.
 
         Args:
-            site (RegisteredSite): Value supplied to this callable.
-            cache (POTranslationCache): Value supplied to this callable.
-            cache_settings (POProcessingCacheSettings): Value supplied to this callable.
-            progress_callback (Callable[[POProcessingProgress], None] | None): Value supplied to
-        this
-            callable.
+            self:
+                Value supplied to this callable.
+            site:
+                Value supplied to this callable.
+            cache:
+                Value supplied to this callable.
+            cache_settings:
+                Value supplied to this callable.
+            progress_callback:
+                Value supplied to this callable.
 
         Returns:
-            POProcessingResult: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         configured_locales = parse_default_locale_list(site.default_locale)
         workspace_root = Path(site.local_path)
@@ -305,23 +355,33 @@ class POProcessingService:
             locales=configured_locales,
         )
         if target_files == ():
-            return _build_empty_processing_result(site=site, cache_settings=cache_settings)
+            return _build_empty_processing_result(
+                site=site, cache_settings=cache_settings
+            )
 
         selected_locales = _resolve_processing_locales(
             target_files=target_files,
             configured_locales=configured_locales,
         )
         locale_groups = _group_locales_by_base(selected_locales)
-        grouped_files = _group_files_by_family(target_files, selected_locales=selected_locales)
+        grouped_files = _group_files_by_family(
+            target_files, selected_locales=selected_locales
+        )
         translation_memory = _build_translation_memory(target_files)
         files_discovered = len(target_files)
         total_families = len(grouped_files)
         total_entries = _count_total_entries(target_files)
         missing_entries = _count_untranslated_entries(target_files)
         fuzzy_entries = _count_fuzzy_entries(target_files)
-        pending_entries = _count_pending_entries(target_files, only_fuzzy=site.only_fuzzy)
-        entries_synchronized = entries_completed_from_sync = entries_reused_from_other_variant = 0
-        entries_translated = entries_translated_from_cache = entries_translated_from_provider = 0
+        pending_entries = _count_pending_entries(
+            target_files, only_fuzzy=site.only_fuzzy
+        )
+        entries_synchronized = entries_completed_from_sync = (
+            entries_reused_from_other_variant
+        ) = 0
+        entries_translated = entries_translated_from_cache = (
+            entries_translated_from_provider
+        ) = 0
         entries_skipped_sync_only = entries_failed = 0
         failures: list[POProcessingFailure] = []
         current_file = current_entry = None
@@ -341,7 +401,9 @@ class POProcessingService:
         )
 
         updated_files: list[POFileData] = []
-        for processed_families, family_files in enumerate(grouped_files.values(), start=1):
+        for processed_families, family_files in enumerate(
+            grouped_files.values(), start=1
+        ):
             progress_context = _FamilyProgressContext(
                 processed_families=processed_families,
                 total_families=total_families,
@@ -356,14 +418,19 @@ class POProcessingService:
                 update: _FamilyProgressUpdate,
                 context: _FamilyProgressContext = progress_context,
             ) -> None:
-                """Emit the current family-level progress snapshot through the workflow callback.
+                """Emit the current family-level progress snapshot through the workflow.
+
+                callback.
 
                 Args:
-                    update (_FamilyProgressUpdate): Value supplied to this callable.
-                    context (_FamilyProgressContext): Value supplied to this callable.
+                    update:
+                        Value supplied to this callable.
+                    context:
+                        Value supplied to this callable.
 
                 Returns:
-                    None: This callable does not return a value.
+                    value:
+                        Structured value returned by this callable.
                 """
                 _emit_po_processing_progress(
                     progress_callback,
@@ -379,7 +446,8 @@ class POProcessingService:
                         files_discovered=context.files_discovered,
                         entries_synchronized=context.synchronized_entries
                         + update.synchronized_entries,
-                        entries_translated=context.translated_entries + update.translated_entries,
+                        entries_translated=context.translated_entries
+                        + update.translated_entries,
                         entries_failed=context.failed_entries + update.failed_entries,
                         message=(
                             "Processing PO family "
@@ -397,7 +465,9 @@ class POProcessingService:
                 translation_memory=translation_memory,
                 runtime=_FamilyProcessingRuntime(
                     translation_provider=(
-                        self._translation_provider if site.use_external_translator else None
+                        self._translation_provider
+                        if site.use_external_translator
+                        else None
                     ),
                     translation_cache=cache,
                     progress_callback=report_family_progress,
@@ -407,7 +477,9 @@ class POProcessingService:
             updated_files.extend(family_outcome.updated_files)
             entries_synchronized += family_outcome.synchronized_entries
             entries_completed_from_sync += family_outcome.initial_sync_entries
-            entries_reused_from_other_variant += family_outcome.reused_from_other_variant
+            entries_reused_from_other_variant += (
+                family_outcome.reused_from_other_variant
+            )
             entries_translated += family_outcome.translated_entries
             entries_translated_from_cache += family_outcome.translated_from_cache
             entries_translated_from_provider += family_outcome.translated_from_provider
@@ -427,7 +499,10 @@ class POProcessingService:
                     entries_synchronized=entries_synchronized,
                     entries_translated=entries_translated,
                     entries_failed=entries_failed,
-                    message=f"Processed {processed_families} of {total_families} PO families.",
+                    message=(
+                        f"Processed {processed_families} of "
+                        f"{total_families} PO families."
+                    ),
                     current_file=current_file,
                     current_entry=current_entry,
                 ),
@@ -533,11 +608,14 @@ def _compile_mo_files(
     """Handle compile mo files.
 
     Args:
-        repository (POCatalogRepository): Value supplied to this callable.
-        files (tuple[POFileData, ...]): Value supplied to this callable.
+        repository:
+            Value supplied to this callable.
+        files:
+            Value supplied to this callable.
 
     Returns:
-        tuple[int, list[POCompilationFailure]]: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
     """
     compiled = 0
     failures: list[POCompilationFailure] = []
@@ -566,15 +644,20 @@ def _detect_variant_inconsistencies(
     """Detect variant inconsistencies.
 
     Args:
-        grouped_files (tuple[POFileData, ...]): Value supplied to this callable.
-        enabled (bool): Value supplied to this callable.
+        grouped_files:
+            Value supplied to this callable.
+        enabled:
+            Value supplied to this callable.
 
     Returns:
-        list[str]: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
     """
     if not enabled:
         return []
-    family_entries = {file_data.locale: list(file_data.entries) for file_data in grouped_files}
+    family_entries = {
+        file_data.locale: list(file_data.entries) for file_data in grouped_files
+    }
     entry_map = _entries_by_key(family_entries)
     details: list[str] = []
     for entry_id, entries_by_locale in entry_map.items():
@@ -587,7 +670,9 @@ def _detect_variant_inconsistencies(
             continue
         if len(set(translated_values.values())) <= 1:
             continue
-        context_label = entry_id.context if entry_id.context is not None else "<sin contexto>"
+        context_label = (
+            entry_id.context if entry_id.context is not None else "<sin contexto>"
+        )
         details.append(
             "Diferencia entre variantes: "
             f"{grouped_files[0].family_key} | msgctxt='{context_label}' | "
@@ -600,10 +685,12 @@ def _canonical_translation_value(value: TranslationValue) -> str:
     """Handle canonical translation value.
 
     Args:
-        value (TranslationValue): Value supplied to this callable.
+        value:
+            Value supplied to this callable.
 
     Returns:
-        str: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
     """
     if isinstance(value, dict):
         return "\x1f".join(f"{key}={value[key]}" for key in sorted(value))
@@ -618,11 +705,14 @@ def _filter_files_by_selected_locales(
     """Filter files by selected locales.
 
     Args:
-        discovered_files (tuple[POFileData, ...]): Value supplied to this callable.
-        locales (tuple[str, ...]): Value supplied to this callable.
+        discovered_files:
+            Value supplied to this callable.
+        locales:
+            Value supplied to this callable.
 
     Returns:
-        tuple[POFileData, ...]: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
     """
     if len(locales) == 1:
         allowed_base_language = _base_language(locales[0])
@@ -632,17 +722,23 @@ def _filter_files_by_selected_locales(
             if _base_language(file_data.locale) == allowed_base_language
         )
     allowed_locales = set(locales)
-    return tuple(file_data for file_data in discovered_files if file_data.locale in allowed_locales)
+    return tuple(
+        file_data
+        for file_data in discovered_files
+        if file_data.locale in allowed_locales
+    )
 
 
 def _group_locales_by_base(locales: tuple[str, ...]) -> dict[str, tuple[str, ...]]:
     """Group locales by base.
 
     Args:
-        locales (tuple[str, ...]): Value supplied to this callable.
+        locales:
+            Value supplied to this callable.
 
     Returns:
-        dict[str, tuple[str, ...]]: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
     """
     grouped: dict[str, list[str]] = defaultdict(list)
     for locale in locales:
@@ -658,11 +754,14 @@ def _resolve_processing_locales(
     """Resolve processing locales.
 
     Args:
-        target_files (tuple[POFileData, ...]): Value supplied to this callable.
-        configured_locales (tuple[str, ...]): Value supplied to this callable.
+        target_files:
+            Value supplied to this callable.
+        configured_locales:
+            Value supplied to this callable.
 
     Returns:
-        tuple[str, ...]: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
     """
     if len(configured_locales) > 1:
         return configured_locales
@@ -682,11 +781,14 @@ def _group_files_by_family(
     """Group files by family.
 
     Args:
-        files (tuple[POFileData, ...]): Value supplied to this callable.
-        selected_locales (tuple[str, ...]): Value supplied to this callable.
+        files:
+            Value supplied to this callable.
+        selected_locales:
+            Value supplied to this callable.
 
     Returns:
-        dict[str, tuple[POFileData, ...]]: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
     """
     locale_position = {locale: index for index, locale in enumerate(selected_locales)}
     grouped: dict[str, list[POFileData]] = defaultdict(list)
@@ -696,7 +798,9 @@ def _group_files_by_family(
         family_key: tuple(
             sorted(
                 family_files,
-                key=lambda file_data: locale_position.get(file_data.locale, len(locale_position)),
+                key=lambda file_data: locale_position.get(
+                    file_data.locale, len(locale_position)
+                ),
             )
         )
         for family_key, family_files in grouped.items()
@@ -709,10 +813,12 @@ def _build_translation_memory(
     """Build translation memory.
 
     Args:
-        files (tuple[POFileData, ...]): Value supplied to this callable.
+        files:
+            Value supplied to this callable.
 
     Returns:
-        dict[str, dict[POEntryId, TranslationValue]]: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
     """
     memory: dict[str, dict[POEntryId, TranslationValue]] = defaultdict(dict)
     for file_data in files:
@@ -727,22 +833,31 @@ def _count_untranslated_entries(files: tuple[POFileData, ...]) -> int:
     """Count untranslated entries.
 
     Args:
-        files (tuple[POFileData, ...]): Value supplied to this callable.
+        files:
+            Value supplied to this callable.
 
     Returns:
-        int: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
     """
-    return sum(1 for file_data in files for entry in file_data.entries if not _is_translated(entry))
+    return sum(
+        1
+        for file_data in files
+        for entry in file_data.entries
+        if not _is_translated(entry)
+    )
 
 
 def _count_total_entries(files: tuple[POFileData, ...]) -> int:
     """Count total entries.
 
     Args:
-        files (tuple[POFileData, ...]): Value supplied to this callable.
+        files:
+            Value supplied to this callable.
 
     Returns:
-        int: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
     """
     return sum(len(file_data.entries) for file_data in files)
 
@@ -751,23 +866,30 @@ def _count_fuzzy_entries(files: tuple[POFileData, ...]) -> int:
     """Count fuzzy entries.
 
     Args:
-        files (tuple[POFileData, ...]): Value supplied to this callable.
+        files:
+            Value supplied to this callable.
 
     Returns:
-        int: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
     """
-    return sum(1 for file_data in files for entry in file_data.entries if entry.is_fuzzy)
+    return sum(
+        1 for file_data in files for entry in file_data.entries if entry.is_fuzzy
+    )
 
 
 def _count_pending_entries(files: tuple[POFileData, ...], *, only_fuzzy: bool) -> int:
     """Count pending entries.
 
     Args:
-        files (tuple[POFileData, ...]): Value supplied to this callable.
-        only_fuzzy (bool): Value supplied to this callable.
+        files:
+            Value supplied to this callable.
+        only_fuzzy:
+            Value supplied to this callable.
 
     Returns:
-        int: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
     """
     return sum(
         1
@@ -788,15 +910,20 @@ def _process_family(
     """Handle process family.
 
     Args:
-        family_files (tuple[POFileData, ...]): Value supplied to this callable.
-        selected_locales (tuple[str, ...]): Value supplied to this callable.
-        locale_groups (dict[str, tuple[str, ...]]): Value supplied to this callable.
-        translation_memory (dict[str, dict[POEntryId, TranslationValue]]): Value supplied to this
-        callable.
-        runtime (_FamilyProcessingRuntime): Value supplied to this callable.
+        family_files:
+            Value supplied to this callable.
+        selected_locales:
+            Value supplied to this callable.
+        locale_groups:
+            Value supplied to this callable.
+        translation_memory:
+            Value supplied to this callable.
+        runtime:
+            Value supplied to this callable.
 
     Returns:
-        _FamilyProcessingOutcome: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
     """
     file_by_locale = {file_data.locale: file_data for file_data in family_files}
     family_entries: dict[str, list[POEntryData]] = {
@@ -828,7 +955,8 @@ def _process_family(
     )
     return _FamilyProcessingOutcome(
         updated_files=updated_files,
-        synchronized_entries=synchronized_entries + translated_entries.synchronized_entries,
+        synchronized_entries=synchronized_entries
+        + translated_entries.synchronized_entries,
         initial_sync_entries=synchronized_entries,
         reused_from_other_variant=translated_entries.reused_from_other_variant,
         translated_entries=translated_entries.translated_entries,
@@ -849,14 +977,18 @@ def _synchronize_family(
     """Handle synchronize family.
 
     Args:
-        family_entries (dict[str, list[POEntryData]]): Value supplied to this callable.
-        selected_locales (tuple[str, ...]): Value supplied to this callable.
-        locale_groups (dict[str, tuple[str, ...]]): Value supplied to this callable.
-        translation_memory (dict[str, dict[POEntryId, TranslationValue]]): Value supplied to this
-        callable.
+        family_entries:
+            Value supplied to this callable.
+        selected_locales:
+            Value supplied to this callable.
+        locale_groups:
+            Value supplied to this callable.
+        translation_memory:
+            Value supplied to this callable.
 
     Returns:
-        int: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
     """
     entry_map = _entries_by_key(family_entries)
     synchronized_entries = 0
@@ -874,7 +1006,9 @@ def _synchronize_family(
                 if target_entry is None or _is_translated(target_entry):
                     continue
                 _apply_translation(target_entry, translation)
-                translation_memory.setdefault(related_locale, {})[entry_id] = translation
+                translation_memory.setdefault(related_locale, {})[entry_id] = (
+                    translation
+                )
                 synchronized_entries += 1
             break
     return synchronized_entries
@@ -891,15 +1025,20 @@ def _translate_missing_entries(
     """Handle translate missing entries.
 
     Args:
-        family_entries (dict[str, list[POEntryData]]): Value supplied to this callable.
-        selected_locales (tuple[str, ...]): Value supplied to this callable.
-        translation_memory (dict[str, dict[POEntryId, TranslationValue]]): Value supplied to this
-        callable.
-        file_by_locale (dict[str, POFileData]): Value supplied to this callable.
-        runtime (_FamilyProcessingRuntime): Value supplied to this callable.
+        family_entries:
+            Value supplied to this callable.
+        selected_locales:
+            Value supplied to this callable.
+        translation_memory:
+            Value supplied to this callable.
+        file_by_locale:
+            Value supplied to this callable.
+        runtime:
+            Value supplied to this callable.
 
     Returns:
-        _TranslationPassOutcome: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
     """
     synchronized_entries = 0
     reused_from_other_variant = 0
@@ -917,7 +1056,9 @@ def _translate_missing_entries(
         if entries is None:
             continue
         for entry in entries:
-            if not _should_process_entry_for_translation(entry, only_fuzzy=runtime.only_fuzzy):
+            if not _should_process_entry_for_translation(
+                entry, only_fuzzy=runtime.only_fuzzy
+            ):
                 continue
             if runtime.progress_callback is not None:
                 runtime.progress_callback(
@@ -1003,10 +1144,12 @@ def _entries_by_key(
     """Handle entries by key.
 
     Args:
-        family_entries (dict[str, list[POEntryData]]): Value supplied to this callable.
+        family_entries:
+            Value supplied to this callable.
 
     Returns:
-        dict[POEntryId, dict[str, POEntryData]]: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
     """
     indexed: dict[POEntryId, dict[str, POEntryData]] = defaultdict(dict)
     for locale, entries in family_entries.items():
@@ -1025,14 +1168,18 @@ def _candidate_translation_from_memory(
     """Handle candidate translation from memory.
 
     Args:
-        locale (str): Value supplied to this callable.
-        entry_id (POEntryId): Value supplied to this callable.
-        locale_groups (dict[str, tuple[str, ...]]): Value supplied to this callable.
-        translation_memory (dict[str, dict[POEntryId, TranslationValue]]): Value supplied to this
-        callable.
+        locale:
+            Value supplied to this callable.
+        entry_id:
+            Value supplied to this callable.
+        locale_groups:
+            Value supplied to this callable.
+        translation_memory:
+            Value supplied to this callable.
 
     Returns:
-        TranslationValue | None: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
     """
     for related_locale in _related_locales(locale, locale_groups=locale_groups):
         candidate = translation_memory.get(related_locale, {}).get(entry_id)
@@ -1053,14 +1200,20 @@ def _translate_entry(
     """Handle translate entry.
 
     Args:
-        entry (POEntryData): Value supplied to this callable.
-        locale (str): Value supplied to this callable.
-        nplurals (int): Value supplied to this callable.
-        translation_provider (POTranslationProvider): Value supplied to this callable.
-        translation_cache (POTranslationCache | None): Value supplied to this callable.
+        entry:
+            Value supplied to this callable.
+        locale:
+            Value supplied to this callable.
+        nplurals:
+            Value supplied to this callable.
+        translation_provider:
+            Value supplied to this callable.
+        translation_cache:
+            Value supplied to this callable.
 
     Returns:
-        tuple[TranslationValue, str]: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
     """
     if entry.entry_id.msgid_plural is None:
         translated_text, source = _translate_text(
@@ -1085,7 +1238,11 @@ def _translate_entry(
     plural_map = {"0": singular}
     for index in range(1, nplurals):
         plural_map[str(index)] = plural
-    source = "cache" if singular_source == "cache" and plural_source == "cache" else "provider"
+    source = (
+        "cache"
+        if singular_source == "cache" and plural_source == "cache"
+        else "provider"
+    )
     return plural_map, source
 
 
@@ -1099,13 +1256,18 @@ def _translate_text(
     """Handle translate text.
 
     Args:
-        text (str): Value supplied to this callable.
-        locale (str): Value supplied to this callable.
-        translation_provider (POTranslationProvider): Value supplied to this callable.
-        translation_cache (POTranslationCache | None): Value supplied to this callable.
+        text:
+            Value supplied to this callable.
+        locale:
+            Value supplied to this callable.
+        translation_provider:
+            Value supplied to this callable.
+        translation_cache:
+            Value supplied to this callable.
 
     Returns:
-        tuple[str, str]: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
     """
     base_language = _base_language(locale)
     if translation_cache is not None:
@@ -1133,11 +1295,14 @@ def _resolve_cache_settings(
     """Resolve cache settings.
 
     Args:
-        site (RegisteredSite): Value supplied to this callable.
-        cache_settings (POProcessingCacheSettings | None): Value supplied to this callable.
+        site:
+            Value supplied to this callable.
+        cache_settings:
+            Value supplied to this callable.
 
     Returns:
-        POProcessingCacheSettings: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
     """
     if cache_settings is not None:
         return cache_settings
@@ -1158,15 +1323,20 @@ def _propagate_translation_to_family(
     """Handle propagate translation to family.
 
     Args:
-        family_entries (dict[str, list[POEntryData]]): Value supplied to this callable.
-        source_locale (str): Value supplied to this callable.
-        entry_id (POEntryId): Value supplied to this callable.
-        translation (TranslationValue): Value supplied to this callable.
-        translation_memory (dict[str, dict[POEntryId, TranslationValue]]): Value supplied to this
-        callable.
+        family_entries:
+            Value supplied to this callable.
+        source_locale:
+            Value supplied to this callable.
+        entry_id:
+            Value supplied to this callable.
+        translation:
+            Value supplied to this callable.
+        translation_memory:
+            Value supplied to this callable.
 
     Returns:
-        int: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
     """
     propagated_entries = 0
     translation_base = _base_language(source_locale)
@@ -1186,11 +1356,14 @@ def _find_entry(entries: list[POEntryData], entry_id: POEntryId) -> POEntryData 
     """Find entry.
 
     Args:
-        entries (list[POEntryData]): Value supplied to this callable.
-        entry_id (POEntryId): Value supplied to this callable.
+        entries:
+            Value supplied to this callable.
+        entry_id:
+            Value supplied to this callable.
 
     Returns:
-        POEntryData | None: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
     """
     for entry in entries:
         if entry.entry_id == entry_id:
@@ -1202,11 +1375,14 @@ def _apply_translation(entry: POEntryData, translation: TranslationValue) -> Non
     """Apply translation.
 
     Args:
-        entry (POEntryData): Value supplied to this callable.
-        translation (TranslationValue): Value supplied to this callable.
+        entry:
+            Value supplied to this callable.
+        translation:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     if isinstance(translation, dict):
         object.__setattr__(entry, "msgstr", "")
@@ -1220,10 +1396,12 @@ def _translation_from_entry(entry: POEntryData) -> TranslationValue:
     """Handle translation from entry.
 
     Args:
-        entry (POEntryData): Value supplied to this callable.
+        entry:
+            Value supplied to this callable.
 
     Returns:
-        TranslationValue: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
     """
     if entry.entry_id.msgid_plural is not None:
         return dict(entry.msgstr_plural)
@@ -1238,15 +1416,20 @@ def _related_locales(
     """Handle related locales.
 
     Args:
-        locale (str): Value supplied to this callable.
-        locale_groups (dict[str, tuple[str, ...]]): Value supplied to this callable.
+        locale:
+            Value supplied to this callable.
+        locale_groups:
+            Value supplied to this callable.
 
     Returns:
-        tuple[str, ...]: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
     """
     base_language = _base_language(locale)
     return tuple(
-        candidate for candidate in locale_groups.get(base_language, ()) if candidate != locale
+        candidate
+        for candidate in locale_groups.get(base_language, ())
+        if candidate != locale
     )
 
 
@@ -1254,10 +1437,12 @@ def _base_language(locale: str) -> str:
     """Handle base language.
 
     Args:
-        locale (str): Value supplied to this callable.
+        locale:
+            Value supplied to this callable.
 
     Returns:
-        str: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
     """
     return locale.split("_", maxsplit=1)[0].lower()
 
@@ -1266,10 +1451,12 @@ def _is_effectively_empty_translation(translation: TranslationValue | None) -> b
     """Handle is effectively empty translation.
 
     Args:
-        translation (TranslationValue | None): Value supplied to this callable.
+        translation:
+            Value supplied to this callable.
 
     Returns:
-        bool: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
     """
     if translation is None:
         return True
@@ -1282,10 +1469,12 @@ def _should_attempt_external_translation(entry: POEntryData) -> bool:
     """Handle should attempt external translation.
 
     Args:
-        entry (POEntryData): Value supplied to this callable.
+        entry:
+            Value supplied to this callable.
 
     Returns:
-        bool: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
     """
     singular = entry.entry_id.msgid.strip()
     if _is_hashtag_like_token(singular):
@@ -1294,15 +1483,20 @@ def _should_attempt_external_translation(entry: POEntryData) -> bool:
     return not (plural is not None and _is_hashtag_like_token(plural.strip()))
 
 
-def _should_process_entry_for_translation(entry: POEntryData, *, only_fuzzy: bool) -> bool:
+def _should_process_entry_for_translation(
+    entry: POEntryData, *, only_fuzzy: bool
+) -> bool:
     """Handle should process entry for translation.
 
     Args:
-        entry (POEntryData): Value supplied to this callable.
-        only_fuzzy (bool): Value supplied to this callable.
+        entry:
+            Value supplied to this callable.
+        only_fuzzy:
+            Value supplied to this callable.
 
     Returns:
-        bool: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
     """
     if _is_translated(entry):
         return False
@@ -1315,10 +1509,12 @@ def _is_hashtag_like_token(text: str) -> bool:
     """Handle is hashtag like token.
 
     Args:
-        text (str): Value supplied to this callable.
+        text:
+            Value supplied to this callable.
 
     Returns:
-        bool: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
     """
     return re.fullmatch(r"#[A-Za-z0-9_-]+", text) is not None
 
@@ -1327,10 +1523,12 @@ def _is_translated(entry: POEntryData) -> bool:
     """Handle is translated.
 
     Args:
-        entry (POEntryData): Value supplied to this callable.
+        entry:
+            Value supplied to this callable.
 
     Returns:
-        bool: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
     """
     if entry.entry_id.msgid_plural is not None:
         if entry.msgstr_plural == {}:

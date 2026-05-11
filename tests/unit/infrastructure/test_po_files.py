@@ -30,7 +30,8 @@ def test_domain_msgstr_plural_from_polib_dict_int_keys() -> None:
     """Verify domain msgstr plural from polib dict int keys.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     entry = polib.POEntry(
         msgid="file",
@@ -47,7 +48,8 @@ def test_domain_msgstr_plural_from_polib_list_positions() -> None:
     """Verify domain msgstr plural from polib list positions.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     entry = polib.POEntry(msgid="x")
     object.__setattr__(entry, "msgstr_plural", ["a", "b"])
@@ -58,17 +60,21 @@ def test_domain_msgstr_plural_from_polib_empty_dict() -> None:
     """Verify domain msgstr plural from polib empty dict.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     entry = polib.POEntry(msgid="x", msgstr_plural={})
     assert _domain_msgstr_plural_from_polib(entry) == {}
 
 
-def test_domain_msgstr_plural_from_polib_falsey_non_mapping_returns_empty_dict() -> None:
+def test_domain_msgstr_plural_from_polib_falsey_non_mapping_returns_empty_dict() -> (
+    None
+):
     """Verify domain msgstr plural from polib falsey non mapping returns empty dict.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     entry = polib.POEntry(msgid="x")
     object.__setattr__(entry, "msgstr_plural", None)
@@ -79,7 +85,8 @@ def test_domain_msgstr_plural_from_polib_rejects_unsupported_type() -> None:
     """Verify domain msgstr plural from polib rejects unsupported type.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     entry = polib.POEntry(msgid="odd")
     object.__setattr__(entry, "msgstr_plural", 99)
@@ -91,7 +98,8 @@ def test_nplurals_from_po_reads_plural_forms_metadata() -> None:
     """Verify nplurals from po reads plural forms metadata.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     po_file = polib.POFile()
     po_file.metadata = {"Plural-Forms": "nplurals=3; plural=n > 1;"}
@@ -103,21 +111,26 @@ def test_nplurals_from_po_defaults_to_two_when_metadata_missing() -> None:
     """Verify nplurals from po defaults to two when metadata missing.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     po_file = polib.POFile()
 
     assert _nplurals_from_po(po_file) == 2
 
 
-def test_catalog_repository_discovers_sorted_files_by_family_and_locale(tmp_path: Path) -> None:
+def test_catalog_repository_discovers_sorted_files_by_family_and_locale(
+    tmp_path: Path,
+) -> None:
     """Verify catalog repository discovers sorted files by family and locale.
 
     Args:
-        tmp_path (Path): Value supplied to this callable.
+        tmp_path:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     first_dir = tmp_path / "plugin_b"
     second_dir = tmp_path / "plugin_a"
@@ -149,14 +162,18 @@ def test_catalog_repository_wraps_workspace_scan_errors(
     """Verify catalog repository wraps workspace scan errors.
 
     Args:
-        tmp_path (Path): Value supplied to this callable.
-        monkeypatch (pytest.MonkeyPatch): Value supplied to this callable.
+        tmp_path:
+            Value supplied to this callable.
+        monkeypatch:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
 
     Raises:
-        OSError: Raised when this callable hits the corresponding error path.
+        OSError:
+            Raised when this callable hits the corresponding error path.
     """
     repository = PolibPOCatalogRepository()
 
@@ -164,14 +181,18 @@ def test_catalog_repository_wraps_workspace_scan_errors(
         """Handle failing rglob.
 
         Args:
-            self (Path): Value supplied to this callable.
-            pattern (str): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            pattern:
+                Value supplied to this callable.
 
         Returns:
-            list[Path]: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
 
         Raises:
-            OSError: Raised when this callable hits the corresponding error path.
+            OSError:
+                Raised when this callable hits the corresponding error path.
         """
         if self == tmp_path:
             msg = "permission denied"
@@ -184,14 +205,18 @@ def test_catalog_repository_wraps_workspace_scan_errors(
         repository.discover_po_files(tmp_path)
 
 
-def test_catalog_repository_wraps_po_parse_errors_during_discovery(tmp_path: Path) -> None:
+def test_catalog_repository_wraps_po_parse_errors_during_discovery(
+    tmp_path: Path,
+) -> None:
     """Verify catalog repository wraps po parse errors during discovery.
 
     Args:
-        tmp_path (Path): Value supplied to this callable.
+        tmp_path:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     po_path = tmp_path / "locale" / "messages-es_ES.po"
     po_path.parent.mkdir(parents=True, exist_ok=True)
@@ -206,10 +231,12 @@ def test_catalog_repository_saves_po_files_with_updated_entries(tmp_path: Path) 
     """Verify catalog repository saves po files with updated entries.
 
     Args:
-        tmp_path (Path): Value supplied to this callable.
+        tmp_path:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     po_path = tmp_path / "locale" / "messages-es_ES.po"
     po_path.parent.mkdir(parents=True, exist_ok=True)
@@ -249,17 +276,21 @@ def test_catalog_repository_wraps_po_load_errors_during_save(tmp_path: Path) -> 
     """Verify catalog repository wraps po load errors during save.
 
     Args:
-        tmp_path (Path): Value supplied to this callable.
+        tmp_path:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     po_path = tmp_path / "locale" / "messages-es_ES.po"
     po_path.parent.mkdir(parents=True, exist_ok=True)
     po_path.write_bytes(b"\xff\xfe\x00\x00")
     repository = PolibPOCatalogRepository()
 
-    with pytest.raises(POProcessingInfrastructureError, match="could not be loaded for save"):
+    with pytest.raises(
+        POProcessingInfrastructureError, match="could not be loaded for save"
+    ):
         repository.save_po_files((_build_po_file_data(po_path, tmp_path),))
 
 
@@ -270,14 +301,18 @@ def test_catalog_repository_wraps_po_write_errors_during_save(
     """Verify catalog repository wraps po write errors during save.
 
     Args:
-        tmp_path (Path): Value supplied to this callable.
-        monkeypatch (pytest.MonkeyPatch): Value supplied to this callable.
+        tmp_path:
+            Value supplied to this callable.
+        monkeypatch:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
 
     Raises:
-        OSError: Raised when this callable hits the corresponding error path.
+        OSError:
+            Raised when this callable hits the corresponding error path.
     """
     po_path = tmp_path / "locale" / "messages-es_ES.po"
     po_path.parent.mkdir(parents=True, exist_ok=True)
@@ -287,14 +322,18 @@ def test_catalog_repository_wraps_po_write_errors_during_save(
         """Handle failing save.
 
         Args:
-            self (polib.POFile): Value supplied to this callable.
-            path (str): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            path:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
 
         Raises:
-            OSError: Raised when this callable hits the corresponding error path.
+            OSError:
+                Raised when this callable hits the corresponding error path.
         """
         msg = "read only"
         raise OSError(msg)
@@ -310,10 +349,12 @@ def test_catalog_repository_compiles_mo_files_from_saved_po(tmp_path: Path) -> N
     """Verify catalog repository compiles mo files from saved po.
 
     Args:
-        tmp_path (Path): Value supplied to this callable.
+        tmp_path:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     po_path = tmp_path / "locale" / "messages-es_ES.po"
     po_path.parent.mkdir(parents=True, exist_ok=True)
@@ -339,17 +380,21 @@ def test_catalog_repository_raises_when_po_file_cannot_be_loaded_for_compile(
     """Verify catalog repository raises when po file cannot be loaded for compile.
 
     Args:
-        tmp_path (Path): Value supplied to this callable.
+        tmp_path:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     po_path = tmp_path / "locale" / "messages-es_ES.po"
     po_path.parent.mkdir(parents=True, exist_ok=True)
     po_path.write_bytes(b"\xff\xfe\x00\x00")
     repository = PolibPOCatalogRepository()
 
-    with pytest.raises(POProcessingCompilationError, match="could not be loaded for compile"):
+    with pytest.raises(
+        POProcessingCompilationError, match="could not be loaded for compile"
+    ):
         repository.compile_mo_file(_build_po_file_data(po_path, tmp_path))
 
 
@@ -360,14 +405,18 @@ def test_catalog_repository_raises_when_mo_file_cannot_be_written(
     """Verify catalog repository raises when mo file cannot be written.
 
     Args:
-        tmp_path (Path): Value supplied to this callable.
-        monkeypatch (pytest.MonkeyPatch): Value supplied to this callable.
+        tmp_path:
+            Value supplied to this callable.
+        monkeypatch:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
 
     Raises:
-        OSError: Raised when this callable hits the corresponding error path.
+        OSError:
+            Raised when this callable hits the corresponding error path.
     """
     po_path = tmp_path / "locale" / "messages-es_ES.po"
     po_path.parent.mkdir(parents=True, exist_ok=True)
@@ -380,14 +429,18 @@ def test_catalog_repository_raises_when_mo_file_cannot_be_written(
         """Handle failing save as mofile.
 
         Args:
-            self (polib.POFile): Value supplied to this callable.
-            path (str): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            path:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
 
         Raises:
-            OSError: Raised when this callable hits the corresponding error path.
+            OSError:
+                Raised when this callable hits the corresponding error path.
         """
         msg = "disk full"
         raise OSError(msg)
@@ -395,7 +448,9 @@ def test_catalog_repository_raises_when_mo_file_cannot_be_written(
     monkeypatch.setattr(polib.POFile, "save_as_mofile", failing_save_as_mofile)
     repository = PolibPOCatalogRepository()
 
-    with pytest.raises(POProcessingCompilationError, match="could not be compiled to MO"):
+    with pytest.raises(
+        POProcessingCompilationError, match="could not be compiled to MO"
+    ):
         repository.compile_mo_file(_build_po_file_data(po_path, tmp_path))
 
 
@@ -403,7 +458,8 @@ def test_apply_entries_to_polib_updates_only_matching_entries() -> None:
     """Verify apply entries to polib updates only matching entries.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     po_file = polib.POFile()
     po_file.append(polib.POEntry(msgid="Save", msgstr=""))
@@ -428,11 +484,14 @@ def _build_po_file_data(path: Path, workspace_root: Path) -> POFileData:
     """Handle build po file data.
 
     Args:
-        path (Path): Value supplied to this callable.
-        workspace_root (Path): Value supplied to this callable.
+        path:
+            Value supplied to this callable.
+        workspace_root:
+            Value supplied to this callable.
 
     Returns:
-        POFileData: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
     """
     locale = _locale_from_filename(path)
     return POFileData(
@@ -449,11 +508,14 @@ def _write_po_file(path: Path, entries: list[tuple[str, str]]) -> None:
     """Handle write po file.
 
     Args:
-        path (Path): Value supplied to this callable.
-        entries (list[tuple[str, str]]): Value supplied to this callable.
+        path:
+            Value supplied to this callable.
+        entries:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     po_file = polib.POFile()
     po_file.metadata = {"Language": _locale_from_filename(path)}

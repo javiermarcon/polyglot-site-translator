@@ -25,9 +25,12 @@ class DjangoFrameworkAdapter(BaseFrameworkAdapter):
     """Detect Django project layouts.
 
     Attributes:
-        framework_type (str): Documented attribute exposed by this type.
-        adapter_name (str): Documented attribute exposed by this type.
-        display_name (str): Documented attribute exposed by this type.
+        framework_type:
+            Documented attribute exposed by this type.
+        adapter_name:
+            Documented attribute exposed by this type.
+        display_name:
+            Documented attribute exposed by this type.
     """
 
     framework_type: str = "django"
@@ -38,10 +41,14 @@ class DjangoFrameworkAdapter(BaseFrameworkAdapter):
         """Return the default Django sync scope.
 
         Args:
-            project_path (Path): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            project_path:
+                Value supplied to this callable.
 
         Returns:
-            AdapterSyncScope: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         return AdapterSyncScope(
             filters=(
@@ -84,10 +91,14 @@ class DjangoFrameworkAdapter(BaseFrameworkAdapter):
         """Inspect a local path for Django markers.
 
         Args:
-            project_path (Path): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            project_path:
+                Value supplied to this callable.
 
         Returns:
-            FrameworkDetectionResult: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         manage_py = project_path / "manage.py"
         settings_py = find_first_level_file(project_path, "settings.py")
@@ -106,7 +117,9 @@ class DjangoFrameworkAdapter(BaseFrameworkAdapter):
             relevant_paths.append(str(manage_py))
             confidence += 45
         if settings_py is not None:
-            evidence.append("settings.py was found in the Django configuration package.")
+            evidence.append(
+                "settings.py was found in the Django configuration package."
+            )
             relevant_paths.append(str(settings_py))
             config_files.append(str(settings_py))
             confidence += 35
@@ -141,8 +154,8 @@ class DjangoFrameworkAdapter(BaseFrameworkAdapter):
 
         if evidence:
             warnings.append(
-                "Partial Django evidence was found, but manage.py and a settings entrypoint "
-                "were not both available."
+                "Partial Django evidence was found, but manage.py and a "
+                "settings entrypoint were not both available."
             )
         return FrameworkDetectionResult.unmatched(
             project_path=str(project_path),

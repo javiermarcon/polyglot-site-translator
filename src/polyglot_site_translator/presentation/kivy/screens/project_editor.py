@@ -31,9 +31,6 @@ from polyglot_site_translator.presentation.kivy.widgets.path_picker import (
     PathFieldPicker,
     build_labeled_path_field,
 )
-from polyglot_site_translator.presentation.kivy.widgets.ssh_host_key_trust_dialog import (
-    open_ssh_host_key_trust_confirmation,
-)
 from polyglot_site_translator.presentation.view_models import (
     ProjectEditorStateViewModel,
     SettingsOptionViewModel,
@@ -41,28 +38,39 @@ from polyglot_site_translator.presentation.view_models import (
     SyncRuleEditorItemViewModel,
 )
 
+from ..widgets.ssh_host_key_trust_dialog import (
+    open_ssh_host_key_trust_confirmation,
+)
+
 
 class ProjectEditorScreen(BaseShellScreen):
     """Screen for creating and editing site registry records.
 
     Attributes:
-        None: This type does not declare additional class-level attributes.
+        None: This type does not declare class-level attributes.
     """
 
     def __init__(self, *, shell: FrontendShell, manager_ref: ScreenManager) -> None:
         """Build the editable project form and cache widget references for refreshes.
 
         Args:
-            shell (FrontendShell): Value supplied to this callable.
-            manager_ref (ScreenManager): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            shell:
+                Value supplied to this callable.
+            manager_ref:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         super().__init__(
             screen_name="project_editor",
             title="Register Project",
-            subtitle="Create or update site registry records without exposing SQL in the UI.",
+            subtitle=(
+                "Create or update site registry records without exposing SQL in the UI."
+            ),
             shell=shell,
             manager_ref=manager_ref,
         )
@@ -97,8 +105,13 @@ class ProjectEditorScreen(BaseShellScreen):
     def refresh(self) -> None:
         """Rebuild the editor UI from the current draft state.
 
+        Args:
+            self:
+                Value supplied to this callable.
+
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         self.clear_content()
         state = self._shell.project_editor_state
@@ -106,7 +119,10 @@ class ProjectEditorScreen(BaseShellScreen):
             self._content.add_widget(
                 _build_information_card(
                     title="Project Editor",
-                    body="Open the register or edit workflow to load a project editor draft.",
+                    body=(
+                        "Open the register or edit workflow to load a project "
+                        "editor draft."
+                    ),
                 )
             )
             self.update_error_label()
@@ -124,10 +140,14 @@ class ProjectEditorScreen(BaseShellScreen):
         """Build form panel.
 
         Args:
-            state (ProjectEditorStateViewModel): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            state:
+                Value supplied to this callable.
 
         Returns:
-            SurfaceBoxLayout: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         panel = SurfaceBoxLayout(
             orientation="vertical",
@@ -148,10 +168,14 @@ class ProjectEditorScreen(BaseShellScreen):
         """Build sections column.
 
         Args:
-            state (ProjectEditorStateViewModel): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            state:
+                Value supplied to this callable.
 
         Returns:
-            BoxLayout: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         column = BoxLayout(
             orientation="vertical",
@@ -164,14 +188,20 @@ class ProjectEditorScreen(BaseShellScreen):
         column.add_widget(Widget())
         return column
 
-    def _build_sections_panel(self, state: ProjectEditorStateViewModel) -> SurfaceBoxLayout:
+    def _build_sections_panel(
+        self, state: ProjectEditorStateViewModel
+    ) -> SurfaceBoxLayout:
         """Build sections panel.
 
         Args:
-            state (ProjectEditorStateViewModel): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            state:
+                Value supplied to this callable.
 
         Returns:
-            SurfaceBoxLayout: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         panel = SurfaceBoxLayout(
             orientation="vertical",
@@ -182,11 +212,14 @@ class ProjectEditorScreen(BaseShellScreen):
             background_role="card_background",
         )
         panel.bind(minimum_height=panel.setter("height"))
-        panel.add_widget(WrappedLabel(text="Project Settings Sections", font_size=18, bold=True))
+        panel.add_widget(
+            WrappedLabel(text="Project Settings Sections", font_size=18, bold=True)
+        )
         panel.add_widget(
             WrappedLabel(
                 text=(
-                    "Navigate the project configuration by domain instead of editing one flat form."
+                    "Navigate the project configuration by domain instead of "
+                    "editing one flat form."
                 ),
                 font_size=14,
                 color_role="text_muted",
@@ -200,19 +233,27 @@ class ProjectEditorScreen(BaseShellScreen):
             )
             button.disabled = section.key == state.selected_section_key
             button.bind(
-                on_release=lambda _widget, key=section.key: self._select_project_editor_section(key)
+                on_release=lambda _widget, key=section.key: (
+                    self._select_project_editor_section(key)
+                )
             )
             panel.add_widget(button)
         return panel
 
-    def _build_section_content(self, state: ProjectEditorStateViewModel) -> SurfaceBoxLayout:
+    def _build_section_content(
+        self, state: ProjectEditorStateViewModel
+    ) -> SurfaceBoxLayout:
         """Build section content.
 
         Args:
-            state (ProjectEditorStateViewModel): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            state:
+                Value supplied to this callable.
 
         Returns:
-            SurfaceBoxLayout: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         panel = SurfaceBoxLayout(
             orientation="vertical",
@@ -222,7 +263,9 @@ class ProjectEditorScreen(BaseShellScreen):
             background_role="card_background",
         )
         panel.bind(minimum_height=panel.setter("height"))
-        panel.add_widget(WrappedLabel(text=state.selected_section_title, font_size=22, bold=True))
+        panel.add_widget(
+            WrappedLabel(text=state.selected_section_title, font_size=22, bold=True)
+        )
         panel.add_widget(
             WrappedLabel(
                 text=state.selected_section_description,
@@ -245,7 +288,9 @@ class ProjectEditorScreen(BaseShellScreen):
                 panel.add_widget(self._build_remote_connection_test_card(state))
         elif state.selected_section_key == "sync":
             panel.add_widget(
-                self._build_adapter_sync_filters_toggle(state.editor.use_adapter_sync_filters)
+                self._build_adapter_sync_filters_toggle(
+                    state.editor.use_adapter_sync_filters
+                )
             )
             panel.add_widget(self._build_sync_scope_panel(state))
         else:
@@ -254,14 +299,20 @@ class ProjectEditorScreen(BaseShellScreen):
         panel.add_widget(self._build_editor_actions(state))
         return panel
 
-    def _build_general_fields(self, state: ProjectEditorStateViewModel) -> SurfaceBoxLayout:
+    def _build_general_fields(
+        self, state: ProjectEditorStateViewModel
+    ) -> SurfaceBoxLayout:
         """Build general fields.
 
         Args:
-            state (ProjectEditorStateViewModel): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            state:
+                Value supplied to this callable.
 
         Returns:
-            SurfaceBoxLayout: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         card = SurfaceBoxLayout(
             orientation="vertical",
@@ -280,7 +331,9 @@ class ProjectEditorScreen(BaseShellScreen):
                 state.editor.framework_type,
             ),
         )
-        card.add_widget(build_site_editor_field_card("Framework Type", self._framework_spinner))
+        card.add_widget(
+            build_site_editor_field_card("Framework Type", self._framework_spinner)
+        )
         self._local_path_input = build_site_editor_text_input(state.editor.local_path)
         card.add_widget(
             build_labeled_path_field(
@@ -290,7 +343,9 @@ class ProjectEditorScreen(BaseShellScreen):
                     pick_mode="directory",
                     title="Choose project directory",
                     path_hint=lambda: (
-                        self._local_path_input.text if self._local_path_input is not None else ""
+                        self._local_path_input.text
+                        if self._local_path_input is not None
+                        else ""
                     ),
                 ),
             ),
@@ -304,10 +359,14 @@ class ProjectEditorScreen(BaseShellScreen):
         """Build translation fields.
 
         Args:
-            state (ProjectEditorStateViewModel): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            state:
+                Value supplied to this callable.
 
         Returns:
-            SurfaceBoxLayout: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         card = SurfaceBoxLayout(
             orientation="vertical",
@@ -317,11 +376,17 @@ class ProjectEditorScreen(BaseShellScreen):
             background_role="card_background",
         )
         card.bind(minimum_height=card.setter("height"))
-        self._default_locale_input = build_site_editor_text_input(state.editor.default_locale)
-        card.add_widget(build_site_editor_field_card("Default Locale", self._default_locale_input))
+        self._default_locale_input = build_site_editor_text_input(
+            state.editor.default_locale
+        )
+        card.add_widget(
+            build_site_editor_field_card("Default Locale", self._default_locale_input)
+        )
         card.add_widget(self._build_compile_mo_toggle(state.editor.compile_mo))
         card.add_widget(
-            self._build_use_external_translator_toggle(state.editor.use_external_translator)
+            self._build_use_external_translator_toggle(
+                state.editor.use_external_translator
+            )
         )
         card.add_widget(
             self._build_use_translation_cache_toggle(state.editor.use_translation_cache)
@@ -330,18 +395,26 @@ class ProjectEditorScreen(BaseShellScreen):
         card.add_widget(self._build_dry_run_toggle(state.editor.dry_run))
         card.add_widget(self._build_stats_only_toggle(state.editor.stats_only))
         card.add_widget(
-            self._build_report_inconsistencies_toggle(state.editor.report_inconsistencies)
+            self._build_report_inconsistencies_toggle(
+                state.editor.report_inconsistencies
+            )
         )
         return card
 
-    def _build_remote_fields(self, state: ProjectEditorStateViewModel) -> SurfaceBoxLayout:
+    def _build_remote_fields(
+        self, state: ProjectEditorStateViewModel
+    ) -> SurfaceBoxLayout:
         """Build remote fields.
 
         Args:
-            state (ProjectEditorStateViewModel): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            state:
+                Value supplied to this callable.
 
         Returns:
-            SurfaceBoxLayout: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         card = SurfaceBoxLayout(
             orientation="vertical",
@@ -359,34 +432,54 @@ class ProjectEditorScreen(BaseShellScreen):
             ),
         )
         card.add_widget(
-            build_site_editor_field_card("Remote Connection Type", self._connection_type_spinner)
+            build_site_editor_field_card(
+                "Remote Connection Type", self._connection_type_spinner
+            )
         )
         self._remote_host_input = build_site_editor_text_input(state.editor.remote_host)
-        card.add_widget(build_site_editor_field_card("Remote Host", self._remote_host_input))
-        self._remote_port_input = build_site_editor_text_input(state.editor.remote_port)
-        card.add_widget(build_site_editor_field_card("Remote Port", self._remote_port_input))
-        self._remote_username_input = build_site_editor_text_input(state.editor.remote_username)
         card.add_widget(
-            build_site_editor_field_card("Remote Username", self._remote_username_input),
+            build_site_editor_field_card("Remote Host", self._remote_host_input)
         )
-        self._remote_password_input, remote_password_card = build_remote_password_field_card(
-            state.editor.remote_password,
+        self._remote_port_input = build_site_editor_text_input(state.editor.remote_port)
+        card.add_widget(
+            build_site_editor_field_card("Remote Port", self._remote_port_input)
+        )
+        self._remote_username_input = build_site_editor_text_input(
+            state.editor.remote_username
+        )
+        card.add_widget(
+            build_site_editor_field_card(
+                "Remote Username", self._remote_username_input
+            ),
+        )
+        self._remote_password_input, remote_password_card = (
+            build_remote_password_field_card(
+                state.editor.remote_password,
+            )
         )
         card.add_widget(remote_password_card)
         self._remote_path_input = build_site_editor_text_input(state.editor.remote_path)
-        card.add_widget(build_site_editor_field_card("Remote Path", self._remote_path_input))
+        card.add_widget(
+            build_site_editor_field_card("Remote Path", self._remote_path_input)
+        )
         return card
 
     def _build_editor_actions(self, state: ProjectEditorStateViewModel) -> BoxLayout:
         """Build editor actions.
 
         Args:
-            state (ProjectEditorStateViewModel): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            state:
+                Value supplied to this callable.
 
         Returns:
-            BoxLayout: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
-        actions = BoxLayout(orientation="horizontal", spacing=12, size_hint_y=None, height=48)
+        actions = BoxLayout(
+            orientation="horizontal", spacing=12, size_hint_y=None, height=48
+        )
         save_button = AppButton(text=state.submit_label, primary=True)
         save_button.bind(on_release=self._save_editor)
         self._test_connection_button = AppButton(
@@ -407,8 +500,13 @@ class ProjectEditorScreen(BaseShellScreen):
     def _reset_form_refs(self) -> None:
         """Reset form refs.
 
+        Args:
+            self:
+                Value supplied to this callable.
+
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         self._name_input = None
         self._framework_spinner = None
@@ -439,10 +537,14 @@ class ProjectEditorScreen(BaseShellScreen):
         """Build active toggle.
 
         Args:
-            is_active (bool): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            is_active:
+                Value supplied to this callable.
 
         Returns:
-            SurfaceBoxLayout: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         card = SurfaceBoxLayout(
             orientation="vertical",
@@ -453,9 +555,15 @@ class ProjectEditorScreen(BaseShellScreen):
         )
         card.bind(minimum_height=card.setter("height"))
         card.add_widget(WrappedLabel(text="Is Active", font_size=16, bold=True))
-        row = BoxLayout(orientation="horizontal", spacing=12, size_hint_y=None, height=40)
-        row.add_widget(WrappedLabel(text="Enable this site in the primary registry listing."))
-        self._is_active_switch = Switch(active=is_active, size_hint=(None, None), size=(72, 36))
+        row = BoxLayout(
+            orientation="horizontal", spacing=12, size_hint_y=None, height=40
+        )
+        row.add_widget(
+            WrappedLabel(text="Enable this site in the primary registry listing.")
+        )
+        self._is_active_switch = Switch(
+            active=is_active, size_hint=(None, None), size=(72, 36)
+        )
         row.add_widget(self._is_active_switch)
         card.add_widget(row)
         return card
@@ -464,10 +572,14 @@ class ProjectEditorScreen(BaseShellScreen):
         """Build compile mo toggle.
 
         Args:
-            is_enabled (bool): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            is_enabled:
+                Value supplied to this callable.
 
         Returns:
-            SurfaceBoxLayout: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         card = SurfaceBoxLayout(
             orientation="vertical",
@@ -478,10 +590,15 @@ class ProjectEditorScreen(BaseShellScreen):
         )
         card.bind(minimum_height=card.setter("height"))
         card.add_widget(WrappedLabel(text="Compile MO Files", font_size=16, bold=True))
-        row = BoxLayout(orientation="horizontal", spacing=12, size_hint_y=None, height=40)
+        row = BoxLayout(
+            orientation="horizontal", spacing=12, size_hint_y=None, height=40
+        )
         row.add_widget(
             WrappedLabel(
-                text="Enable MO compilation after the translation workflow saves updated PO files."
+                text=(
+                    "Enable MO compilation after the translation workflow "
+                    "saves updated PO files."
+                )
             )
         )
         self._compile_mo_switch = Switch(
@@ -493,14 +610,20 @@ class ProjectEditorScreen(BaseShellScreen):
         card.add_widget(row)
         return card
 
-    def _build_use_external_translator_toggle(self, is_enabled: bool) -> SurfaceBoxLayout:
+    def _build_use_external_translator_toggle(
+        self, is_enabled: bool
+    ) -> SurfaceBoxLayout:
         """Build use external translator toggle.
 
         Args:
-            is_enabled (bool): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            is_enabled:
+                Value supplied to this callable.
 
         Returns:
-            SurfaceBoxLayout: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         card = SurfaceBoxLayout(
             orientation="vertical",
@@ -510,13 +633,18 @@ class ProjectEditorScreen(BaseShellScreen):
             background_role="card_subtle_background",
         )
         card.bind(minimum_height=card.setter("height"))
-        card.add_widget(WrappedLabel(text="Use External Translator", font_size=16, bold=True))
-        row = BoxLayout(orientation="horizontal", spacing=12, size_hint_y=None, height=40)
+        card.add_widget(
+            WrappedLabel(text="Use External Translator", font_size=16, bold=True)
+        )
+        row = BoxLayout(
+            orientation="horizontal", spacing=12, size_hint_y=None, height=40
+        )
         row.add_widget(
             WrappedLabel(
                 text=(
-                    "Enable the external translator for untranslated entries that cannot be "
-                    "resolved from other PO files in the same family."
+                    "Enable the external translator for untranslated entries "
+                    "that cannot be resolved from other PO files in the same "
+                    "family."
                 )
             )
         )
@@ -533,10 +661,14 @@ class ProjectEditorScreen(BaseShellScreen):
         """Build dry run toggle.
 
         Args:
-            is_enabled (bool): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            is_enabled:
+                Value supplied to this callable.
 
         Returns:
-            SurfaceBoxLayout: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         card = SurfaceBoxLayout(
             orientation="vertical",
@@ -547,11 +679,17 @@ class ProjectEditorScreen(BaseShellScreen):
         )
         card.bind(minimum_height=card.setter("height"))
         card.add_widget(WrappedLabel(text="Dry-run", font_size=16, bold=True))
-        row = BoxLayout(orientation="horizontal", spacing=12, size_hint_y=None, height=40)
-        row.add_widget(
-            WrappedLabel(text="Compute translation changes without writing PO or MO files.")
+        row = BoxLayout(
+            orientation="horizontal", spacing=12, size_hint_y=None, height=40
         )
-        self._dry_run_switch = Switch(active=is_enabled, size_hint=(None, None), size=(72, 36))
+        row.add_widget(
+            WrappedLabel(
+                text="Compute translation changes without writing PO or MO files."
+            )
+        )
+        self._dry_run_switch = Switch(
+            active=is_enabled, size_hint=(None, None), size=(72, 36)
+        )
         row.add_widget(self._dry_run_switch)
         card.add_widget(row)
         return card
@@ -560,10 +698,14 @@ class ProjectEditorScreen(BaseShellScreen):
         """Build only fuzzy toggle.
 
         Args:
-            is_enabled (bool): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            is_enabled:
+                Value supplied to this callable.
 
         Returns:
-            SurfaceBoxLayout: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         card = SurfaceBoxLayout(
             orientation="vertical",
@@ -573,12 +715,22 @@ class ProjectEditorScreen(BaseShellScreen):
             background_role="card_subtle_background",
         )
         card.bind(minimum_height=card.setter("height"))
-        card.add_widget(WrappedLabel(text="Only Fuzzy Entries", font_size=16, bold=True))
-        row = BoxLayout(orientation="horizontal", spacing=12, size_hint_y=None, height=40)
-        row.add_widget(
-            WrappedLabel(text="Restrict external translation to gettext entries flagged as fuzzy.")
+        card.add_widget(
+            WrappedLabel(text="Only Fuzzy Entries", font_size=16, bold=True)
         )
-        self._only_fuzzy_switch = Switch(active=is_enabled, size_hint=(None, None), size=(72, 36))
+        row = BoxLayout(
+            orientation="horizontal", spacing=12, size_hint_y=None, height=40
+        )
+        row.add_widget(
+            WrappedLabel(
+                text=(
+                    "Restrict external translation to gettext entries flagged as fuzzy."
+                )
+            )
+        )
+        self._only_fuzzy_switch = Switch(
+            active=is_enabled, size_hint=(None, None), size=(72, 36)
+        )
         row.add_widget(self._only_fuzzy_switch)
         card.add_widget(row)
         return card
@@ -587,10 +739,14 @@ class ProjectEditorScreen(BaseShellScreen):
         """Build use translation cache toggle.
 
         Args:
-            is_enabled (bool): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            is_enabled:
+                Value supplied to this callable.
 
         Returns:
-            SurfaceBoxLayout: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         card = SurfaceBoxLayout(
             orientation="vertical",
@@ -600,13 +756,17 @@ class ProjectEditorScreen(BaseShellScreen):
             background_role="card_subtle_background",
         )
         card.bind(minimum_height=card.setter("height"))
-        card.add_widget(WrappedLabel(text="Use Translation Cache", font_size=16, bold=True))
-        row = BoxLayout(orientation="horizontal", spacing=12, size_hint_y=None, height=40)
+        card.add_widget(
+            WrappedLabel(text="Use Translation Cache", font_size=16, bold=True)
+        )
+        row = BoxLayout(
+            orientation="horizontal", spacing=12, size_hint_y=None, height=40
+        )
         row.add_widget(
             WrappedLabel(
                 text=(
-                    "Reuse cached external-translation results before calling the provider "
-                    "again for the same base-language text."
+                    "Reuse cached external-translation results before calling "
+                    "the provider again for the same base-language text."
                 )
             )
         )
@@ -623,10 +783,14 @@ class ProjectEditorScreen(BaseShellScreen):
         """Build stats only toggle.
 
         Args:
-            is_enabled (bool): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            is_enabled:
+                Value supplied to this callable.
 
         Returns:
-            SurfaceBoxLayout: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         card = SurfaceBoxLayout(
             orientation="vertical",
@@ -637,9 +801,13 @@ class ProjectEditorScreen(BaseShellScreen):
         )
         card.bind(minimum_height=card.setter("height"))
         card.add_widget(WrappedLabel(text="Stats Only", font_size=16, bold=True))
-        row = BoxLayout(orientation="horizontal", spacing=12, size_hint_y=None, height=40)
+        row = BoxLayout(
+            orientation="horizontal", spacing=12, size_hint_y=None, height=40
+        )
         row.add_widget(
-            WrappedLabel(text="Collect translation workflow statistics without writing files.")
+            WrappedLabel(
+                text="Collect translation workflow statistics without writing files."
+            )
         )
         self._stats_only_switch = Switch(
             active=is_enabled,
@@ -650,14 +818,20 @@ class ProjectEditorScreen(BaseShellScreen):
         card.add_widget(row)
         return card
 
-    def _build_report_inconsistencies_toggle(self, is_enabled: bool) -> SurfaceBoxLayout:
+    def _build_report_inconsistencies_toggle(
+        self, is_enabled: bool
+    ) -> SurfaceBoxLayout:
         """Build report inconsistencies toggle.
 
         Args:
-            is_enabled (bool): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            is_enabled:
+                Value supplied to this callable.
 
         Returns:
-            SurfaceBoxLayout: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         card = SurfaceBoxLayout(
             orientation="vertical",
@@ -667,10 +841,16 @@ class ProjectEditorScreen(BaseShellScreen):
             background_role="card_subtle_background",
         )
         card.bind(minimum_height=card.setter("height"))
-        card.add_widget(WrappedLabel(text="Report Inconsistencies", font_size=16, bold=True))
-        row = BoxLayout(orientation="horizontal", spacing=12, size_hint_y=None, height=40)
+        card.add_widget(
+            WrappedLabel(text="Report Inconsistencies", font_size=16, bold=True)
+        )
+        row = BoxLayout(
+            orientation="horizontal", spacing=12, size_hint_y=None, height=40
+        )
         row.add_widget(
-            WrappedLabel(text="Report differing translated values across locale variants.")
+            WrappedLabel(
+                text="Report differing translated values across locale variants."
+            )
         )
         self._report_inconsistencies_switch = Switch(
             active=is_enabled,
@@ -688,13 +868,18 @@ class ProjectEditorScreen(BaseShellScreen):
         """Show connection test output and optional SSH host-key trust flow.
 
         Args:
-            state (ProjectEditorStateViewModel): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            state:
+                Value supplied to this callable.
 
         Returns:
-            SurfaceBoxLayout: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
 
         Raises:
-            ValueError: Raised when this callable hits the corresponding error path.
+            ValueError:
+                Raised when this callable hits the corresponding error path.
         """
         result = state.connection_test_result
         if result is None:
@@ -708,7 +893,9 @@ class ProjectEditorScreen(BaseShellScreen):
             background_role="card_background",
         )
         card.bind(minimum_height=card.setter("height"))
-        card.add_widget(WrappedLabel(text="Remote Connection Test", font_size=18, bold=True))
+        card.add_widget(
+            WrappedLabel(text="Remote Connection Test", font_size=18, bold=True)
+        )
         card.add_widget(
             WrappedLabel(
                 text=result.message,
@@ -735,8 +922,13 @@ class ProjectEditorScreen(BaseShellScreen):
     def _retest_connection_with_trusted_host_key(self) -> None:
         """Handle retest connection with trusted host key.
 
+        Args:
+            self:
+                Value supplied to this callable.
+
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         state = self._require_state()
         editor = self._collect_editor_from_form(state)
@@ -744,14 +936,20 @@ class ProjectEditorScreen(BaseShellScreen):
         self._shell.trust_project_editor_remote_host_key(editor)
         self.refresh()
 
-    def _build_sync_scope_panel(self, state: ProjectEditorStateViewModel) -> SurfaceBoxLayout:
+    def _build_sync_scope_panel(
+        self, state: ProjectEditorStateViewModel
+    ) -> SurfaceBoxLayout:
         """Build sync scope panel.
 
         Args:
-            state (ProjectEditorStateViewModel): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            state:
+                Value supplied to this callable.
 
         Returns:
-            SurfaceBoxLayout: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         card = SurfaceBoxLayout(
             orientation="vertical",
@@ -761,7 +959,9 @@ class ProjectEditorScreen(BaseShellScreen):
             background_role="card_subtle_background",
         )
         card.bind(minimum_height=card.setter("height"))
-        card.add_widget(WrappedLabel(text="Resolved Sync Scope", font_size=16, bold=True))
+        card.add_widget(
+            WrappedLabel(text="Resolved Sync Scope", font_size=16, bold=True)
+        )
         card.add_widget(
             WrappedLabel(
                 text=f"Status: {state.sync_scope_status}",
@@ -801,11 +1001,16 @@ class ProjectEditorScreen(BaseShellScreen):
         """Build sync rule item.
 
         Args:
-            state (ProjectEditorStateViewModel): Value supplied to this callable.
-            item (SyncRuleEditorItemViewModel): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            state:
+                Value supplied to this callable.
+            item:
+                Value supplied to this callable.
 
         Returns:
-            SurfaceBoxLayout: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         card = SurfaceBoxLayout(
             orientation="vertical",
@@ -818,7 +1023,10 @@ class ProjectEditorScreen(BaseShellScreen):
         card.add_widget(WrappedLabel(text=item.relative_path, font_size=15, bold=True))
         card.add_widget(
             WrappedLabel(
-                text=(f"{item.behavior.title()} {item.filter_type} rule from {item.source}."),
+                text=(
+                    f"{item.behavior.title()} {item.filter_type} rule from "
+                    f"{item.source}."
+                ),
                 font_size=13,
                 color_role="text_muted",
             )
@@ -831,20 +1039,24 @@ class ProjectEditorScreen(BaseShellScreen):
                     color_role="text_muted",
                 )
             )
-        row = BoxLayout(orientation="horizontal", spacing=12, size_hint_y=None, height=40)
+        row = BoxLayout(
+            orientation="horizontal", spacing=12, size_hint_y=None, height=40
+        )
         row.add_widget(WrappedLabel(text="Enabled"))
-        item_switch = Switch(active=item.is_enabled, size_hint=(None, None), size=(72, 36))
+        item_switch = Switch(
+            active=item.is_enabled, size_hint=(None, None), size=(72, 36)
+        )
         item_switch.bind(
-            active=lambda _instance, value, rule_key=item.rule_key: self._toggle_sync_rule(
-                state, rule_key, value
+            active=lambda _instance, value, rule_key=item.rule_key: (
+                self._toggle_sync_rule(state, rule_key, value)
             )
         )
         row.add_widget(item_switch)
         if item.is_removable:
             remove_button = AppButton(text="Remove", primary=False)
             remove_button.bind(
-                on_release=lambda *_args, rule_key=item.rule_key: self._remove_sync_rule(
-                    state, rule_key
+                on_release=lambda *_args, rule_key=item.rule_key: (
+                    self._remove_sync_rule(state, rule_key)
                 )
             )
             row.add_widget(remove_button)
@@ -858,10 +1070,14 @@ class ProjectEditorScreen(BaseShellScreen):
         """Build custom sync rule form.
 
         Args:
-            state (ProjectEditorStateViewModel): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            state:
+                Value supplied to this callable.
 
         Returns:
-            SurfaceBoxLayout: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         card = SurfaceBoxLayout(
             orientation="vertical",
@@ -871,25 +1087,35 @@ class ProjectEditorScreen(BaseShellScreen):
             background_role="card_background",
         )
         card.bind(minimum_height=card.setter("height"))
-        card.add_widget(WrappedLabel(text="Project Sync Rule Overrides", font_size=15, bold=True))
+        card.add_widget(
+            WrappedLabel(text="Project Sync Rule Overrides", font_size=15, bold=True)
+        )
         self._sync_rule_path_input = build_site_editor_text_input("")
-        card.add_widget(build_site_editor_field_card("Relative Path", self._sync_rule_path_input))
+        card.add_widget(
+            build_site_editor_field_card("Relative Path", self._sync_rule_path_input)
+        )
         self._sync_rule_description_input = build_site_editor_text_input("")
         card.add_widget(
-            build_site_editor_field_card("Description", self._sync_rule_description_input)
+            build_site_editor_field_card(
+                "Description", self._sync_rule_description_input
+            )
         )
         self._sync_rule_filter_type_spinner = build_site_editor_spinner(
             values=[option.label for option in state.sync_rule_filter_type_options],
             current_label=state.sync_rule_filter_type_options[0].label,
         )
         card.add_widget(
-            build_site_editor_field_card("Filter Type", self._sync_rule_filter_type_spinner)
+            build_site_editor_field_card(
+                "Filter Type", self._sync_rule_filter_type_spinner
+            )
         )
         self._sync_rule_behavior_spinner = build_site_editor_spinner(
             values=[option.label for option in state.sync_rule_behavior_options],
             current_label=state.sync_rule_behavior_options[0].label,
         )
-        card.add_widget(build_site_editor_field_card("Behavior", self._sync_rule_behavior_spinner))
+        card.add_widget(
+            build_site_editor_field_card("Behavior", self._sync_rule_behavior_spinner)
+        )
         add_button = AppButton(text="Add Project Rule", primary=False)
         add_button.bind(on_release=lambda *_args: self._add_sync_rule(state))
         card.add_widget(add_button)
@@ -899,10 +1125,14 @@ class ProjectEditorScreen(BaseShellScreen):
         """Build adapter sync filters toggle.
 
         Args:
-            is_enabled (bool): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            is_enabled:
+                Value supplied to this callable.
 
         Returns:
-            SurfaceBoxLayout: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         card = SurfaceBoxLayout(
             orientation="vertical",
@@ -912,13 +1142,17 @@ class ProjectEditorScreen(BaseShellScreen):
             background_role="card_subtle_background",
         )
         card.bind(minimum_height=card.setter("height"))
-        card.add_widget(WrappedLabel(text="Use Adapter Sync Filters", font_size=16, bold=True))
-        row = BoxLayout(orientation="horizontal", spacing=12, size_hint_y=None, height=40)
+        card.add_widget(
+            WrappedLabel(text="Use Adapter Sync Filters", font_size=16, bold=True)
+        )
+        row = BoxLayout(
+            orientation="horizontal", spacing=12, size_hint_y=None, height=40
+        )
         row.add_widget(
             WrappedLabel(
                 text=(
-                    "When enabled, sync uses the current framework adapter scope instead "
-                    "of transferring the full remote/local tree."
+                    "When enabled, sync uses the current framework adapter "
+                    "scope instead of transferring the full remote/local tree."
                 )
             )
         )
@@ -935,10 +1169,14 @@ class ProjectEditorScreen(BaseShellScreen):
         """Save editor.
 
         Args:
-            _args (object): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            *_args:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         state = self._require_state()
         editor = self._collect_editor_from_form(state)
@@ -956,10 +1194,14 @@ class ProjectEditorScreen(BaseShellScreen):
         """Handle test connection.
 
         Args:
-            _args (object): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            *_args:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         state = self._require_state()
         editor = self._collect_editor_from_form(state)
@@ -971,10 +1213,14 @@ class ProjectEditorScreen(BaseShellScreen):
         """Refresh sync scope.
 
         Args:
-            _args (object): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            *_args:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         state = self._require_state()
         editor = self._collect_editor_from_form(state)
@@ -991,12 +1237,18 @@ class ProjectEditorScreen(BaseShellScreen):
         """Handle toggle sync rule.
 
         Args:
-            state (ProjectEditorStateViewModel): Value supplied to this callable.
-            rule_key (str): Value supplied to this callable.
-            is_enabled (bool): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            state:
+                Value supplied to this callable.
+            rule_key:
+                Value supplied to this callable.
+            is_enabled:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         current_items = self._current_sync_rule_items(state)
         next_items = tuple(
@@ -1016,14 +1268,21 @@ class ProjectEditorScreen(BaseShellScreen):
         """Handle remove sync rule.
 
         Args:
-            state (ProjectEditorStateViewModel): Value supplied to this callable.
-            rule_key (str): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            state:
+                Value supplied to this callable.
+            rule_key:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         next_items = tuple(
-            item for item in self._current_sync_rule_items(state) if item.rule_key != rule_key
+            item
+            for item in self._current_sync_rule_items(state)
+            if item.rule_key != rule_key
         )
         editor = self._collect_editor_from_form(state, sync_rule_items=next_items)
         self._draft_editor = editor
@@ -1034,10 +1293,14 @@ class ProjectEditorScreen(BaseShellScreen):
         """Handle add sync rule.
 
         Args:
-            state (ProjectEditorStateViewModel): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            state:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         relative_path = self._optional_text(self._sync_rule_path_input)
         filter_type = self._require_framework_value(
@@ -1062,7 +1325,9 @@ class ProjectEditorScreen(BaseShellScreen):
                 is_removable=True,
             ),
         )
-        editor = self._collect_editor_from_form(state, sync_rule_items=tuple(next_items))
+        editor = self._collect_editor_from_form(
+            state, sync_rule_items=tuple(next_items)
+        )
         self._draft_editor = editor
         self._shell.preview_project_editor(editor)
         self.refresh()
@@ -1071,10 +1336,14 @@ class ProjectEditorScreen(BaseShellScreen):
         """Handle back to projects.
 
         Args:
-            _args (object): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            *_args:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         self._shell.open_projects()
         self.show_route("projects")
@@ -1083,10 +1352,14 @@ class ProjectEditorScreen(BaseShellScreen):
         """Select project editor section.
 
         Args:
-            section_key (str): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            section_key:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         state = self._require_state()
         editor = self._collect_editor_from_form(state)
@@ -1099,11 +1372,17 @@ class ProjectEditorScreen(BaseShellScreen):
     def _require_state(self) -> ProjectEditorStateViewModel:
         """Validate and return state.
 
+        Args:
+            self:
+                Value supplied to this callable.
+
         Returns:
-            ProjectEditorStateViewModel: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
 
         Raises:
-            ValueError: Raised when this callable hits the corresponding error path.
+            ValueError:
+                Raised when this callable hits the corresponding error path.
         """
         state = self._shell.project_editor_state
         if state is None:
@@ -1115,13 +1394,18 @@ class ProjectEditorScreen(BaseShellScreen):
         """Validate and return text.
 
         Args:
-            field (TextInput | None): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            field:
+                Value supplied to this callable.
 
         Returns:
-            str: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
 
         Raises:
-            ValueError: Raised when this callable hits the corresponding error path.
+            ValueError:
+                Raised when this callable hits the corresponding error path.
         """
         if field is None:
             msg = "Project editor input field is not available."
@@ -1132,13 +1416,18 @@ class ProjectEditorScreen(BaseShellScreen):
         """Handle optional text.
 
         Args:
-            field (TextInput | None): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            field:
+                Value supplied to this callable.
 
         Returns:
-            str: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
 
         Raises:
-            ValueError: Raised when this callable hits the corresponding error path.
+            ValueError:
+                Raised when this callable hits the corresponding error path.
         """
         if field is None:
             msg = "Project editor input field is not available."
@@ -1152,10 +1441,14 @@ class ProjectEditorScreen(BaseShellScreen):
         """Handle current sync rule items.
 
         Args:
-            state (ProjectEditorStateViewModel): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            state:
+                Value supplied to this callable.
 
         Returns:
-            tuple[SyncRuleEditorItemViewModel, ...]: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         if self._draft_editor is None:
             return state.editor.sync_rule_items
@@ -1170,12 +1463,16 @@ class ProjectEditorScreen(BaseShellScreen):
         """Collect editor from form.
 
         Args:
-            state (ProjectEditorStateViewModel): Value supplied to this callable.
-            sync_rule_items (tuple[SyncRuleEditorItemViewModel, ...] | None): Value supplied to this
-            callable.
+            self:
+                Value supplied to this callable.
+            state:
+                Value supplied to this callable.
+            sync_rule_items:
+                Value supplied to this callable.
 
         Returns:
-            SiteEditorViewModel: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         return SiteEditorViewModel(
             site_id=state.editor.site_id,
@@ -1185,7 +1482,9 @@ class ProjectEditorScreen(BaseShellScreen):
                 field=self._framework_spinner,
                 fallback=state.editor.framework_type,
             ),
-            local_path=self._text_or_fallback(self._local_path_input, state.editor.local_path),
+            local_path=self._text_or_fallback(
+                self._local_path_input, state.editor.local_path
+            ),
             default_locale=self._text_or_fallback(
                 self._default_locale_input,
                 state.editor.default_locale,
@@ -1230,8 +1529,12 @@ class ProjectEditorScreen(BaseShellScreen):
                 field=self._connection_type_spinner,
                 fallback=state.editor.connection_type,
             ),
-            remote_host=self._text_or_fallback(self._remote_host_input, state.editor.remote_host),
-            remote_port=self._text_or_fallback(self._remote_port_input, state.editor.remote_port),
+            remote_host=self._text_or_fallback(
+                self._remote_host_input, state.editor.remote_host
+            ),
+            remote_port=self._text_or_fallback(
+                self._remote_port_input, state.editor.remote_port
+            ),
             remote_username=self._text_or_fallback(
                 self._remote_username_input,
                 state.editor.remote_username,
@@ -1240,7 +1543,9 @@ class ProjectEditorScreen(BaseShellScreen):
                 self._remote_password_input,
                 state.editor.remote_password,
             ),
-            remote_path=self._text_or_fallback(self._remote_path_input, state.editor.remote_path),
+            remote_path=self._text_or_fallback(
+                self._remote_path_input, state.editor.remote_path
+            ),
             is_active=(
                 self._is_active_switch.active
                 if self._is_active_switch is not None
@@ -1253,18 +1558,26 @@ class ProjectEditorScreen(BaseShellScreen):
                 else state.editor.use_adapter_sync_filters
             ),
             sync_rule_items=(
-                self._current_sync_rule_items(state) if sync_rule_items is None else sync_rule_items
+                self._current_sync_rule_items(state)
+                if sync_rule_items is None
+                else sync_rule_items
             ),
         )
 
-    def _bind_connection_test_state_updates(self, state: ProjectEditorStateViewModel) -> None:
+    def _bind_connection_test_state_updates(
+        self, state: ProjectEditorStateViewModel
+    ) -> None:
         """Handle bind connection test state updates.
 
         Args:
-            state (ProjectEditorStateViewModel): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            state:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         bindable_fields = [
             self._connection_type_spinner,
@@ -1282,14 +1595,20 @@ class ProjectEditorScreen(BaseShellScreen):
                     )
                 )
 
-    def _refresh_test_connection_button_state(self, state: ProjectEditorStateViewModel) -> None:
+    def _refresh_test_connection_button_state(
+        self, state: ProjectEditorStateViewModel
+    ) -> None:
         """Refresh test connection button state.
 
         Args:
-            state (ProjectEditorStateViewModel): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            state:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         if self._test_connection_button is None:
             return
@@ -1298,17 +1617,29 @@ class ProjectEditorScreen(BaseShellScreen):
             field=self._connection_type_spinner,
             fallback=state.editor.connection_type,
         )
-        remote_port = self._text_or_fallback(self._remote_port_input, state.editor.remote_port)
+        remote_port = self._text_or_fallback(
+            self._remote_port_input, state.editor.remote_port
+        )
         self._test_connection_button.disabled = not (
             connection_type != "none"
-            and self._text_or_fallback(self._remote_host_input, state.editor.remote_host) != ""
+            and self._text_or_fallback(
+                self._remote_host_input, state.editor.remote_host
+            )
+            != ""
             and remote_port.isdigit()
             and int(remote_port) > 0
-            and self._text_or_fallback(self._remote_username_input, state.editor.remote_username)
+            and self._text_or_fallback(
+                self._remote_username_input, state.editor.remote_username
+            )
             != ""
-            and self._text_or_fallback(self._remote_password_input, state.editor.remote_password)
+            and self._text_or_fallback(
+                self._remote_password_input, state.editor.remote_password
+            )
             != ""
-            and self._text_or_fallback(self._remote_path_input, state.editor.remote_path) != ""
+            and self._text_or_fallback(
+                self._remote_path_input, state.editor.remote_path
+            )
+            != ""
         )
 
     def _require_framework_value(
@@ -1319,14 +1650,20 @@ class ProjectEditorScreen(BaseShellScreen):
         """Validate and return framework value.
 
         Args:
-            options (list[SettingsOptionViewModel]): Value supplied to this callable.
-            field (Spinner | None): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            options:
+                Value supplied to this callable.
+            field:
+                Value supplied to this callable.
 
         Returns:
-            str: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
 
         Raises:
-            ValueError: Raised when this callable hits the corresponding error path.
+            ValueError:
+                Raised when this callable hits the corresponding error path.
         """
         if field is None:
             msg = "Project editor input field is not available."
@@ -1338,11 +1675,14 @@ class ProjectEditorScreen(BaseShellScreen):
         """Handle text or fallback.
 
         Args:
-            field (TextInput | None): Value supplied to this callable.
-            fallback (str): Value supplied to this callable.
+            field:
+                Value supplied to this callable.
+            fallback:
+                Value supplied to this callable.
 
         Returns:
-            str: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         if field is None:
             return fallback
@@ -1358,12 +1698,16 @@ class ProjectEditorScreen(BaseShellScreen):
         """Handle spinner value or fallback.
 
         Args:
-            options (list[SettingsOptionViewModel]): Value supplied to this callable.
-            field (Spinner | None): Value supplied to this callable.
-            fallback (str): Value supplied to this callable.
+            options:
+                Value supplied to this callable.
+            field:
+                Value supplied to this callable.
+            fallback:
+                Value supplied to this callable.
 
         Returns:
-            str: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         if field is None:
             return fallback
@@ -1374,11 +1718,14 @@ def _build_information_card(*, title: str, body: str) -> SurfaceBoxLayout:
     """Build information card.
 
     Args:
-        title (str): Value supplied to this callable.
-        body (str): Value supplied to this callable.
+        title:
+            Value supplied to this callable.
+        body:
+            Value supplied to this callable.
 
     Returns:
-        SurfaceBoxLayout: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
     """
     card = SurfaceBoxLayout(
         orientation="vertical",
@@ -1400,11 +1747,14 @@ def _with_rule_enabled(
     """Return rule enabled.
 
     Args:
-        item (SyncRuleEditorItemViewModel): Value supplied to this callable.
-        is_enabled (bool): Value supplied to this callable.
+        item:
+            Value supplied to this callable.
+        is_enabled:
+            Value supplied to this callable.
 
     Returns:
-        SyncRuleEditorItemViewModel: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
     """
     return SyncRuleEditorItemViewModel(
         rule_key=item.rule_key,

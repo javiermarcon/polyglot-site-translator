@@ -25,21 +25,25 @@ class PolibPOCatalogRepository(POCatalogRepository):
     """Load and persist PO files using `polib`.
 
     Attributes:
-        None: This type does not declare additional class-level attributes.
+        None: This type does not declare class-level attributes.
     """
 
     def discover_po_files(self, workspace_root: Path) -> tuple[POFileData, ...]:
         """Discover PO files under a workspace and normalize them into domain models.
 
         Args:
-            workspace_root (Path): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            workspace_root:
+                Value supplied to this callable.
 
         Returns:
-            tuple[POFileData, ...]: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
 
         Raises:
-            POProcessingInfrastructureError: Raised when this callable hits the corresponding error
-        path.
+            POProcessingInfrastructureError:
+                Raised when this callable hits the corresponding error path.
         """
         files: list[POFileData] = []
         by_family: dict[str, list[POFileData]] = defaultdict(list)
@@ -74,14 +78,18 @@ class PolibPOCatalogRepository(POCatalogRepository):
         """Write updated domain entries back into their source PO files.
 
         Args:
-            files (tuple[POFileData, ...]): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            files:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
 
         Raises:
-            POProcessingInfrastructureError: Raised when this callable hits the corresponding error
-        path.
+            POProcessingInfrastructureError:
+                Raised when this callable hits the corresponding error path.
         """
         for file_data in files:
             path = Path(file_data.source_path)
@@ -101,14 +109,18 @@ class PolibPOCatalogRepository(POCatalogRepository):
         """Compile one persisted PO file into its sibling MO artifact.
 
         Args:
-            file_data (POFileData): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            file_data:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
 
         Raises:
-            POProcessingCompilationError: Raised when this callable hits the corresponding error
-        path.
+            POProcessingCompilationError:
+                Raised when this callable hits the corresponding error path.
         """
         path = Path(file_data.source_path)
         mo_path = path.with_suffix(".mo")
@@ -128,13 +140,16 @@ def _domain_msgstr_plural_from_polib(entry: polib.POEntry) -> dict[str, str]:
     """Map polib plural translations to domain ``dict[str, str]``.
 
     Args:
-        entry (polib.POEntry): Value supplied to this callable.
+        entry:
+            Value supplied to this callable.
 
     Returns:
-        dict[str, str]: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
 
     Raises:
-        TypeError: Raised when this callable hits the corresponding error path.
+        TypeError:
+            Raised when this callable hits the corresponding error path.
     """
     raw = cast(object, entry.msgstr_plural)
     if isinstance(raw, dict):
@@ -151,10 +166,12 @@ def _entry_from_polib(entry: polib.POEntry) -> POEntryData:
     """Handle entry from polib.
 
     Args:
-        entry (polib.POEntry): Value supplied to this callable.
+        entry:
+            Value supplied to this callable.
 
     Returns:
-        POEntryData: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
     """
     msgid_plural = entry.msgid_plural or None
     return POEntryData(
@@ -169,17 +186,24 @@ def _entry_from_polib(entry: polib.POEntry) -> POEntryData:
     )
 
 
-def _apply_entries_to_polib(po_file: polib.POFile, entries: tuple[POEntryData, ...]) -> None:
+def _apply_entries_to_polib(
+    po_file: polib.POFile, entries: tuple[POEntryData, ...]
+) -> None:
     """Apply entries to polib.
 
     Args:
-        po_file (polib.POFile): Value supplied to this callable.
-        entries (tuple[POEntryData, ...]): Value supplied to this callable.
+        po_file:
+            Value supplied to this callable.
+        entries:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
-    updated_entries: dict[POEntryId, POEntryData] = {entry.entry_id: entry for entry in entries}
+    updated_entries: dict[POEntryId, POEntryData] = {
+        entry.entry_id: entry for entry in entries
+    }
     for item in po_file:
         entry_id = POEntryId(
             context=item.msgctxt,
@@ -190,7 +214,9 @@ def _apply_entries_to_polib(po_file: polib.POFile, entries: tuple[POEntryData, .
         if updated_entry is None:
             continue
         item.msgstr = updated_entry.msgstr
-        plural_for_polib = {int(key): value for key, value in updated_entry.msgstr_plural.items()}
+        plural_for_polib = {
+            int(key): value for key, value in updated_entry.msgstr_plural.items()
+        }
         # Third-party stubs sometimes type ``msgstr_plural`` as ``list[str]``; polib
         # persists plural forms as ``dict[int, str]`` at runtime.
         cast(Any, item).msgstr_plural = plural_for_polib
@@ -203,10 +229,12 @@ def _locale_from_filename(path: Path) -> str:
     """Handle locale from filename.
 
     Args:
-        path (Path): Value supplied to this callable.
+        path:
+            Value supplied to this callable.
 
     Returns:
-        str: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
     """
     return path.stem.split("-")[-1]
 
@@ -215,11 +243,14 @@ def _build_family_key(relative_path: Path, locale: str) -> str:
     """Build family key.
 
     Args:
-        relative_path (Path): Value supplied to this callable.
-        locale (str): Value supplied to this callable.
+        relative_path:
+            Value supplied to this callable.
+        locale:
+            Value supplied to this callable.
 
     Returns:
-        str: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
     """
     suffix = f"-{locale}"
     stem = relative_path.stem
@@ -231,10 +262,12 @@ def _nplurals_from_po(po_file: polib.POFile) -> int:
     """Handle nplurals from po.
 
     Args:
-        po_file (polib.POFile): Value supplied to this callable.
+        po_file:
+            Value supplied to this callable.
 
     Returns:
-        int: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
     """
     plural_forms = po_file.metadata.get("Plural-Forms", "")
     match = re.search(r"nplurals\s*=\s*(\d+)", plural_forms)

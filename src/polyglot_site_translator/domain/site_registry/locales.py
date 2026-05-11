@@ -15,14 +15,18 @@ def normalize_default_locale(value: str, *, label: str = "Default locale") -> st
     """Return a canonical comma-separated locale list for persistence.
 
     Args:
-        value (str): Value supplied to this callable.
-        label (str): Value supplied to this callable.
+        value:
+            Value supplied to this callable.
+        label:
+            Value supplied to this callable.
 
     Returns:
-        str: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
 
     Raises:
-        SiteRegistryValidationError: Raised when this callable hits the corresponding error path.
+        SiteRegistryValidationError:
+            Raised when this callable hits the corresponding error path.
     """
     normalized_value = value.strip()
     if normalized_value == "":
@@ -30,7 +34,10 @@ def normalize_default_locale(value: str, *, label: str = "Default locale") -> st
         raise SiteRegistryValidationError(msg)
     locale_items = tuple(item.strip() for item in normalized_value.split(","))
     if any(item == "" for item in locale_items):
-        msg = f"{label} must be a valid locale or a comma-separated list of valid locales."
+        msg = (
+            f"{label} must be a valid locale or a comma-separated list of "
+            "valid locales."
+        )
         raise SiteRegistryValidationError(msg)
     invalid_locales = tuple(
         item for item in locale_items if _LOCALE_PATTERN.fullmatch(item) is None
@@ -38,21 +45,27 @@ def normalize_default_locale(value: str, *, label: str = "Default locale") -> st
     if invalid_locales != ():
         invalid_list = ", ".join(invalid_locales)
         msg = (
-            f"{label} must be a valid locale or a comma-separated list of valid locales. "
+            f"{label} must be a valid locale or a comma-separated list of "
+            "valid locales. "
             f"Invalid values: {invalid_list}."
         )
         raise SiteRegistryValidationError(msg)
     return ",".join(locale_items)
 
 
-def parse_default_locale_list(value: str, *, label: str = "Default locale") -> tuple[str, ...]:
+def parse_default_locale_list(
+    value: str, *, label: str = "Default locale"
+) -> tuple[str, ...]:
     """Return the normalized configured locales as a tuple.
 
     Args:
-        value (str): Value supplied to this callable.
-        label (str): Value supplied to this callable.
+        value:
+            Value supplied to this callable.
+        label:
+            Value supplied to this callable.
 
     Returns:
-        tuple[str, ...]: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
     """
     return tuple(normalize_default_locale(value, label=label).split(","))

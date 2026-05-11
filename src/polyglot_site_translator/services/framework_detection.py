@@ -4,7 +4,9 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from polyglot_site_translator.adapters.framework_registry import FrameworkAdapterRegistry
+from polyglot_site_translator.adapters.framework_registry import (
+    FrameworkAdapterRegistry,
+)
 from polyglot_site_translator.domain.framework_detection.errors import (
     FrameworkDetectionError,
 )
@@ -18,17 +20,21 @@ class FrameworkDetectionService:
     """Orchestrate adapter registry resolution for project paths.
 
     Attributes:
-        None: This type does not declare additional class-level attributes.
+        None: This type does not declare class-level attributes.
     """
 
     def __init__(self, *, registry: FrameworkAdapterRegistry) -> None:
         """Store the framework adapter registry used for path inspection.
 
         Args:
-            registry (FrameworkAdapterRegistry): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            registry:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         self._registry = registry
 
@@ -36,13 +42,18 @@ class FrameworkDetectionService:
         """Return the best framework detection result for a local project path.
 
         Args:
-            project_path (Path | str): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            project_path:
+                Value supplied to this callable.
 
         Returns:
-            FrameworkDetectionResult: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
 
         Raises:
-            FrameworkDetectionError: Raised when this callable hits the corresponding error path.
+            FrameworkDetectionError:
+                Raised when this callable hits the corresponding error path.
         """
         resolved_path = Path(project_path)
         try:
@@ -67,11 +78,17 @@ class FrameworkDetectionService:
     def list_supported_frameworks(self) -> list[FrameworkDescriptor]:
         """Return framework metadata suitable for selectors and labels.
 
+        Args:
+            self:
+                Value supplied to this callable.
+
         Returns:
-            list[FrameworkDescriptor]: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
 
         Raises:
-            FrameworkDetectionError: Raised when this callable hits the corresponding error path.
+            FrameworkDetectionError:
+                Raised when this callable hits the corresponding error path.
         """
         try:
             return self._registry.list_framework_descriptors()

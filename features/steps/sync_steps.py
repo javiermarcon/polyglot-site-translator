@@ -11,7 +11,9 @@ from typing import Any, Protocol, TypeVar, cast
 
 import behave as behave_module  # type: ignore[import-untyped]
 
-from polyglot_site_translator.adapters.framework_registry import FrameworkAdapterRegistry
+from polyglot_site_translator.adapters.framework_registry import (
+    FrameworkAdapterRegistry,
+)
 from polyglot_site_translator.app import create_kivy_app
 from polyglot_site_translator.domain.remote_connections.models import (
     RemoteConnectionConfig,
@@ -31,7 +33,9 @@ from polyglot_site_translator.infrastructure.remote_connections.base import (
 from polyglot_site_translator.infrastructure.remote_connections.registry import (
     RemoteConnectionRegistry,
 )
-from polyglot_site_translator.infrastructure.settings import build_default_settings_service
+from polyglot_site_translator.infrastructure.settings import (
+    build_default_settings_service,
+)
 from polyglot_site_translator.presentation.fakes import build_default_frontend_services
 from polyglot_site_translator.presentation.frontend_shell import FrontendShell
 from polyglot_site_translator.presentation.kivy.screens.project_detail import (
@@ -47,7 +51,9 @@ from polyglot_site_translator.services.remote_connections import RemoteConnectio
 
 StepFunction = TypeVar("StepFunction", bound=Callable[..., object])
 
-given = cast(Callable[[str], Callable[[StepFunction], StepFunction]], behave_module.given)
+given = cast(
+    Callable[[str], Callable[[StepFunction], StepFunction]], behave_module.given
+)
 when = cast(Callable[[str], Callable[[StepFunction], StepFunction]], behave_module.when)
 then = cast(Callable[[str], Callable[[StepFunction], StepFunction]], behave_module.then)
 
@@ -57,10 +63,14 @@ class ScenarioSyncSession:
     """BDD helper for ScenarioSyncSession.
 
     Attributes:
-        config (RemoteConnectionConfig): Documented attribute exposed by this type.
-        provider (ScenarioSyncProvider): Documented attribute exposed by this type.
-        state (RemoteConnectionSessionState): Documented attribute exposed by this type.
-        _connect_emitted (bool): Documented attribute exposed by this type.
+        config:
+            Documented attribute exposed by this type.
+        provider:
+            Documented attribute exposed by this type.
+        state:
+            Documented attribute exposed by this type.
+        _connect_emitted:
+            Documented attribute exposed by this type.
     """
 
     config: RemoteConnectionConfig
@@ -75,11 +85,14 @@ class ScenarioSyncSession:
         """Handle emit connect if needed.
 
         Args:
-            progress_callback (Callable[[SyncProgressEvent], None] | None): Value supplied to this
-        callable.
+            self:
+                Value supplied to this callable.
+            progress_callback:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         if self._connect_emitted or progress_callback is None:
             return
@@ -99,23 +112,29 @@ class ScenarioSyncSession:
         """Handle iter remote files.
 
         Args:
-            progress_callback (Callable[[SyncProgressEvent], None] | None): Value supplied to this
-        callable.
+            self:
+                Value supplied to this callable.
+            progress_callback:
+                Value supplied to this callable.
 
         Returns:
-            Iterable[RemoteSyncFile]: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
 
         Raises:
-            OSError: Raised when this callable hits the corresponding error path.
-            RemoteConnectionOperationError: Raised when this callable hits the corresponding error
-        path.
+            RemoteConnectionOperationError:
+                Raised when this callable hits the corresponding error path.
+            OSError:
+                Raised when this callable hits the corresponding error path.
         """
         if progress_callback is not None:
             self._emit_connect_if_needed(progress_callback)
             progress_callback(
                 SyncProgressEvent(
                     stage=SyncProgressStage.LISTING_REMOTE,
-                    message="Listing remote files through the behave sync provider session.",
+                    message=(
+                        "Listing remote files through the behave sync provider session."
+                    ),
                     command_text=f"SFTP LIST {self.config.remote_path}",
                 )
             )
@@ -139,19 +158,25 @@ class ScenarioSyncSession:
         """Handle download file.
 
         Args:
-            remote_path (str): Value supplied to this callable.
-            progress_callback (Callable[[SyncProgressEvent], None] | None): Value supplied to this
-        callable.
+            self:
+                Value supplied to this callable.
+            remote_path:
+                Value supplied to this callable.
+            progress_callback:
+                Value supplied to this callable.
 
         Returns:
-            bytes: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         if progress_callback is not None:
             self._emit_connect_if_needed(progress_callback)
             progress_callback(
                 SyncProgressEvent(
                     stage=SyncProgressStage.DOWNLOADING_FILE,
-                    message=f"Downloading {remote_path} through the behave sync session.",
+                    message=(
+                        f"Downloading {remote_path} through the behave sync session."
+                    ),
                     command_text=f"SFTP GET {remote_path}",
                 )
             )
@@ -165,12 +190,16 @@ class ScenarioSyncSession:
         """Handle ensure remote directory.
 
         Args:
-            remote_path (str): Value supplied to this callable.
-            progress_callback (Callable[[SyncProgressEvent], None] | None): Value supplied to this
-        callable.
+            self:
+                Value supplied to this callable.
+            remote_path:
+                Value supplied to this callable.
+            progress_callback:
+                Value supplied to this callable.
 
         Returns:
-            int: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         if progress_callback is not None:
             self._emit_connect_if_needed(progress_callback)
@@ -193,16 +222,22 @@ class ScenarioSyncSession:
         """Handle upload file.
 
         Args:
-            remote_path (str): Value supplied to this callable.
-            contents (bytes): Value supplied to this callable.
-            progress_callback (Callable[[SyncProgressEvent], None] | None): Value supplied to this
-        callable.
+            self:
+                Value supplied to this callable.
+            remote_path:
+                Value supplied to this callable.
+            contents:
+                Value supplied to this callable.
+            progress_callback:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
 
         Raises:
-            OSError: Raised when this callable hits the corresponding error path.
+            OSError:
+                Raised when this callable hits the corresponding error path.
         """
         if progress_callback is not None:
             self._emit_connect_if_needed(progress_callback)
@@ -226,11 +261,14 @@ class ScenarioSyncSession:
         """Handle close.
 
         Args:
-            progress_callback (Callable[[SyncProgressEvent], None] | None): Value supplied to this
-        callable.
+            self:
+                Value supplied to this callable.
+            progress_callback:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         self.state = RemoteConnectionSessionState.CLOSED
         if progress_callback is not None:
@@ -248,16 +286,22 @@ class ScenarioSyncProvider:
     """BDD helper for ScenarioSyncProvider.
 
     Attributes:
-        descriptor (RemoteConnectionTypeDescriptor): Documented attribute exposed by this type.
-        remote_files_by_host (dict[str, list[RemoteSyncFile]]): Documented attribute exposed by this
-        type.
-        file_contents_by_path (dict[str, bytes]): Documented attribute exposed by this type.
-        failing_hosts (dict[str, str]): Documented attribute exposed by this type.
-        failing_hosts_with_error_codes (dict[str, tuple[str, str]]): Documented attribute exposed by
-        this type.
-        uploaded_file_contents (dict[str, bytes]): Documented attribute exposed by this type.
-        upload_failing_hosts (dict[str, str]): Documented attribute exposed by this type.
-        created_remote_directories (list[str]): Documented attribute exposed by this type.
+        descriptor:
+            Documented attribute exposed by this type.
+        remote_files_by_host:
+            Documented attribute exposed by this type.
+        file_contents_by_path:
+            Documented attribute exposed by this type.
+        failing_hosts:
+            Documented attribute exposed by this type.
+        failing_hosts_with_error_codes:
+            Documented attribute exposed by this type.
+        uploaded_file_contents:
+            Documented attribute exposed by this type.
+        upload_failing_hosts:
+            Documented attribute exposed by this type.
+        created_remote_directories:
+            Documented attribute exposed by this type.
     """
 
     descriptor: RemoteConnectionTypeDescriptor = field(
@@ -270,7 +314,9 @@ class ScenarioSyncProvider:
     remote_files_by_host: dict[str, list[RemoteSyncFile]] = field(default_factory=dict)
     file_contents_by_path: dict[str, bytes] = field(default_factory=dict)
     failing_hosts: dict[str, str] = field(default_factory=dict)
-    failing_hosts_with_error_codes: dict[str, tuple[str, str]] = field(default_factory=dict)
+    failing_hosts_with_error_codes: dict[str, tuple[str, str]] = field(
+        default_factory=dict
+    )
     uploaded_file_contents: dict[str, bytes] = field(default_factory=dict)
     upload_failing_hosts: dict[str, str] = field(default_factory=dict)
     created_remote_directories: list[str] = field(default_factory=list)
@@ -282,10 +328,14 @@ class ScenarioSyncProvider:
         """Verify connection.
 
         Args:
-            config (RemoteConnectionConfigInput): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            config:
+                Value supplied to this callable.
 
         Returns:
-            RemoteConnectionTestResult: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         return RemoteConnectionTestResult(
             success=True,
@@ -300,10 +350,14 @@ class ScenarioSyncProvider:
         """Handle open session.
 
         Args:
-            config (RemoteConnectionConfig): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            config:
+                Value supplied to this callable.
 
         Returns:
-            ScenarioSyncSession: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         return ScenarioSyncSession(config=config, provider=self)
 
@@ -317,18 +371,24 @@ class ScenarioSyncProvider:
         """Handle list remote files.
 
         Args:
-            config (RemoteConnectionConfig): Value supplied to this callable.
-            progress_callback (Callable[[SyncProgressEvent], None] | None): Value supplied to this
-        callable.
-            max_files (int): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            config:
+                Value supplied to this callable.
+            progress_callback:
+                Value supplied to this callable.
+            max_files:
+                Value supplied to this callable.
 
         Returns:
-            list[RemoteSyncFile]: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
 
         Raises:
-            OSError: Raised when this callable hits the corresponding error path.
-            RemoteConnectionOperationError: Raised when this callable hits the corresponding error
-        path.
+            RemoteConnectionOperationError:
+                Raised when this callable hits the corresponding error path.
+            OSError:
+                Raised when this callable hits the corresponding error path.
         """
         if progress_callback is not None:
             progress_callback(
@@ -358,12 +418,16 @@ class ScenarioSyncProvider:
         """Handle iter remote files.
 
         Args:
-            config (RemoteConnectionConfig): Value supplied to this callable.
-            progress_callback (Callable[[SyncProgressEvent], None] | None): Value supplied to this
-        callable.
+            self:
+                Value supplied to this callable.
+            config:
+                Value supplied to this callable.
+            progress_callback:
+                Value supplied to this callable.
 
         Returns:
-            Iterable[RemoteSyncFile]: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         return iter(self.list_remote_files(config, progress_callback))
 
@@ -376,19 +440,26 @@ class ScenarioSyncProvider:
         """Handle download file.
 
         Args:
-            config (RemoteConnectionConfig): Value supplied to this callable.
-            remote_path (str): Value supplied to this callable.
-            progress_callback (Callable[[SyncProgressEvent], None] | None): Value supplied to this
-        callable.
+            self:
+                Value supplied to this callable.
+            config:
+                Value supplied to this callable.
+            remote_path:
+                Value supplied to this callable.
+            progress_callback:
+                Value supplied to this callable.
 
         Returns:
-            bytes: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         if progress_callback is not None:
             progress_callback(
                 SyncProgressEvent(
                     stage=SyncProgressStage.DOWNLOADING_FILE,
-                    message=f"Downloading {remote_path} through the behave sync provider.",
+                    message=(
+                        f"Downloading {remote_path} through the behave sync provider."
+                    ),
                     command_text=f"SFTP GET {remote_path}",
                 )
             )
@@ -403,13 +474,18 @@ class ScenarioSyncProvider:
         """Handle ensure remote directory.
 
         Args:
-            config (RemoteConnectionConfig): Value supplied to this callable.
-            remote_path (str): Value supplied to this callable.
-            progress_callback (Callable[[SyncProgressEvent], None] | None): Value supplied to this
-        callable.
+            self:
+                Value supplied to this callable.
+            config:
+                Value supplied to this callable.
+            remote_path:
+                Value supplied to this callable.
+            progress_callback:
+                Value supplied to this callable.
 
         Returns:
-            int: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         session = self.open_session(config)
         try:
@@ -427,14 +503,20 @@ class ScenarioSyncProvider:
         """Handle upload file.
 
         Args:
-            config (RemoteConnectionConfig): Value supplied to this callable.
-            remote_path (str): Value supplied to this callable.
-            contents (bytes): Value supplied to this callable.
-            progress_callback (Callable[[SyncProgressEvent], None] | None): Value supplied to this
-        callable.
+            self:
+                Value supplied to this callable.
+            config:
+                Value supplied to this callable.
+            remote_path:
+                Value supplied to this callable.
+            contents:
+                Value supplied to this callable.
+            progress_callback:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         session = self.open_session(config)
         try:
@@ -447,14 +529,20 @@ class BehaveSyncContext(Protocol):
     """BDD helper for BehaveSyncContext.
 
     Attributes:
-        shell (FrontendShell): Documented attribute exposed by this type.
-        sync_provider (ScenarioSyncProvider): Documented attribute exposed by this type.
-        sync_root (Any): Documented attribute exposed by this type.
-        settings_temp_dir (tempfile.TemporaryDirectory[str]): Documented attribute exposed by this
-    type.
-        project_ids (dict[str, str]): Documented attribute exposed by this type.
-        sync_screen (SyncScreen): Documented attribute exposed by this type.
-        detail_screen (ProjectDetailScreen): Documented attribute exposed by this type.
+        shell:
+            Documented attribute exposed by this type.
+        sync_provider:
+            Documented attribute exposed by this type.
+        sync_root:
+            Documented attribute exposed by this type.
+        settings_temp_dir:
+            Documented attribute exposed by this type.
+        project_ids:
+            Documented attribute exposed by this type.
+        sync_screen:
+            Documented attribute exposed by this type.
+        detail_screen:
+            Documented attribute exposed by this type.
     """
 
     shell: FrontendShell
@@ -471,12 +559,18 @@ class ProjectSetupSpec:
     """BDD helper for ProjectSetupSpec.
 
     Attributes:
-        project_key (str): Documented attribute exposed by this type.
-        local_directory_name (str): Documented attribute exposed by this type.
-        connection_type (str): Documented attribute exposed by this type.
-        remote_host (str): Documented attribute exposed by this type.
-        framework_type (str): Documented attribute exposed by this type.
-        use_adapter_sync_filters (bool): Documented attribute exposed by this type.
+        project_key:
+            Documented attribute exposed by this type.
+        local_directory_name:
+            Documented attribute exposed by this type.
+        connection_type:
+            Documented attribute exposed by this type.
+        remote_host:
+            Documented attribute exposed by this type.
+        framework_type:
+            Documented attribute exposed by this type.
+        use_adapter_sync_filters:
+            Documented attribute exposed by this type.
     """
 
     project_key: str
@@ -491,7 +585,7 @@ class _FailingFrameworkSyncScopeService:
     """BDD helper for FailingFrameworkSyncScopeService.
 
     Attributes:
-        None: This type does not declare additional class-level attributes.
+        None: This type does not declare class-level attributes.
     """
 
     @staticmethod
@@ -499,13 +593,16 @@ class _FailingFrameworkSyncScopeService:
         """Handle resolve for site.
 
         Args:
-            site (Any): Value supplied to this callable.
+            site:
+                Value supplied to this callable.
 
         Returns:
-            Any: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
 
         Raises:
-            OSError: Raised when this callable hits the corresponding error path.
+            OSError:
+                Raised when this callable hits the corresponding error path.
         """
         msg = "broken sync scope"
         raise OSError(msg)
@@ -515,10 +612,12 @@ def _context(context: object) -> BehaveSyncContext:
     """Handle context.
 
     Args:
-        context (object): Value supplied to this callable.
+        context:
+            Value supplied to this callable.
 
     Returns:
-        BehaveSyncContext: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
     """
     return cast(BehaveSyncContext, context)
 
@@ -528,10 +627,12 @@ def step_real_sync_shell(context: object) -> None:
     """Run the BDD step for real sync shell.
 
     Args:
-        context (object): Value supplied to this callable.
+        context:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     typed_context = _context(context)
     typed_context.settings_temp_dir = tempfile.TemporaryDirectory()
@@ -540,7 +641,9 @@ def step_real_sync_shell(context: object) -> None:
     settings_service = build_default_settings_service(
         config_dir=Path(typed_context.settings_temp_dir.name)
     )
-    registry = RemoteConnectionRegistry.default_registry(providers=[typed_context.sync_provider])
+    registry = RemoteConnectionRegistry.default_registry(
+        providers=[typed_context.sync_provider]
+    )
     framework_registry = FrameworkAdapterRegistry.discover_installed()
     app = create_kivy_app(
         services=build_default_frontend_services(
@@ -548,13 +651,17 @@ def step_real_sync_shell(context: object) -> None:
             remote_connection_service=RemoteConnectionService(registry=registry),
             project_sync_service=ProjectSyncService(
                 registry=registry,
-                framework_sync_scope_service=FrameworkSyncScopeService(registry=framework_registry),
+                framework_sync_scope_service=FrameworkSyncScopeService(
+                    registry=framework_registry
+                ),
             ),
         )
     )
     typed_context.sync_root = app.build()
     typed_context.shell = app._shell
-    typed_context.sync_screen = cast(SyncScreen, typed_context.sync_root.get_screen("sync"))
+    typed_context.sync_screen = cast(
+        SyncScreen, typed_context.sync_root.get_screen("sync")
+    )
     typed_context.detail_screen = cast(
         ProjectDetailScreen,
         typed_context.sync_root.get_screen("project_detail"),
@@ -569,10 +676,12 @@ def step_real_sync_shell_with_failing_scope_resolution(context: object) -> None:
     """Run the BDD step for real sync shell with failing scope resolution.
 
     Args:
-        context (object): Value supplied to this callable.
+        context:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     typed_context = _context(context)
     typed_context.settings_temp_dir = tempfile.TemporaryDirectory()
@@ -581,7 +690,9 @@ def step_real_sync_shell_with_failing_scope_resolution(context: object) -> None:
     settings_service = build_default_settings_service(
         config_dir=Path(typed_context.settings_temp_dir.name)
     )
-    registry = RemoteConnectionRegistry.default_registry(providers=[typed_context.sync_provider])
+    registry = RemoteConnectionRegistry.default_registry(
+        providers=[typed_context.sync_provider]
+    )
     app = create_kivy_app(
         services=build_default_frontend_services(
             settings_service=settings_service,
@@ -594,7 +705,9 @@ def step_real_sync_shell_with_failing_scope_resolution(context: object) -> None:
     )
     typed_context.sync_root = app.build()
     typed_context.shell = app._shell
-    typed_context.sync_screen = cast(SyncScreen, typed_context.sync_root.get_screen("sync"))
+    typed_context.sync_screen = cast(
+        SyncScreen, typed_context.sync_root.get_screen("sync")
+    )
     typed_context.detail_screen = cast(
         ProjectDetailScreen,
         typed_context.sync_root.get_screen("project_detail"),
@@ -606,11 +719,14 @@ def step_set_sync_command_log_limit(context: object, limit: int) -> None:
     """Run the BDD step for set sync command log limit.
 
     Args:
-        context (object): Value supplied to this callable.
-        limit (int): Value supplied to this callable.
+        context:
+            Value supplied to this callable.
+        limit:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     typed_context = _context(context)
     typed_context.shell.open_settings()
@@ -629,11 +745,14 @@ def step_project_has_remote_files(context: object, project_key: str) -> None:
     """Run the BDD step for project has remote files.
 
     Args:
-        context (object): Value supplied to this callable.
-        project_key (str): Value supplied to this callable.
+        context:
+            Value supplied to this callable.
+        project_key:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     typed_context = _context(context)
     typed_context.sync_provider.remote_files_by_host["marketing.example.test"] = [
@@ -670,11 +789,14 @@ def step_project_has_local_files_for_upload(context: object, project_key: str) -
     """Run the BDD step for project has local files for upload.
 
     Args:
-        context (object): Value supplied to this callable.
-        project_key (str): Value supplied to this callable.
+        context:
+            Value supplied to this callable.
+        project_key:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     typed_context = _context(context)
     local_root = _create_project(
@@ -689,10 +811,14 @@ def step_project_has_local_files_for_upload(context: object, project_key: str) -
     (local_root / "locale").mkdir(parents=True, exist_ok=True)
     (local_root / "templates").mkdir(parents=True, exist_ok=True)
     (local_root / "locale" / "es.po").write_text('msgid "hola"\n', encoding="utf-8")
-    (local_root / "templates" / "home.html").write_text("<h1>Hola</h1>\n", encoding="utf-8")
+    (local_root / "templates" / "home.html").write_text(
+        "<h1>Hola</h1>\n", encoding="utf-8"
+    )
 
 
-@given('the registered project "{project_key}" has django remote files with excluded paths')
+@given(
+    'the registered project "{project_key}" has django remote files with excluded paths'
+)
 def step_project_has_django_remote_files_with_exclusions(
     context: object,
     project_key: str,
@@ -700,11 +826,14 @@ def step_project_has_django_remote_files_with_exclusions(
     """Run the BDD step for project has django remote files with exclusions.
 
     Args:
-        context (object): Value supplied to this callable.
-        project_key (str): Value supplied to this callable.
+        context:
+            Value supplied to this callable.
+        project_key:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     typed_context = _context(context)
     typed_context.sync_provider.remote_files_by_host["django-filtered.example.test"] = [
@@ -738,7 +867,9 @@ def step_project_has_django_remote_files_with_exclusions(
     )
 
 
-@given('the registered project "{project_key}" has django local files with excluded paths')
+@given(
+    'the registered project "{project_key}" has django local files with excluded paths'
+)
 def step_project_has_django_local_files_with_exclusions(
     context: object,
     project_key: str,
@@ -746,11 +877,14 @@ def step_project_has_django_local_files_with_exclusions(
     """Run the BDD step for project has django local files with exclusions.
 
     Args:
-        context (object): Value supplied to this callable.
-        project_key (str): Value supplied to this callable.
+        context:
+            Value supplied to this callable.
+        project_key:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     typed_context = _context(context)
     local_root = _create_project(
@@ -771,17 +905,21 @@ def step_project_has_django_local_files_with_exclusions(
 
 
 @given(
-    'the registered project "{project_key}" has mixed remote files and adapter sync filters enabled'
+    'the registered project "{project_key}" has mixed remote files and '
+    "adapter sync filters enabled"
 )
 def step_project_has_filtered_remote_files(context: object, project_key: str) -> None:
     """Run the BDD step for project has filtered remote files.
 
     Args:
-        context (object): Value supplied to this callable.
-        project_key (str): Value supplied to this callable.
+        context:
+            Value supplied to this callable.
+        project_key:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     typed_context = _context(context)
     typed_context.sync_provider.remote_files_by_host["filtered.example.test"] = [
@@ -822,11 +960,14 @@ def step_project_has_full_remote_files(context: object, project_key: str) -> Non
     """Run the BDD step for project has full remote files.
 
     Args:
-        context (object): Value supplied to this callable.
-        project_key (str): Value supplied to this callable.
+        context:
+            Value supplied to this callable.
+        project_key:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     typed_context = _context(context)
     typed_context.sync_provider.remote_files_by_host["full.example.test"] = [
@@ -864,11 +1005,14 @@ def step_project_without_remote_connection(context: object, project_key: str) ->
     """Run the BDD step for project without remote connection.
 
     Args:
-        context (object): Value supplied to this callable.
-        project_key (str): Value supplied to this callable.
+        context:
+            Value supplied to this callable.
+        project_key:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     typed_context = _context(context)
     _create_project(
@@ -887,11 +1031,14 @@ def step_project_listing_failure(context: object, project_key: str) -> None:
     """Run the BDD step for project listing failure.
 
     Args:
-        context (object): Value supplied to this callable.
-        project_key (str): Value supplied to this callable.
+        context:
+            Value supplied to this callable.
+        project_key:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     typed_context = _context(context)
     typed_context.sync_provider.failing_hosts["broken.example.test"] = (
@@ -908,19 +1055,26 @@ def step_project_listing_failure(context: object, project_key: str) -> None:
     )
 
 
-@given('the registered project "{project_key}" fails because the SSH host key is unknown')
+@given(
+    'the registered project "{project_key}" fails because the SSH host key is unknown'
+)
 def step_project_unknown_ssh_host_key(context: object, project_key: str) -> None:
     """Run the BDD step for project unknown ssh host key.
 
     Args:
-        context (object): Value supplied to this callable.
-        project_key (str): Value supplied to this callable.
+        context:
+            Value supplied to this callable.
+        project_key:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     typed_context = _context(context)
-    typed_context.sync_provider.failing_hosts_with_error_codes["unknown-ssh.example.test"] = (
+    typed_context.sync_provider.failing_hosts_with_error_codes[
+        "unknown-ssh.example.test"
+    ] = (
         "unknown_ssh_host_key",
         "Server 'unknown-ssh.example.test' not found in known_hosts",
     )
@@ -940,11 +1094,14 @@ def step_project_empty_remote(context: object, project_key: str) -> None:
     """Run the BDD step for project empty remote.
 
     Args:
-        context (object): Value supplied to this callable.
-        project_key (str): Value supplied to this callable.
+        context:
+            Value supplied to this callable.
+        project_key:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     typed_context = _context(context)
     typed_context.sync_provider.remote_files_by_host["empty.example.test"] = []
@@ -964,11 +1121,14 @@ def step_project_upload_failure(context: object, project_key: str) -> None:
     """Run the BDD step for project upload failure.
 
     Args:
-        context (object): Value supplied to this callable.
-        project_key (str): Value supplied to this callable.
+        context:
+            Value supplied to this callable.
+        project_key:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     typed_context = _context(context)
     typed_context.sync_provider.upload_failing_hosts["upload-broken.example.test"] = (
@@ -992,11 +1152,14 @@ def step_project_empty_local_source(context: object, project_key: str) -> None:
     """Run the BDD step for project empty local source.
 
     Args:
-        context (object): Value supplied to this callable.
-        project_key (str): Value supplied to this callable.
+        context:
+            Value supplied to this callable.
+        project_key:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     typed_context = _context(context)
     local_root = _create_project(
@@ -1016,11 +1179,14 @@ def step_assert_downloaded_files(context: object, downloaded_files: int) -> None
     """Run the BDD step for assert downloaded files.
 
     Args:
-        context (object): Value supplied to this callable.
-        downloaded_files (int): Value supplied to this callable.
+        context:
+            Value supplied to this callable.
+        downloaded_files:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     typed_context = _context(context)
     assert typed_context.shell.sync_state is not None
@@ -1032,11 +1198,14 @@ def step_assert_sync_error_code(context: object, error_code: str) -> None:
     """Run the BDD step for assert sync error code.
 
     Args:
-        context (object): Value supplied to this callable.
-        error_code (str): Value supplied to this callable.
+        context:
+            Value supplied to this callable.
+        error_code:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     typed_context = _context(context)
     assert typed_context.shell.sync_state is not None
@@ -1048,10 +1217,12 @@ def step_assert_sync_screen(context: object) -> None:
     """Run the BDD step for assert sync screen.
 
     Args:
-        context (object): Value supplied to this callable.
+        context:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     typed_context = _context(context)
     typed_context.sync_screen.refresh()
@@ -1063,14 +1234,18 @@ def step_assert_uploaded_files(context: object, uploaded_files: int) -> None:
     """Run the BDD step for assert uploaded files.
 
     Args:
-        context (object): Value supplied to this callable.
-        uploaded_files (int): Value supplied to this callable.
+        context:
+            Value supplied to this callable.
+        uploaded_files:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
 
     Raises:
-        AssertionError: Raised when this callable hits the corresponding error path.
+        AssertionError:
+            Raised when this callable hits the corresponding error path.
     """
     typed_context = _context(context)
     assert typed_context.shell.sync_state is not None
@@ -1083,13 +1258,16 @@ def step_assert_sync_screen_uploaded_files(context: object) -> None:
     """Run the BDD step for assert sync screen uploaded files.
 
     Args:
-        context (object): Value supplied to this callable.
+        context:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
 
     Raises:
-        AssertionError: Raised when this callable hits the corresponding error path.
+        AssertionError:
+            Raised when this callable hits the corresponding error path.
     """
     typed_context = _context(context)
     typed_context.sync_screen.refresh()
@@ -1102,10 +1280,12 @@ def step_start_sync_from_detail_screen(context: object) -> None:
     """Run the BDD step for start sync from detail screen.
 
     Args:
-        context (object): Value supplied to this callable.
+        context:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     typed_context = _context(context)
     typed_context.sync_root.current = "project_detail"
@@ -1117,10 +1297,12 @@ def step_start_local_to_remote_sync(context: object) -> None:
     """Run the BDD step for start local to remote sync.
 
     Args:
-        context (object): Value supplied to this callable.
+        context:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     typed_context = _context(context)
     typed_context.shell.start_sync_to_remote()
@@ -1131,10 +1313,12 @@ def step_assert_sync_progress_window_open(context: object) -> None:
     """Run the BDD step for assert sync progress window open.
 
     Args:
-        context (object): Value supplied to this callable.
+        context:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     typed_context = _context(context)
     assert typed_context.detail_screen._sync_progress_popup is not None
@@ -1145,10 +1329,12 @@ def step_assert_sync_progress_window_commands(context: object) -> None:
     """Run the BDD step for assert sync progress window commands.
 
     Args:
-        context (object): Value supplied to this callable.
+        context:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     typed_context = _context(context)
     popup = typed_context.detail_screen._sync_progress_popup
@@ -1167,13 +1353,16 @@ def step_assert_sync_progress_window_download_commands(context: object) -> None:
     """Run the BDD step for assert sync progress window download commands.
 
     Args:
-        context (object): Value supplied to this callable.
+        context:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
 
     Raises:
-        AssertionError: Raised when this callable hits the corresponding error path.
+        AssertionError:
+            Raised when this callable hits the corresponding error path.
     """
     typed_context = _context(context)
     popup = typed_context.detail_screen._sync_progress_popup
@@ -1193,13 +1382,16 @@ def step_assert_sync_progress_window_failed_status(context: object) -> None:
     """Run the BDD step for assert sync progress window failed status.
 
     Args:
-        context (object): Value supplied to this callable.
+        context:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
 
     Raises:
-        AssertionError: Raised when this callable hits the corresponding error path.
+        AssertionError:
+            Raised when this callable hits the corresponding error path.
     """
     typed_context = _context(context)
     popup = typed_context.detail_screen._sync_progress_popup
@@ -1219,13 +1411,16 @@ def step_assert_sync_progress_window_error_message(context: object) -> None:
     """Run the BDD step for assert sync progress window error message.
 
     Args:
-        context (object): Value supplied to this callable.
+        context:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
 
     Raises:
-        AssertionError: Raised when this callable hits the corresponding error path.
+        AssertionError:
+            Raised when this callable hits the corresponding error path.
     """
     typed_context = _context(context)
     popup = typed_context.detail_screen._sync_progress_popup
@@ -1250,13 +1445,16 @@ def step_assert_sync_progress_window_host_key_trust_action(context: object) -> N
     """Run the BDD step for assert sync progress window host key trust action.
 
     Args:
-        context (object): Value supplied to this callable.
+        context:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
 
     Raises:
-        AssertionError: Raised when this callable hits the corresponding error path.
+        AssertionError:
+            Raised when this callable hits the corresponding error path.
     """
     typed_context = _context(context)
     popup = typed_context.detail_screen._sync_progress_popup
@@ -1278,14 +1476,18 @@ def step_assert_sync_progress_window_limit(context: object, limit: int) -> None:
     """Run the BDD step for assert sync progress window limit.
 
     Args:
-        context (object): Value supplied to this callable.
-        limit (int): Value supplied to this callable.
+        context:
+            Value supplied to this callable.
+        limit:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
 
     Raises:
-        AssertionError: Raised when this callable hits the corresponding error path.
+        AssertionError:
+            Raised when this callable hits the corresponding error path.
     """
     typed_context = _context(context)
     popup = typed_context.detail_screen._sync_progress_popup
@@ -1298,10 +1500,15 @@ def step_assert_sync_progress_window_limit(context: object, limit: int) -> None:
         command_lines = [
             line for line in popup._command_log_label.text.splitlines() if line.strip()
         ]
-        if len(command_lines) == limit and "SFTP CLOSE marketing.example.test:22" in command_lines:
+        if (
+            len(command_lines) == limit
+            and "SFTP CLOSE marketing.example.test:22" in command_lines
+        ):
             break
         time.sleep(0.01)
-    command_lines = [line for line in popup._command_log_label.text.splitlines() if line.strip()]
+    command_lines = [
+        line for line in popup._command_log_label.text.splitlines() if line.strip()
+    ]
     assert len(command_lines) == limit
     if "SFTP LIST /srv/app" in command_lines:
         raise AssertionError
@@ -1316,13 +1523,16 @@ def step_assert_single_remote_connect(context: object) -> None:
     """Run the BDD step for assert single remote connect.
 
     Args:
-        context (object): Value supplied to this callable.
+        context:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
 
     Raises:
-        AssertionError: Raised when this callable hits the corresponding error path.
+        AssertionError:
+            Raised when this callable hits the corresponding error path.
     """
     typed_context = _context(context)
     popup = typed_context.detail_screen._sync_progress_popup
@@ -1330,10 +1540,18 @@ def step_assert_single_remote_connect(context: object) -> None:
     deadline = time.monotonic() + 1
     while time.monotonic() < deadline:
         popup.refresh()
-        if popup._command_log_label.text.count("SFTP CONNECT marketing.example.test:22") == 1:
+        if (
+            popup._command_log_label.text.count(
+                "SFTP CONNECT marketing.example.test:22"
+            )
+            == 1
+        ):
             break
         time.sleep(0.01)
-    if popup._command_log_label.text.count("SFTP CONNECT marketing.example.test:22") != 1:
+    if (
+        popup._command_log_label.text.count("SFTP CONNECT marketing.example.test:22")
+        != 1
+    ):
         raise AssertionError
 
 
@@ -1342,13 +1560,16 @@ def step_assert_single_remote_close(context: object) -> None:
     """Run the BDD step for assert single remote close.
 
     Args:
-        context (object): Value supplied to this callable.
+        context:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
 
     Raises:
-        AssertionError: Raised when this callable hits the corresponding error path.
+        AssertionError:
+            Raised when this callable hits the corresponding error path.
     """
     typed_context = _context(context)
     popup = typed_context.detail_screen._sync_progress_popup
@@ -1356,7 +1577,10 @@ def step_assert_single_remote_close(context: object) -> None:
     deadline = time.monotonic() + 1
     while time.monotonic() < deadline:
         popup.refresh()
-        if popup._command_log_label.text.count("SFTP CLOSE marketing.example.test:22") == 1:
+        if (
+            popup._command_log_label.text.count("SFTP CLOSE marketing.example.test:22")
+            == 1
+        ):
             break
         time.sleep(0.01)
     if popup._command_log_label.text.count("SFTP CLOSE marketing.example.test:22") != 1:
@@ -1370,13 +1594,18 @@ def _create_project(
     """Handle create project.
 
     Args:
-        context (BehaveSyncContext): Value supplied to this callable.
-        spec (ProjectSetupSpec): Value supplied to this callable.
+        context:
+            Value supplied to this callable.
+        spec:
+            Value supplied to this callable.
 
     Returns:
-        Path: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
     """
-    local_root = Path(context.settings_temp_dir.name) / "workspace" / spec.local_directory_name
+    local_root = (
+        Path(context.settings_temp_dir.name) / "workspace" / spec.local_directory_name
+    )
     context.shell.open_project_editor_create()
     context.shell.save_new_project(
         SiteEditorViewModel(
@@ -1406,11 +1635,14 @@ def step_open_project_detail(context: object, project_id: str) -> None:
     """Run the BDD step for open project detail.
 
     Args:
-        context (object): Value supplied to this callable.
-        project_id (str): Value supplied to this callable.
+        context:
+            Value supplied to this callable.
+        project_id:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     typed_context = _context(context)
     resolved_project_id = typed_context.project_ids.get(project_id, project_id)

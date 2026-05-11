@@ -9,21 +9,27 @@ from pathlib import Path
 
 import pytest
 
-from polyglot_site_translator.domain.site_registry.errors import SiteRegistryPersistenceError
+from polyglot_site_translator.domain.site_registry.errors import (
+    SiteRegistryPersistenceError,
+)
 from polyglot_site_translator.infrastructure.site_secrets import (
     _NONCE_SIZE,
     LocalKeySiteSecretCipher,
 )
 
 
-def test_secret_cipher_roundtrips_plaintext_and_reuses_the_generated_key(tmp_path: Path) -> None:
+def test_secret_cipher_roundtrips_plaintext_and_reuses_the_generated_key(
+    tmp_path: Path,
+) -> None:
     """Verify secret cipher roundtrips plaintext and reuses the generated key.
 
     Args:
-        tmp_path (Path): Value supplied to this callable.
+        tmp_path:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     cipher = LocalKeySiteSecretCipher(tmp_path / "site_registry.key")
 
@@ -37,10 +43,12 @@ def test_secret_cipher_rejects_tampered_payloads(tmp_path: Path) -> None:
     """Verify secret cipher rejects tampered payloads.
 
     Args:
-        tmp_path (Path): Value supplied to this callable.
+        tmp_path:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     cipher = LocalKeySiteSecretCipher(tmp_path / "site_registry.key")
     encrypted = cipher.encrypt("super-secret")
@@ -60,14 +68,18 @@ def test_secret_cipher_wraps_os_errors_when_key_storage_fails(
     """Verify secret cipher wraps os errors when key storage fails.
 
     Args:
-        monkeypatch (pytest.MonkeyPatch): Value supplied to this callable.
-        tmp_path (Path): Value supplied to this callable.
+        monkeypatch:
+            Value supplied to this callable.
+        tmp_path:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
 
     Raises:
-        OSError: Raised when this callable hits the corresponding error path.
+        OSError:
+            Raised when this callable hits the corresponding error path.
     """
     cipher = LocalKeySiteSecretCipher(tmp_path / "nested" / "site_registry.key")
 
@@ -75,19 +87,25 @@ def test_secret_cipher_wraps_os_errors_when_key_storage_fails(
         """Handle fail write bytes.
 
         Args:
-            _self (Path): Value supplied to this callable.
-            _data (bytes): Value supplied to this callable.
+            _self:
+                Value supplied to this callable.
+            _data:
+                Value supplied to this callable.
 
         Returns:
-            int: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
 
         Raises:
-            OSError: Raised when this callable hits the corresponding error path.
+            OSError:
+                Raised when this callable hits the corresponding error path.
         """
         msg = "boom"
         raise OSError(msg)
 
-    monkeypatch.setattr(type(tmp_path / "site_registry.key"), "write_bytes", fail_write_bytes)
+    monkeypatch.setattr(
+        type(tmp_path / "site_registry.key"), "write_bytes", fail_write_bytes
+    )
 
     with pytest.raises(
         SiteRegistryPersistenceError,
@@ -100,10 +118,12 @@ def test_secret_cipher_rejects_invalid_encoded_payloads(tmp_path: Path) -> None:
     """Verify secret cipher rejects invalid encoded payloads.
 
     Args:
-        tmp_path (Path): Value supplied to this callable.
+        tmp_path:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     cipher = LocalKeySiteSecretCipher(tmp_path / "site_registry.key")
 
@@ -118,10 +138,12 @@ def test_secret_cipher_rejects_non_ascii_ciphertext(tmp_path: Path) -> None:
     """Verify secret cipher rejects non ascii ciphertext.
 
     Args:
-        tmp_path (Path): Value supplied to this callable.
+        tmp_path:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     cipher = LocalKeySiteSecretCipher(tmp_path / "site_registry.key")
 
@@ -139,11 +161,14 @@ def test_secret_cipher_rejects_invalid_utf8_plaintext(
     """Verify secret cipher rejects invalid utf8 plaintext.
 
     Args:
-        tmp_path (Path): Value supplied to this callable.
-        monkeypatch (pytest.MonkeyPatch): Value supplied to this callable.
+        tmp_path:
+            Value supplied to this callable.
+        monkeypatch:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     cipher = LocalKeySiteSecretCipher(tmp_path / "site_registry.key")
     key = b"k" * 32

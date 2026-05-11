@@ -30,7 +30,8 @@ def test_apply_runtime_settings_refreshes_current_screen_when_root_is_present() 
     """Verify apply runtime settings refreshes current screen when root is present.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     shell = create_frontend_shell(build_seeded_services())
     app = PolyglotSiteTranslatorApp(shell)
@@ -45,7 +46,8 @@ def test_resolve_initial_screen_name_maps_project_detail_and_po_processing() -> 
     """Verify resolve initial screen name maps project detail and po processing.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     shell = create_frontend_shell(build_seeded_services())
 
@@ -63,7 +65,8 @@ def test_set_settings_ui_language_accepts_spanish_value() -> None:
     """Verify set settings ui language accepts spanish value.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     shell = create_frontend_shell(build_seeded_services())
 
@@ -74,11 +77,14 @@ def test_set_settings_ui_language_accepts_spanish_value() -> None:
     assert shell.settings_state.app_settings.ui_language == "es"
 
 
-def test_persist_last_opened_screen_keeps_latest_error_when_settings_save_fails() -> None:
+def test_persist_last_opened_screen_keeps_latest_error_when_settings_save_fails() -> (
+    None
+):
     """Verify persist last opened screen keeps latest error when settings save fails.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     failing_settings = InMemorySettingsService(
         _saved_settings=replace(
@@ -96,11 +102,14 @@ def test_persist_last_opened_screen_keeps_latest_error_when_settings_save_fails(
     assert shell.latest_error == "App settings could not be saved."
 
 
-def test_open_initial_route_falls_back_to_dashboard_when_startup_state_is_missing() -> None:
+def test_open_initial_route_falls_back_to_dashboard_when_startup_state_is_missing() -> (
+    None
+):
     """Verify open initial route falls back to dashboard when startup state is missing.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     shell = create_frontend_shell(build_seeded_services())
     app = PolyglotSiteTranslatorApp(shell)
@@ -116,7 +125,8 @@ def test_load_startup_settings_converts_controlled_errors_to_failed_state() -> N
     """Verify load startup settings converts controlled errors to failed state.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     shell = create_frontend_shell(build_failing_settings_load_services())
     app = PolyglotSiteTranslatorApp(shell)
@@ -132,7 +142,8 @@ def test_handle_thread_exception_surfaces_po_processing_failures() -> None:
     """Verify handle thread exception surfaces po processing failures.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     shell = create_frontend_shell(build_seeded_services())
     app = PolyglotSiteTranslatorApp(shell)
@@ -166,7 +177,8 @@ def test_runtime_exception_handler_surfaces_kivy_callback_failures() -> None:
     """Verify runtime exception handler surfaces kivy callback failures.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     shell = create_frontend_shell(build_seeded_services())
     app = PolyglotSiteTranslatorApp(shell)
@@ -185,7 +197,8 @@ def test_apply_runtime_settings_is_noop_when_root_is_missing() -> None:
     """Verify apply runtime settings is noop when root is missing.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     shell = create_frontend_shell(build_seeded_services())
     app = PolyglotSiteTranslatorApp(shell)
@@ -193,11 +206,14 @@ def test_apply_runtime_settings_is_noop_when_root_is_missing() -> None:
     app.apply_runtime_settings(build_default_app_settings())
 
 
-def test_apply_runtime_settings_handles_screens_without_theme_and_missing_current_screen() -> None:
-    """Verify apply runtime settings handles screens without theme and missing current screen.
+def test_apply_runtime_settings_handles_screens_theme__15a5() -> None:
+    """Verify apply runtime settings handles screens without theme and missing current.
+
+    screen.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     shell = create_frontend_shell(build_seeded_services())
     app = PolyglotSiteTranslatorApp(shell)
@@ -212,7 +228,10 @@ def test_apply_runtime_settings_handles_screens_without_theme_and_missing_curren
         type(
             "_Root",
             (),
-            {"screens": [screen_with_theme, screen_without_theme], "current_screen": None},
+            {
+                "screens": [screen_with_theme, screen_without_theme],
+                "current_screen": None,
+            },
         )(),
     )
 
@@ -225,7 +244,8 @@ def test_open_initial_route_honors_settings_and_projects_preferences() -> None:
     """Verify open initial route honors settings and projects preferences.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     settings_service = InMemorySettingsService(
         _saved_settings=replace(
@@ -234,7 +254,9 @@ def test_open_initial_route_honors_settings_and_projects_preferences() -> None:
             last_opened_screen="settings",
         )
     )
-    settings_shell = create_frontend_shell(build_seeded_services_with_settings(settings_service))
+    settings_shell = create_frontend_shell(
+        build_seeded_services_with_settings(settings_service)
+    )
     settings_app = PolyglotSiteTranslatorApp(settings_shell)
 
     settings_app._open_initial_route()
@@ -247,7 +269,9 @@ def test_open_initial_route_honors_settings_and_projects_preferences() -> None:
             last_opened_screen="projects",
         )
     )
-    projects_shell = create_frontend_shell(build_seeded_services_with_settings(projects_settings))
+    projects_shell = create_frontend_shell(
+        build_seeded_services_with_settings(projects_settings)
+    )
     projects_app = PolyglotSiteTranslatorApp(projects_shell)
 
     projects_app._open_initial_route()
@@ -258,7 +282,8 @@ def test_open_initial_route_falls_back_to_dashboard_for_unknown_saved_screen() -
     """Verify open initial route falls back to dashboard for unknown saved screen.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     settings_service = InMemorySettingsService(
         _saved_settings=replace(
@@ -279,7 +304,8 @@ def test_on_stop_restores_runtime_handlers() -> None:
     """Verify on stop restores runtime handlers.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     shell = create_frontend_shell(build_seeded_services())
     app = PolyglotSiteTranslatorApp(shell)
@@ -291,10 +317,12 @@ def test_on_stop_restores_runtime_handlers() -> None:
         """Handle capture remove handler.
 
         Args:
-            handler (object): Value supplied to this callable.
+            handler:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         removed_handlers.append(handler)
 
@@ -309,11 +337,14 @@ def test_on_stop_restores_runtime_handlers() -> None:
     assert threading.excepthook is app._previous_threading_excepthook
 
 
-def test_main_and_thread_exception_handlers_delegate_interrupts_and_empty_values() -> None:
+def test_main_and_thread_exception_handlers_delegate_interrupts_and_empty_values() -> (
+    None
+):
     """Verify main and thread exception handlers delegate interrupts and empty values.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     shell = create_frontend_shell(build_seeded_services())
     app = PolyglotSiteTranslatorApp(shell)
@@ -328,12 +359,16 @@ def test_main_and_thread_exception_handlers_delegate_interrupts_and_empty_values
         """Handle capture main.
 
         Args:
-            exc_type (type[BaseException]): Value supplied to this callable.
-            _exc_value (BaseException): Value supplied to this callable.
-            _exc_traceback (TracebackType | None): Value supplied to this callable.
+            exc_type:
+                Value supplied to this callable.
+            _exc_value:
+                Value supplied to this callable.
+            _exc_traceback:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         main_calls.append(exc_type)
 
@@ -341,10 +376,12 @@ def test_main_and_thread_exception_handlers_delegate_interrupts_and_empty_values
         """Handle capture thread.
 
         Args:
-            args (threading.ExceptHookArgs): Value supplied to this callable.
+            args:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         thread_calls.append(args.exc_type)
 
@@ -371,21 +408,26 @@ def test_main_exception_handler_surfaces_non_interrupt_errors() -> None:
     """Verify main exception handler surfaces non interrupt errors.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     shell = create_frontend_shell(build_seeded_services())
     app = PolyglotSiteTranslatorApp(shell)
 
     app._handle_main_exception(RuntimeError, RuntimeError("boom"), None)
 
-    assert shell.latest_error == "Unhandled runtime error in main thread. Cause: RuntimeError: boom"
+    assert (
+        shell.latest_error
+        == "Unhandled runtime error in main thread. Cause: RuntimeError: boom"
+    )
 
 
 def test_runtime_exception_handler_raises_for_interrupts() -> None:
     """Verify runtime exception handler raises for interrupts.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     shell = create_frontend_shell(build_seeded_services())
     app = PolyglotSiteTranslatorApp(shell)

@@ -15,23 +15,31 @@ class POProcessingScreen(BaseShellScreen):
     """Screen showing PO processing workflow state.
 
     Attributes:
-        None: This type does not declare additional class-level attributes.
+        None: This type does not declare class-level attributes.
     """
 
     def __init__(self, *, shell: FrontendShell, manager_ref: ScreenManager) -> None:
         """Build the translation workflow screen and its progress widgets.
 
         Args:
-            shell (FrontendShell): Value supplied to this callable.
-            manager_ref (ScreenManager): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            shell:
+                Value supplied to this callable.
+            manager_ref:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         super().__init__(
             screen_name="po_processing",
             title="Translation",
-            subtitle="Project-scoped translation workflow summary and prepared locale families.",
+            subtitle=(
+                "Project-scoped translation workflow summary and prepared "
+                "locale families."
+            ),
             shell=shell,
             manager_ref=manager_ref,
         )
@@ -47,10 +55,14 @@ class POProcessingScreen(BaseShellScreen):
         """Handle back to project.
 
         Args:
-            _args (object): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            *_args:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         if self._shell.project_detail_state is not None:
             self._shell.select_project(self._shell.project_detail_state.project.id)
@@ -59,8 +71,13 @@ class POProcessingScreen(BaseShellScreen):
     def refresh(self) -> None:
         """Refresh the progress bar and summary from translation workflow state.
 
+        Args:
+            self:
+                Value supplied to this callable.
+
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         state = self._shell.po_processing_state
         if state is None:
@@ -90,9 +107,17 @@ class POProcessingScreen(BaseShellScreen):
                 f"{state.summary}"
             )
         self.update_error_label()
-        if state is not None and state.status == "running" and self._refresh_event is None:
-            self._refresh_event = Clock.schedule_interval(self._refresh_from_clock, 0.25)
-        if (state is None or state.status != "running") and self._refresh_event is not None:
+        if (
+            state is not None
+            and state.status == "running"
+            and self._refresh_event is None
+        ):
+            self._refresh_event = Clock.schedule_interval(
+                self._refresh_from_clock, 0.25
+            )
+        if (
+            state is None or state.status != "running"
+        ) and self._refresh_event is not None:
             self._refresh_event.cancel()
             self._refresh_event = None
 
@@ -100,10 +125,14 @@ class POProcessingScreen(BaseShellScreen):
         """Refresh from clock.
 
         Args:
-            _dt (float): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            _dt:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         self.refresh()
 
@@ -111,10 +140,14 @@ class POProcessingScreen(BaseShellScreen):
         """Cancel the periodic refresh loop when the screen is left.
 
         Args:
-            args (object): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            *args:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         super().on_leave(*args)
         if self._refresh_event is not None:

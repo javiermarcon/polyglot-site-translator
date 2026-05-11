@@ -29,7 +29,8 @@ def test_catalog_double_returns_detail_and_raises_for_unknown_project() -> None:
     """Verify catalog double returns detail and raises for unknown project.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     services = build_seeded_services()
     catalog = services.catalog
@@ -47,7 +48,8 @@ def test_failing_catalog_double_surfaces_controlled_errors() -> None:
     """Verify failing catalog double surfaces controlled errors.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     catalog = FailingSiteRegistryCatalogService()
 
@@ -67,7 +69,8 @@ def test_stub_workflow_double_covers_success_and_fail_sync_branches() -> None:
     """Verify stub workflow double covers success and fail sync branches.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     workflow = StubProjectWorkflowService()
 
@@ -100,7 +103,8 @@ def test_in_memory_settings_service_covers_save_load_fail_and_reset() -> None:
     """Verify in memory settings service covers save load fail and reset.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     seeded_settings = build_seeded_services().settings.load_settings().app_settings
     service = InMemorySettingsService(_saved_settings=seeded_settings)
@@ -117,7 +121,9 @@ def test_in_memory_settings_service_covers_save_load_fail_and_reset() -> None:
     assert saved.app_settings.default_use_external_translator is False
     assert service.reset_settings().status == "defaults-restored"
 
-    with pytest.raises(ControlledServiceError, match="App settings are temporarily unavailable"):
+    with pytest.raises(
+        ControlledServiceError, match="App settings are temporarily unavailable"
+    ):
         InMemorySettingsService(
             _saved_settings=saved.app_settings,
             fail_load=True,
@@ -133,7 +139,8 @@ def test_registry_management_double_covers_create_edit_update_and_preview() -> N
     """Verify registry management double covers create edit update and preview.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     services = build_seeded_services()
     registry = services.registry
@@ -183,11 +190,15 @@ def test_seeded_service_builders_cover_empty_and_failing_variants() -> None:
     """Verify seeded service builders cover empty and failing variants.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     assert build_empty_services().catalog.list_projects() == []
     assert (
-        cast(StubProjectWorkflowService, build_failing_sync_services().workflows).fail_sync is True
+        cast(
+            StubProjectWorkflowService, build_failing_sync_services().workflows
+        ).fail_sync
+        is True
     )
     with pytest.raises(ControlledServiceError):
         build_failing_settings_load_services().settings.load_settings()

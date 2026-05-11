@@ -9,12 +9,17 @@ from typing import cast
 
 import pytest
 
-from polyglot_site_translator.adapters.framework_registry import FrameworkAdapterRegistry
+from polyglot_site_translator.adapters.framework_registry import (
+    FrameworkAdapterRegistry,
+)
 from polyglot_site_translator.adapters.wordpress import WordPressFrameworkAdapter
 from polyglot_site_translator.domain.framework_detection.models import (
     FrameworkDetectionResult,
 )
-from polyglot_site_translator.domain.site_registry.models import RegisteredSite, SiteProject
+from polyglot_site_translator.domain.site_registry.models import (
+    RegisteredSite,
+    SiteProject,
+)
 from polyglot_site_translator.domain.sync.errors import (
     SyncConfigurationError,
     SyncScopePersistenceError,
@@ -45,9 +50,12 @@ class _NoFilterAdapter:
     """Test helper for NoFilterAdapter.
 
     Attributes:
-        framework_type (str): Documented attribute exposed by this type.
-        adapter_name (str): Documented attribute exposed by this type.
-        display_name (str): Documented attribute exposed by this type.
+        framework_type:
+            Documented attribute exposed by this type.
+        adapter_name:
+            Documented attribute exposed by this type.
+        display_name:
+            Documented attribute exposed by this type.
     """
 
     framework_type: str = "nofilter"
@@ -59,10 +67,12 @@ class _NoFilterAdapter:
         """Handle detect.
 
         Args:
-            project_path (Path): Value supplied to this callable.
+            project_path:
+                Value supplied to this callable.
 
         Returns:
-            FrameworkDetectionResult: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         return FrameworkDetectionResult.unmatched(project_path=str(project_path))
 
@@ -71,10 +81,12 @@ class _NoFilterAdapter:
         """Handle get sync scope.
 
         Args:
-            project_path (Path): Value supplied to this callable.
+            project_path:
+                Value supplied to this callable.
 
         Returns:
-            AdapterSyncScope: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         return AdapterSyncScope()
 
@@ -83,26 +95,36 @@ class _NoFilterAdapter:
         """Handle get sync filters.
 
         Args:
-            project_path (Path): Value supplied to this callable.
+            project_path:
+                Value supplied to this callable.
 
         Returns:
-            tuple[SyncFilterSpec, ...]: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         return ()
 
 
-def test_framework_sync_scope_service_resolves_wordpress_filters(tmp_path: Path) -> None:
+def test_framework_sync_scope_service_resolves_wordpress_filters(
+    tmp_path: Path,
+) -> None:
     """Verify framework sync scope service resolves wordpress filters.
 
     Args:
-        tmp_path (Path): Value supplied to this callable.
+        tmp_path:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
-    service = FrameworkSyncScopeService(registry=FrameworkAdapterRegistry.discover_installed())
+    service = FrameworkSyncScopeService(
+        registry=FrameworkAdapterRegistry.discover_installed()
+    )
 
-    resolved_scope = service.resolve_for_site(_build_site(tmp_path, framework_type="wordpress"))
+    resolved_scope = service.resolve_for_site(
+        _build_site(tmp_path, framework_type="wordpress")
+    )
 
     assert resolved_scope.status is SyncScopeStatus.FILTERED
     assert [sync_filter.relative_path for sync_filter in resolved_scope.filters] == [
@@ -119,48 +141,66 @@ def test_framework_sync_scope_service_returns_adapter_unavailable_when_missing(
     """Verify framework sync scope service returns adapter unavailable when missing.
 
     Args:
-        tmp_path (Path): Value supplied to this callable.
+        tmp_path:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
-    service = FrameworkSyncScopeService(registry=FrameworkAdapterRegistry.discover_installed())
+    service = FrameworkSyncScopeService(
+        registry=FrameworkAdapterRegistry.discover_installed()
+    )
 
-    resolved_scope = service.resolve_for_site(_build_site(tmp_path, framework_type="customapp"))
+    resolved_scope = service.resolve_for_site(
+        _build_site(tmp_path, framework_type="customapp")
+    )
 
     assert resolved_scope.status is SyncScopeStatus.ADAPTER_UNAVAILABLE
     assert resolved_scope.filters == ()
 
 
-def test_framework_sync_scope_service_returns_framework_unresolved_for_unknown_framework(
+def test_framewor_sync_scope_service_returns_framewor__562c(
     tmp_path: Path,
 ) -> None:
-    """Verify framework sync scope service returns framework unresolved for unknown framework.
+    """Verify framework sync scope service returns framework unresolved for unknown.
+
+    framework.
 
     Args:
-        tmp_path (Path): Value supplied to this callable.
+        tmp_path:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
-    service = FrameworkSyncScopeService(registry=FrameworkAdapterRegistry.discover_installed())
+    service = FrameworkSyncScopeService(
+        registry=FrameworkAdapterRegistry.discover_installed()
+    )
 
-    resolved_scope = service.resolve_for_site(_build_site(tmp_path, framework_type="unknown"))
+    resolved_scope = service.resolve_for_site(
+        _build_site(tmp_path, framework_type="unknown")
+    )
 
     assert resolved_scope.status is SyncScopeStatus.FRAMEWORK_UNRESOLVED
     assert resolved_scope.filters == ()
 
 
-def test_framework_sync_scope_service_returns_explicit_no_filters_when_adapter_defines_none(
+def test_framewor_sync_scope_service_returns_explicit__c0cb(
     tmp_path: Path,
 ) -> None:
-    """Verify framework sync scope service returns explicit no filters when adapter defines….
+    """Verify framework sync scope service returns explicit no filters when adapter.
+
+    defines….
 
     Args:
-        tmp_path (Path): Value supplied to this callable.
+        tmp_path:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     service = FrameworkSyncScopeService(
         registry=FrameworkAdapterRegistry.default_registry(
@@ -168,7 +208,9 @@ def test_framework_sync_scope_service_returns_explicit_no_filters_when_adapter_d
         )
     )
 
-    resolved_scope = service.resolve_for_site(_build_site(tmp_path, framework_type="nofilter"))
+    resolved_scope = service.resolve_for_site(
+        _build_site(tmp_path, framework_type="nofilter")
+    )
 
     assert resolved_scope.status is SyncScopeStatus.NO_FILTERS
     assert resolved_scope.filters == ()
@@ -180,12 +222,16 @@ def test_framework_sync_scope_service_resolves_from_an_explicit_project_path(
     """Verify framework sync scope service resolves from an explicit project path.
 
     Args:
-        tmp_path (Path): Value supplied to this callable.
+        tmp_path:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
-    service = FrameworkSyncScopeService(registry=FrameworkAdapterRegistry.discover_installed())
+    service = FrameworkSyncScopeService(
+        registry=FrameworkAdapterRegistry.discover_installed()
+    )
     project_path = tmp_path / "flask-site"
     project_path.mkdir()
 
@@ -199,22 +245,34 @@ def test_framework_sync_scope_service_resolves_from_an_explicit_project_path(
     assert resolved_scope.includes("templates/base.html") is False
 
 
-def test_framework_sync_scope_service_resolves_django_exclusions(tmp_path: Path) -> None:
+def test_framework_sync_scope_service_resolves_django_exclusions(
+    tmp_path: Path,
+) -> None:
     """Verify framework sync scope service resolves django exclusions.
 
     Args:
-        tmp_path (Path): Value supplied to this callable.
+        tmp_path:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
-    service = FrameworkSyncScopeService(registry=FrameworkAdapterRegistry.discover_installed())
+    service = FrameworkSyncScopeService(
+        registry=FrameworkAdapterRegistry.discover_installed()
+    )
 
-    resolved_scope = service.resolve_for_site(_build_site(tmp_path, framework_type="django"))
+    resolved_scope = service.resolve_for_site(
+        _build_site(tmp_path, framework_type="django")
+    )
 
     assert resolved_scope.status is SyncScopeStatus.FILTERED
-    assert ".venv" in [sync_filter.relative_path for sync_filter in resolved_scope.excludes]
-    assert "__pycache__" in [sync_filter.relative_path for sync_filter in resolved_scope.excludes]
+    assert ".venv" in [
+        sync_filter.relative_path for sync_filter in resolved_scope.excludes
+    ]
+    assert "__pycache__" in [
+        sync_filter.relative_path for sync_filter in resolved_scope.excludes
+    ]
     assert resolved_scope.includes("locale/es/LC_MESSAGES/django.po") is True
     assert resolved_scope.includes(".venv/lib/python3.12/site.py") is False
     assert resolved_scope.includes("__pycache__/settings.cpython-312.pyc") is False
@@ -226,12 +284,16 @@ def test_framework_sync_scope_service_uses_project_rules_when_no_adapter_exists(
     """Verify framework sync scope service uses project rules when no adapter exists.
 
     Args:
-        tmp_path (Path): Value supplied to this callable.
+        tmp_path:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
-    service = FrameworkSyncScopeService(registry=FrameworkAdapterRegistry.discover_installed())
+    service = FrameworkSyncScopeService(
+        registry=FrameworkAdapterRegistry.discover_installed()
+    )
 
     resolved_scope = service.resolve_for_framework(
         framework_type="customapp",
@@ -257,14 +319,18 @@ def test_framework_sync_scope_service_uses_project_rules_when_no_adapter_exists(
     assert resolved_scope.includes("locale_custom/es/messages.po") is True
 
 
-def test_framework_sync_scope_service_applies_global_settings_rules(tmp_path: Path) -> None:
+def test_framework_sync_scope_service_applies_global_settings_rules(
+    tmp_path: Path,
+) -> None:
     """Verify framework sync scope service applies global settings rules.
 
     Args:
-        tmp_path (Path): Value supplied to this callable.
+        tmp_path:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     service = FrameworkSyncScopeService(
         registry=FrameworkAdapterRegistry.discover_installed(),
@@ -283,19 +349,25 @@ def test_framework_sync_scope_service_applies_global_settings_rules(tmp_path: Pa
         ),
     )
 
-    resolved_scope = service.resolve_for_site(_build_site(tmp_path, framework_type="wordpress"))
+    resolved_scope = service.resolve_for_site(
+        _build_site(tmp_path, framework_type="wordpress")
+    )
 
     assert resolved_scope.includes(".git/HEAD") is False
 
 
-def test_framework_sync_scope_service_applies_framework_settings_rules(tmp_path: Path) -> None:
+def test_framework_sync_scope_service_applies_framework_settings_rules(
+    tmp_path: Path,
+) -> None:
     """Verify framework sync scope service applies framework settings rules.
 
     Args:
-        tmp_path (Path): Value supplied to this callable.
+        tmp_path:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     service = FrameworkSyncScopeService(
         registry=FrameworkAdapterRegistry.discover_installed(),
@@ -319,7 +391,9 @@ def test_framework_sync_scope_service_applies_framework_settings_rules(tmp_path:
         ),
     )
 
-    resolved_scope = service.resolve_for_site(_build_site(tmp_path, framework_type="django"))
+    resolved_scope = service.resolve_for_site(
+        _build_site(tmp_path, framework_type="django")
+    )
 
     assert resolved_scope.includes(".ruff_cache/check") is False
 
@@ -330,10 +404,12 @@ def test_framework_sync_scope_service_applies_gitignore_rules_when_enabled(
     """Verify framework sync scope service applies gitignore rules when enabled.
 
     Args:
-        tmp_path (Path): Value supplied to this callable.
+        tmp_path:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     local_root = tmp_path / "django"
     local_root.mkdir()
@@ -362,19 +438,23 @@ def test_framework_sync_scope_service_applies_gitignore_rules_when_enabled(
     )
 
     assert resolved_scope.includes("__snapshots__/message.txt") is False
-    assert resolved_scope.includes("locale/__pycache__/settings.cpython-312.pyc") is False
+    assert (
+        resolved_scope.includes("locale/__pycache__/settings.cpython-312.pyc") is False
+    )
 
 
-def test_framework_sync_scope_service_respects_gitignore_precedence_over_project_overrides(
+def test_framewor_sync_scope_service_respects_gitignor_3319(
     tmp_path: Path,
 ) -> None:
-    """Verify framework sync scope service respects gitignore precedence over project overrides.
+    """Verify framework sync scope service respects gitignore precedence over project.
 
     Args:
-        tmp_path (Path): Value supplied to this callable.
+        tmp_path:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     local_root = tmp_path / "custom"
     local_root.mkdir()
@@ -417,10 +497,12 @@ def test_framework_sync_scope_service_ignores_gitignore_rules_when_disabled(
     """Verify framework sync scope service ignores gitignore rules when disabled.
 
     Args:
-        tmp_path (Path): Value supplied to this callable.
+        tmp_path:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     local_root = tmp_path / "customapp"
     local_root.mkdir()
@@ -448,13 +530,16 @@ def test_framework_sync_scope_service_wraps_adapter_scope_resolution_failures(
     """Verify framework sync scope service wraps adapter scope resolution failures.
 
     Args:
-        tmp_path (Path): Value supplied to this callable.
+        tmp_path:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
 
     Raises:
-        OSError: Raised when this callable hits the corresponding error path.
+        OSError:
+            Raised when this callable hits the corresponding error path.
     """
 
     @dataclass(frozen=True)
@@ -462,9 +547,12 @@ def test_framework_sync_scope_service_wraps_adapter_scope_resolution_failures(
         """Test helper for FailingAdapter.
 
         Attributes:
-            framework_type (str): Documented attribute exposed by this type.
-            adapter_name (str): Documented attribute exposed by this type.
-            display_name (str): Documented attribute exposed by this type.
+            framework_type:
+                Documented attribute exposed by this type.
+            adapter_name:
+                Documented attribute exposed by this type.
+            display_name:
+                Documented attribute exposed by this type.
         """
 
         framework_type: str = "broken"
@@ -476,10 +564,12 @@ def test_framework_sync_scope_service_wraps_adapter_scope_resolution_failures(
             """Handle detect.
 
             Args:
-                project_path (Path): Value supplied to this callable.
+                project_path:
+                    Value supplied to this callable.
 
             Returns:
-                FrameworkDetectionResult: Structured value returned by this callable.
+                value:
+                    Structured value returned by this callable.
             """
             return FrameworkDetectionResult.unmatched(project_path=str(project_path))
 
@@ -488,13 +578,16 @@ def test_framework_sync_scope_service_wraps_adapter_scope_resolution_failures(
             """Handle get sync scope.
 
             Args:
-                project_path (Path): Value supplied to this callable.
+                project_path:
+                    Value supplied to this callable.
 
             Returns:
-                AdapterSyncScope: Structured value returned by this callable.
+                value:
+                    Structured value returned by this callable.
 
             Raises:
-                OSError: Raised when this callable hits the corresponding error path.
+                OSError:
+                    Raised when this callable hits the corresponding error path.
             """
             msg = f"cannot inspect {project_path}"
             raise OSError(msg)
@@ -504,10 +597,12 @@ def test_framework_sync_scope_service_wraps_adapter_scope_resolution_failures(
             """Handle get sync filters.
 
             Args:
-                project_path (Path): Value supplied to this callable.
+                project_path:
+                    Value supplied to this callable.
 
             Returns:
-                tuple[SyncFilterSpec, ...]: Structured value returned by this callable.
+                value:
+                    Structured value returned by this callable.
             """
             return ()
 
@@ -528,26 +623,33 @@ def test_framework_sync_scope_service_wraps_adapter_scope_resolution_failures(
 def test_framework_sync_scope_service_wraps_settings_and_gitignore_loading_failures(
     tmp_path: Path,
 ) -> None:
-    """Verify framework sync scope service wraps settings and gitignore loading failures.
+    """Verify framework sync scope service wraps settings and gitignore loading.
+
+    failures.
 
     Args:
-        tmp_path (Path): Value supplied to this callable.
+        tmp_path:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
 
     Raises:
-        OSError: Raised when this callable hits the corresponding error path.
+        OSError:
+            Raised when this callable hits the corresponding error path.
     """
 
     def _raise_settings_error() -> AdapterSyncScopeSettings:
         """Handle raise settings error.
 
         Returns:
-            AdapterSyncScopeSettings: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
 
         Raises:
-            OSError: Raised when this callable hits the corresponding error path.
+            OSError:
+                Raised when this callable hits the corresponding error path.
         """
         msg = "settings boom"
         raise OSError(msg)
@@ -570,13 +672,16 @@ def test_framework_sync_scope_service_wraps_settings_and_gitignore_loading_failu
         """Handle raise gitignore error.
 
         Args:
-            _path (Path): Value supplied to this callable.
+            _path:
+                Value supplied to this callable.
 
         Returns:
-            tuple[ConfiguredSyncRule, ...]: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
 
         Raises:
-            OSError: Raised when this callable hits the corresponding error path.
+            OSError:
+                Raised when this callable hits the corresponding error path.
         """
         msg = "gitignore boom"
         raise OSError(msg)
@@ -607,23 +712,28 @@ def test_framework_sync_scope_service_reraises_sync_scope_persistence_failures(
     """Verify framework sync scope service reraises sync scope persistence failures.
 
     Args:
-        tmp_path (Path): Value supplied to this callable.
+        tmp_path:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
 
     Raises:
-        SyncScopePersistenceError: Raised when this callable hits the corresponding error path.
+        SyncScopePersistenceError:
+            Raised when this callable hits the corresponding error path.
     """
 
     def _raise_settings_persistence() -> AdapterSyncScopeSettings:
         """Handle raise settings persistence.
 
         Returns:
-            AdapterSyncScopeSettings: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
 
         Raises:
-            SyncScopePersistenceError: Raised when this callable hits the corresponding error path.
+            SyncScopePersistenceError:
+                Raised when this callable hits the corresponding error path.
         """
         msg = "settings persistence"
         raise SyncScopePersistenceError(msg)
@@ -643,13 +753,16 @@ def test_framework_sync_scope_service_reraises_sync_scope_persistence_failures(
         """Handle raise gitignore persistence.
 
         Args:
-            _path (Path): Value supplied to this callable.
+            _path:
+                Value supplied to this callable.
 
         Returns:
-            tuple[ConfiguredSyncRule, ...]: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
 
         Raises:
-            SyncScopePersistenceError: Raised when this callable hits the corresponding error path.
+            SyncScopePersistenceError:
+                Raised when this callable hits the corresponding error path.
         """
         msg = "gitignore persistence"
         raise SyncScopePersistenceError(msg)
@@ -671,18 +784,22 @@ def test_framework_sync_scope_service_reraises_sync_scope_persistence_failures(
         )
 
 
-def test_framework_sync_scope_service_private_adapter_scope_errors_and_rule_key_validation(
+def test_framewor_sync_scope_service_private_adapter_s_49bd(
     tmp_path: Path,
 ) -> None:
-    """Verify framework sync scope service private adapter scope errors and rule key validation.
+    """Verify framework sync scope service private adapter scope errors and rule key.
 
     Args:
-        tmp_path (Path): Value supplied to this callable.
+        tmp_path:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
-    service = FrameworkSyncScopeService(registry=FrameworkAdapterRegistry.discover_installed())
+    service = FrameworkSyncScopeService(
+        registry=FrameworkAdapterRegistry.discover_installed()
+    )
 
     with pytest.raises(
         SyncConfigurationError,
@@ -702,7 +819,9 @@ def test_framework_sync_scope_service_private_adapter_scope_errors_and_rule_key_
         is_enabled=True,
     )
 
-    with pytest.raises(ValueError, match=r"Framework-configured rules require a framework type"):
+    with pytest.raises(
+        ValueError, match=r"Framework-configured rules require a framework type"
+    ):
         _build_configured_rule_key(
             configured_rule,
             source=SyncRuleSource.FRAMEWORK,
@@ -715,11 +834,14 @@ def test_framework_sync_scope_service_private_adapter_scope_errors_and_rule_key_
         )
 
 
-def test_framework_sync_scope_helpers_cover_override_skip_and_gitignore_key_detection() -> None:
-    """Verify framework sync scope helpers cover override skip and gitignore key detection.
+def test_framewor_sync_scope_helpers_cover_override_sk_5a0c() -> None:
+    """Verify framework sync scope helpers cover override skip and gitignore key.
+
+    detection.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     overrides = (
         ProjectSyncRuleOverride(
@@ -771,11 +893,14 @@ def _build_site(tmp_path: Path, *, framework_type: str) -> RegisteredSite:
     """Handle build site.
 
     Args:
-        tmp_path (Path): Value supplied to this callable.
-        framework_type (str): Value supplied to this callable.
+        tmp_path:
+            Value supplied to this callable.
+        framework_type:
+            Value supplied to this callable.
 
     Returns:
-        RegisteredSite: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
     """
     local_root = tmp_path / framework_type
     local_root.mkdir(exist_ok=True)

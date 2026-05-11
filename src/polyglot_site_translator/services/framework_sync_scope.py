@@ -5,7 +5,9 @@ from __future__ import annotations
 from collections.abc import Callable
 from pathlib import Path
 
-from polyglot_site_translator.adapters.framework_registry import FrameworkAdapterRegistry
+from polyglot_site_translator.adapters.framework_registry import (
+    FrameworkAdapterRegistry,
+)
 from polyglot_site_translator.domain.site_registry.models import RegisteredSite
 from polyglot_site_translator.domain.sync.errors import (
     SyncConfigurationError,
@@ -38,29 +40,33 @@ class FrameworkSyncScopeService:
     """Resolve framework-defined sync filters for registered sites.
 
     Attributes:
-        None: This type does not declare additional class-level attributes.
+        None: This type does not declare class-level attributes.
     """
 
     def __init__(
         self,
         *,
         registry: FrameworkAdapterRegistry,
-        sync_scope_settings_provider: Callable[[], AdapterSyncScopeSettings] | None = None,
-        gitignore_rule_loader: Callable[[Path], tuple[ConfiguredSyncRule, ...]] | None = None,
+        sync_scope_settings_provider: Callable[[], AdapterSyncScopeSettings]
+        | None = None,
+        gitignore_rule_loader: Callable[[Path], tuple[ConfiguredSyncRule, ...]]
+        | None = None,
     ) -> None:
         """Store adapter, settings, and gitignore collaborators for scope resolution.
 
         Args:
-            registry (FrameworkAdapterRegistry): Value supplied to this callable.
-            sync_scope_settings_provider (Callable[[], AdapterSyncScopeSettings] | None): Value
-        supplied to
-            this callable.
-            gitignore_rule_loader (Callable[[Path], tuple[ConfiguredSyncRule, ...]] | None): Value
-        supplied
-            to this callable.
+            self:
+                Value supplied to this callable.
+            registry:
+                Value supplied to this callable.
+            sync_scope_settings_provider:
+                Value supplied to this callable.
+            gitignore_rule_loader:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         self._registry = registry
         self._sync_scope_settings_provider = (
@@ -72,10 +78,14 @@ class FrameworkSyncScopeService:
         """Resolve the sync scope for a persisted site.
 
         Args:
-            site (RegisteredSite): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            site:
+                Value supplied to this callable.
 
         Returns:
-            ResolvedSyncScope: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         return self.resolve_for_framework(
             framework_type=site.framework_type,
@@ -97,13 +107,18 @@ class FrameworkSyncScopeService:
         """Resolve the sync scope for a framework type and project path.
 
         Args:
-            framework_type (str): Value supplied to this callable.
-            project_path (Path | str): Value supplied to this callable.
-            project_rule_overrides (tuple[ProjectSyncRuleOverride, ...]): Value supplied to this
-        callable.
+            self:
+                Value supplied to this callable.
+            framework_type:
+                Value supplied to this callable.
+            project_path:
+                Value supplied to this callable.
+            project_rule_overrides:
+                Value supplied to this callable.
 
         Returns:
-            ResolvedSyncScope: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         normalized_framework_type = framework_type.strip().lower()
         sync_scope_settings = self._load_sync_scope_settings()
@@ -115,7 +130,9 @@ class FrameworkSyncScopeService:
             framework_type=normalized_framework_type,
             adapter_scope=AdapterSyncScope(),
             global_rules=sync_scope_settings.global_rules,
-            framework_rules=sync_scope_settings.rules_for_framework(normalized_framework_type),
+            framework_rules=sync_scope_settings.rules_for_framework(
+                normalized_framework_type
+            ),
             gitignore_rules=gitignore_rules,
             project_rule_overrides=project_rule_overrides,
         )
@@ -127,8 +144,9 @@ class FrameworkSyncScopeService:
                     resolved_rules=resolved_shared_rules,
                     no_rules_status=SyncScopeStatus.FRAMEWORK_UNRESOLVED,
                     no_rules_message=(
-                        "The project does not expose a supported framework type and "
-                        "no active global, project or gitignore sync rules are available."
+                        "The project does not expose a supported framework "
+                        "type and no active global, project or gitignore sync "
+                        "rules are available."
                     ),
                     active_rules_message=(
                         "Framework type is unresolved; using active global, project or "
@@ -153,9 +171,11 @@ class FrameworkSyncScopeService:
                     resolved_rules=resolved_shared_rules,
                     no_rules_status=SyncScopeStatus.ADAPTER_UNAVAILABLE,
                     no_rules_message=(
-                        "No installed framework adapter can provide sync filters for "
-                        f"'{normalized_framework_type}' and no active global, framework, "
-                        "project or gitignore sync rules are available."
+                        "No installed framework adapter can provide sync "
+                        "filters for "
+                        f"'{normalized_framework_type}' and no active global, "
+                        "framework, project or gitignore sync rules are "
+                        "available."
                     ),
                     active_rules_message=(
                         "No installed framework adapter is available; using active "
@@ -183,7 +203,9 @@ class FrameworkSyncScopeService:
             framework_type=normalized_framework_type,
             adapter_scope=adapter_scope,
             global_rules=sync_scope_settings.global_rules,
-            framework_rules=sync_scope_settings.rules_for_framework(normalized_framework_type),
+            framework_rules=sync_scope_settings.rules_for_framework(
+                normalized_framework_type
+            ),
             gitignore_rules=gitignore_rules,
             project_rule_overrides=project_rule_overrides,
         )
@@ -207,11 +229,17 @@ class FrameworkSyncScopeService:
     def _load_sync_scope_settings(self) -> AdapterSyncScopeSettings:
         """Load sync scope settings.
 
+        Args:
+            self:
+                Value supplied to this callable.
+
         Returns:
-            AdapterSyncScopeSettings: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
 
         Raises:
-            SyncConfigurationError: Raised when this callable hits the corresponding error path.
+            SyncConfigurationError:
+                Raised when this callable hits the corresponding error path.
         """
         try:
             return self._sync_scope_settings_provider()
@@ -230,14 +258,20 @@ class FrameworkSyncScopeService:
         """Load project gitignore rules.
 
         Args:
-            sync_scope_settings (AdapterSyncScopeSettings): Value supplied to this callable.
-            project_path (Path): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            sync_scope_settings:
+                Value supplied to this callable.
+            project_path:
+                Value supplied to this callable.
 
         Returns:
-            tuple[ConfiguredSyncRule, ...]: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
 
         Raises:
-            SyncConfigurationError: Raised when this callable hits the corresponding error path.
+            SyncConfigurationError:
+                Raised when this callable hits the corresponding error path.
         """
         try:
             return _load_gitignore_rules(
@@ -249,7 +283,8 @@ class FrameworkSyncScopeService:
             raise
         except (LookupError, OSError, RuntimeError, ValueError) as error:
             msg = (
-                f"Project gitignore sync rules could not be resolved for '{project_path}'. "
+                "Project gitignore sync rules could not be resolved for "
+                f"'{project_path}'. "
                 f"Cause: {error}"
             )
             raise SyncConfigurationError(msg) from error
@@ -264,26 +299,36 @@ class FrameworkSyncScopeService:
         """Load adapter scope.
 
         Args:
-            framework_type (str): Value supplied to this callable.
-            adapter_name (str): Value supplied to this callable.
-            project_path (Path): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            framework_type:
+                Value supplied to this callable.
+            adapter_name:
+                Value supplied to this callable.
+            project_path:
+                Value supplied to this callable.
 
         Returns:
-            AdapterSyncScope: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
 
         Raises:
-            SyncConfigurationError: Raised when this callable hits the corresponding error path.
+            SyncConfigurationError:
+                Raised when this callable hits the corresponding error path.
         """
         adapter = self._registry.find_adapter(framework_type)
         if adapter is None:
-            msg = f"No installed framework adapter can provide sync filters for '{framework_type}'."
+            msg = (
+                "No installed framework adapter can provide sync filters for "
+                f"'{framework_type}'."
+            )
             raise SyncConfigurationError(msg)
         try:
             return adapter.get_sync_scope(project_path)
         except (LookupError, OSError, RuntimeError, ValueError) as error:
             msg = (
-                f"Framework adapter '{adapter_name}' failed while resolving sync scope for "
-                f"'{project_path}'. Cause: {error}"
+                f"Framework adapter '{adapter_name}' failed while resolving "
+                f"sync scope for '{project_path}'. Cause: {error}"
             )
             raise SyncConfigurationError(msg) from error
 
@@ -300,15 +345,22 @@ def _build_scope_from_rules(  # noqa: PLR0913
     """Build scope from rules.
 
     Args:
-        framework_type (str): Value supplied to this callable.
-        adapter_name (str | None): Value supplied to this callable.
-        resolved_rules (tuple[ResolvedSyncRule, ...]): Value supplied to this callable.
-        no_rules_status (SyncScopeStatus): Value supplied to this callable.
-        no_rules_message (str): Value supplied to this callable.
-        active_rules_message (str): Value supplied to this callable.
+        framework_type:
+            Value supplied to this callable.
+        adapter_name:
+            Value supplied to this callable.
+        resolved_rules:
+            Value supplied to this callable.
+        no_rules_status:
+            Value supplied to this callable.
+        no_rules_message:
+            Value supplied to this callable.
+        active_rules_message:
+            Value supplied to this callable.
 
     Returns:
-        ResolvedSyncScope: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
     """
     include_filters = tuple(
         rule.as_filter_spec()
@@ -356,16 +408,22 @@ def _resolve_scope_rules(  # noqa: PLR0913
     """Resolve scope rules.
 
     Args:
-        framework_type (str): Value supplied to this callable.
-        adapter_scope (AdapterSyncScope): Value supplied to this callable.
-        global_rules (tuple[ConfiguredSyncRule, ...]): Value supplied to this callable.
-        framework_rules (tuple[ConfiguredSyncRule, ...]): Value supplied to this callable.
-        gitignore_rules (tuple[ConfiguredSyncRule, ...]): Value supplied to this callable.
-        project_rule_overrides (tuple[ProjectSyncRuleOverride, ...]): Value supplied to this
-    callable.
+        framework_type:
+            Value supplied to this callable.
+        adapter_scope:
+            Value supplied to this callable.
+        global_rules:
+            Value supplied to this callable.
+        framework_rules:
+            Value supplied to this callable.
+        gitignore_rules:
+            Value supplied to this callable.
+        project_rule_overrides:
+            Value supplied to this callable.
 
     Returns:
-        tuple[ResolvedSyncRule, ...]: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
     """
     adapter_rules = [
         *_build_resolved_rules(
@@ -406,7 +464,9 @@ def _resolve_scope_rules(  # noqa: PLR0913
                 description=rule.description,
                 source=rule.source,
                 is_enabled=(
-                    rule.is_enabled if target_override is None else target_override.is_enabled
+                    rule.is_enabled
+                    if target_override is None
+                    else target_override.is_enabled
                 ),
             )
         )
@@ -442,12 +502,16 @@ def _build_resolved_rules(
     """Build resolved rules.
 
     Args:
-        filter_specs (tuple[SyncFilterSpec, ...]): Value supplied to this callable.
-        behavior (SyncRuleBehavior): Value supplied to this callable.
-        source (SyncRuleSource): Value supplied to this callable.
+        filter_specs:
+            Value supplied to this callable.
+        behavior:
+            Value supplied to this callable.
+        source:
+            Value supplied to this callable.
 
     Returns:
-        list[ResolvedSyncRule]: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
     """
     return [
         ResolvedSyncRule(
@@ -476,12 +540,16 @@ def _build_resolved_rules_from_configured(
     """Build resolved rules from configured.
 
     Args:
-        configured_rules (tuple[ConfiguredSyncRule, ...]): Value supplied to this callable.
-        source (SyncRuleSource): Value supplied to this callable.
-        framework_type (str | None): Value supplied to this callable.
+        configured_rules:
+            Value supplied to this callable.
+        source:
+            Value supplied to this callable.
+        framework_type:
+            Value supplied to this callable.
 
     Returns:
-        list[ResolvedSyncRule]: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
     """
     resolved_rules: list[ResolvedSyncRule] = []
     for configured_rule in configured_rules:
@@ -513,15 +581,20 @@ def _build_configured_rule_key(
     """Build configured rule key.
 
     Args:
-        configured_rule (ConfiguredSyncRule): Value supplied to this callable.
-        source (SyncRuleSource): Value supplied to this callable.
-        framework_type (str | None): Value supplied to this callable.
+        configured_rule:
+            Value supplied to this callable.
+        source:
+            Value supplied to this callable.
+        framework_type:
+            Value supplied to this callable.
 
     Returns:
-        str: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
 
     Raises:
-        ValueError: Raised when this callable hits the corresponding error path.
+        ValueError:
+            Raised when this callable hits the corresponding error path.
     """
     if source is SyncRuleSource.GLOBAL:
         return build_global_sync_rule_key(
@@ -554,14 +627,16 @@ def _load_gitignore_rules(
     """Load gitignore rules.
 
     Args:
-        sync_scope_settings (AdapterSyncScopeSettings): Value supplied to this callable.
-        project_path (Path): Value supplied to this callable.
-        gitignore_rule_loader (Callable[[Path], tuple[ConfiguredSyncRule, ...]]): Value supplied to
-    this
-        callable.
+        sync_scope_settings:
+            Value supplied to this callable.
+        project_path:
+            Value supplied to this callable.
+        gitignore_rule_loader:
+            Value supplied to this callable.
 
     Returns:
-        tuple[ConfiguredSyncRule, ...]: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
     """
     if not sync_scope_settings.use_gitignore_rules:
         return ()
@@ -572,10 +647,12 @@ def _is_gitignore_override_key(rule_key: str) -> bool:
     """Handle is gitignore override key.
 
     Args:
-        rule_key (str): Value supplied to this callable.
+        rule_key:
+            Value supplied to this callable.
 
     Returns:
-        bool: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
     """
     return rule_key.startswith(f"{SyncRuleSource.GITIGNORE.value}:")
 
@@ -584,5 +661,5 @@ class SyncScopeResolutionService(FrameworkSyncScopeService):
     """Alias for the sync scope composition service.
 
     Attributes:
-        None: This type does not declare additional class-level attributes.
+        None: This type does not declare class-level attributes.
     """

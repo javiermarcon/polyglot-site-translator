@@ -27,13 +27,20 @@ class _TranslatedResult:
     """Test helper for TranslatedResult.
 
     Attributes:
-        src (str): Documented attribute exposed by this type.
-        dest (str): Documented attribute exposed by this type.
-        origin (str): Documented attribute exposed by this type.
-        text (str): Documented attribute exposed by this type.
-        pronunciation (str | None): Documented attribute exposed by this type.
-        extra_data (dict[str, object] | None): Documented attribute exposed by this type.
-        response (object | None): Documented attribute exposed by this type.
+        src:
+            Documented attribute exposed by this type.
+        dest:
+            Documented attribute exposed by this type.
+        origin:
+            Documented attribute exposed by this type.
+        text:
+            Documented attribute exposed by this type.
+        pronunciation:
+            Documented attribute exposed by this type.
+        extra_data:
+            Documented attribute exposed by this type.
+        response:
+            Documented attribute exposed by this type.
     """
 
     src: str
@@ -50,9 +57,12 @@ class _StubTranslator:
     """Test helper for StubTranslator.
 
     Attributes:
-        translated_text (str): Documented attribute exposed by this type.
-        last_dest (str | None): Documented attribute exposed by this type.
-        last_text (str | None): Documented attribute exposed by this type.
+        translated_text:
+            Documented attribute exposed by this type.
+        last_dest:
+            Documented attribute exposed by this type.
+        last_text:
+            Documented attribute exposed by this type.
     """
 
     translated_text: str
@@ -63,11 +73,16 @@ class _StubTranslator:
         """Handle translate.
 
         Args:
-            text (str): Value supplied to this callable.
-            dest (str): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            text:
+                Value supplied to this callable.
+            dest:
+                Value supplied to this callable.
 
         Returns:
-            Any: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         self.last_text = text
         self.last_dest = dest
@@ -87,7 +102,7 @@ class _FailingTranslator:
     """Test helper for FailingTranslator.
 
     Attributes:
-        None: This type does not declare additional class-level attributes.
+        None: This type does not declare class-level attributes.
     """
 
     @staticmethod
@@ -95,14 +110,18 @@ class _FailingTranslator:
         """Handle translate.
 
         Args:
-            text (str): Value supplied to this callable.
-            dest (str): Value supplied to this callable.
+            text:
+                Value supplied to this callable.
+            dest:
+                Value supplied to this callable.
 
         Returns:
-            Any: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
 
         Raises:
-            OSError: Raised when this callable hits the corresponding error path.
+            OSError:
+                Raised when this callable hits the corresponding error path.
         """
         msg = "network down"
         raise OSError(msg)
@@ -113,7 +132,7 @@ class _ListTranslator:
     """Test helper for ListTranslator.
 
     Attributes:
-        None: This type does not declare additional class-level attributes.
+        None: This type does not declare class-level attributes.
     """
 
     @staticmethod
@@ -121,11 +140,14 @@ class _ListTranslator:
         """Handle translate.
 
         Args:
-            text (str): Value supplied to this callable.
-            dest (str): Value supplied to this callable.
+            text:
+                Value supplied to this callable.
+            dest:
+                Value supplied to this callable.
 
         Returns:
-            list[str]: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         return ["bad-shape"]
 
@@ -135,7 +157,7 @@ class _ProtocolFailingTranslator:
     """Test helper for ProtocolFailingTranslator.
 
     Attributes:
-        None: This type does not declare additional class-level attributes.
+        None: This type does not declare class-level attributes.
     """
 
     @staticmethod
@@ -143,14 +165,18 @@ class _ProtocolFailingTranslator:
         """Handle translate.
 
         Args:
-            text (str): Value supplied to this callable.
-            dest (str): Value supplied to this callable.
+            text:
+                Value supplied to this callable.
+            dest:
+                Value supplied to this callable.
 
         Returns:
-            Any: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
 
         Raises:
-            RuntimeError: Raised when this callable hits the corresponding error path.
+            RuntimeError:
+                Raised when this callable hits the corresponding error path.
         """
         msg = "protocol closed"
         raise RuntimeError(msg)
@@ -161,7 +187,7 @@ class _MisconfiguredTranslator:
     """Test helper for MisconfiguredTranslator.
 
     Attributes:
-        None: This type does not declare additional class-level attributes.
+        None: This type does not declare class-level attributes.
     """
 
     @staticmethod
@@ -169,14 +195,18 @@ class _MisconfiguredTranslator:
         """Handle translate.
 
         Args:
-            text (str): Value supplied to this callable.
-            dest (str): Value supplied to this callable.
+            text:
+                Value supplied to this callable.
+            dest:
+                Value supplied to this callable.
 
         Returns:
-            Any: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
 
         Raises:
-            AttributeError: Raised when this callable hits the corresponding error path.
+            AttributeError:
+                Raised when this callable hits the corresponding error path.
         """
         msg = "translator object has no HTTP client"
         raise AttributeError(msg)
@@ -187,7 +217,7 @@ class _UnexpectedResultTranslator:
     """Test helper for UnexpectedResultTranslator.
 
     Attributes:
-        None: This type does not declare additional class-level attributes.
+        None: This type does not declare class-level attributes.
     """
 
     @staticmethod
@@ -195,11 +225,14 @@ class _UnexpectedResultTranslator:
         """Handle translate.
 
         Args:
-            text (str): Value supplied to this callable.
-            dest (str): Value supplied to this callable.
+            text:
+                Value supplied to this callable.
+            dest:
+                Value supplied to this callable.
 
         Returns:
-            object: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         return {"text": "Hola"}
 
@@ -208,12 +241,15 @@ def test_googletrans_provider_translates_to_target_base_language() -> None:
     """Verify googletrans provider translates to target base language.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     translator = _StubTranslator(translated_text="Hola {{name}} %1$s")
     provider = GoogleTransPOTranslationProvider(translator=translator)
 
-    translated = provider.translate_text(text="Hello {name} % 1 $ s", target_locale="es_AR")
+    translated = provider.translate_text(
+        text="Hello {name} % 1 $ s", target_locale="es_AR"
+    )
 
     assert translated == "Hola {{name}} %1$s"
     assert translator.last_dest == "es"
@@ -224,11 +260,14 @@ def test_googletrans_provider_wraps_translation_failures() -> None:
     """Verify googletrans provider wraps translation failures.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     provider = GoogleTransPOTranslationProvider(translator=_FailingTranslator())
 
-    with pytest.raises(POTranslationProviderTransportError, match="External PO translation failed"):
+    with pytest.raises(
+        POTranslationProviderTransportError, match="External PO translation failed"
+    ):
         provider.translate_text(text="Hello", target_locale="es_AR")
 
 
@@ -236,7 +275,8 @@ def test_googletrans_provider_rejects_multiple_results_for_single_request() -> N
     """Verify googletrans provider rejects multiple results for single request.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     provider = GoogleTransPOTranslationProvider(translator=_ListTranslator())
 
@@ -244,17 +284,22 @@ def test_googletrans_provider_rejects_multiple_results_for_single_request() -> N
         provider.translate_text(text="Hello", target_locale="es_AR")
 
 
-def test_googletrans_provider_reuses_loop_without_asyncio_run(monkeypatch: MonkeyPatch) -> None:
+def test_googletrans_provider_reuses_loop_without_asyncio_run(
+    monkeypatch: MonkeyPatch,
+) -> None:
     """Verify googletrans provider reuses loop without asyncio run.
 
     Args:
-        monkeypatch (MonkeyPatch): Value supplied to this callable.
+        monkeypatch:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
 
     Raises:
-        AssertionError: Raised when this callable hits the corresponding error path.
+        AssertionError:
+            Raised when this callable hits the corresponding error path.
     """
     translator = _StubTranslator(translated_text="Hola")
     provider = GoogleTransPOTranslationProvider(translator=translator)
@@ -263,13 +308,16 @@ def test_googletrans_provider_reuses_loop_without_asyncio_run(monkeypatch: Monke
         """Handle forbidden asyncio run.
 
         Args:
-            coro (object): Value supplied to this callable.
+            coro:
+                Value supplied to this callable.
 
         Returns:
-            object: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
 
         Raises:
-            AssertionError: Raised when this callable hits the corresponding error path.
+            AssertionError:
+                Raised when this callable hits the corresponding error path.
         """
         if asyncio.iscoroutine(coro):
             coro.close()
@@ -292,7 +340,8 @@ def test_googletrans_provider_wraps_http_protocol_errors() -> None:
     """Verify googletrans provider wraps http protocol errors.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     provider = GoogleTransPOTranslationProvider(translator=_ProtocolFailingTranslator())
 
@@ -304,7 +353,8 @@ def test_googletrans_provider_wraps_configuration_errors() -> None:
     """Verify googletrans provider wraps configuration errors.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     provider = GoogleTransPOTranslationProvider(translator=_MisconfiguredTranslator())
 
@@ -316,7 +366,8 @@ def test_googletrans_provider_translation_errors_keep_base_type() -> None:
     """Verify googletrans provider translation errors keep base type.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     provider = GoogleTransPOTranslationProvider(translator=_FailingTranslator())
 
@@ -328,24 +379,33 @@ def test_googletrans_provider_rejects_unexpected_result_type() -> None:
     """Verify googletrans provider rejects unexpected result type.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
-    provider = GoogleTransPOTranslationProvider(translator=_UnexpectedResultTranslator())
+    provider = GoogleTransPOTranslationProvider(
+        translator=_UnexpectedResultTranslator()
+    )
 
-    with pytest.raises(POTranslationProviderResponseError, match="unexpected result type"):
+    with pytest.raises(
+        POTranslationProviderResponseError, match="unexpected result type"
+    ):
         provider.translate_text(text="Hello", target_locale="es_AR")
 
 
 def test_googletrans_provider_reuses_thread_local_translator_and_recreates_closed_loop(
     monkeypatch: MonkeyPatch,
 ) -> None:
-    """Verify googletrans provider reuses thread local translator and recreates closed loop.
+    """Verify googletrans provider reuses thread local translator and recreates closed.
+
+    loop.
 
     Args:
-        monkeypatch (MonkeyPatch): Value supplied to this callable.
+        monkeypatch:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     provider = GoogleTransPOTranslationProvider(translator=None)
     created: list[_StubTranslator] = []
@@ -354,17 +414,21 @@ def test_googletrans_provider_reuses_thread_local_translator_and_recreates_close
         """Test helper for TranslatorFactory.
 
         Attributes:
-            None: This type does not declare additional class-level attributes.
+            None: This type does not declare class-level attributes.
         """
 
         def __init__(self, *, http2: bool) -> None:
             """Initialize the test helper state.
 
             Args:
-                http2 (bool): Value supplied to this callable.
+                self:
+                    Value supplied to this callable.
+                http2:
+                    Value supplied to this callable.
 
             Returns:
-                None: This callable does not return a value.
+                value:
+                    Structured value returned by this callable.
             """
             assert http2 is False
             super().__init__(translated_text="Hola")
@@ -394,7 +458,8 @@ def test_googletrans_helpers_cover_locale_and_text_sanitization() -> None:
     """Verify googletrans helpers cover locale and text sanitization.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     assert _base_language("es_AR") == "es"
     assert _base_language("PT") == "pt"

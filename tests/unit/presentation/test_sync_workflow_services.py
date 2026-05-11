@@ -14,7 +14,9 @@ from polyglot_site_translator.domain.remote_connections.models import (
     RemoteConnectionConfig,
     RemoteConnectionTestResult,
 )
-from polyglot_site_translator.domain.site_registry.errors import SiteRegistryNotFoundError
+from polyglot_site_translator.domain.site_registry.errors import (
+    SiteRegistryNotFoundError,
+)
 from polyglot_site_translator.domain.site_registry.models import (
     RegisteredSite,
     SiteProject,
@@ -38,8 +40,10 @@ class _ServiceStub:
     """Test helper for ServiceStub.
 
     Attributes:
-        site (RegisteredSite): Documented attribute exposed by this type.
-        missing (bool): Documented attribute exposed by this type.
+        site:
+            Documented attribute exposed by this type.
+        missing:
+            Documented attribute exposed by this type.
     """
 
     site: RegisteredSite
@@ -49,13 +53,18 @@ class _ServiceStub:
         """Handle get site.
 
         Args:
-            site_id (str): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            site_id:
+                Value supplied to this callable.
 
         Returns:
-            RegisteredSite: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
 
         Raises:
-            SiteRegistryNotFoundError: Raised when this callable hits the corresponding error path.
+            SiteRegistryNotFoundError:
+                Raised when this callable hits the corresponding error path.
         """
         if self.missing:
             msg = f"Unknown site id: {site_id}"
@@ -66,10 +75,14 @@ class _ServiceStub:
         """Handle detect framework.
 
         Args:
-            project_path (str): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            project_path:
+                Value supplied to this callable.
 
         Returns:
-            FrameworkDetectionResult: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         return FrameworkDetectionResult.unmatched(
             project_path=project_path,
@@ -83,10 +96,12 @@ class _ServiceStub:
         """Verify remote connection.
 
         Args:
-            registration (SiteRegistrationInput): Value supplied to this callable.
+            registration:
+                Value supplied to this callable.
 
         Returns:
-            RemoteConnectionTestResult: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         return RemoteConnectionTestResult(
             success=True,
@@ -109,7 +124,8 @@ class _ProjectSyncStub:
     """Test helper for ProjectSyncStub.
 
     Attributes:
-        result (SyncResult): Documented attribute exposed by this type.
+        result:
+            Documented attribute exposed by this type.
     """
 
     result: SyncResult
@@ -122,12 +138,16 @@ class _ProjectSyncStub:
         """Handle sync remote to local.
 
         Args:
-            site (RegisteredSite): Value supplied to this callable.
-            progress_callback (Callable[[SyncProgressEvent], None] | None): Value supplied to this
-        callable.
+            self:
+                Value supplied to this callable.
+            site:
+                Value supplied to this callable.
+            progress_callback:
+                Value supplied to this callable.
 
         Returns:
-            SyncResult: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         return self.result
 
@@ -139,12 +159,16 @@ class _ProjectSyncStub:
         """Handle sync local to remote.
 
         Args:
-            site (RegisteredSite): Value supplied to this callable.
-            progress_callback (Callable[[SyncProgressEvent], None] | None): Value supplied to this
-        callable.
+            self:
+                Value supplied to this callable.
+            site:
+                Value supplied to this callable.
+            progress_callback:
+                Value supplied to this callable.
 
         Returns:
-            SyncResult: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         return self.result
 
@@ -153,7 +177,8 @@ def test_sync_workflow_service_maps_successful_sync_results() -> None:
     """Verify sync workflow service maps successful sync results.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     workflow = SiteRegistryPresentationWorkflowService(
         service=_ServiceStub(site=_build_site()),
@@ -187,7 +212,8 @@ def test_sync_workflow_service_maps_empty_remote_results() -> None:
     """Verify sync workflow service maps empty remote results.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     workflow = SiteRegistryPresentationWorkflowService(
         service=_ServiceStub(site=_build_site()),
@@ -220,7 +246,8 @@ def test_sync_workflow_service_maps_controlled_failures() -> None:
     """Verify sync workflow service maps controlled failures.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     workflow = SiteRegistryPresentationWorkflowService(
         service=_ServiceStub(site=_build_site()),
@@ -259,7 +286,8 @@ def test_sync_workflow_service_uses_context_when_failure_has_no_error() -> None:
     """Verify sync workflow service uses context when failure has no error.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     workflow = SiteRegistryPresentationWorkflowService(
         service=_ServiceStub(site=_build_site()),
@@ -295,7 +323,8 @@ def test_sync_workflow_service_wraps_missing_site_errors() -> None:
     """Verify sync workflow service wraps missing site errors.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     workflow = SiteRegistryPresentationWorkflowService(
         service=_ServiceStub(site=_build_site(), missing=True),
@@ -325,7 +354,8 @@ def test_sync_workflow_service_maps_successful_local_to_remote_sync_results() ->
     """Verify sync workflow service maps successful local to remote sync results.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     workflow = SiteRegistryPresentationWorkflowService(
         service=_ServiceStub(site=_build_site()),
@@ -354,14 +384,18 @@ def test_sync_workflow_service_maps_successful_local_to_remote_sync_results() ->
     assert state.status == "completed"
     assert state.files_synced == 2
     assert state.error_code is None
-    assert state.summary == "Uploaded 2 files from /workspace/site into the remote workspace."
+    assert (
+        state.summary
+        == "Uploaded 2 files from /workspace/site into the remote workspace."
+    )
 
 
 def _build_site() -> RegisteredSite:
     """Handle build site.
 
     Returns:
-        RegisteredSite: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
     """
     return RegisteredSite(
         project=SiteProject(

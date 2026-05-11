@@ -15,20 +15,32 @@ class SiteRegistrationInput:
     """Validated input payload for create/update site registry workflows.
 
     Attributes:
-        name (str): Documented attribute exposed by this type.
-        framework_type (str): Documented attribute exposed by this type.
-        local_path (str): Documented attribute exposed by this type.
-        default_locale (str): Documented attribute exposed by this type.
-        remote_connection (RemoteConnectionConfigInput | None): Documented attribute exposed by this
-        type.
-        is_active (bool): Documented attribute exposed by this type.
-        compile_mo (bool): Documented attribute exposed by this type.
-        use_external_translator (bool): Documented attribute exposed by this type.
-        use_translation_cache (bool): Documented attribute exposed by this type.
-        only_fuzzy (bool): Documented attribute exposed by this type.
-        dry_run (bool): Documented attribute exposed by this type.
-        stats_only (bool): Documented attribute exposed by this type.
-        report_inconsistencies (bool): Documented attribute exposed by this type.
+        name:
+            Documented attribute exposed by this type.
+        framework_type:
+            Documented attribute exposed by this type.
+        local_path:
+            Documented attribute exposed by this type.
+        default_locale:
+            Documented attribute exposed by this type.
+        remote_connection:
+            Documented attribute exposed by this type.
+        is_active:
+            Documented attribute exposed by this type.
+        compile_mo:
+            Documented attribute exposed by this type.
+        use_external_translator:
+            Documented attribute exposed by this type.
+        use_translation_cache:
+            Documented attribute exposed by this type.
+        only_fuzzy:
+            Documented attribute exposed by this type.
+        dry_run:
+            Documented attribute exposed by this type.
+        stats_only:
+            Documented attribute exposed by this type.
+        report_inconsistencies:
+            Documented attribute exposed by this type.
     """
 
     name: str
@@ -51,19 +63,32 @@ class SiteProject:
     """A site or project persisted in the local site registry.
 
     Attributes:
-        id (str): Documented attribute exposed by this type.
-        name (str): Documented attribute exposed by this type.
-        framework_type (str): Documented attribute exposed by this type.
-        local_path (str): Documented attribute exposed by this type.
-        default_locale (str): Documented attribute exposed by this type.
-        is_active (bool): Documented attribute exposed by this type.
-        compile_mo (bool): Documented attribute exposed by this type.
-        use_external_translator (bool): Documented attribute exposed by this type.
-        use_translation_cache (bool): Documented attribute exposed by this type.
-        only_fuzzy (bool): Documented attribute exposed by this type.
-        dry_run (bool): Documented attribute exposed by this type.
-        stats_only (bool): Documented attribute exposed by this type.
-        report_inconsistencies (bool): Documented attribute exposed by this type.
+        id:
+            Documented attribute exposed by this type.
+        name:
+            Documented attribute exposed by this type.
+        framework_type:
+            Documented attribute exposed by this type.
+        local_path:
+            Documented attribute exposed by this type.
+        default_locale:
+            Documented attribute exposed by this type.
+        is_active:
+            Documented attribute exposed by this type.
+        compile_mo:
+            Documented attribute exposed by this type.
+        use_external_translator:
+            Documented attribute exposed by this type.
+        use_translation_cache:
+            Documented attribute exposed by this type.
+        only_fuzzy:
+            Documented attribute exposed by this type.
+        dry_run:
+            Documented attribute exposed by this type.
+        stats_only:
+            Documented attribute exposed by this type.
+        report_inconsistencies:
+            Documented attribute exposed by this type.
     """
 
     id: str
@@ -86,9 +111,10 @@ class RegisteredSite:
     """Aggregate of a persisted site project and its optional remote config.
 
     Attributes:
-        project (SiteProject): Documented attribute exposed by this type.
-        remote_connection (RemoteConnectionConfig | None): Documented attribute exposed by this
-    type.
+        project:
+            Documented attribute exposed by this type.
+        remote_connection:
+            Documented attribute exposed by this type.
     """
 
     project: SiteProject
@@ -98,8 +124,13 @@ class RegisteredSite:
     def id(self) -> str:
         """Return the persisted project identifier.
 
+        Args:
+            self:
+                Value supplied to this callable.
+
         Returns:
-            str: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         return self.project.id
 
@@ -107,8 +138,13 @@ class RegisteredSite:
     def name(self) -> str:
         """Return the project name.
 
+        Args:
+            self:
+                Value supplied to this callable.
+
         Returns:
-            str: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         return self.project.name
 
@@ -116,8 +152,13 @@ class RegisteredSite:
     def framework_type(self) -> str:
         """Return the project framework type.
 
+        Args:
+            self:
+                Value supplied to this callable.
+
         Returns:
-            str: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         return self.project.framework_type
 
@@ -125,8 +166,13 @@ class RegisteredSite:
     def local_path(self) -> str:
         """Return the local workspace path.
 
+        Args:
+            self:
+                Value supplied to this callable.
+
         Returns:
-            str: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         return self.project.local_path
 
@@ -134,8 +180,13 @@ class RegisteredSite:
     def default_locale(self) -> str:
         """Return the configured default locale.
 
+        Args:
+            self:
+                Value supplied to this callable.
+
         Returns:
-            str: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         return self.project.default_locale
 
@@ -143,8 +194,13 @@ class RegisteredSite:
     def compile_mo(self) -> bool:
         """Return whether MO compilation is enabled for this project.
 
+        Args:
+            self:
+                Value supplied to this callable.
+
         Returns:
-            bool: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         return self.project.compile_mo
 
@@ -152,8 +208,13 @@ class RegisteredSite:
     def use_external_translator(self) -> bool:
         """Return whether external translation is enabled for this project.
 
+        Args:
+            self:
+                Value supplied to this callable.
+
         Returns:
-            bool: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         return self.project.use_external_translator
 
@@ -161,8 +222,13 @@ class RegisteredSite:
     def dry_run(self) -> bool:
         """Return whether translation runs in dry-run mode for this project.
 
+        Args:
+            self:
+                Value supplied to this callable.
+
         Returns:
-            bool: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         return self.project.dry_run
 
@@ -170,8 +236,13 @@ class RegisteredSite:
     def use_translation_cache(self) -> bool:
         """Return whether the translation cache is enabled for this project.
 
+        Args:
+            self:
+                Value supplied to this callable.
+
         Returns:
-            bool: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         return self.project.use_translation_cache
 
@@ -179,8 +250,13 @@ class RegisteredSite:
     def only_fuzzy(self) -> bool:
         """Return whether translation should process only fuzzy entries.
 
+        Args:
+            self:
+                Value supplied to this callable.
+
         Returns:
-            bool: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         return self.project.only_fuzzy
 
@@ -188,8 +264,13 @@ class RegisteredSite:
     def stats_only(self) -> bool:
         """Return whether translation runs in stats-only mode for this project.
 
+        Args:
+            self:
+                Value supplied to this callable.
+
         Returns:
-            bool: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         return self.project.stats_only
 
@@ -197,8 +278,13 @@ class RegisteredSite:
     def report_inconsistencies(self) -> bool:
         """Return whether variant inconsistencies are reported for this project.
 
+        Args:
+            self:
+                Value supplied to this callable.
+
         Returns:
-            bool: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         return self.project.report_inconsistencies
 
@@ -206,7 +292,12 @@ class RegisteredSite:
     def is_active(self) -> bool:
         """Return whether the project is active.
 
+        Args:
+            self:
+                Value supplied to this callable.
+
         Returns:
-            bool: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         return self.project.is_active

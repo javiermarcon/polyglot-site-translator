@@ -11,7 +11,8 @@ def test_dashboard_to_settings_and_back_keeps_saved_state() -> None:
     """Verify dashboard to settings and back keeps saved state.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     shell = create_frontend_shell(build_seeded_services())
 

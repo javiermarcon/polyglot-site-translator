@@ -29,7 +29,9 @@ from polyglot_site_translator.infrastructure.database_location import (
     resolve_sqlite_database_location,
 )
 from polyglot_site_translator.infrastructure.settings import TomlSettingsService
-from polyglot_site_translator.infrastructure.site_secrets import LocalKeySiteSecretCipher
+from polyglot_site_translator.infrastructure.site_secrets import (
+    LocalKeySiteSecretCipher,
+)
 from polyglot_site_translator.presentation.errors import ControlledServiceError
 
 
@@ -37,7 +39,7 @@ class SqliteSiteRegistryRepository:
     """Persist site registry records in SQLite.
 
     Attributes:
-        None: This type does not declare additional class-level attributes.
+        None: This type does not declare class-level attributes.
     """
 
     def __init__(
@@ -49,11 +51,16 @@ class SqliteSiteRegistryRepository:
         """Store repository dependencies and ensure the registry schema exists.
 
         Args:
-            location (SQLiteDatabaseLocation): Value supplied to this callable.
-            secret_cipher (LocalKeySiteSecretCipher): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            location:
+                Value supplied to this callable.
+            secret_cipher:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         self._location = location
         self._secret_cipher = secret_cipher
@@ -63,15 +70,20 @@ class SqliteSiteRegistryRepository:
         """Insert a new site registry record.
 
         Args:
-            site (RegisteredSite): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            site:
+                Value supplied to this callable.
 
         Returns:
-            RegisteredSite: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
 
         Raises:
-            SiteRegistryPersistenceError: Raised when this callable hits the corresponding error
-        path.
-            _map_integrity_error: Raised when this callable hits the corresponding error path.
+            _map_integrity_error:
+                Raised when this callable hits the corresponding error path.
+            SiteRegistryPersistenceError:
+                Raised when this callable hits the corresponding error path.
         """
         project_statement = """
             INSERT INTO site_registry (
@@ -117,19 +129,26 @@ class SqliteSiteRegistryRepository:
         except sqlite3.IntegrityError as error:
             raise _map_integrity_error(site.name) from error
         except sqlite3.Error as error:
-            msg = f"SQLite site registry write failed at {self._location.database_path}."
+            msg = (
+                f"SQLite site registry write failed at {self._location.database_path}."
+            )
             raise SiteRegistryPersistenceError(msg) from error
         return site
 
     def list_sites(self) -> list[RegisteredSite]:
         """Return persisted site registry records ordered by name.
 
+        Args:
+            self:
+                Value supplied to this callable.
+
         Returns:
-            list[RegisteredSite]: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
 
         Raises:
-            SiteRegistryPersistenceError: Raised when this callable hits the corresponding error
-        path.
+            SiteRegistryPersistenceError:
+                Raised when this callable hits the corresponding error path.
         """
         statement = """
             SELECT
@@ -181,15 +200,20 @@ class SqliteSiteRegistryRepository:
         """Return a single site registry record.
 
         Args:
-            site_id (str): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            site_id:
+                Value supplied to this callable.
 
         Returns:
-            RegisteredSite: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
 
         Raises:
-            SiteRegistryNotFoundError: Raised when this callable hits the corresponding error path.
-            SiteRegistryPersistenceError: Raised when this callable hits the corresponding error
-        path.
+            SiteRegistryNotFoundError:
+                Raised when this callable hits the corresponding error path.
+            SiteRegistryPersistenceError:
+                Raised when this callable hits the corresponding error path.
         """
         statement = """
             SELECT
@@ -224,7 +248,9 @@ class SqliteSiteRegistryRepository:
         try:
             with self._connect() as connection:
                 row = connection.execute(statement, (site_id,)).fetchone()
-                overrides_by_site = _fetch_sync_rule_overrides(connection, site_ids=(site_id,))
+                overrides_by_site = _fetch_sync_rule_overrides(
+                    connection, site_ids=(site_id,)
+                )
         except sqlite3.Error as error:
             msg = f"SQLite site registry read failed at {self._location.database_path}."
             raise SiteRegistryPersistenceError(msg) from error
@@ -241,16 +267,22 @@ class SqliteSiteRegistryRepository:
         """Persist changes for an existing site registry record.
 
         Args:
-            site (RegisteredSite): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            site:
+                Value supplied to this callable.
 
         Returns:
-            RegisteredSite: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
 
         Raises:
-            SiteRegistryNotFoundError: Raised when this callable hits the corresponding error path.
-            SiteRegistryPersistenceError: Raised when this callable hits the corresponding error
-        path.
-            _map_integrity_error: Raised when this callable hits the corresponding error path.
+            _map_integrity_error:
+                Raised when this callable hits the corresponding error path.
+            SiteRegistryPersistenceError:
+                Raised when this callable hits the corresponding error path.
+            SiteRegistryNotFoundError:
+                Raised when this callable hits the corresponding error path.
         """
         project_statement = """
             UPDATE site_registry
@@ -292,7 +324,9 @@ class SqliteSiteRegistryRepository:
         """
         try:
             with self._connect() as connection:
-                cursor = connection.execute(project_statement, _project_update_params(site.project))
+                cursor = connection.execute(
+                    project_statement, _project_update_params(site.project)
+                )
                 if cursor.rowcount == 0:
                     msg = f"Unknown site id: {site.id}"
                     raise SiteRegistryNotFoundError(msg)
@@ -307,7 +341,9 @@ class SqliteSiteRegistryRepository:
         except sqlite3.IntegrityError as error:
             raise _map_integrity_error(site.name) from error
         except sqlite3.Error as error:
-            msg = f"SQLite site registry write failed at {self._location.database_path}."
+            msg = (
+                f"SQLite site registry write failed at {self._location.database_path}."
+            )
             raise SiteRegistryPersistenceError(msg) from error
         return site
 
@@ -315,22 +351,29 @@ class SqliteSiteRegistryRepository:
         """Delete a site registry record.
 
         Args:
-            site_id (str): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            site_id:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
 
         Raises:
-            SiteRegistryNotFoundError: Raised when this callable hits the corresponding error path.
-            SiteRegistryPersistenceError: Raised when this callable hits the corresponding error
-        path.
+            SiteRegistryNotFoundError:
+                Raised when this callable hits the corresponding error path.
+            SiteRegistryPersistenceError:
+                Raised when this callable hits the corresponding error path.
         """
         statement = "DELETE FROM site_registry WHERE id = ?"
         try:
             with self._connect() as connection:
                 cursor = connection.execute(statement, (site_id,))
         except sqlite3.Error as error:
-            msg = f"SQLite site registry delete failed at {self._location.database_path}."
+            msg = (
+                f"SQLite site registry delete failed at {self._location.database_path}."
+            )
             raise SiteRegistryPersistenceError(msg) from error
         if cursor.rowcount == 0:
             msg = f"Unknown site id: {site_id}"
@@ -340,15 +383,20 @@ class SqliteSiteRegistryRepository:
         """Return the stored encrypted password for integration tests.
 
         Args:
-            site_id (str): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            site_id:
+                Value supplied to this callable.
 
         Returns:
-            str: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
 
         Raises:
-            SiteRegistryNotFoundError: Raised when this callable hits the corresponding error path.
-            SiteRegistryPersistenceError: Raised when this callable hits the corresponding error
-        path.
+            SiteRegistryNotFoundError:
+                Raised when this callable hits the corresponding error path.
+            SiteRegistryPersistenceError:
+                Raised when this callable hits the corresponding error path.
         """
         statement = """
             SELECT password_encrypted
@@ -369,12 +417,17 @@ class SqliteSiteRegistryRepository:
     def _ensure_schema(self) -> None:
         """Handle ensure schema.
 
+        Args:
+            self:
+                Value supplied to this callable.
+
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
 
         Raises:
-            SiteRegistryPersistenceError: Raised when this callable hits the corresponding error
-        path.
+            SiteRegistryPersistenceError:
+                Raised when this callable hits the corresponding error path.
         """
         try:
             self._location.directory.mkdir(parents=True, exist_ok=True)
@@ -385,17 +438,27 @@ class SqliteSiteRegistryRepository:
                 _ensure_sync_rule_override_table(connection)
                 _migrate_legacy_ftp_schema(connection)
         except sqlite3.Error as error:
-            msg = f"SQLite schema initialization failed at {self._location.database_path}."
+            msg = (
+                "SQLite schema initialization failed at "
+                f"{self._location.database_path}."
+            )
             raise SiteRegistryPersistenceError(msg) from error
         except OSError as error:
-            msg = f"SQLite directory could not be prepared at {self._location.directory}."
+            msg = (
+                f"SQLite directory could not be prepared at {self._location.directory}."
+            )
             raise SiteRegistryPersistenceError(msg) from error
 
     def _connect(self) -> sqlite3.Connection:
         """Handle connect.
 
+        Args:
+            self:
+                Value supplied to this callable.
+
         Returns:
-            sqlite3.Connection: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         connection = sqlite3.connect(self._location.database_path)
         connection.row_factory = sqlite3.Row
@@ -407,14 +470,15 @@ def _ensure_project_table(connection: sqlite3.Connection) -> None:
     """Handle ensure project table.
 
     Args:
-        connection (sqlite3.Connection): Value supplied to this callable.
+        connection:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     connection.execute(
-        """
-        CREATE TABLE IF NOT EXISTS site_registry (
+        """CREATE TABLE IF NOT EXISTS site_registry (
             id TEXT PRIMARY KEY,
             name TEXT NOT NULL UNIQUE,
             framework_type TEXT NOT NULL,
@@ -440,50 +504,43 @@ def _ensure_project_table(connection: sqlite3.Connection) -> None:
     columns = _get_table_columns(connection, "site_registry")
     if "compile_mo" not in columns:
         connection.execute(
-            """
-            ALTER TABLE site_registry
+            """ALTER TABLE site_registry
             ADD COLUMN compile_mo INTEGER NOT NULL DEFAULT 1
             """
         )
     if "use_external_translator" not in columns:
         connection.execute(
-            """
-            ALTER TABLE site_registry
+            """ALTER TABLE site_registry
             ADD COLUMN use_external_translator INTEGER NOT NULL DEFAULT 1
             """
         )
     if "use_translation_cache" not in columns:
         connection.execute(
-            """
-            ALTER TABLE site_registry
+            """ALTER TABLE site_registry
             ADD COLUMN use_translation_cache INTEGER NOT NULL DEFAULT 1
             """
         )
     if "only_fuzzy" not in columns:
         connection.execute(
-            """
-            ALTER TABLE site_registry
+            """ALTER TABLE site_registry
             ADD COLUMN only_fuzzy INTEGER NOT NULL DEFAULT 0
             """
         )
     if "dry_run" not in columns:
         connection.execute(
-            """
-            ALTER TABLE site_registry
+            """ALTER TABLE site_registry
             ADD COLUMN dry_run INTEGER NOT NULL DEFAULT 0
             """
         )
     if "stats_only" not in columns:
         connection.execute(
-            """
-            ALTER TABLE site_registry
+            """ALTER TABLE site_registry
             ADD COLUMN stats_only INTEGER NOT NULL DEFAULT 0
             """
         )
     if "report_inconsistencies" not in columns:
         connection.execute(
-            """
-            ALTER TABLE site_registry
+            """ALTER TABLE site_registry
             ADD COLUMN report_inconsistencies INTEGER NOT NULL DEFAULT 0
             """
         )
@@ -493,14 +550,15 @@ def _ensure_remote_table(connection: sqlite3.Connection) -> None:
     """Handle ensure remote table.
 
     Args:
-        connection (sqlite3.Connection): Value supplied to this callable.
+        connection:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     connection.execute(
-        """
-        CREATE TABLE IF NOT EXISTS site_remote_connections (
+        """CREATE TABLE IF NOT EXISTS site_remote_connections (
             id TEXT PRIMARY KEY,
             site_project_id TEXT NOT NULL UNIQUE,
             connection_type TEXT NOT NULL,
@@ -514,15 +572,15 @@ def _ensure_remote_table(connection: sqlite3.Connection) -> None:
                 use_adapter_sync_filters INTEGER NOT NULL CHECK (
                     use_adapter_sync_filters IN (0, 1)
                 ) DEFAULT 0,
-                FOREIGN KEY (site_project_id) REFERENCES site_registry(id) ON DELETE CASCADE
+                FOREIGN KEY (site_project_id) REFERENCES site_registry(id)
+                ON DELETE CASCADE
             )
             """
     )
     columns = _get_table_columns(connection, "site_remote_connections")
     if "use_adapter_sync_filters" not in columns:
         connection.execute(
-            """
-            ALTER TABLE site_remote_connections
+            """ALTER TABLE site_remote_connections
             ADD COLUMN use_adapter_sync_filters INTEGER NOT NULL DEFAULT 0
             """
         )
@@ -532,14 +590,15 @@ def _ensure_sync_rule_override_table(connection: sqlite3.Connection) -> None:
     """Handle ensure sync rule override table.
 
     Args:
-        connection (sqlite3.Connection): Value supplied to this callable.
+        connection:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     connection.execute(
-        """
-        CREATE TABLE IF NOT EXISTS site_remote_sync_rule_overrides (
+        """CREATE TABLE IF NOT EXISTS site_remote_sync_rule_overrides (
             rule_key TEXT NOT NULL,
             site_project_id TEXT NOT NULL,
             target_rule_key TEXT,
@@ -559,10 +618,12 @@ def _migrate_legacy_ftp_schema(connection: sqlite3.Connection) -> None:
     """Handle migrate legacy ftp schema.
 
     Args:
-        connection (sqlite3.Connection): Value supplied to this callable.
+        connection:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     columns = _get_table_columns(connection, "site_registry")
     legacy_columns = {
@@ -575,8 +636,7 @@ def _migrate_legacy_ftp_schema(connection: sqlite3.Connection) -> None:
     if not legacy_columns.issubset(set(columns)):
         return
     connection.execute(
-        """
-        CREATE TEMP TABLE site_remote_connections_legacy_migration AS
+        """CREATE TEMP TABLE site_remote_connections_legacy_migration AS
         SELECT
             'remote-' || id AS id,
             id AS site_project_id,
@@ -595,8 +655,7 @@ def _migrate_legacy_ftp_schema(connection: sqlite3.Connection) -> None:
         (BuiltinRemoteConnectionType.FTP.value,),
     )
     connection.execute(
-        """
-        CREATE TABLE IF NOT EXISTS site_registry_migrated (
+        """CREATE TABLE IF NOT EXISTS site_registry_migrated (
             id TEXT PRIMARY KEY,
             name TEXT NOT NULL UNIQUE,
             framework_type TEXT NOT NULL,
@@ -620,8 +679,7 @@ def _migrate_legacy_ftp_schema(connection: sqlite3.Connection) -> None:
         """
     )
     connection.execute(
-        """
-        INSERT INTO site_registry_migrated (
+        """INSERT INTO site_registry_migrated (
             id,
             name,
             framework_type,
@@ -656,8 +714,7 @@ def _migrate_legacy_ftp_schema(connection: sqlite3.Connection) -> None:
     connection.execute("DROP TABLE site_registry")
     connection.execute("ALTER TABLE site_registry_migrated RENAME TO site_registry")
     connection.execute(
-        """
-        INSERT INTO site_remote_connections (
+        """INSERT INTO site_remote_connections (
             id,
             site_project_id,
             connection_type,
@@ -697,11 +754,14 @@ def _get_table_columns(connection: sqlite3.Connection, table_name: str) -> list[
     """Return table columns.
 
     Args:
-        connection (sqlite3.Connection): Value supplied to this callable.
-        table_name (str): Value supplied to this callable.
+        connection:
+            Value supplied to this callable.
+        table_name:
+            Value supplied to this callable.
 
     Returns:
-        list[str]: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
     """
     rows = connection.execute(f"PRAGMA table_info({table_name})").fetchall()
     return [str(row["name"]) for row in rows]
@@ -711,10 +771,12 @@ def _project_params(project: SiteProject) -> tuple[object, ...]:
     """Handle project params.
 
     Args:
-        project (SiteProject): Value supplied to this callable.
+        project:
+            Value supplied to this callable.
 
     Returns:
-        tuple[object, ...]: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
     """
     return (
         project.id,
@@ -737,10 +799,12 @@ def _project_update_params(project: SiteProject) -> tuple[object, ...]:
     """Handle project update params.
 
     Args:
-        project (SiteProject): Value supplied to this callable.
+        project:
+            Value supplied to this callable.
 
     Returns:
-        tuple[object, ...]: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
     """
     return (
         project.name,
@@ -766,11 +830,14 @@ def _connection_params(
     """Handle connection params.
 
     Args:
-        connection (RemoteConnectionConfig): Value supplied to this callable.
-        secret_cipher (LocalKeySiteSecretCipher): Value supplied to this callable.
+        connection:
+            Value supplied to this callable.
+        secret_cipher:
+            Value supplied to this callable.
 
     Returns:
-        tuple[object, ...]: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
     """
     return (
         connection.id,
@@ -794,17 +861,19 @@ def _replace_sync_rule_overrides(
     """Handle replace sync rule overrides.
 
     Args:
-        connection (sqlite3.Connection): Value supplied to this callable.
-        remote_connection (RemoteConnectionConfig): Value supplied to this callable.
+        connection:
+            Value supplied to this callable.
+        remote_connection:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     if remote_connection.flags.sync_rule_overrides == ():
         return
     connection.executemany(
-        """
-        INSERT INTO site_remote_sync_rule_overrides (
+        """INSERT INTO site_remote_sync_rule_overrides (
             rule_key,
             site_project_id,
             target_rule_key,
@@ -839,11 +908,14 @@ def _fetch_sync_rule_overrides(
     """Handle fetch sync rule overrides.
 
     Args:
-        connection (sqlite3.Connection): Value supplied to this callable.
-        site_ids (tuple[str, ...] | None): Value supplied to this callable.
+        connection:
+            Value supplied to this callable.
+        site_ids:
+            Value supplied to this callable.
 
     Returns:
-        dict[str, tuple[ProjectSyncRuleOverride, ...]]: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
     """
     statement = """
         SELECT
@@ -870,7 +942,9 @@ def _fetch_sync_rule_overrides(
             ProjectSyncRuleOverride(
                 rule_key=str(row["rule_key"]),
                 target_rule_key=(
-                    str(row["target_rule_key"]) if row["target_rule_key"] is not None else None
+                    str(row["target_rule_key"])
+                    if row["target_rule_key"] is not None
+                    else None
                 ),
                 relative_path=str(row["relative_path"]),
                 filter_type=SyncFilterType(str(row["filter_type"])),
@@ -893,12 +967,16 @@ def _map_row_to_site(
     """Map row to site.
 
     Args:
-        row (sqlite3.Row): Value supplied to this callable.
-        secret_cipher (LocalKeySiteSecretCipher): Value supplied to this callable.
-        sync_rule_overrides (tuple[ProjectSyncRuleOverride, ...]): Value supplied to this callable.
+        row:
+            Value supplied to this callable.
+        secret_cipher:
+            Value supplied to this callable.
+        sync_rule_overrides:
+            Value supplied to this callable.
 
     Returns:
-        RegisteredSite: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
     """
     project = SiteProject(
         id=str(row["id"]),
@@ -940,10 +1018,12 @@ def _map_integrity_error(site_name: str) -> SiteRegistryConflictError:
     """Map integrity error.
 
     Args:
-        site_name (str): Value supplied to this callable.
+        site_name:
+            Value supplied to this callable.
 
     Returns:
-        SiteRegistryConflictError: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
     """
     msg = f"A site with the name '{site_name}' already exists."
     return SiteRegistryConflictError(msg)
@@ -953,17 +1033,21 @@ class ConfiguredSqliteSiteRegistryRepository:
     """Resolve the SQLite location from app settings before each repository operation.
 
     Attributes:
-        None: This type does not declare additional class-level attributes.
+        None: This type does not declare class-level attributes.
     """
 
     def __init__(self, settings_service: TomlSettingsService) -> None:
         """Defer repository construction until settings have resolved the database path.
 
         Args:
-            settings_service (TomlSettingsService): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            settings_service:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         self._settings_service = settings_service
 
@@ -971,18 +1055,27 @@ class ConfiguredSqliteSiteRegistryRepository:
         """Create a site using the repository resolved from the current app settings.
 
         Args:
-            site (RegisteredSite): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            site:
+                Value supplied to this callable.
 
         Returns:
-            RegisteredSite: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         return self._build_repository().create_site(site)
 
     def list_sites(self) -> list[RegisteredSite]:
         """List sites using the repository resolved from the current app settings.
 
+        Args:
+            self:
+                Value supplied to this callable.
+
         Returns:
-            list[RegisteredSite]: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         return self._build_repository().list_sites()
 
@@ -990,10 +1083,14 @@ class ConfiguredSqliteSiteRegistryRepository:
         """Load one site using the repository resolved from the current app settings.
 
         Args:
-            site_id (str): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            site_id:
+                Value supplied to this callable.
 
         Returns:
-            RegisteredSite: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         return self._build_repository().get_site(site_id)
 
@@ -1001,10 +1098,14 @@ class ConfiguredSqliteSiteRegistryRepository:
         """Update a site using the repository resolved from the current app settings.
 
         Args:
-            site (RegisteredSite): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            site:
+                Value supplied to this callable.
 
         Returns:
-            RegisteredSite: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         return self._build_repository().update_site(site)
 
@@ -1012,22 +1113,31 @@ class ConfiguredSqliteSiteRegistryRepository:
         """Delete a site using the repository resolved from the current app settings.
 
         Args:
-            site_id (str): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            site_id:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         self._build_repository().delete_site(site_id)
 
     def _build_repository(self) -> SqliteSiteRegistryRepository:
         """Build repository.
 
+        Args:
+            self:
+                Value supplied to this callable.
+
         Returns:
-            SqliteSiteRegistryRepository: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
 
         Raises:
-            SiteRegistryConfigurationError: Raised when this callable hits the corresponding error
-        path.
+            SiteRegistryConfigurationError:
+                Raised when this callable hits the corresponding error path.
         """
         try:
             settings_state = self._settings_service.load_settings()

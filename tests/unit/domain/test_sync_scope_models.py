@@ -27,7 +27,8 @@ def test_sync_filter_spec_matches_directory_prefixes() -> None:
     """Verify sync filter spec matches directory prefixes.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     filter_spec = SyncFilterSpec(
         relative_path="locale",
@@ -44,7 +45,8 @@ def test_sync_filter_spec_matches_exact_files() -> None:
     """Verify sync filter spec matches exact files.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     filter_spec = SyncFilterSpec(
         relative_path="babel.cfg",
@@ -60,7 +62,8 @@ def test_resolved_sync_scope_requires_no_filters_when_unresolved() -> None:
     """Verify resolved sync scope requires no filters when unresolved.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     scope = ResolvedSyncScope(
         framework_type="unknown",
@@ -78,7 +81,8 @@ def test_resolved_sync_scope_applies_exclusions_after_inclusions() -> None:
     """Verify resolved sync scope applies exclusions after inclusions.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     scope = ResolvedSyncScope(
         framework_type="django",
@@ -110,7 +114,8 @@ def test_resolved_sync_scope_uses_only_exclusions_when_not_filtered() -> None:
     """Verify resolved sync scope uses only exclusions when not filtered.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     scope = ResolvedSyncScope(
         framework_type="django",
@@ -135,7 +140,8 @@ def test_sync_filter_spec_matches_glob_patterns() -> None:
     """Verify sync filter spec matches glob patterns.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     filter_spec = SyncFilterSpec(
         relative_path="*.pyc",
@@ -147,11 +153,14 @@ def test_sync_filter_spec_matches_glob_patterns() -> None:
     assert filter_spec.matches("locale/es/LC_MESSAGES/django.po") is False
 
 
-def test_resolved_sync_rule_as_filter_spec_and_glob_helpers_cover_basename_and_segments() -> None:
-    """Verify resolved sync rule as filter spec and glob helpers cover basename and segments.
+def test_resolved_sync_rule_filter_spec_glob_helpers_cbd7() -> None:
+    """Verify resolved sync rule as filter spec and glob helpers cover basename and.
+
+    segments.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     filter_from_rule = ConfiguredSyncRule(
         relative_path="locale",
@@ -194,7 +203,8 @@ def test_default_sync_scope_settings_include_global_git_exclusion() -> None:
     """Verify default sync scope settings include global git exclusion.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     settings = build_default_sync_scope_settings()
 
@@ -214,7 +224,8 @@ def test_adapter_sync_scope_settings_returns_rules_for_requested_framework() -> 
     """Verify adapter sync scope settings returns rules for requested framework.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     settings = AdapterSyncScopeSettings(
         global_rules=(),
@@ -239,11 +250,14 @@ def test_adapter_sync_scope_settings_returns_rules_for_requested_framework() -> 
     assert settings.rules_for_framework("flask") == ()
 
 
-def test_adapter_sync_scope_and_project_override_helpers_cover_simple_properties() -> None:
+def test_adapter_sync_scope_and_project_override_helpers_cover_simple_properties() -> (
+    None
+):
     """Verify adapter sync scope and project override helpers cover simple properties.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     empty_scope = AdapterSyncScope()
     non_empty_scope = AdapterSyncScope(
@@ -284,7 +298,8 @@ def test_sync_rule_key_builders_normalize_paths_and_framework_names() -> None:
     """Verify sync rule key builders normalize paths and framework names.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     assert (
         build_sync_rule_key(
@@ -318,7 +333,8 @@ def test_sync_filter_glob_matching_covers_segment_and_suffix_paths() -> None:
     """Verify sync filter glob matching covers segment and suffix paths.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     bare_pattern = SyncFilterSpec(
         relative_path="cache",

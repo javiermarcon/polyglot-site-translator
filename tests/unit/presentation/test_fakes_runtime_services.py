@@ -10,7 +10,9 @@ import pytest
 from polyglot_site_translator.infrastructure.remote_connections.registry import (
     RemoteConnectionRegistry,
 )
-from polyglot_site_translator.infrastructure.settings import build_default_settings_service
+from polyglot_site_translator.infrastructure.settings import (
+    build_default_settings_service,
+)
 from polyglot_site_translator.presentation.errors import ControlledServiceError
 from polyglot_site_translator.presentation.fakes import build_default_frontend_services
 from polyglot_site_translator.presentation.view_models import SiteEditorViewModel
@@ -25,11 +27,14 @@ def _build_editor(*, connection_type: str, remote_host: str) -> SiteEditorViewMo
     """Handle build editor.
 
     Args:
-        connection_type (str): Value supplied to this callable.
-        remote_host (str): Value supplied to this callable.
+        connection_type:
+            Value supplied to this callable.
+        remote_host:
+            Value supplied to this callable.
 
     Returns:
-        SiteEditorViewModel: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
     """
     return SiteEditorViewModel(
         site_id=None,
@@ -47,11 +52,14 @@ def _build_editor(*, connection_type: str, remote_host: str) -> SiteEditorViewMo
     )
 
 
-def test_seeded_registry_fake_reports_success_for_configured_remote_connection() -> None:
+def test_seeded_registry_fake_reports_success_for_configured_remote_connection() -> (
+    None
+):
     """Verify seeded registry fake reports success for configured remote connection.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     services = build_seeded_services()
 
@@ -63,11 +71,14 @@ def test_seeded_registry_fake_reports_success_for_configured_remote_connection()
     assert result.error_code is None
 
 
-def test_seeded_registry_fake_reports_invalid_configuration_without_remote_connection() -> None:
-    """Verify seeded registry fake reports invalid configuration without remote connection.
+def test_seeded_registry_fake_reports_invalid_configur_0ea9() -> None:
+    """Verify seeded registry fake reports invalid configuration without remote.
+
+    connection.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     services = build_seeded_services()
 
@@ -77,17 +88,24 @@ def test_seeded_registry_fake_reports_invalid_configuration_without_remote_conne
 
     assert result.success is False
     assert result.error_code == "invalid_remote_config"
-    assert result.message == "Remote connection test requires a configured remote connection."
+    assert (
+        result.message
+        == "Remote connection test requires a configured remote connection."
+    )
 
 
-def test_runtime_services_allow_catalog_replacement_with_failure_double(tmp_path: Path) -> None:
+def test_runtime_services_allow_catalog_replacement_with_failure_double(
+    tmp_path: Path,
+) -> None:
     """Verify runtime services allow catalog replacement with failure double.
 
     Args:
-        tmp_path (Path): Value supplied to this callable.
+        tmp_path:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     settings_service = build_default_settings_service(config_dir=tmp_path / "config")
 
@@ -103,13 +121,17 @@ def test_runtime_services_allow_catalog_replacement_with_failure_double(tmp_path
 def test_build_default_frontend_services_accepts_injected_remote_connection_service(
     tmp_path: Path,
 ) -> None:
-    """Verify build default frontend services accepts injected remote connection service.
+    """Verify build default frontend services accepts injected remote connection.
+
+    service.
 
     Args:
-        tmp_path (Path): Value supplied to this callable.
+        tmp_path:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     settings_service = build_default_settings_service(config_dir=tmp_path / "config")
     injected_remote_service = RemoteConnectionService(
@@ -128,12 +150,15 @@ def test_failing_site_registry_catalog_service_raises_controlled_errors() -> Non
     """Verify failing site registry catalog service raises controlled errors.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     service = FailingSiteRegistryCatalogService()
 
     with pytest.raises(ControlledServiceError, match="temporarily unavailable\\."):
         service.list_projects()
 
-    with pytest.raises(ControlledServiceError, match="temporarily unavailable for missing-site\\."):
+    with pytest.raises(
+        ControlledServiceError, match="temporarily unavailable for missing-site\\."
+    ):
         service.get_project_detail("missing-site")

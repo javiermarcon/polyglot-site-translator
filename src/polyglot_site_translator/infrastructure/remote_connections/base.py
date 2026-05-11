@@ -17,25 +17,35 @@ from polyglot_site_translator.domain.remote_connections.models import (
     RemoteConnectionTestResult,
     RemoteConnectionTypeDescriptor,
 )
-from polyglot_site_translator.domain.sync.models import RemoteSyncFile, SyncProgressCallback
+from polyglot_site_translator.domain.sync.models import (
+    RemoteSyncFile,
+    SyncProgressCallback,
+)
 
 
 class RemoteConnectionOperationError(OSError):
     """Concrete remote operation failure with a stable structured error code.
 
     Attributes:
-        None: This type does not declare additional class-level attributes.
+        None: This type does not declare class-level attributes.
     """
 
     def __init__(self, *, error_code: str, message: str) -> None:
-        """Capture the stable provider-facing error code alongside the transport message.
+        """Capture the stable provider-facing error code alongside the transport.
+
+        message.
 
         Args:
-            error_code (str): Value supplied to this callable.
-            message (str): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            error_code:
+                Value supplied to this callable.
+            message:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         super().__init__(message)
         self.error_code = error_code
@@ -45,7 +55,7 @@ class RemoteConnectionDependencyError(RemoteConnectionOperationError):
     """Raised when a remote provider cannot run because a dependency is missing.
 
     Attributes:
-        None: This type does not declare additional class-level attributes.
+        None: This type does not declare class-level attributes.
     """
 
 
@@ -53,7 +63,7 @@ class RemoteConnectionConfigurationError(RemoteConnectionOperationError):
     """Raised when local provider configuration prevents a remote operation.
 
     Attributes:
-        None: This type does not declare additional class-level attributes.
+        None: This type does not declare class-level attributes.
     """
 
 
@@ -61,7 +71,7 @@ class RemoteConnectionTransportError(RemoteConnectionOperationError):
     """Raised when opening or using the remote transport fails.
 
     Attributes:
-        None: This type does not declare additional class-level attributes.
+        None: This type does not declare class-level attributes.
     """
 
 
@@ -69,7 +79,7 @@ class RemoteConnectionListingError(RemoteConnectionOperationError):
     """Raised when remote file discovery fails.
 
     Attributes:
-        None: This type does not declare additional class-level attributes.
+        None: This type does not declare class-level attributes.
     """
 
 
@@ -77,7 +87,7 @@ class RemoteConnectionDownloadError(RemoteConnectionOperationError):
     """Raised when a remote file download fails.
 
     Attributes:
-        None: This type does not declare additional class-level attributes.
+        None: This type does not declare class-level attributes.
     """
 
 
@@ -85,7 +95,7 @@ class RemoteConnectionDirectoryError(RemoteConnectionOperationError):
     """Raised when remote directory preparation fails.
 
     Attributes:
-        None: This type does not declare additional class-level attributes.
+        None: This type does not declare class-level attributes.
     """
 
 
@@ -93,7 +103,7 @@ class RemoteConnectionUploadError(RemoteConnectionOperationError):
     """Raised when uploading a remote file fails.
 
     Attributes:
-        None: This type does not declare additional class-level attributes.
+        None: This type does not declare class-level attributes.
     """
 
 
@@ -101,21 +111,29 @@ class BaseRemoteConnectionSession(ABC):
     """Reusable remote connection session with state and controlled connect retries.
 
     Attributes:
-        None: This type does not declare additional class-level attributes.
+        None: This type does not declare class-level attributes.
     """
 
-    def __init__(self, config: RemoteConnectionConfig, *, max_connect_attempts: int = 2) -> None:
+    def __init__(
+        self, config: RemoteConnectionConfig, *, max_connect_attempts: int = 2
+    ) -> None:
         """Store remote config and initialize lifecycle state for a reusable session.
 
         Args:
-            config (RemoteConnectionConfig): Value supplied to this callable.
-            max_connect_attempts (int): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            config:
+                Value supplied to this callable.
+            max_connect_attempts:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
 
         Raises:
-            ValueError: Raised when this callable hits the corresponding error path.
+            ValueError:
+                Raised when this callable hits the corresponding error path.
         """
         if max_connect_attempts <= 0:
             msg = "max_connect_attempts must be a positive integer."
@@ -128,8 +146,13 @@ class BaseRemoteConnectionSession(ABC):
     def state(self) -> RemoteConnectionSessionState:
         """Return the current session lifecycle state.
 
+        Args:
+            self:
+                Value supplied to this callable.
+
         Returns:
-            RemoteConnectionSessionState: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         return self._state
 
@@ -140,10 +163,14 @@ class BaseRemoteConnectionSession(ABC):
         """Yield remote files incrementally using the current session.
 
         Args:
-            progress_callback (SyncProgressCallback | None): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            progress_callback:
+                Value supplied to this callable.
 
         Returns:
-            Iterable[RemoteSyncFile]: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         self._ensure_open(progress_callback)
         return self._iter_remote_files(progress_callback)
@@ -156,11 +183,16 @@ class BaseRemoteConnectionSession(ABC):
         """Download a remote file through the current session.
 
         Args:
-            remote_path (str): Value supplied to this callable.
-            progress_callback (SyncProgressCallback | None): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            remote_path:
+                Value supplied to this callable.
+            progress_callback:
+                Value supplied to this callable.
 
         Returns:
-            bytes: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         self._ensure_open(progress_callback)
         return self._download_file(remote_path, progress_callback)
@@ -172,10 +204,14 @@ class BaseRemoteConnectionSession(ABC):
         """Close the session and release remote resources.
 
         Args:
-            progress_callback (SyncProgressCallback | None): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            progress_callback:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         if self._state is RemoteConnectionSessionState.CLOSED:
             return
@@ -196,11 +232,16 @@ class BaseRemoteConnectionSession(ABC):
         """Create a remote directory path through the current session.
 
         Args:
-            remote_path (str): Value supplied to this callable.
-            progress_callback (SyncProgressCallback | None): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            remote_path:
+                Value supplied to this callable.
+            progress_callback:
+                Value supplied to this callable.
 
         Returns:
-            int: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         self._ensure_open(progress_callback)
         return self._ensure_remote_directory(remote_path, progress_callback)
@@ -214,12 +255,18 @@ class BaseRemoteConnectionSession(ABC):
         """Upload file contents through the current session.
 
         Args:
-            remote_path (str): Value supplied to this callable.
-            contents (bytes): Value supplied to this callable.
-            progress_callback (SyncProgressCallback | None): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            remote_path:
+                Value supplied to this callable.
+            contents:
+                Value supplied to this callable.
+            progress_callback:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         self._ensure_open(progress_callback)
         self._upload_file(remote_path, contents, progress_callback)
@@ -228,14 +275,18 @@ class BaseRemoteConnectionSession(ABC):
         """Handle ensure open.
 
         Args:
-            progress_callback (SyncProgressCallback | None): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            progress_callback:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
 
         Raises:
-            RemoteConnectionOperationError: Raised when this callable hits the corresponding error
-        path.
+            RemoteConnectionOperationError:
+                Raised when this callable hits the corresponding error path.
         """
         if self._state is RemoteConnectionSessionState.OPEN:
             return
@@ -251,8 +302,9 @@ class BaseRemoteConnectionSession(ABC):
                 self._connect(progress_callback)
             except RemoteConnectionOperationError as error:
                 self._reset_after_failed_connect()
-                if attempt_number < self._max_connect_attempts and self._should_retry_connect(
-                    error
+                if (
+                    attempt_number < self._max_connect_attempts
+                    and self._should_retry_connect(error)
                 ):
                     attempt_number += 1
                     continue
@@ -267,10 +319,12 @@ class BaseRemoteConnectionSession(ABC):
         """Handle should retry connect.
 
         Args:
-            error (RemoteConnectionOperationError): Value supplied to this callable.
+            error:
+                Value supplied to this callable.
 
         Returns:
-            bool: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         return error.error_code in {"connection_timeout", "transport_io_failed"}
 
@@ -279,10 +333,14 @@ class BaseRemoteConnectionSession(ABC):
         """Open the concrete transport session.
 
         Args:
-            progress_callback (SyncProgressCallback | None): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            progress_callback:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
 
     @abstractmethod
@@ -293,10 +351,14 @@ class BaseRemoteConnectionSession(ABC):
         """Yield remote files using an open concrete transport session.
 
         Args:
-            progress_callback (SyncProgressCallback | None): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            progress_callback:
+                Value supplied to this callable.
 
         Returns:
-            Iterable[RemoteSyncFile]: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
 
     @abstractmethod
@@ -308,11 +370,16 @@ class BaseRemoteConnectionSession(ABC):
         """Download a remote file using an open concrete transport session.
 
         Args:
-            remote_path (str): Value supplied to this callable.
-            progress_callback (SyncProgressCallback | None): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            remote_path:
+                Value supplied to this callable.
+            progress_callback:
+                Value supplied to this callable.
 
         Returns:
-            bytes: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
 
     @abstractmethod
@@ -324,11 +391,16 @@ class BaseRemoteConnectionSession(ABC):
         """Create a remote directory path using an open concrete transport session.
 
         Args:
-            remote_path (str): Value supplied to this callable.
-            progress_callback (SyncProgressCallback | None): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            remote_path:
+                Value supplied to this callable.
+            progress_callback:
+                Value supplied to this callable.
 
         Returns:
-            int: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
 
     @abstractmethod
@@ -341,12 +413,18 @@ class BaseRemoteConnectionSession(ABC):
         """Upload file contents using an open concrete transport session.
 
         Args:
-            remote_path (str): Value supplied to this callable.
-            contents (bytes): Value supplied to this callable.
-            progress_callback (SyncProgressCallback | None): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            remote_path:
+                Value supplied to this callable.
+            contents:
+                Value supplied to this callable.
+            progress_callback:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
 
     @abstractmethod
@@ -354,18 +432,27 @@ class BaseRemoteConnectionSession(ABC):
         """Close the concrete transport session.
 
         Args:
-            progress_callback (SyncProgressCallback | None): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            progress_callback:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
 
     @abstractmethod
     def _reset_after_failed_connect(self) -> None:
         """Reset transport resources after a failed connect attempt.
 
+        Args:
+            self:
+                Value supplied to this callable.
+
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
 
 
@@ -373,7 +460,8 @@ class BaseRemoteConnectionProvider(ABC):
     """Abstract discoverable remote connection provider.
 
     Attributes:
-        descriptor (RemoteConnectionTypeDescriptor): Documented attribute exposed by this type.
+        descriptor:
+            Documented attribute exposed by this type.
     """
 
     descriptor: RemoteConnectionTypeDescriptor
@@ -386,10 +474,14 @@ class BaseRemoteConnectionProvider(ABC):
         """Attempt a transport-level connection test.
 
         Args:
-            config (RemoteConnectionConfigInput): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            config:
+                Value supplied to this callable.
 
         Returns:
-            RemoteConnectionTestResult: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
 
     @abstractmethod
@@ -397,10 +489,14 @@ class BaseRemoteConnectionProvider(ABC):
         """Create a reusable remote session for sync workflows.
 
         Args:
-            config (RemoteConnectionConfig): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            config:
+                Value supplied to this callable.
 
         Returns:
-            RemoteConnectionSession: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
 
     def list_remote_files(
@@ -413,15 +509,22 @@ class BaseRemoteConnectionProvider(ABC):
         """Return a bounded materialized list of remote files.
 
         Args:
-            config (RemoteConnectionConfig): Value supplied to this callable.
-            progress_callback (SyncProgressCallback | None): Value supplied to this callable.
-            max_files (int): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            config:
+                Value supplied to this callable.
+            progress_callback:
+                Value supplied to this callable.
+            max_files:
+                Value supplied to this callable.
 
         Returns:
-            list[RemoteSyncFile]: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
 
         Raises:
-            ValueError: Raised when this callable hits the corresponding error path.
+            ValueError:
+                Raised when this callable hits the corresponding error path.
         """
         if max_files <= 0:
             msg = "max_files must be a positive integer."
@@ -441,11 +544,16 @@ class BaseRemoteConnectionProvider(ABC):
         """Yield remote files through a short-lived reusable session.
 
         Args:
-            config (RemoteConnectionConfig): Value supplied to this callable.
-            progress_callback (SyncProgressCallback | None): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            config:
+                Value supplied to this callable.
+            progress_callback:
+                Value supplied to this callable.
 
         Returns:
-            Iterable[RemoteSyncFile]: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         session = self.open_session(config)
         try:
@@ -462,12 +570,18 @@ class BaseRemoteConnectionProvider(ABC):
         """Download one remote file through a short-lived reusable session.
 
         Args:
-            config (RemoteConnectionConfig): Value supplied to this callable.
-            remote_path (str): Value supplied to this callable.
-            progress_callback (SyncProgressCallback | None): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            config:
+                Value supplied to this callable.
+            remote_path:
+                Value supplied to this callable.
+            progress_callback:
+                Value supplied to this callable.
 
         Returns:
-            bytes: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         session = self.open_session(config)
         try:
@@ -484,12 +598,18 @@ class BaseRemoteConnectionProvider(ABC):
         """Create a remote directory path through a short-lived reusable session.
 
         Args:
-            config (RemoteConnectionConfig): Value supplied to this callable.
-            remote_path (str): Value supplied to this callable.
-            progress_callback (SyncProgressCallback | None): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            config:
+                Value supplied to this callable.
+            remote_path:
+                Value supplied to this callable.
+            progress_callback:
+                Value supplied to this callable.
 
         Returns:
-            int: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         session = self.open_session(config)
         try:
@@ -507,13 +627,20 @@ class BaseRemoteConnectionProvider(ABC):
         """Upload one local file through a short-lived reusable session.
 
         Args:
-            config (RemoteConnectionConfig): Value supplied to this callable.
-            remote_path (str): Value supplied to this callable.
-            contents (bytes): Value supplied to this callable.
-            progress_callback (SyncProgressCallback | None): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            config:
+                Value supplied to this callable.
+            remote_path:
+                Value supplied to this callable.
+            contents:
+                Value supplied to this callable.
+            progress_callback:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         session = self.open_session(config)
         try:

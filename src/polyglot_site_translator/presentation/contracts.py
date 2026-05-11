@@ -27,24 +27,33 @@ class ProjectCatalogService(Protocol):
     """Read-only project catalog interface for the UI.
 
     Attributes:
-        None: This type does not declare additional class-level attributes.
+        None: This type does not declare class-level attributes.
     """
 
     def list_projects(self) -> list[ProjectSummaryViewModel]:
         """Return registered projects for list screens.
 
+        Args:
+            self:
+                Value supplied to this callable.
+
         Returns:
-            list[ProjectSummaryViewModel]: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
 
     def get_project_detail(self, project_id: str) -> ProjectDetailViewModel:
         """Return project detail data for the selected project.
 
         Args:
-            project_id (str): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            project_id:
+                Value supplied to this callable.
 
         Returns:
-            ProjectDetailViewModel: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
 
 
@@ -52,7 +61,7 @@ class ProjectWorkflowService(Protocol):
     """Workflow actions exposed to the UI.
 
     Attributes:
-        None: This type does not declare additional class-level attributes.
+        None: This type does not declare class-level attributes.
     """
 
     def start_sync(
@@ -63,12 +72,16 @@ class ProjectWorkflowService(Protocol):
         """Start or preview a sync workflow for a project.
 
         Args:
-            project_id (str): Value supplied to this callable.
-            progress_callback (Callable[[SyncProgressEvent], None] | None): Value supplied to this
-        callable.
+            self:
+                Value supplied to this callable.
+            project_id:
+                Value supplied to this callable.
+            progress_callback:
+                Value supplied to this callable.
 
         Returns:
-            SyncStatusViewModel: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
 
     def start_sync_to_remote(
@@ -79,32 +92,46 @@ class ProjectWorkflowService(Protocol):
         """Start a local-to-remote sync workflow for a project.
 
         Args:
-            project_id (str): Value supplied to this callable.
-            progress_callback (Callable[[SyncProgressEvent], None] | None): Value supplied to this
-        callable.
+            self:
+                Value supplied to this callable.
+            project_id:
+                Value supplied to this callable.
+            progress_callback:
+                Value supplied to this callable.
 
         Returns:
-            SyncStatusViewModel: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
 
-    def trust_remote_host_key(self, project_id: str) -> RemoteConnectionTestResultViewModel:
+    def trust_remote_host_key(
+        self, project_id: str
+    ) -> RemoteConnectionTestResultViewModel:
         """Trust the configured SSH host key for a project after user confirmation.
 
         Args:
-            project_id (str): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            project_id:
+                Value supplied to this callable.
 
         Returns:
-            RemoteConnectionTestResultViewModel: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
 
     def start_audit(self, project_id: str) -> AuditSummaryViewModel:
         """Start an audit workflow for a project.
 
         Args:
-            project_id (str): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            project_id:
+                Value supplied to this callable.
 
         Returns:
-            AuditSummaryViewModel: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
 
     def start_po_processing(
@@ -116,14 +143,18 @@ class ProjectWorkflowService(Protocol):
         """Start a PO processing workflow for a project.
 
         Args:
-            project_id (str): Value supplied to this callable.
-            request (TranslationWorkflowRequestViewModel | None): Value supplied to this callable.
-            progress_callback (Callable[[POProcessingProgress], None] | None): Value supplied to
-        this
-            callable.
+            self:
+                Value supplied to this callable.
+            project_id:
+                Value supplied to this callable.
+            request:
+                Value supplied to this callable.
+            progress_callback:
+                Value supplied to this callable.
 
         Returns:
-            POProcessingSummaryViewModel: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
 
 
@@ -131,31 +162,47 @@ class SettingsService(Protocol):
     """Settings operations exposed to the UI.
 
     Attributes:
-        None: This type does not declare additional class-level attributes.
+        None: This type does not declare class-level attributes.
     """
 
     def load_settings(self) -> SettingsStateViewModel:
         """Return the current settings state.
 
+        Args:
+            self:
+                Value supplied to this callable.
+
         Returns:
-            SettingsStateViewModel: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
 
-    def save_settings(self, app_settings: AppSettingsViewModel) -> SettingsStateViewModel:
+    def save_settings(
+        self, app_settings: AppSettingsViewModel
+    ) -> SettingsStateViewModel:
         """Persist frontend settings and return the saved state.
 
         Args:
-            app_settings (AppSettingsViewModel): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            app_settings:
+                Value supplied to this callable.
 
         Returns:
-            SettingsStateViewModel: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
 
     def reset_settings(self) -> SettingsStateViewModel:
         """Restore frontend settings defaults.
 
+        Args:
+            self:
+                Value supplied to this callable.
+
         Returns:
-            SettingsStateViewModel: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
 
 
@@ -163,34 +210,47 @@ class ProjectRegistryManagementService(Protocol):
     """Create and update project registry records exposed to the UI.
 
     Attributes:
-        None: This type does not declare additional class-level attributes.
+        None: This type does not declare class-level attributes.
     """
 
     def build_create_project_editor(self) -> ProjectEditorStateViewModel:
         """Return the initial project editor state for create flows.
 
+        Args:
+            self:
+                Value supplied to this callable.
+
         Returns:
-            ProjectEditorStateViewModel: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
 
     def build_edit_project_editor(self, project_id: str) -> ProjectEditorStateViewModel:
         """Return the initial project editor state for edit flows.
 
         Args:
-            project_id (str): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            project_id:
+                Value supplied to this callable.
 
         Returns:
-            ProjectEditorStateViewModel: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
 
     def create_project(self, editor: SiteEditorViewModel) -> ProjectDetailViewModel:
         """Create a new project registry record and return its detail view.
 
         Args:
-            editor (SiteEditorViewModel): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            editor:
+                Value supplied to this callable.
 
         Returns:
-            ProjectDetailViewModel: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
 
     def update_project(
@@ -201,11 +261,16 @@ class ProjectRegistryManagementService(Protocol):
         """Update a project registry record and return its detail view.
 
         Args:
-            project_id (str): Value supplied to this callable.
-            editor (SiteEditorViewModel): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            project_id:
+                Value supplied to this callable.
+            editor:
+                Value supplied to this callable.
 
         Returns:
-            ProjectDetailViewModel: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
 
     def test_remote_connection(
@@ -215,10 +280,14 @@ class ProjectRegistryManagementService(Protocol):
         """Test the current remote connection draft and return the result.
 
         Args:
-            editor (SiteEditorViewModel): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            editor:
+                Value supplied to this callable.
 
         Returns:
-            RemoteConnectionTestResultViewModel: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
 
     def preview_project_editor(
@@ -230,11 +299,16 @@ class ProjectRegistryManagementService(Protocol):
         """Rebuild the project editor state for a modified draft without persisting it.
 
         Args:
-            editor (SiteEditorViewModel): Value supplied to this callable.
-            mode (str): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            editor:
+                Value supplied to this callable.
+            mode:
+                Value supplied to this callable.
 
         Returns:
-            ProjectEditorStateViewModel: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
 
 
@@ -243,10 +317,14 @@ class FrontendServices:
     """Injectable service bundle consumed by the presentation layer.
 
     Attributes:
-        catalog (ProjectCatalogService): Documented attribute exposed by this type.
-        workflows (ProjectWorkflowService): Documented attribute exposed by this type.
-        settings (SettingsService): Documented attribute exposed by this type.
-        registry (ProjectRegistryManagementService): Documented attribute exposed by this type.
+        catalog:
+            Documented attribute exposed by this type.
+        workflows:
+            Documented attribute exposed by this type.
+        settings:
+            Documented attribute exposed by this type.
+        registry:
+            Documented attribute exposed by this type.
     """
 
     catalog: ProjectCatalogService

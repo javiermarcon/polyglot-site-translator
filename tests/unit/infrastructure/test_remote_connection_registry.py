@@ -11,12 +11,14 @@ def test_remote_connection_registry_discovers_builtin_connection_types() -> None
     """Verify remote connection registry discovers builtin connection types.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     registry = RemoteConnectionRegistry.discover_installed()
 
     assert [
-        descriptor.connection_type for descriptor in registry.list_connection_descriptors()
+        descriptor.connection_type
+        for descriptor in registry.list_connection_descriptors()
     ] == ["ftp", "ftps_explicit", "ftps_implicit", "scp", "sftp"]
 
 
@@ -24,7 +26,8 @@ def test_remote_connection_registry_resolves_a_provider_by_type() -> None:
     """Verify remote connection registry resolves a provider by type.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     registry = RemoteConnectionRegistry.discover_installed()
 

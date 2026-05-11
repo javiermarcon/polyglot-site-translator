@@ -11,9 +11,12 @@ class SyncFilterType(StrEnum):
     """Supported sync filter matching strategies.
 
     Attributes:
-        DIRECTORY: Documented attribute exposed by this type.
-        FILE: Documented attribute exposed by this type.
-        GLOB: Documented attribute exposed by this type.
+        DIRECTORY:
+            Documented attribute exposed by this type.
+        FILE:
+            Documented attribute exposed by this type.
+        GLOB:
+            Documented attribute exposed by this type.
     """
 
     DIRECTORY = "directory"
@@ -25,8 +28,10 @@ class SyncRuleBehavior(StrEnum):
     """Supported rule behaviors for sync scope entries.
 
     Attributes:
-        INCLUDE: Documented attribute exposed by this type.
-        EXCLUDE: Documented attribute exposed by this type.
+        INCLUDE:
+            Documented attribute exposed by this type.
+        EXCLUDE:
+            Documented attribute exposed by this type.
     """
 
     INCLUDE = "include"
@@ -37,11 +42,16 @@ class SyncRuleSource(StrEnum):
     """Origin of a resolved sync rule.
 
     Attributes:
-        ADAPTER: Documented attribute exposed by this type.
-        GLOBAL: Documented attribute exposed by this type.
-        FRAMEWORK: Documented attribute exposed by this type.
-        GITIGNORE: Documented attribute exposed by this type.
-        PROJECT: Documented attribute exposed by this type.
+        ADAPTER:
+            Documented attribute exposed by this type.
+        GLOBAL:
+            Documented attribute exposed by this type.
+        FRAMEWORK:
+            Documented attribute exposed by this type.
+        GITIGNORE:
+            Documented attribute exposed by this type.
+        PROJECT:
+            Documented attribute exposed by this type.
     """
 
     ADAPTER = "adapter"
@@ -55,10 +65,14 @@ class SyncScopeStatus(StrEnum):
     """Explicit outcomes for framework sync scope resolution.
 
     Attributes:
-        FILTERED: Documented attribute exposed by this type.
-        NO_FILTERS: Documented attribute exposed by this type.
-        FRAMEWORK_UNRESOLVED: Documented attribute exposed by this type.
-        ADAPTER_UNAVAILABLE: Documented attribute exposed by this type.
+        FILTERED:
+            Documented attribute exposed by this type.
+        NO_FILTERS:
+            Documented attribute exposed by this type.
+        FRAMEWORK_UNRESOLVED:
+            Documented attribute exposed by this type.
+        ADAPTER_UNAVAILABLE:
+            Documented attribute exposed by this type.
     """
 
     FILTERED = "filtered"
@@ -72,8 +86,10 @@ class AdapterSyncScope:
     """Adapter-owned include/exclude rules for synchronization.
 
     Attributes:
-        filters (tuple[SyncFilterSpec, ...]): Documented attribute exposed by this type.
-        excludes (tuple[SyncFilterSpec, ...]): Documented attribute exposed by this type.
+        filters:
+            Documented attribute exposed by this type.
+        excludes:
+            Documented attribute exposed by this type.
     """
 
     filters: tuple[SyncFilterSpec, ...] = ()
@@ -83,8 +99,13 @@ class AdapterSyncScope:
     def is_empty(self) -> bool:
         """Return whether the adapter provides no sync rules.
 
+        Args:
+            self:
+                Value supplied to this callable.
+
         Returns:
-            bool: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         return self.filters == () and self.excludes == ()
 
@@ -94,11 +115,16 @@ class ConfiguredSyncRule:
     """A persisted sync rule configured outside a specific project.
 
     Attributes:
-        relative_path (str): Documented attribute exposed by this type.
-        filter_type (SyncFilterType): Documented attribute exposed by this type.
-        behavior (SyncRuleBehavior): Documented attribute exposed by this type.
-        description (str): Documented attribute exposed by this type.
-        is_enabled (bool): Documented attribute exposed by this type.
+        relative_path:
+            Documented attribute exposed by this type.
+        filter_type:
+            Documented attribute exposed by this type.
+        behavior:
+            Documented attribute exposed by this type.
+        description:
+            Documented attribute exposed by this type.
+        is_enabled:
+            Documented attribute exposed by this type.
     """
 
     relative_path: str
@@ -113,8 +139,10 @@ class FrameworkSyncRuleSet:
     """A persisted set of sync rules attached to a framework type.
 
     Attributes:
-        framework_type (str): Documented attribute exposed by this type.
-        rules (tuple[ConfiguredSyncRule, ...]): Documented attribute exposed by this type.
+        framework_type:
+            Documented attribute exposed by this type.
+        rules:
+            Documented attribute exposed by this type.
     """
 
     framework_type: str
@@ -123,8 +151,13 @@ class FrameworkSyncRuleSet:
     def normalized_framework_type(self) -> str:
         """Return the canonical lowercase framework type.
 
+        Args:
+            self:
+                Value supplied to this callable.
+
         Returns:
-            str: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         return self.framework_type.strip().lower()
 
@@ -134,24 +167,32 @@ class AdapterSyncScopeSettings:
     """Persisted sync-scope settings shared across projects.
 
     Attributes:
-        global_rules (tuple[ConfiguredSyncRule, ...]): Documented attribute exposed by this type.
-        framework_rule_sets (tuple[FrameworkSyncRuleSet, ...]): Documented attribute exposed by this
-        type.
-        use_gitignore_rules (bool): Documented attribute exposed by this type.
+        global_rules:
+            Documented attribute exposed by this type.
+        framework_rule_sets:
+            Documented attribute exposed by this type.
+        use_gitignore_rules:
+            Documented attribute exposed by this type.
     """
 
     global_rules: tuple[ConfiguredSyncRule, ...] = ()
     framework_rule_sets: tuple[FrameworkSyncRuleSet, ...] = ()
     use_gitignore_rules: bool = False
 
-    def rules_for_framework(self, framework_type: str) -> tuple[ConfiguredSyncRule, ...]:
+    def rules_for_framework(
+        self, framework_type: str
+    ) -> tuple[ConfiguredSyncRule, ...]:
         """Return persisted rules configured for the given framework type.
 
         Args:
-            framework_type (str): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            framework_type:
+                Value supplied to this callable.
 
         Returns:
-            tuple[ConfiguredSyncRule, ...]: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         normalized_framework_type = framework_type.strip().lower()
         for rule_set in self.framework_rule_sets:
@@ -165,13 +206,20 @@ class ProjectSyncRuleOverride:
     """Persisted project-specific override or custom sync rule.
 
     Attributes:
-        rule_key (str): Documented attribute exposed by this type.
-        relative_path (str): Documented attribute exposed by this type.
-        filter_type (SyncFilterType): Documented attribute exposed by this type.
-        behavior (SyncRuleBehavior): Documented attribute exposed by this type.
-        is_enabled (bool): Documented attribute exposed by this type.
-        description (str): Documented attribute exposed by this type.
-        target_rule_key (str | None): Documented attribute exposed by this type.
+        rule_key:
+            Documented attribute exposed by this type.
+        relative_path:
+            Documented attribute exposed by this type.
+        filter_type:
+            Documented attribute exposed by this type.
+        behavior:
+            Documented attribute exposed by this type.
+        is_enabled:
+            Documented attribute exposed by this type.
+        description:
+            Documented attribute exposed by this type.
+        target_rule_key:
+            Documented attribute exposed by this type.
     """
 
     rule_key: str
@@ -186,8 +234,13 @@ class ProjectSyncRuleOverride:
     def is_custom(self) -> bool:
         """Return whether the override introduces a custom project rule.
 
+        Args:
+            self:
+                Value supplied to this callable.
+
         Returns:
-            bool: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         return self.target_rule_key is None
 
@@ -197,9 +250,12 @@ class SyncFilterSpec:
     """A single adapter-defined sync filter.
 
     Attributes:
-        relative_path (str): Documented attribute exposed by this type.
-        filter_type (SyncFilterType): Documented attribute exposed by this type.
-        description (str): Documented attribute exposed by this type.
+        relative_path:
+            Documented attribute exposed by this type.
+        filter_type:
+            Documented attribute exposed by this type.
+        description:
+            Documented attribute exposed by this type.
     """
 
     relative_path: str
@@ -210,10 +266,14 @@ class SyncFilterSpec:
         """Return whether the filter includes the given relative path.
 
         Args:
-            relative_path (str): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            relative_path:
+                Value supplied to this callable.
 
         Returns:
-            bool: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         normalized_filter = _normalize_relative_path(self.relative_path)
         normalized_path = _normalize_relative_path(relative_path)
@@ -234,13 +294,20 @@ class ResolvedSyncRule:
     """A resolved rule surfaced to services and UI catalogs.
 
     Attributes:
-        rule_key (str): Documented attribute exposed by this type.
-        relative_path (str): Documented attribute exposed by this type.
-        filter_type (SyncFilterType): Documented attribute exposed by this type.
-        behavior (SyncRuleBehavior): Documented attribute exposed by this type.
-        description (str): Documented attribute exposed by this type.
-        source (SyncRuleSource): Documented attribute exposed by this type.
-        is_enabled (bool): Documented attribute exposed by this type.
+        rule_key:
+            Documented attribute exposed by this type.
+        relative_path:
+            Documented attribute exposed by this type.
+        filter_type:
+            Documented attribute exposed by this type.
+        behavior:
+            Documented attribute exposed by this type.
+        description:
+            Documented attribute exposed by this type.
+        source:
+            Documented attribute exposed by this type.
+        is_enabled:
+            Documented attribute exposed by this type.
     """
 
     rule_key: str
@@ -254,8 +321,13 @@ class ResolvedSyncRule:
     def as_filter_spec(self) -> SyncFilterSpec:
         """Return the matching filter spec for this rule.
 
+        Args:
+            self:
+                Value supplied to this callable.
+
         Returns:
-            SyncFilterSpec: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         return SyncFilterSpec(
             relative_path=self.relative_path,
@@ -269,13 +341,20 @@ class ResolvedSyncScope:
     """Resolved adapter scope reused by both sync directions.
 
     Attributes:
-        framework_type (str): Documented attribute exposed by this type.
-        adapter_name (str | None): Documented attribute exposed by this type.
-        status (SyncScopeStatus): Documented attribute exposed by this type.
-        filters (tuple[SyncFilterSpec, ...]): Documented attribute exposed by this type.
-        message (str): Documented attribute exposed by this type.
-        excludes (tuple[SyncFilterSpec, ...]): Documented attribute exposed by this type.
-        catalog_rules (tuple[ResolvedSyncRule, ...]): Documented attribute exposed by this type.
+        framework_type:
+            Documented attribute exposed by this type.
+        adapter_name:
+            Documented attribute exposed by this type.
+        status:
+            Documented attribute exposed by this type.
+        filters:
+            Documented attribute exposed by this type.
+        message:
+            Documented attribute exposed by this type.
+        excludes:
+            Documented attribute exposed by this type.
+        catalog_rules:
+            Documented attribute exposed by this type.
     """
 
     framework_type: str
@@ -290,8 +369,13 @@ class ResolvedSyncScope:
     def is_filtered(self) -> bool:
         """Return whether the scope actively restricts synchronized paths.
 
+        Args:
+            self:
+                Value supplied to this callable.
+
         Returns:
-            bool: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         return self.status is SyncScopeStatus.FILTERED and (
             self.filters != () or self.excludes != ()
@@ -301,10 +385,14 @@ class ResolvedSyncScope:
         """Return whether a relative path belongs to the resolved scope.
 
         Args:
-            relative_path (str): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            relative_path:
+                Value supplied to this callable.
 
         Returns:
-            bool: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         if any(sync_filter.matches(relative_path) for sync_filter in self.excludes):
             return False
@@ -317,10 +405,12 @@ def _normalize_relative_path(value: str) -> str:
     """Normalize relative path.
 
     Args:
-        value (str): Value supplied to this callable.
+        value:
+            Value supplied to this callable.
 
     Returns:
-        str: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
     """
     return value.strip().strip("/")
 
@@ -334,12 +424,16 @@ def build_sync_rule_key(
     """Build the stable rule key used by adapter rules and project overrides.
 
     Args:
-        relative_path (str): Value supplied to this callable.
-        filter_type (SyncFilterType): Value supplied to this callable.
-        behavior (SyncRuleBehavior): Value supplied to this callable.
+        relative_path:
+            Value supplied to this callable.
+        filter_type:
+            Value supplied to this callable.
+        behavior:
+            Value supplied to this callable.
 
     Returns:
-        str: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
     """
     normalized_path = _normalize_relative_path(relative_path)
     return f"{behavior.value}:{filter_type.value}:{normalized_path}"
@@ -354,12 +448,16 @@ def build_global_sync_rule_key(
     """Build the stable rule key used by global sync rules.
 
     Args:
-        relative_path (str): Value supplied to this callable.
-        filter_type (SyncFilterType): Value supplied to this callable.
-        behavior (SyncRuleBehavior): Value supplied to this callable.
+        relative_path:
+            Value supplied to this callable.
+        filter_type:
+            Value supplied to this callable.
+        behavior:
+            Value supplied to this callable.
 
     Returns:
-        str: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
     """
     base_rule_key = build_sync_rule_key(
         relative_path=relative_path,
@@ -379,13 +477,18 @@ def build_framework_sync_rule_key(
     """Build the stable rule key used by framework-level sync rules.
 
     Args:
-        framework_type (str): Value supplied to this callable.
-        relative_path (str): Value supplied to this callable.
-        filter_type (SyncFilterType): Value supplied to this callable.
-        behavior (SyncRuleBehavior): Value supplied to this callable.
+        framework_type:
+            Value supplied to this callable.
+        relative_path:
+            Value supplied to this callable.
+        filter_type:
+            Value supplied to this callable.
+        behavior:
+            Value supplied to this callable.
 
     Returns:
-        str: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
     """
     normalized_framework_type = framework_type.strip().lower()
     base_rule_key = build_sync_rule_key(
@@ -403,10 +506,12 @@ def build_gitignore_sync_rule_key(
     """Build the stable rule key used by gitignore-derived rules.
 
     Args:
-        pattern (str): Value supplied to this callable.
+        pattern:
+            Value supplied to this callable.
 
     Returns:
-        str: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
     """
     return f"gitignore:{pattern.strip()}"
 
@@ -415,7 +520,8 @@ def build_default_sync_scope_settings() -> AdapterSyncScopeSettings:
     """Return the default persisted sync-scope settings.
 
     Returns:
-        AdapterSyncScopeSettings: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
     """
     return AdapterSyncScopeSettings(
         global_rules=(
@@ -436,11 +542,14 @@ def _match_glob_pattern(*, pattern: str, relative_path: str) -> bool:
     """Handle match glob pattern.
 
     Args:
-        pattern (str): Value supplied to this callable.
-        relative_path (str): Value supplied to this callable.
+        pattern:
+            Value supplied to this callable.
+        relative_path:
+            Value supplied to this callable.
 
     Returns:
-        bool: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
     """
     segments = relative_path.split("/")
     basename = relative_path.rsplit("/", maxsplit=1)[-1]
@@ -453,4 +562,7 @@ def _match_glob_pattern(*, pattern: str, relative_path: str) -> bool:
             return True
         if any(fnmatch(segment, pattern) for segment in segments):
             return True
-    return any(fnmatch("/".join(segments[index:]), pattern) for index in range(1, len(segments)))
+    return any(
+        fnmatch("/".join(segments[index:]), pattern)
+        for index in range(1, len(segments))
+    )

@@ -22,9 +22,12 @@ class _AdapterWithDefaultSyncScope(BaseFrameworkAdapter):
     """Test helper for AdapterWithDefaultSyncScope.
 
     Attributes:
-        framework_type: Documented attribute exposed by this type.
-        adapter_name: Documented attribute exposed by this type.
-        display_name: Documented attribute exposed by this type.
+        framework_type:
+            Documented attribute exposed by this type.
+        adapter_name:
+            Documented attribute exposed by this type.
+        display_name:
+            Documented attribute exposed by this type.
     """
 
     framework_type = "example"
@@ -35,10 +38,14 @@ class _AdapterWithDefaultSyncScope(BaseFrameworkAdapter):
         """Handle detect.
 
         Args:
-            project_path (Path): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            project_path:
+                Value supplied to this callable.
 
         Returns:
-            FrameworkDetectionResult: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         return FrameworkDetectionResult.unmatched(project_path=str(project_path))
 
@@ -47,10 +54,12 @@ class _AdapterWithDefaultSyncScope(BaseFrameworkAdapter):
         """Handle get sync filters.
 
         Args:
-            project_path (Path): Value supplied to this callable.
+            project_path:
+                Value supplied to this callable.
 
         Returns:
-            tuple[SyncFilterSpec, ...]: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         return (
             SyncFilterSpec(
@@ -65,9 +74,12 @@ class _AdapterWithNoCustomFilters(BaseFrameworkAdapter):
     """Test helper for AdapterWithNoCustomFilters.
 
     Attributes:
-        framework_type: Documented attribute exposed by this type.
-        adapter_name: Documented attribute exposed by this type.
-        display_name: Documented attribute exposed by this type.
+        framework_type:
+            Documented attribute exposed by this type.
+        adapter_name:
+            Documented attribute exposed by this type.
+        display_name:
+            Documented attribute exposed by this type.
     """
 
     framework_type = "empty"
@@ -78,10 +90,14 @@ class _AdapterWithNoCustomFilters(BaseFrameworkAdapter):
         """Handle detect.
 
         Args:
-            project_path (Path): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            project_path:
+                Value supplied to this callable.
 
         Returns:
-            FrameworkDetectionResult: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         return FrameworkDetectionResult.unmatched(project_path=str(project_path))
 
@@ -90,10 +106,12 @@ def test_find_first_level_file_prefers_root_and_nested_matches(tmp_path: Path) -
     """Verify find first level file prefers root and nested matches.
 
     Args:
-        tmp_path (Path): Value supplied to this callable.
+        tmp_path:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     root_file = tmp_path / "settings.py"
     root_file.write_text("ROOT = True\n", encoding="utf-8")
@@ -109,14 +127,18 @@ def test_find_first_level_file_prefers_root_and_nested_matches(tmp_path: Path) -
     assert find_first_level_file(tmp_path, "settings.py") == nested_file
 
 
-def test_find_first_level_directory_finds_root_and_nested_matches(tmp_path: Path) -> None:
+def test_find_first_level_directory_finds_root_and_nested_matches(
+    tmp_path: Path,
+) -> None:
     """Verify find first level directory finds root and nested matches.
 
     Args:
-        tmp_path (Path): Value supplied to this callable.
+        tmp_path:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     root_dir = tmp_path / "locale"
     root_dir.mkdir()
@@ -139,14 +161,18 @@ def test_read_text_if_present_handles_missing_binary_and_read_errors(
     """Verify read text if present handles missing binary and read errors.
 
     Args:
-        tmp_path (Path): Value supplied to this callable.
-        monkeypatch (pytest.MonkeyPatch): Value supplied to this callable.
+        tmp_path:
+            Value supplied to this callable.
+        monkeypatch:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
 
     Raises:
-        OSError: Raised when this callable hits the corresponding error path.
+        OSError:
+            Raised when this callable hits the corresponding error path.
     """
     assert read_text_if_present(tmp_path / "missing.txt") == ""
 
@@ -162,14 +188,18 @@ def test_read_text_if_present_handles_missing_binary_and_read_errors(
         """Handle raise os error.
 
         Args:
-            _args (object): Value supplied to this callable.
-            _kwargs (object): Value supplied to this callable.
+            *_args:
+                Value supplied to this callable.
+            **_kwargs:
+                Value supplied to this callable.
 
         Returns:
-            str: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
 
         Raises:
-            OSError: Raised when this callable hits the corresponding error path.
+            OSError:
+                Raised when this callable hits the corresponding error path.
         """
         msg = "boom"
         raise OSError(msg)
@@ -183,7 +213,8 @@ def test_base_framework_adapter_default_scope_delegates_to_sync_filters() -> Non
     """Verify base framework adapter default scope delegates to sync filters.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     scope = _AdapterWithDefaultSyncScope().get_sync_scope(Path("/workspace/project"))
 
@@ -195,7 +226,8 @@ def test_base_framework_adapter_default_filters_are_empty_when_not_overridden() 
     """Verify base framework adapter default filters are empty when not overridden.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     adapter = _AdapterWithNoCustomFilters()
 

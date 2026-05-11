@@ -7,33 +7,35 @@ from kivy.uix.screenmanager import ScreenManager
 from polyglot_site_translator.presentation.frontend_shell import FrontendShell
 from polyglot_site_translator.presentation.kivy.screens.base import BaseShellScreen
 from polyglot_site_translator.presentation.kivy.widgets.common import WrappedLabel
-from polyglot_site_translator.presentation.kivy.widgets.po_locale_selection_popup import (
-    POLocaleSelectionPopup,
-)
-from polyglot_site_translator.presentation.kivy.widgets.sync_progress_popup import (
-    SyncProgressPopup,
-)
 from polyglot_site_translator.presentation.view_models import (
     TranslationWorkflowRequestViewModel,
 )
+
+from ..widgets.po_locale_selection_popup import POLocaleSelectionPopup
+from ..widgets.sync_progress_popup import SyncProgressPopup
 
 
 class ProjectDetailScreen(BaseShellScreen):
     """Screen showing project details and workflow actions.
 
     Attributes:
-        None: This type does not declare additional class-level attributes.
+        None: This type does not declare class-level attributes.
     """
 
     def __init__(self, *, shell: FrontendShell, manager_ref: ScreenManager) -> None:
         """Build project actions, summary labels, and workflow popups.
 
         Args:
-            shell (FrontendShell): Value supplied to this callable.
-            manager_ref (ScreenManager): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            shell:
+                Value supplied to this callable.
+            manager_ref:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         super().__init__(
             screen_name="project_detail",
@@ -58,10 +60,14 @@ class ProjectDetailScreen(BaseShellScreen):
         """Handle back to projects.
 
         Args:
-            _args (object): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            *_args:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         self._shell.open_projects()
         self.show_route("projects")
@@ -70,10 +76,14 @@ class ProjectDetailScreen(BaseShellScreen):
         """Handle start sync.
 
         Args:
-            _args (object): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            *_args:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         self._shell.start_sync_async()
         if self._sync_progress_popup is None:
@@ -84,10 +94,14 @@ class ProjectDetailScreen(BaseShellScreen):
         """Handle start sync to remote.
 
         Args:
-            _args (object): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            *_args:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         self._shell.start_sync_to_remote_async()
         if self._sync_progress_popup is None:
@@ -98,10 +112,14 @@ class ProjectDetailScreen(BaseShellScreen):
         """Handle start audit.
 
         Args:
-            _args (object): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            *_args:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         self._shell.start_audit()
         self.show_route("audit")
@@ -110,10 +128,14 @@ class ProjectDetailScreen(BaseShellScreen):
         """Handle start po processing.
 
         Args:
-            _args (object): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            *_args:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         detail = self._shell.project_detail_state
         if detail is None:
@@ -132,10 +154,14 @@ class ProjectDetailScreen(BaseShellScreen):
         """Handle confirm po processing.
 
         Args:
-            request (TranslationWorkflowRequestViewModel): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            request:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         self._shell.start_po_processing_async(
             request.locales,
@@ -147,10 +173,14 @@ class ProjectDetailScreen(BaseShellScreen):
         """Handle edit project.
 
         Args:
-            _args (object): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            *_args:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         detail = self._shell.project_detail_state
         if detail is None:
@@ -161,8 +191,13 @@ class ProjectDetailScreen(BaseShellScreen):
     def refresh(self) -> None:
         """Refresh the detail summary from the selected project state.
 
+        Args:
+            self:
+                Value supplied to this callable.
+
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         detail = self._shell.project_detail_state
         if detail is None:

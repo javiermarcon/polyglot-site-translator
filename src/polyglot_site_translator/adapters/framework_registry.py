@@ -28,7 +28,8 @@ class FrameworkAdapterRegistry:
     """Resolve framework adapters against a project path.
 
     Attributes:
-        adapters (list[FrameworkAdapter]): Documented attribute exposed by this type.
+        adapters:
+            Documented attribute exposed by this type.
     """
 
     adapters: list[FrameworkAdapter]
@@ -42,10 +43,14 @@ class FrameworkAdapterRegistry:
         """Build the default registry with an explicit ordered adapter list.
 
         Args:
-            adapters (list[FrameworkAdapter]): Value supplied to this callable.
+            cls:
+                Value supplied to this callable.
+            adapters:
+                Value supplied to this callable.
 
         Returns:
-            FrameworkAdapterRegistry: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         return cls(adapters=list(adapters))
 
@@ -53,8 +58,13 @@ class FrameworkAdapterRegistry:
     def discover_installed(cls) -> FrameworkAdapterRegistry:
         """Discover installed framework adapters dynamically from the adapters package.
 
+        Args:
+            cls:
+                Value supplied to this callable.
+
         Returns:
-            FrameworkAdapterRegistry: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         adapters: list[FrameworkAdapter] = []
         for module_info in pkgutil.iter_modules(adapters_package_path):
@@ -76,8 +86,13 @@ class FrameworkAdapterRegistry:
     def iter_adapters(self) -> list[FrameworkAdapter]:
         """Return registered adapters preserving registration order.
 
+        Args:
+            self:
+                Value supplied to this callable.
+
         Returns:
-            list[FrameworkAdapter]: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         return list(self.adapters)
 
@@ -85,10 +100,14 @@ class FrameworkAdapterRegistry:
         """Return the adapter registered for a framework type, if any.
 
         Args:
-            framework_type (str): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            framework_type:
+                Value supplied to this callable.
 
         Returns:
-            FrameworkAdapter | None: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         for adapter in self.adapters:
             if adapter.framework_type == framework_type:
@@ -98,8 +117,13 @@ class FrameworkAdapterRegistry:
     def list_framework_descriptors(self) -> list[FrameworkDescriptor]:
         """Return display metadata for the unknown option and all discovered adapters.
 
+        Args:
+            self:
+                Value supplied to this callable.
+
         Returns:
-            list[FrameworkDescriptor]: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         descriptors = [
             FrameworkDescriptor(
@@ -115,14 +139,18 @@ class FrameworkAdapterRegistry:
         """Return the best framework match for the given project path.
 
         Args:
-            project_path (Path): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            project_path:
+                Value supplied to this callable.
 
         Returns:
-            FrameworkDetectionResult: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
 
         Raises:
-            FrameworkDetectionAmbiguityError: Raised when this callable hits the corresponding error
-        path.
+            FrameworkDetectionAmbiguityError:
+                Raised when this callable hits the corresponding error path.
         """
         matched_results: list[FrameworkDetectionResult] = []
         warnings: list[str] = []
@@ -140,7 +168,9 @@ class FrameworkAdapterRegistry:
         matched_results.sort(key=lambda result: result.confidence, reverse=True)
         top_result = matched_results[0]
         top_matches = [
-            result for result in matched_results if result.confidence == top_result.confidence
+            result
+            for result in matched_results
+            if result.confidence == top_result.confidence
         ]
         if len(top_matches) > 1:
             adapter_names = ", ".join(result.adapter_name for result in top_matches)

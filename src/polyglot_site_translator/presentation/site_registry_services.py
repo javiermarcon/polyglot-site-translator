@@ -85,7 +85,9 @@ from polyglot_site_translator.presentation.view_models import (
     build_sync_rule_filter_type_options,
     build_translation_options,
 )
-from polyglot_site_translator.services.framework_sync_scope import FrameworkSyncScopeService
+from polyglot_site_translator.services.framework_sync_scope import (
+    FrameworkSyncScopeService,
+)
 from polyglot_site_translator.services.site_registry import SiteRegistryService
 
 
@@ -93,27 +95,35 @@ class SiteRegistryWorkflowService(Protocol):
     """Subset of site-registry behavior required by workflow presentation adapters.
 
     Attributes:
-        None: This type does not declare additional class-level attributes.
+        None: This type does not declare class-level attributes.
     """
 
     def get_site(self, site_id: str) -> RegisteredSite:
         """Return a persisted site registry record.
 
         Args:
-            site_id (str): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            site_id:
+                Value supplied to this callable.
 
         Returns:
-            RegisteredSite: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
 
     def detect_framework(self, project_path: str) -> FrameworkDetectionResult:
         """Return framework detection data for a local path.
 
         Args:
-            project_path (str): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            project_path:
+                Value supplied to this callable.
 
         Returns:
-            FrameworkDetectionResult: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
 
     def test_remote_connection(
@@ -123,10 +133,14 @@ class SiteRegistryWorkflowService(Protocol):
         """Test a remote connection from site registration input.
 
         Args:
-            registration (SiteRegistrationInput): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            registration:
+                Value supplied to this callable.
 
         Returns:
-            RemoteConnectionTestResult: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
 
 
@@ -134,7 +148,7 @@ class ProjectSyncWorkflowService(Protocol):
     """Sync orchestration contract consumed by workflow presentation adapters.
 
     Attributes:
-        None: This type does not declare additional class-level attributes.
+        None: This type does not declare class-level attributes.
     """
 
     def sync_remote_to_local(
@@ -145,12 +159,16 @@ class ProjectSyncWorkflowService(Protocol):
         """Synchronize the remote project into the local workspace.
 
         Args:
-            site (RegisteredSite): Value supplied to this callable.
-            progress_callback (Callable[[SyncProgressEvent], None] | None): Value supplied to this
-        callable.
+            self:
+                Value supplied to this callable.
+            site:
+                Value supplied to this callable.
+            progress_callback:
+                Value supplied to this callable.
 
         Returns:
-            SyncResult: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
 
     def sync_local_to_remote(
@@ -161,12 +179,16 @@ class ProjectSyncWorkflowService(Protocol):
         """Synchronize the local workspace into the remote project.
 
         Args:
-            site (RegisteredSite): Value supplied to this callable.
-            progress_callback (Callable[[SyncProgressEvent], None] | None): Value supplied to this
-        callable.
+            self:
+                Value supplied to this callable.
+            site:
+                Value supplied to this callable.
+            progress_callback:
+                Value supplied to this callable.
 
         Returns:
-            SyncResult: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
 
 
@@ -174,7 +196,7 @@ class POProcessingWorkflowService(Protocol):
     """PO processing contract consumed by workflow presentation adapters.
 
     Attributes:
-        None: This type does not declare additional class-level attributes.
+        None: This type does not declare class-level attributes.
     """
 
     def process_site(
@@ -186,14 +208,18 @@ class POProcessingWorkflowService(Protocol):
         """Run PO processing for a site workspace.
 
         Args:
-            site (RegisteredSite): Value supplied to this callable.
-            cache_settings (POProcessingCacheSettings | None): Value supplied to this callable.
-            progress_callback (Callable[[POProcessingProgress], None] | None): Value supplied to
-        this
-            callable.
+            self:
+                Value supplied to this callable.
+            site:
+                Value supplied to this callable.
+            cache_settings:
+                Value supplied to this callable.
+            progress_callback:
+                Value supplied to this callable.
 
         Returns:
-            POProcessingResult: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
 
 
@@ -201,28 +227,38 @@ class SiteRegistryPresentationCatalogService(ProjectCatalogService):
     """Expose real site registry records as project summary/detail view models.
 
     Attributes:
-        None: This type does not declare additional class-level attributes.
+        None: This type does not declare class-level attributes.
     """
 
     def __init__(self, service: SiteRegistryService) -> None:
         """Bind the presentation catalog adapter to the real registry service.
 
         Args:
-            service (SiteRegistryService): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            service:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         self._service = service
 
     def list_projects(self) -> list[ProjectSummaryViewModel]:
         """Return project summaries backed by SQLite.
 
+        Args:
+            self:
+                Value supplied to this callable.
+
         Returns:
-            list[ProjectSummaryViewModel]: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
 
         Raises:
-            ControlledServiceError: Raised when this callable hits the corresponding error path.
+            ControlledServiceError:
+                Raised when this callable hits the corresponding error path.
         """
         try:
             sites = self._service.list_sites()
@@ -237,13 +273,18 @@ class SiteRegistryPresentationCatalogService(ProjectCatalogService):
         """Return project detail information backed by SQLite.
 
         Args:
-            project_id (str): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            project_id:
+                Value supplied to this callable.
 
         Returns:
-            ProjectDetailViewModel: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
 
         Raises:
-            ControlledServiceError: Raised when this callable hits the corresponding error path.
+            ControlledServiceError:
+                Raised when this callable hits the corresponding error path.
         """
         try:
             site = self._service.get_site(project_id)
@@ -262,7 +303,7 @@ class SiteRegistryPresentationManagementService(ProjectRegistryManagementService
     """Expose create and update site registry workflows to the UI.
 
     Attributes:
-        None: This type does not declare additional class-level attributes.
+        None: This type does not declare class-level attributes.
     """
 
     def __init__(
@@ -275,13 +316,18 @@ class SiteRegistryPresentationManagementService(ProjectRegistryManagementService
         """Store registry, settings, and sync-scope services used by editor workflows.
 
         Args:
-            service (SiteRegistryService): Value supplied to this callable.
-            settings_service (TomlSettingsService): Value supplied to this callable.
-            framework_sync_scope_service (FrameworkSyncScopeService | None): Value supplied to this
-            callable.
+            self:
+                Value supplied to this callable.
+            service:
+                Value supplied to this callable.
+            settings_service:
+                Value supplied to this callable.
+            framework_sync_scope_service:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         self._service = service
         self._settings_service = settings_service
@@ -290,8 +336,13 @@ class SiteRegistryPresentationManagementService(ProjectRegistryManagementService
     def build_create_project_editor(self) -> ProjectEditorStateViewModel:
         """Return the initial create-project editor state.
 
+        Args:
+            self:
+                Value supplied to this callable.
+
         Returns:
-            ProjectEditorStateViewModel: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         settings_state = self._load_settings_state()
         editor = replace(
@@ -329,13 +380,18 @@ class SiteRegistryPresentationManagementService(ProjectRegistryManagementService
         """Return the initial edit-project editor state.
 
         Args:
-            project_id (str): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            project_id:
+                Value supplied to this callable.
 
         Returns:
-            ProjectEditorStateViewModel: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
 
         Raises:
-            ControlledServiceError: Raised when this callable hits the corresponding error path.
+            ControlledServiceError:
+                Raised when this callable hits the corresponding error path.
         """
         try:
             site = self._service.get_site(project_id)
@@ -361,13 +417,18 @@ class SiteRegistryPresentationManagementService(ProjectRegistryManagementService
         """Create a site registry record from the editor state.
 
         Args:
-            editor (SiteEditorViewModel): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            editor:
+                Value supplied to this callable.
 
         Returns:
-            ProjectDetailViewModel: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
 
         Raises:
-            ControlledServiceError: Raised when this callable hits the corresponding error path.
+            ControlledServiceError:
+                Raised when this callable hits the corresponding error path.
         """
         try:
             site = self._service.create_site(_build_service_payload(editor))
@@ -391,14 +452,20 @@ class SiteRegistryPresentationManagementService(ProjectRegistryManagementService
         """Update a site registry record from the editor state.
 
         Args:
-            project_id (str): Value supplied to this callable.
-            editor (SiteEditorViewModel): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            project_id:
+                Value supplied to this callable.
+            editor:
+                Value supplied to this callable.
 
         Returns:
-            ProjectDetailViewModel: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
 
         Raises:
-            ControlledServiceError: Raised when this callable hits the corresponding error path.
+            ControlledServiceError:
+                Raised when this callable hits the corresponding error path.
         """
         try:
             site = self._service.update_site(
@@ -425,16 +492,23 @@ class SiteRegistryPresentationManagementService(ProjectRegistryManagementService
         """Test the current remote connection draft from the editor.
 
         Args:
-            editor (SiteEditorViewModel): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            editor:
+                Value supplied to this callable.
 
         Returns:
-            RemoteConnectionTestResultViewModel: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
 
         Raises:
-            ControlledServiceError: Raised when this callable hits the corresponding error path.
+            ControlledServiceError:
+                Raised when this callable hits the corresponding error path.
         """
         try:
-            result = self._service.test_remote_connection(_build_service_payload(editor))
+            result = self._service.test_remote_connection(
+                _build_service_payload(editor)
+            )
         except (
             ValueError,
             SiteRegistryValidationError,
@@ -457,14 +531,20 @@ class SiteRegistryPresentationManagementService(ProjectRegistryManagementService
         """Rebuild the editor state for the current draft without persisting changes.
 
         Args:
-            editor (SiteEditorViewModel): Value supplied to this callable.
-            mode (str): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            editor:
+                Value supplied to this callable.
+            mode:
+                Value supplied to this callable.
 
         Returns:
-            ProjectEditorStateViewModel: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
 
         Raises:
-            ControlledServiceError: Raised when this callable hits the corresponding error path.
+            ControlledServiceError:
+                Raised when this callable hits the corresponding error path.
         """
         try:
             return _build_editor_state(
@@ -486,11 +566,17 @@ class SiteRegistryPresentationManagementService(ProjectRegistryManagementService
     def _default_workspace_root(self) -> Path:
         """Handle default workspace root.
 
+        Args:
+            self:
+                Value supplied to this callable.
+
         Returns:
-            Path: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
 
         Raises:
-            ControlledServiceError: Raised when this callable hits the corresponding error path.
+            ControlledServiceError:
+                Raised when this callable hits the corresponding error path.
         """
         settings_state = self._load_settings_state()
         try:
@@ -505,11 +591,17 @@ class SiteRegistryPresentationManagementService(ProjectRegistryManagementService
     def _load_settings_state(self) -> SettingsStateViewModel:
         """Load settings state.
 
+        Args:
+            self:
+                Value supplied to this callable.
+
         Returns:
-            SettingsStateViewModel: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
 
         Raises:
-            ControlledServiceError: Raised when this callable hits the corresponding error path.
+            ControlledServiceError:
+                Raised when this callable hits the corresponding error path.
         """
         try:
             return self._settings_service.load_settings()
@@ -525,7 +617,7 @@ class SiteRegistryPresentationWorkflowService(ProjectWorkflowService):
     """Expose runtime workflow previews backed by persisted project context.
 
     Attributes:
-        None: This type does not declare additional class-level attributes.
+        None: This type does not declare class-level attributes.
     """
 
     def __init__(
@@ -539,14 +631,20 @@ class SiteRegistryPresentationWorkflowService(ProjectWorkflowService):
         """Store the workflow services required by sync, audit, and translation actions.
 
         Args:
-            service (SiteRegistryWorkflowService): Value supplied to this callable.
-            project_sync_service (ProjectSyncWorkflowService): Value supplied to this callable.
-            po_processing_service (POProcessingWorkflowService | None): Value supplied to this
-        callable.
-            settings_service (TomlSettingsService | None): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            service:
+                Value supplied to this callable.
+            project_sync_service:
+                Value supplied to this callable.
+            po_processing_service:
+                Value supplied to this callable.
+            settings_service:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         self._service = service
         self._project_sync_service = project_sync_service
@@ -561,15 +659,20 @@ class SiteRegistryPresentationWorkflowService(ProjectWorkflowService):
         """Run remote-to-local sync for the selected project.
 
         Args:
-            project_id (str): Value supplied to this callable.
-            progress_callback (Callable[[SyncProgressEvent], None] | None): Value supplied to this
-        callable.
+            self:
+                Value supplied to this callable.
+            project_id:
+                Value supplied to this callable.
+            progress_callback:
+                Value supplied to this callable.
 
         Returns:
-            SyncStatusViewModel: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
 
         Raises:
-            ControlledServiceError: Raised when this callable hits the corresponding error path.
+            ControlledServiceError:
+                Raised when this callable hits the corresponding error path.
         """
         try:
             site = self._service.get_site(project_id)
@@ -595,15 +698,20 @@ class SiteRegistryPresentationWorkflowService(ProjectWorkflowService):
         """Run local-to-remote sync for the selected project.
 
         Args:
-            project_id (str): Value supplied to this callable.
-            progress_callback (Callable[[SyncProgressEvent], None] | None): Value supplied to this
-        callable.
+            self:
+                Value supplied to this callable.
+            project_id:
+                Value supplied to this callable.
+            progress_callback:
+                Value supplied to this callable.
 
         Returns:
-            SyncStatusViewModel: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
 
         Raises:
-            ControlledServiceError: Raised when this callable hits the corresponding error path.
+            ControlledServiceError:
+                Raised when this callable hits the corresponding error path.
         """
         try:
             site = self._service.get_site(project_id)
@@ -621,18 +729,26 @@ class SiteRegistryPresentationWorkflowService(ProjectWorkflowService):
         )
         return _build_sync_status(result)
 
-    def trust_remote_host_key(self, project_id: str) -> RemoteConnectionTestResultViewModel:
+    def trust_remote_host_key(
+        self, project_id: str
+    ) -> RemoteConnectionTestResultViewModel:
         """Trust a selected project's SSH host key after explicit UI confirmation.
 
         Args:
-            project_id (str): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            project_id:
+                Value supplied to this callable.
 
         Returns:
-            RemoteConnectionTestResultViewModel: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
 
         Raises:
-            AssertionError: Raised when this callable hits the corresponding error path.
-            ControlledServiceError: Raised when this callable hits the corresponding error path.
+            AssertionError:
+                Raised when this callable hits the corresponding error path.
+            ControlledServiceError:
+                Raised when this callable hits the corresponding error path.
         """
         try:
             site = self._service.get_site(project_id)
@@ -677,13 +793,18 @@ class SiteRegistryPresentationWorkflowService(ProjectWorkflowService):
         """Return a framework-aware audit preview for the selected project.
 
         Args:
-            project_id (str): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            project_id:
+                Value supplied to this callable.
 
         Returns:
-            AuditSummaryViewModel: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
 
         Raises:
-            ControlledServiceError: Raised when this callable hits the corresponding error path.
+            ControlledServiceError:
+                Raised when this callable hits the corresponding error path.
         """
         try:
             site = self._service.get_site(project_id)
@@ -721,17 +842,22 @@ class SiteRegistryPresentationWorkflowService(ProjectWorkflowService):
         """Run PO processing and return a typed workflow summary.
 
         Args:
-            project_id (str): Value supplied to this callable.
-            request (TranslationWorkflowRequestViewModel | None): Value supplied to this callable.
-            progress_callback (Callable[[POProcessingProgress], None] | None): Value supplied to
-        this
-            callable.
+            self:
+                Value supplied to this callable.
+            project_id:
+                Value supplied to this callable.
+            request:
+                Value supplied to this callable.
+            progress_callback:
+                Value supplied to this callable.
 
         Returns:
-            POProcessingSummaryViewModel: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
 
         Raises:
-            ControlledServiceError: Raised when this callable hits the corresponding error path.
+            ControlledServiceError:
+                Raised when this callable hits the corresponding error path.
         """
         try:
             site = self._service.get_site(project_id)
@@ -811,7 +937,9 @@ class SiteRegistryPresentationWorkflowService(ProjectWorkflowService):
             summary_lines.append(
                 f"Translation inconsistencies: {result.variant_inconsistencies_found}"
             )
-            summary_lines.append(f"Variant differences found: {result.variant_differences_found}")
+            summary_lines.append(
+                f"Variant differences found: {result.variant_differences_found}"
+            )
         if result.variant_differences_found > 0:
             summary_lines.append("Variant difference details:")
             summary_lines.extend(result.variant_inconsistency_details)
@@ -863,13 +991,18 @@ class SiteRegistryPresentationWorkflowService(ProjectWorkflowService):
         """Build po processing cache settings.
 
         Args:
-            site (RegisteredSite): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            site:
+                Value supplied to this callable.
 
         Returns:
-            POProcessingCacheSettings: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
 
         Raises:
-            ControlledServiceError: Raised when this callable hits the corresponding error path.
+            ControlledServiceError:
+                Raised when this callable hits the corresponding error path.
         """
         if self._settings_service is None:
             return POProcessingCacheSettings(
@@ -899,18 +1032,24 @@ def _build_editor_state(  # noqa: PLR0913
     """Build editor state.
 
     Args:
-        service (SiteRegistryService): Value supplied to this callable.
-        framework_sync_scope_service (FrameworkSyncScopeService | None): Value supplied to this
-        callable.
-        mode (str): Value supplied to this callable.
-        editor (SiteEditorViewModel): Value supplied to this callable.
-        status (str): Value supplied to this callable.
-        status_message (str | None): Value supplied to this callable.
-        connection_test_result (RemoteConnectionTestResultViewModel | None): Value supplied to this
-        callable.
+        service:
+            Value supplied to this callable.
+        framework_sync_scope_service:
+            Value supplied to this callable.
+        mode:
+            Value supplied to this callable.
+        editor:
+            Value supplied to this callable.
+        status:
+            Value supplied to this callable.
+        status_message:
+            Value supplied to this callable.
+        connection_test_result:
+            Value supplied to this callable.
 
     Returns:
-        ProjectEditorStateViewModel: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
     """
     resolved_scope = _resolve_editor_sync_scope(
         framework_sync_scope_service=framework_sync_scope_service,
@@ -943,13 +1082,16 @@ def _require_remote_connection_for_host_key_trust(site: RegisteredSite) -> None:
     """Validate and return remote connection for host key trust.
 
     Args:
-        site (RegisteredSite): Value supplied to this callable.
+        site:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
 
     Raises:
-        SiteRegistryValidationError: Raised when this callable hits the corresponding error path.
+        SiteRegistryValidationError:
+            Raised when this callable hits the corresponding error path.
     """
     if site.remote_connection is not None:
         return
@@ -961,10 +1103,12 @@ def _build_service_payload(editor: SiteEditorViewModel) -> SiteRegistrationInput
     """Build service payload.
 
     Args:
-        editor (SiteEditorViewModel): Value supplied to this callable.
+        editor:
+            Value supplied to this callable.
 
     Returns:
-        SiteRegistrationInput: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
     """
     remote_connection: RemoteConnectionConfigInput | None = None
     if editor.connection_type != NO_REMOTE_CONNECTION_VALUE:
@@ -978,7 +1122,9 @@ def _build_service_payload(editor: SiteEditorViewModel) -> SiteRegistrationInput
             flags=RemoteConnectionFlags(
                 verify_host=editor.remote_verify_host,
                 use_adapter_sync_filters=editor.use_adapter_sync_filters,
-                sync_rule_overrides=_build_project_rule_overrides(editor.sync_rule_items),
+                sync_rule_overrides=_build_project_rule_overrides(
+                    editor.sync_rule_items
+                ),
             ),
         )
     return SiteRegistrationInput(
@@ -1002,10 +1148,12 @@ def _build_project_summary(site: RegisteredSite) -> ProjectSummaryViewModel:
     """Build project summary.
 
     Args:
-        site (RegisteredSite): Value supplied to this callable.
+        site:
+            Value supplied to this callable.
 
     Returns:
-        ProjectSummaryViewModel: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
     """
     return ProjectSummaryViewModel(
         id=site.id,
@@ -1023,11 +1171,14 @@ def _build_project_detail(
     """Build project detail.
 
     Args:
-        site (RegisteredSite): Value supplied to this callable.
-        detection_result (FrameworkDetectionResult | None): Value supplied to this callable.
+        site:
+            Value supplied to this callable.
+        detection_result:
+            Value supplied to this callable.
 
     Returns:
-        ProjectDetailViewModel: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
     """
     return ProjectDetailViewModel(
         project=_build_project_summary(site),
@@ -1049,10 +1200,12 @@ def _build_site_editor(site: RegisteredSite) -> SiteEditorViewModel:
     """Build site editor.
 
     Args:
-        site (RegisteredSite): Value supplied to this callable.
+        site:
+            Value supplied to this callable.
 
     Returns:
-        SiteEditorViewModel: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
     """
     remote_connection = site.remote_connection
     if remote_connection is None:
@@ -1102,7 +1255,9 @@ def _build_site_editor(site: RegisteredSite) -> SiteEditorViewModel:
         is_active=site.is_active,
         remote_verify_host=remote_connection.flags.verify_host,
         use_adapter_sync_filters=remote_connection.flags.use_adapter_sync_filters,
-        sync_rule_items=_build_override_editor_items(remote_connection.flags.sync_rule_overrides),
+        sync_rule_items=_build_override_editor_items(
+            remote_connection.flags.sync_rule_overrides
+        ),
     )
 
 
@@ -1110,10 +1265,12 @@ def _format_framework_name(framework_type: str) -> str:
     """Format framework name.
 
     Args:
-        framework_type (str): Value supplied to this callable.
+        framework_type:
+            Value supplied to this callable.
 
     Returns:
-        str: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
     """
     framework_map = {
         "wordpress": "WordPress",
@@ -1127,10 +1284,12 @@ def _build_configuration_summary(site: RegisteredSite) -> str:
     """Build configuration summary.
 
     Args:
-        site (RegisteredSite): Value supplied to this callable.
+        site:
+            Value supplied to this callable.
 
     Returns:
-        str: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
     """
     if site.remote_connection is None:
         compile_summary = "enabled" if site.compile_mo else "disabled"
@@ -1148,7 +1307,9 @@ def _build_configuration_summary(site: RegisteredSite) -> str:
             f"Report inconsistencies: {inconsistency_summary} | "
             "Remote connection: None"
         )
-    sync_mode = "filtered" if site.remote_connection.flags.use_adapter_sync_filters else "full"
+    sync_mode = (
+        "filtered" if site.remote_connection.flags.use_adapter_sync_filters else "full"
+    )
     compile_summary = "enabled" if site.compile_mo else "disabled"
     translator_summary = "enabled" if site.use_external_translator else "disabled"
     cache_summary = "enabled" if site.use_translation_cache else "disabled"
@@ -1175,11 +1336,14 @@ def _build_metadata_summary(
     """Build metadata summary.
 
     Args:
-        site (RegisteredSite): Value supplied to this callable.
-        detection_result (FrameworkDetectionResult | None): Value supplied to this callable.
+        site:
+            Value supplied to this callable.
+        detection_result:
+            Value supplied to this callable.
 
     Returns:
-        str: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
     """
     remote_summary = "Remote connection: none configured"
     if site.remote_connection is not None:
@@ -1187,7 +1351,9 @@ def _build_metadata_summary(
             f"Remote user: {site.remote_connection.username} | "
             f"Connection type: {site.remote_connection.connection_type}"
         )
-    summary = f"Framework: {_format_framework_name(site.framework_type)} | {remote_summary}"
+    summary = (
+        f"Framework: {_format_framework_name(site.framework_type)} | {remote_summary}"
+    )
     if detection_result is None:
         return summary
     if detection_result.matched:
@@ -1207,10 +1373,12 @@ def _build_sync_status(result: SyncResult) -> SyncStatusViewModel:
     """Build sync status.
 
     Args:
-        result (SyncResult): Value supplied to this callable.
+        result:
+            Value supplied to this callable.
 
     Returns:
-        SyncStatusViewModel: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
     """
     if result.success:
         if result.direction is SyncDirection.LOCAL_TO_REMOTE:
@@ -1218,14 +1386,15 @@ def _build_sync_status(result: SyncResult) -> SyncStatusViewModel:
                 summary = "Local workspace is empty. No files were uploaded."
             else:
                 summary = (
-                    f"Uploaded {result.summary.files_uploaded} files from {result.local_path} "
-                    "into the remote workspace."
+                    f"Uploaded {result.summary.files_uploaded} files from "
+                    f"{result.local_path} into the remote workspace."
                 )
         elif result.summary.files_downloaded == 0:
             summary = "Remote workspace is empty. No files were downloaded."
         else:
             summary = (
-                f"Downloaded {result.summary.files_downloaded} files into {result.local_path}."
+                f"Downloaded {result.summary.files_downloaded} files into "
+                f"{result.local_path}."
             )
         return SyncStatusViewModel(
             status="completed",
@@ -1267,12 +1436,14 @@ def _resolve_editor_sync_scope(
     """Resolve editor sync scope.
 
     Args:
-        framework_sync_scope_service (FrameworkSyncScopeService | None): Value supplied to this
-        callable.
-        editor (SiteEditorViewModel): Value supplied to this callable.
+        framework_sync_scope_service:
+            Value supplied to this callable.
+        editor:
+            Value supplied to this callable.
 
     Returns:
-        ResolvedSyncScope: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
     """
     framework_type = editor.framework_type.strip().lower()
     if framework_sync_scope_service is None:
@@ -1282,14 +1453,21 @@ def _resolve_editor_sync_scope(
             status=SyncScopeStatus.ADAPTER_UNAVAILABLE,
             filters=(),
             excludes=(),
-            message="Framework sync scope service is not available in this frontend runtime.",
-            catalog_rules=_build_resolved_rules_from_editor_items(editor.sync_rule_items),
+            message=(
+                "Framework sync scope service is not available in this "
+                "frontend runtime."
+            ),
+            catalog_rules=_build_resolved_rules_from_editor_items(
+                editor.sync_rule_items
+            ),
         )
     try:
         return framework_sync_scope_service.resolve_for_framework(
             framework_type=framework_type,
             project_path=editor.local_path,
-            project_rule_overrides=_build_project_rule_overrides(editor.sync_rule_items),
+            project_rule_overrides=_build_project_rule_overrides(
+                editor.sync_rule_items
+            ),
         )
     except (
         SyncConfigurationError,
@@ -1306,7 +1484,9 @@ def _resolve_editor_sync_scope(
             filters=(),
             excludes=(),
             message=f"Framework sync scope resolution failed. Cause: {error}",
-            catalog_rules=_build_resolved_rules_from_editor_items(editor.sync_rule_items),
+            catalog_rules=_build_resolved_rules_from_editor_items(
+                editor.sync_rule_items
+            ),
         )
 
 
@@ -1317,11 +1497,14 @@ def _apply_resolved_scope_to_editor(
     """Apply resolved scope to editor.
 
     Args:
-        editor (SiteEditorViewModel): Value supplied to this callable.
-        resolved_scope (ResolvedSyncScope): Value supplied to this callable.
+        editor:
+            Value supplied to this callable.
+        resolved_scope:
+            Value supplied to this callable.
 
     Returns:
-        SiteEditorViewModel: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
     """
     if resolved_scope.catalog_rules == ():
         return replace(editor, sync_rule_items=())
@@ -1337,10 +1520,12 @@ def _build_editor_sync_rule_items(
     """Build editor sync rule items.
 
     Args:
-        resolved_scope (ResolvedSyncScope): Value supplied to this callable.
+        resolved_scope:
+            Value supplied to this callable.
 
     Returns:
-        tuple[SyncRuleEditorItemViewModel, ...]: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
     """
     sorted_rules = sorted(
         resolved_scope.catalog_rules,
@@ -1353,7 +1538,9 @@ def _build_editor_sync_rule_items(
     return tuple(
         SyncRuleEditorItemViewModel(
             rule_key=rule.rule_key,
-            target_rule_key=(rule.rule_key if rule.source is SyncRuleSource.ADAPTER else None),
+            target_rule_key=(
+                rule.rule_key if rule.source is SyncRuleSource.ADAPTER else None
+            ),
             relative_path=rule.relative_path,
             filter_type=rule.filter_type.value,
             behavior=rule.behavior.value,
@@ -1372,10 +1559,12 @@ def _build_override_editor_items(
     """Build override editor items.
 
     Args:
-        overrides (tuple[ProjectSyncRuleOverride, ...]): Value supplied to this callable.
+        overrides:
+            Value supplied to this callable.
 
     Returns:
-        tuple[SyncRuleEditorItemViewModel, ...]: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
     """
     return tuple(
         SyncRuleEditorItemViewModel(
@@ -1386,7 +1575,9 @@ def _build_override_editor_items(
             behavior=override.behavior.value,
             description=override.description,
             source=(
-                SyncRuleSource.PROJECT.value if override.is_custom else SyncRuleSource.ADAPTER.value
+                SyncRuleSource.PROJECT.value
+                if override.is_custom
+                else SyncRuleSource.ADAPTER.value
             ),
             is_enabled=override.is_enabled,
             is_removable=override.is_custom,
@@ -1401,13 +1592,16 @@ def _build_project_rule_overrides(
     """Build project rule overrides.
 
     Args:
-        items (tuple[SyncRuleEditorItemViewModel, ...]): Value supplied to this callable.
+        items:
+            Value supplied to this callable.
 
     Returns:
-        tuple[ProjectSyncRuleOverride, ...]: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
 
     Raises:
-        ValueError: Raised when this callable hits the corresponding error path.
+        ValueError:
+            Raised when this callable hits the corresponding error path.
     """
     overrides: list[ProjectSyncRuleOverride] = []
     seen_rule_keys: set[str] = set()
@@ -1454,10 +1648,12 @@ def _build_resolved_rules_from_editor_items(
     """Build resolved rules from editor items.
 
     Args:
-        items (tuple[SyncRuleEditorItemViewModel, ...]): Value supplied to this callable.
+        items:
+            Value supplied to this callable.
 
     Returns:
-        tuple[ResolvedSyncRule, ...]: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
     """
     return tuple(
         ResolvedSyncRule(

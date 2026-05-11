@@ -20,7 +20,8 @@ class _TranslationResult(Protocol):
     """Provide TranslationResult behavior for this module.
 
     Attributes:
-        text (str): Documented attribute exposed by this type.
+        text:
+            Documented attribute exposed by this type.
     """
 
     text: str
@@ -30,18 +31,23 @@ class _TranslatorClient(Protocol):
     """Provide TranslatorClient behavior for this module.
 
     Attributes:
-        None: This type does not declare additional class-level attributes.
+        None: This type does not declare class-level attributes.
     """
 
     async def translate(self, text: str, dest: str) -> object:
         """Translate a text into the requested destination language.
 
         Args:
-            text (str): Value supplied to this callable.
-            dest (str): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            text:
+                Value supplied to this callable.
+            dest:
+                Value supplied to this callable.
 
         Returns:
-            object: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
 
 
@@ -49,17 +55,21 @@ class GoogleTransPOTranslationProvider:
     """Translate missing PO entries through ``googletrans``.
 
     Attributes:
-        None: This type does not declare additional class-level attributes.
+        None: This type does not declare class-level attributes.
     """
 
     def __init__(self, translator: _TranslatorClient | None = None) -> None:
         """Optionally inject a translator client while keeping per-thread runtime state.
 
         Args:
-            translator (_TranslatorClient | None): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            translator:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         self._translator = translator
         self._thread_state = threading.local()
@@ -68,21 +78,24 @@ class GoogleTransPOTranslationProvider:
         """Translate text into the base language for the target locale.
 
         Args:
-            text (str): Value supplied to this callable.
-            target_locale (str): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            text:
+                Value supplied to this callable.
+            target_locale:
+                Value supplied to this callable.
 
         Returns:
-            str: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
 
         Raises:
-            POTranslationProviderConfigurationError: Raised when this callable hits the
-        corresponding error
-            path.
-            POTranslationProviderResponseError: Raised when this callable hits the corresponding
-        error path.
-            POTranslationProviderTransportError: Raised when this callable hits the corresponding
-        error
-            path.
+            POTranslationProviderResponseError:
+                Raised when this callable hits the corresponding error path.
+            POTranslationProviderConfigurationError:
+                Raised when this callable hits the corresponding error path.
+            POTranslationProviderTransportError:
+                Raised when this callable hits the corresponding error path.
         """
         destination_language = _base_language(target_locale)
         sanitized_source = _sanitize_text(text).replace(".", ". ")
@@ -103,12 +116,16 @@ class GoogleTransPOTranslationProvider:
         except _transport_error_types() as error:
             cause = str(error).strip() or error.__class__.__name__
             msg = (
-                f"External PO translation failed for locale '{target_locale}' and text {text!r}. "
+                f"External PO translation failed for locale '{target_locale}' "
+                f"and text {text!r}. "
                 f"Cause: {cause}"
             )
             raise POTranslationProviderTransportError(msg) from error
         if isinstance(translated, list):
-            msg = "External PO translation returned multiple results for a single text request."
+            msg = (
+                "External PO translation returned multiple results for a "
+                "single text request."
+            )
             raise POTranslationProviderResponseError(msg)
         if not isinstance(translated, _TranslationResult):
             msg = (
@@ -121,8 +138,13 @@ class GoogleTransPOTranslationProvider:
     def _loop(self) -> asyncio.AbstractEventLoop:
         """Handle loop.
 
+        Args:
+            self:
+                Value supplied to this callable.
+
         Returns:
-            asyncio.AbstractEventLoop: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         loop = getattr(self._thread_state, "loop", None)
         if isinstance(loop, asyncio.AbstractEventLoop) and not loop.is_closed():
@@ -134,8 +156,13 @@ class GoogleTransPOTranslationProvider:
     def _translator_for_current_thread(self) -> _TranslatorClient:
         """Handle translator for current thread.
 
+        Args:
+            self:
+                Value supplied to this callable.
+
         Returns:
-            _TranslatorClient: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         if self._translator is not None:
             return self._translator
@@ -152,12 +179,12 @@ def _load_googletrans_translator_class() -> type[_TranslatorClient]:
     """Load googletrans translator class.
 
     Returns:
-        type[_TranslatorClient]: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
 
     Raises:
-        POTranslationProviderConfigurationError: Raised when this callable hits the corresponding
-    error
-        path.
+        POTranslationProviderConfigurationError:
+            Raised when this callable hits the corresponding error path.
     """
     try:
         module = importlib.import_module("googletrans")
@@ -175,7 +202,8 @@ def _transport_error_types() -> tuple[type[BaseException], ...]:
     """Handle transport error types.
 
     Returns:
-        tuple[type[BaseException], ...]: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
     """
     error_types: list[type[BaseException]] = [OSError, RuntimeError]
     for module_name, attribute_name in (
@@ -196,10 +224,12 @@ def _base_language(locale: str) -> str:
     """Handle base language.
 
     Args:
-        locale (str): Value supplied to this callable.
+        locale:
+            Value supplied to this callable.
 
     Returns:
-        str: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
     """
     return locale.split("_", maxsplit=1)[0].lower()
 
@@ -208,10 +238,12 @@ def _sanitize_text(text: str) -> str:
     """Handle sanitize text.
 
     Args:
-        text (str): Value supplied to this callable.
+        text:
+            Value supplied to this callable.
 
     Returns:
-        str: Structured value returned by this callable.
+        value:
+            Structured value returned by this callable.
     """
     sanitized = text.replace("{", "{{").replace("}", "}}")
     return re.sub(r"%\s*(\d+)\s*\$\s*(\w)", r"%\1$\2", sanitized)

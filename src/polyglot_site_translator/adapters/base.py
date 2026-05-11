@@ -15,9 +15,12 @@ class BaseFrameworkAdapter(ABC):
     """Abstract discoverable framework adapter.
 
     Attributes:
-        framework_type (str): Documented attribute exposed by this type.
-        adapter_name (str): Documented attribute exposed by this type.
-        display_name (str): Documented attribute exposed by this type.
+        framework_type:
+            Documented attribute exposed by this type.
+        adapter_name:
+            Documented attribute exposed by this type.
+        display_name:
+            Documented attribute exposed by this type.
     """
 
     framework_type: str
@@ -29,20 +32,28 @@ class BaseFrameworkAdapter(ABC):
         """Inspect a path and return a structured detection result.
 
         Args:
-            project_path (Path): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            project_path:
+                Value supplied to this callable.
 
         Returns:
-            FrameworkDetectionResult: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
 
     def get_sync_scope(self, project_path: Path) -> AdapterSyncScope:
         """Return adapter-defined include/exclude sync rules for the given project path.
 
         Args:
-            project_path (Path): Value supplied to this callable.
+            self:
+                Value supplied to this callable.
+            project_path:
+                Value supplied to this callable.
 
         Returns:
-            AdapterSyncScope: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         return AdapterSyncScope(filters=self.get_sync_filters(project_path))
 
@@ -51,9 +62,11 @@ class BaseFrameworkAdapter(ABC):
         """Return adapter-defined sync filters for the given project path.
 
         Args:
-            project_path (Path): Value supplied to this callable.
+            project_path:
+                Value supplied to this callable.
 
         Returns:
-            tuple[SyncFilterSpec, ...]: Structured value returned by this callable.
+            value:
+                Structured value returned by this callable.
         """
         return ()

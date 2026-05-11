@@ -8,7 +8,10 @@ from typing import Literal
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.popup import Popup
 
-from polyglot_site_translator.presentation.kivy.widgets.common import AppButton, WrappedLabel
+from polyglot_site_translator.presentation.kivy.widgets.common import (
+    AppButton,
+    WrappedLabel,
+)
 
 _PURPOSE_MESSAGES: dict[str, str] = {
     "sync": (
@@ -30,11 +33,14 @@ def open_ssh_host_key_trust_confirmation(
     """Show the confirmation popup; call ``on_trust`` after the user accepts.
 
     Args:
-        on_trust (Callable[[], None]): Value supplied to this callable.
-        purpose (Literal["sync", "connection_test"]): Value supplied to this callable.
+        on_trust:
+            Value supplied to this callable.
+        purpose:
+            Value supplied to this callable.
 
     Returns:
-        None: This callable does not return a value.
+        value:
+            Structured value returned by this callable.
     """
     confirmation = Popup(
         title="Trust SSH Host Key?",
@@ -43,7 +49,9 @@ def open_ssh_host_key_trust_confirmation(
     )
     container = BoxLayout(orientation="vertical", spacing=12, padding=12)
     container.add_widget(WrappedLabel(text=_PURPOSE_MESSAGES[purpose]))
-    actions = BoxLayout(orientation="horizontal", spacing=12, size_hint_y=None, height=48)
+    actions = BoxLayout(
+        orientation="horizontal", spacing=12, size_hint_y=None, height=48
+    )
     accept_button = AppButton(text="Trust and Retry", primary=True)
     cancel_button = AppButton(text="Cancel", primary=False)
 
@@ -51,10 +59,12 @@ def open_ssh_host_key_trust_confirmation(
         """Handle accept.
 
         Args:
-            _instance (object): Value supplied to this callable.
+            _instance:
+                Value supplied to this callable.
 
         Returns:
-            None: This callable does not return a value.
+            value:
+                Structured value returned by this callable.
         """
         confirmation.dismiss()
         on_trust()
