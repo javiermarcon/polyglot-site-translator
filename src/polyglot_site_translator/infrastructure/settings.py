@@ -10,6 +10,19 @@ import sys
 import tomllib
 from typing import Any
 
+from polyglot_site_translator.domain.site_registry.errors import (
+    SiteRegistryValidationError,
+)
+from polyglot_site_translator.domain.site_registry.locales import (
+    normalize_default_locale,
+)
+from polyglot_site_translator.domain.sync.scope import (
+    AdapterSyncScopeSettings,
+    ConfiguredSyncRule,
+    FrameworkSyncRuleSet,
+    SyncFilterType,
+    SyncRuleBehavior,
+)
 from polyglot_site_translator.infrastructure.database_location import (
     DEFAULT_DATABASE_FILENAME,
     normalize_database_filename,
@@ -34,7 +47,16 @@ _ALLOWED_ROUTE_NAMES = {route_name.value for route_name in RouteName}
 
 
 def resolve_user_config_dir(explicit_dir: Path | None = None) -> Path:
-    """Return the platform-aware per-user configuration directory."""
+    """Return the platform-aware per-user configuration directory.
+
+    Args:
+        explicit_dir:
+            Value supplied to this callable.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
     if explicit_dir is not None:
         return explicit_dir
 
@@ -51,13 +73,30 @@ def resolve_user_config_dir(explicit_dir: Path | None = None) -> Path:
     return _resolve_posix_config_dir()
 
 
-def build_default_settings_service(config_dir: Path | None = None) -> TomlSettingsService:
-    """Build the default TOML-backed settings service for the current user."""
+def build_default_settings_service(
+    config_dir: Path | None = None,
+) -> TomlSettingsService:
+    """Build the default TOML-backed settings service for the current user.
+
+    Args:
+        config_dir:
+            Value supplied to this callable.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
     settings_path = resolve_user_config_dir(config_dir) / SETTINGS_FILENAME
     return TomlSettingsService(settings_path=settings_path)
 
 
 def _resolve_windows_config_dir() -> Path:
+    """Resolve windows config dir.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
     appdata = os.getenv("APPDATA")
     if appdata:
         return Path(appdata) / APP_CONFIG_DIRNAME
@@ -65,6 +104,12 @@ def _resolve_windows_config_dir() -> Path:
 
 
 def _resolve_posix_config_dir() -> Path:
+    """Resolve posix config dir.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
     xdg_config_home = os.getenv("XDG_CONFIG_HOME")
     if xdg_config_home:
         return Path(xdg_config_home) / APP_CONFIG_DIRNAME
@@ -72,18 +117,56 @@ def _resolve_posix_config_dir() -> Path:
 
 
 class TomlSettingsService:
-    """Persist frontend app settings in a TOML file."""
+    """Persist frontend app settings in a TOML file.
+
+    Attributes:
+        None: This type does not declare class-level attributes.
+    """
 
     def __init__(self, settings_path: Path) -> None:
+        """Bind the service to one concrete TOML settings file.
+
+        Args:
+            self:
+                Value supplied to this callable.
+            settings_path:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+        """
         self._settings_path = settings_path
 
     @property
     def settings_path(self) -> Path:
-        """Return the backing TOML file path."""
+        """Return the backing TOML file path.
+
+        Args:
+            self:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+        """
         return self._settings_path
 
     def load_settings(self) -> SettingsStateViewModel:
-        """Load settings from TOML or fall back to defaults."""
+        """Load settings from TOML or fall back to defaults.
+
+        Args:
+            self:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+
+        Raises:
+            ControlledServiceError:
+                Raised when this callable hits the corresponding error path.
+        """
         try:
             app_settings = self._load_app_settings()
         except OSError as error:
@@ -98,8 +181,25 @@ class TomlSettingsService:
             status_message="Settings loaded.",
         )
 
-    def save_settings(self, app_settings: AppSettingsViewModel) -> SettingsStateViewModel:
-        """Persist the provided settings as TOML."""
+    def save_settings(
+        self, app_settings: AppSettingsViewModel
+    ) -> SettingsStateViewModel:
+        """Persist the provided settings as TOML.
+
+        Args:
+            self:
+                Value supplied to this callable.
+            app_settings:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+
+        Raises:
+            ControlledServiceError:
+                Raised when this callable hits the corresponding error path.
+        """
         normalized_settings = _validate_app_settings(
             _with_default_database_directory(
                 app_settings,
@@ -122,7 +222,16 @@ class TomlSettingsService:
         )
 
     def reset_settings(self) -> SettingsStateViewModel:
-        """Restore and persist frontend defaults."""
+        """Restore and persist frontend defaults.
+
+        Args:
+            self:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+        """
         default_settings = build_default_app_settings(
             database_directory=str(self._settings_path.parent),
             database_filename=DEFAULT_DATABASE_FILENAME,
@@ -134,6 +243,16 @@ class TomlSettingsService:
         )
 
     def _load_app_settings(self) -> AppSettingsViewModel:
+        """Load app settings.
+
+        Args:
+            self:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+        """
         if not self._settings_path.exists():
             return _build_default_persisted_settings(self._settings_path.parent)
 
@@ -145,9 +264,15 @@ class TomlSettingsService:
         default_settings = _build_default_persisted_settings(self._settings_path.parent)
         app_settings = replace(
             default_settings,
-            theme_mode=_read_string(raw_settings, "theme_mode", default_settings.theme_mode),
-            window_width=_read_int(raw_settings, "window_width", default_settings.window_width),
-            window_height=_read_int(raw_settings, "window_height", default_settings.window_height),
+            theme_mode=_read_string(
+                raw_settings, "theme_mode", default_settings.theme_mode
+            ),
+            window_width=_read_int(
+                raw_settings, "window_width", default_settings.window_width
+            ),
+            window_height=_read_int(
+                raw_settings, "window_height", default_settings.window_height
+            ),
             remember_last_screen=_read_bool(
                 raw_settings,
                 "remember_last_screen",
@@ -163,7 +288,47 @@ class TomlSettingsService:
                 "developer_mode",
                 default_settings.developer_mode,
             ),
-            ui_language=_read_string(raw_settings, "ui_language", default_settings.ui_language),
+            ui_language=_read_string(
+                raw_settings, "ui_language", default_settings.ui_language
+            ),
+            default_project_locale=_read_translation_default_project_locale(
+                raw_document,
+                default_settings.default_project_locale,
+            ),
+            default_compile_mo=_read_translation_default_compile_mo(
+                raw_document,
+                default_settings.default_compile_mo,
+            ),
+            default_use_external_translator=_read_translation_default_use_external_translator(
+                raw_document,
+                default_settings.default_use_external_translator,
+            ),
+            default_use_translation_cache=_read_translation_default_use_translation_cache(
+                raw_document,
+                default_settings.default_use_translation_cache,
+            ),
+            default_only_fuzzy=_read_translation_default_only_fuzzy(
+                raw_document,
+                default_settings.default_only_fuzzy,
+            ),
+            translation_cache_path=_read_translation_cache_path(
+                raw_document,
+                default_settings.translation_cache_path,
+            ),
+            default_dry_run=_read_translation_default_dry_run(
+                raw_document,
+                default_settings.default_dry_run,
+            ),
+            default_stats_only=_read_translation_default_stats_only(
+                raw_document,
+                default_settings.default_stats_only,
+            ),
+            default_report_inconsistencies=(
+                _read_translation_default_report_inconsistencies(
+                    raw_document,
+                    default_settings.default_report_inconsistencies,
+                )
+            ),
             database_directory=_read_string(
                 raw_settings,
                 "database_directory",
@@ -174,11 +339,30 @@ class TomlSettingsService:
                 "database_filename",
                 default_settings.database_filename,
             ),
+            sync_progress_log_limit=_read_int(
+                raw_settings,
+                "sync_progress_log_limit",
+                default_settings.sync_progress_log_limit,
+            ),
+            sync_scope_settings=_read_sync_scope_settings(
+                raw_document,
+                default_settings.sync_scope_settings,
+            ),
         )
         return _validate_app_settings(app_settings)
 
 
 def _build_default_persisted_settings(settings_directory: Path) -> AppSettingsViewModel:
+    """Build default persisted settings.
+
+    Args:
+        settings_directory:
+            Value supplied to this callable.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
     return build_default_app_settings(database_directory=str(settings_directory))
 
 
@@ -187,12 +371,38 @@ def _with_default_database_directory(
     *,
     default_directory: Path,
 ) -> AppSettingsViewModel:
+    """Return default database directory.
+
+    Args:
+        app_settings:
+            Value supplied to this callable.
+        default_directory:
+            Value supplied to this callable.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
     if app_settings.database_directory.strip():
         return app_settings
     return replace(app_settings, database_directory=str(default_directory))
 
 
 def _read_app_table(raw_document: dict[str, Any]) -> dict[str, Any]:
+    """Read app table.
+
+    Args:
+        raw_document:
+            Value supplied to this callable.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+
+    Raises:
+        ControlledServiceError:
+            Raised when this callable hits the corresponding error path.
+    """
     raw_app_settings = raw_document.get("app")
     if raw_app_settings is None:
         return {}
@@ -203,6 +413,24 @@ def _read_app_table(raw_document: dict[str, Any]) -> dict[str, Any]:
 
 
 def _read_string(raw_settings: dict[str, Any], key: str, default: str) -> str:
+    """Read string.
+
+    Args:
+        raw_settings:
+            Value supplied to this callable.
+        key:
+            Value supplied to this callable.
+        default:
+            Value supplied to this callable.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+
+    Raises:
+        ControlledServiceError:
+            Raised when this callable hits the corresponding error path.
+    """
     raw_value = raw_settings.get(key, default)
     if isinstance(raw_value, str):
         return raw_value
@@ -211,6 +439,24 @@ def _read_string(raw_settings: dict[str, Any], key: str, default: str) -> str:
 
 
 def _read_int(raw_settings: dict[str, Any], key: str, default: int) -> int:
+    """Read int.
+
+    Args:
+        raw_settings:
+            Value supplied to this callable.
+        key:
+            Value supplied to this callable.
+        default:
+            Value supplied to this callable.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+
+    Raises:
+        ControlledServiceError:
+            Raised when this callable hits the corresponding error path.
+    """
     raw_value = raw_settings.get(key, default)
     if isinstance(raw_value, int) and not isinstance(raw_value, bool):
         return raw_value
@@ -219,6 +465,24 @@ def _read_int(raw_settings: dict[str, Any], key: str, default: int) -> int:
 
 
 def _read_bool(raw_settings: dict[str, Any], key: str, default: bool) -> bool:
+    """Read bool.
+
+    Args:
+        raw_settings:
+            Value supplied to this callable.
+        key:
+            Value supplied to this callable.
+        default:
+            Value supplied to this callable.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+
+    Raises:
+        ControlledServiceError:
+            Raised when this callable hits the corresponding error path.
+    """
     raw_value = raw_settings.get(key, default)
     if isinstance(raw_value, bool):
         return raw_value
@@ -227,6 +491,20 @@ def _read_bool(raw_settings: dict[str, Any], key: str, default: bool) -> bool:
 
 
 def _validate_app_settings(app_settings: AppSettingsViewModel) -> AppSettingsViewModel:
+    """Validate app settings.
+
+    Args:
+        app_settings:
+            Value supplied to this callable.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+
+    Raises:
+        ControlledServiceError:
+            Raised when this callable hits the corresponding error path.
+    """
     if app_settings.theme_mode not in _ALLOWED_THEME_MODES:
         msg = f"Unsupported theme mode: {app_settings.theme_mode}"
         raise ControlledServiceError(msg)
@@ -239,20 +517,50 @@ def _validate_app_settings(app_settings: AppSettingsViewModel) -> AppSettingsVie
     if app_settings.last_opened_screen not in _ALLOWED_ROUTE_NAMES:
         msg = f"Unsupported last opened screen: {app_settings.last_opened_screen}"
         raise ControlledServiceError(msg)
+    if app_settings.sync_progress_log_limit <= 0:
+        msg = "Sync progress log limit must be a positive integer."
+        raise ControlledServiceError(msg)
     try:
-        database_directory = str(validate_database_directory(app_settings.database_directory))
+        default_project_locale = normalize_default_locale(
+            app_settings.default_project_locale,
+            label="Default project locale",
+        )
+    except SiteRegistryValidationError as error:
+        raise ControlledServiceError(str(error)) from error
+    try:
+        database_directory = str(
+            validate_database_directory(app_settings.database_directory)
+        )
         database_filename = normalize_database_filename(app_settings.database_filename)
     except ValueError as error:
         raise ControlledServiceError(str(error)) from error
     return replace(
         app_settings,
+        default_project_locale=default_project_locale,
+        translation_cache_path=_normalize_translation_cache_path(
+            app_settings.translation_cache_path,
+            default_directory=Path(database_directory),
+        ),
         database_directory=database_directory,
         database_filename=database_filename,
+        sync_scope_settings=_validate_sync_scope_settings(
+            app_settings.sync_scope_settings
+        ),
     )
 
 
 def _serialize_settings_document(app_settings: AppSettingsViewModel) -> str:
-    return (
+    """Serialize settings document.
+
+    Args:
+        app_settings:
+            Value supplied to this callable.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
+    document = (
         "# Polyglot Site Translator frontend settings\n"
         "[meta]\n"
         f"schema_version = {SETTINGS_SCHEMA_VERSION}\n\n"
@@ -260,20 +568,720 @@ def _serialize_settings_document(app_settings: AppSettingsViewModel) -> str:
         f"theme_mode = {_format_toml_string(app_settings.theme_mode)}\n"
         f"window_width = {app_settings.window_width}\n"
         f"window_height = {app_settings.window_height}\n"
-        f"remember_last_screen = {_format_toml_bool(app_settings.remember_last_screen)}\n"
+        "remember_last_screen = "
+        f"{_format_toml_bool(app_settings.remember_last_screen)}\n"
         f"last_opened_screen = {_format_toml_string(app_settings.last_opened_screen)}\n"
         f"developer_mode = {_format_toml_bool(app_settings.developer_mode)}\n"
         f"ui_language = {_format_toml_string(app_settings.ui_language)}\n"
         f"database_directory = {_format_toml_string(app_settings.database_directory)}\n"
         f"database_filename = {_format_toml_string(app_settings.database_filename)}\n"
+        f"sync_progress_log_limit = {app_settings.sync_progress_log_limit}\n"
+        "\n"
+        "[translation]\n"
+        "default_project_locale = "
+        f"{_format_toml_string(app_settings.default_project_locale)}\n"
+        f"default_compile_mo = {_format_toml_bool(app_settings.default_compile_mo)}\n"
+        "default_use_external_translator = "
+        f"{_format_toml_bool(app_settings.default_use_external_translator)}\n"
+        "default_use_translation_cache = "
+        f"{_format_toml_bool(app_settings.default_use_translation_cache)}\n"
+        f"default_only_fuzzy = {_format_toml_bool(app_settings.default_only_fuzzy)}\n"
+        "translation_cache_path = "
+        f"{_format_toml_string(app_settings.translation_cache_path)}\n"
+        f"default_dry_run = {_format_toml_bool(app_settings.default_dry_run)}\n"
+        f"default_stats_only = {_format_toml_bool(app_settings.default_stats_only)}\n"
+        "default_report_inconsistencies = "
+        f"{_format_toml_bool(app_settings.default_report_inconsistencies)}\n"
     )
+    document += _serialize_sync_scope_settings(app_settings.sync_scope_settings)
+    return document
 
 
 def _format_toml_string(value: str) -> str:
+    """Format toml string.
+
+    Args:
+        value:
+            Value supplied to this callable.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
     return json.dumps(value)
 
 
 def _format_toml_bool(value: bool) -> str:
+    """Format toml bool.
+
+    Args:
+        value:
+            Value supplied to this callable.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
     if value:
         return "true"
     return "false"
+
+
+def _read_translation_default_project_locale(
+    raw_document: dict[str, Any],
+    default_locale: str,
+) -> str:
+    """Read translation default project locale.
+
+    Args:
+        raw_document:
+            Value supplied to this callable.
+        default_locale:
+            Value supplied to this callable.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+
+    Raises:
+        ControlledServiceError:
+            Raised when this callable hits the corresponding error path.
+    """
+    raw_translation = raw_document.get("translation")
+    if raw_translation is None:
+        return default_locale
+    if not isinstance(raw_translation, dict):
+        msg = "The [translation] settings section must be a TOML table."
+        raise ControlledServiceError(msg)
+    raw_value = raw_translation.get("default_project_locale", default_locale)
+    if isinstance(raw_value, str):
+        return raw_value
+    msg = "The translation setting 'default_project_locale' must be a string."
+    raise ControlledServiceError(msg)
+
+
+def _read_translation_default_compile_mo(
+    raw_document: dict[str, Any],
+    default_compile_mo: bool,
+) -> bool:
+    """Read translation default compile mo.
+
+    Args:
+        raw_document:
+            Value supplied to this callable.
+        default_compile_mo:
+            Value supplied to this callable.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+
+    Raises:
+        ControlledServiceError:
+            Raised when this callable hits the corresponding error path.
+    """
+    raw_translation = raw_document.get("translation")
+    if raw_translation is None:
+        return default_compile_mo
+    if not isinstance(raw_translation, dict):
+        msg = "The [translation] settings section must be a TOML table."
+        raise ControlledServiceError(msg)
+    raw_value = raw_translation.get("default_compile_mo", default_compile_mo)
+    if isinstance(raw_value, bool):
+        return raw_value
+    msg = "The translation setting 'default_compile_mo' must be a boolean."
+    raise ControlledServiceError(msg)
+
+
+def _read_translation_default_use_external_translator(
+    raw_document: dict[str, Any],
+    default_use_external_translator: bool,
+) -> bool:
+    """Read translation default use external translator.
+
+    Args:
+        raw_document:
+            Value supplied to this callable.
+        default_use_external_translator:
+            Value supplied to this callable.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+
+    Raises:
+        ControlledServiceError:
+            Raised when this callable hits the corresponding error path.
+    """
+    raw_translation = raw_document.get("translation")
+    if raw_translation is None:
+        return default_use_external_translator
+    if not isinstance(raw_translation, dict):
+        msg = "The [translation] settings section must be a TOML table."
+        raise ControlledServiceError(msg)
+    raw_value = raw_translation.get(
+        "default_use_external_translator",
+        default_use_external_translator,
+    )
+    if isinstance(raw_value, bool):
+        return raw_value
+    msg = "The translation setting 'default_use_external_translator' must be a boolean."
+    raise ControlledServiceError(msg)
+
+
+def _read_translation_default_dry_run(
+    raw_document: dict[str, Any],
+    default_dry_run: bool,
+) -> bool:
+    """Read translation default dry run.
+
+    Args:
+        raw_document:
+            Value supplied to this callable.
+        default_dry_run:
+            Value supplied to this callable.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+
+    Raises:
+        ControlledServiceError:
+            Raised when this callable hits the corresponding error path.
+    """
+    raw_translation = raw_document.get("translation")
+    if raw_translation is None:
+        return default_dry_run
+    if not isinstance(raw_translation, dict):
+        msg = "The [translation] settings section must be a TOML table."
+        raise ControlledServiceError(msg)
+    raw_value = raw_translation.get("default_dry_run", default_dry_run)
+    if isinstance(raw_value, bool):
+        return raw_value
+    msg = "The translation setting 'default_dry_run' must be a boolean."
+    raise ControlledServiceError(msg)
+
+
+def _read_translation_default_use_translation_cache(
+    raw_document: dict[str, Any],
+    default_use_translation_cache: bool,
+) -> bool:
+    """Read translation default use translation cache.
+
+    Args:
+        raw_document:
+            Value supplied to this callable.
+        default_use_translation_cache:
+            Value supplied to this callable.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+
+    Raises:
+        ControlledServiceError:
+            Raised when this callable hits the corresponding error path.
+    """
+    raw_translation = raw_document.get("translation")
+    if raw_translation is None:
+        return default_use_translation_cache
+    if not isinstance(raw_translation, dict):
+        msg = "The [translation] settings section must be a TOML table."
+        raise ControlledServiceError(msg)
+    raw_value = raw_translation.get(
+        "default_use_translation_cache",
+        default_use_translation_cache,
+    )
+    if isinstance(raw_value, bool):
+        return raw_value
+    msg = "The translation setting 'default_use_translation_cache' must be a boolean."
+    raise ControlledServiceError(msg)
+
+
+def _read_translation_cache_path(
+    raw_document: dict[str, Any],
+    default_cache_path: str,
+) -> str:
+    """Read translation cache path.
+
+    Args:
+        raw_document:
+            Value supplied to this callable.
+        default_cache_path:
+            Value supplied to this callable.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+
+    Raises:
+        ControlledServiceError:
+            Raised when this callable hits the corresponding error path.
+    """
+    raw_translation = raw_document.get("translation")
+    if raw_translation is None:
+        return default_cache_path
+    if not isinstance(raw_translation, dict):
+        msg = "The [translation] settings section must be a TOML table."
+        raise ControlledServiceError(msg)
+    raw_value = raw_translation.get("translation_cache_path", default_cache_path)
+    if isinstance(raw_value, str):
+        return raw_value
+    msg = "The translation setting 'translation_cache_path' must be a string."
+    raise ControlledServiceError(msg)
+
+
+def _read_translation_default_only_fuzzy(
+    raw_document: dict[str, Any],
+    default_only_fuzzy: bool,
+) -> bool:
+    """Read translation default only fuzzy.
+
+    Args:
+        raw_document:
+            Value supplied to this callable.
+        default_only_fuzzy:
+            Value supplied to this callable.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+
+    Raises:
+        ControlledServiceError:
+            Raised when this callable hits the corresponding error path.
+    """
+    raw_translation = raw_document.get("translation")
+    if raw_translation is None:
+        return default_only_fuzzy
+    if not isinstance(raw_translation, dict):
+        msg = "The [translation] settings section must be a TOML table."
+        raise ControlledServiceError(msg)
+    raw_value = raw_translation.get("default_only_fuzzy", default_only_fuzzy)
+    if isinstance(raw_value, bool):
+        return raw_value
+    msg = "The translation setting 'default_only_fuzzy' must be a boolean."
+    raise ControlledServiceError(msg)
+
+
+def _read_translation_default_stats_only(
+    raw_document: dict[str, Any],
+    default_stats_only: bool,
+) -> bool:
+    """Read translation default stats only.
+
+    Args:
+        raw_document:
+            Value supplied to this callable.
+        default_stats_only:
+            Value supplied to this callable.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+
+    Raises:
+        ControlledServiceError:
+            Raised when this callable hits the corresponding error path.
+    """
+    raw_translation = raw_document.get("translation")
+    if raw_translation is None:
+        return default_stats_only
+    if not isinstance(raw_translation, dict):
+        msg = "The [translation] settings section must be a TOML table."
+        raise ControlledServiceError(msg)
+    raw_value = raw_translation.get("default_stats_only", default_stats_only)
+    if isinstance(raw_value, bool):
+        return raw_value
+    msg = "The translation setting 'default_stats_only' must be a boolean."
+    raise ControlledServiceError(msg)
+
+
+def _read_translation_default_report_inconsistencies(
+    raw_document: dict[str, Any],
+    default_report_inconsistencies: bool,
+) -> bool:
+    """Read translation default report inconsistencies.
+
+    Args:
+        raw_document:
+            Value supplied to this callable.
+        default_report_inconsistencies:
+            Value supplied to this callable.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+
+    Raises:
+        ControlledServiceError:
+            Raised when this callable hits the corresponding error path.
+    """
+    raw_translation = raw_document.get("translation")
+    if raw_translation is None:
+        return default_report_inconsistencies
+    if not isinstance(raw_translation, dict):
+        msg = "The [translation] settings section must be a TOML table."
+        raise ControlledServiceError(msg)
+    raw_value = raw_translation.get(
+        "default_report_inconsistencies",
+        default_report_inconsistencies,
+    )
+    if isinstance(raw_value, bool):
+        return raw_value
+    msg = "The translation setting 'default_report_inconsistencies' must be a boolean."
+    raise ControlledServiceError(msg)
+
+
+def _normalize_translation_cache_path(
+    cache_path: str,
+    *,
+    default_directory: Path,
+) -> str:
+    """Normalize translation cache path.
+
+    Args:
+        cache_path:
+            Value supplied to this callable.
+        default_directory:
+            Value supplied to this callable.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
+    resolved_path = cache_path.strip()
+    if resolved_path == "":
+        return str(default_directory / ".po_translation_cache")
+    normalized_path = Path(resolved_path).expanduser()
+    if not normalized_path.is_absolute():
+        normalized_path = default_directory / normalized_path
+    return str(normalized_path)
+
+
+def _read_sync_scope_settings(
+    raw_document: dict[str, Any],
+    default_settings: AdapterSyncScopeSettings,
+) -> AdapterSyncScopeSettings:
+    """Read sync scope settings.
+
+    Args:
+        raw_document:
+            Value supplied to this callable.
+        default_settings:
+            Value supplied to this callable.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+
+    Raises:
+        ControlledServiceError:
+            Raised when this callable hits the corresponding error path.
+    """
+    raw_sync_scope = raw_document.get("sync_scope")
+    if raw_sync_scope is None:
+        return default_settings
+    if not isinstance(raw_sync_scope, dict):
+        msg = "The [sync_scope] settings section must be a TOML table."
+        raise ControlledServiceError(msg)
+    return AdapterSyncScopeSettings(
+        global_rules=_read_configured_rules(
+            raw_sync_scope.get("global_rules"),
+            key="sync_scope.global_rules",
+        ),
+        framework_rule_sets=_read_framework_rule_sets(
+            raw_sync_scope.get("framework_rules"),
+        ),
+        use_gitignore_rules=_read_bool(
+            raw_sync_scope,
+            "use_gitignore_rules",
+            default_settings.use_gitignore_rules,
+        ),
+    )
+
+
+def _read_configured_rules(
+    raw_rules: Any,
+    *,
+    key: str,
+) -> tuple[ConfiguredSyncRule, ...]:
+    """Read configured rules.
+
+    Args:
+        raw_rules:
+            Value supplied to this callable.
+        key:
+            Value supplied to this callable.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+
+    Raises:
+        ControlledServiceError:
+            Raised when this callable hits the corresponding error path.
+    """
+    if raw_rules is None:
+        return ()
+    if not isinstance(raw_rules, list):
+        msg = f"The {key} setting must be an array of TOML tables."
+        raise ControlledServiceError(msg)
+    configured_rules: list[ConfiguredSyncRule] = []
+    for index, raw_rule in enumerate(raw_rules):
+        if not isinstance(raw_rule, dict):
+            msg = f"The {key}[{index}] setting must be a TOML table."
+            raise ControlledServiceError(msg)
+        configured_rules.append(
+            ConfiguredSyncRule(
+                relative_path=_read_string(raw_rule, "relative_path", ""),
+                filter_type=_read_sync_filter_type(raw_rule, key=f"{key}[{index}]"),
+                behavior=_read_sync_rule_behavior(raw_rule, key=f"{key}[{index}]"),
+                description=_read_string(raw_rule, "description", ""),
+                is_enabled=_read_bool(raw_rule, "is_enabled", True),
+            )
+        )
+    return tuple(configured_rules)
+
+
+def _read_framework_rule_sets(
+    raw_framework_rules: Any,
+) -> tuple[FrameworkSyncRuleSet, ...]:
+    """Read framework rule sets.
+
+    Args:
+        raw_framework_rules:
+            Value supplied to this callable.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+
+    Raises:
+        ControlledServiceError:
+            Raised when this callable hits the corresponding error path.
+    """
+    if raw_framework_rules is None:
+        return ()
+    if not isinstance(raw_framework_rules, list):
+        msg = "The sync_scope.framework_rules setting must be an array of TOML tables."
+        raise ControlledServiceError(msg)
+    framework_rules: dict[str, list[ConfiguredSyncRule]] = {}
+    for index, raw_rule in enumerate(raw_framework_rules):
+        if not isinstance(raw_rule, dict):
+            msg = (
+                f"The sync_scope.framework_rules[{index}] setting must be a TOML table."
+            )
+            raise ControlledServiceError(msg)
+        framework_type = _read_string(raw_rule, "framework_type", "").strip().lower()
+        if framework_type == "":
+            msg = "Framework sync rules require a non-empty framework_type."
+            raise ControlledServiceError(msg)
+        framework_rules.setdefault(framework_type, []).append(
+            ConfiguredSyncRule(
+                relative_path=_read_string(raw_rule, "relative_path", ""),
+                filter_type=_read_sync_filter_type(
+                    raw_rule,
+                    key=f"sync_scope.framework_rules[{index}]",
+                ),
+                behavior=_read_sync_rule_behavior(
+                    raw_rule,
+                    key=f"sync_scope.framework_rules[{index}]",
+                ),
+                description=_read_string(raw_rule, "description", ""),
+                is_enabled=_read_bool(raw_rule, "is_enabled", True),
+            )
+        )
+    return tuple(
+        FrameworkSyncRuleSet(framework_type=framework_type, rules=tuple(rules))
+        for framework_type, rules in sorted(framework_rules.items())
+    )
+
+
+def _read_sync_filter_type(raw_settings: dict[str, Any], *, key: str) -> SyncFilterType:
+    """Read sync filter type.
+
+    Args:
+        raw_settings:
+            Value supplied to this callable.
+        key:
+            Value supplied to this callable.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+
+    Raises:
+        ControlledServiceError:
+            Raised when this callable hits the corresponding error path.
+    """
+    raw_value = _read_string(raw_settings, "filter_type", "")
+    try:
+        return SyncFilterType(raw_value)
+    except ValueError as error:
+        msg = f"Unsupported sync filter type in {key}: {raw_value}"
+        raise ControlledServiceError(msg) from error
+
+
+def _read_sync_rule_behavior(
+    raw_settings: dict[str, Any], *, key: str
+) -> SyncRuleBehavior:
+    """Read sync rule behavior.
+
+    Args:
+        raw_settings:
+            Value supplied to this callable.
+        key:
+            Value supplied to this callable.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+
+    Raises:
+        ControlledServiceError:
+            Raised when this callable hits the corresponding error path.
+    """
+    raw_value = _read_string(raw_settings, "behavior", "")
+    try:
+        return SyncRuleBehavior(raw_value)
+    except ValueError as error:
+        msg = f"Unsupported sync rule behavior in {key}: {raw_value}"
+        raise ControlledServiceError(msg) from error
+
+
+def _validate_sync_scope_settings(
+    sync_scope_settings: AdapterSyncScopeSettings,
+) -> AdapterSyncScopeSettings:
+    """Validate sync scope settings.
+
+    Args:
+        sync_scope_settings:
+            Value supplied to this callable.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+
+    Raises:
+        ControlledServiceError:
+            Raised when this callable hits the corresponding error path.
+    """
+    validated_global_rules = tuple(
+        _validate_configured_rule(rule, context="global sync rule")
+        for rule in sync_scope_settings.global_rules
+    )
+    validated_framework_rule_sets: list[FrameworkSyncRuleSet] = []
+    for rule_set in sync_scope_settings.framework_rule_sets:
+        normalized_framework_type = rule_set.normalized_framework_type()
+        if normalized_framework_type == "":
+            msg = "Framework sync rules require a non-empty framework type."
+            raise ControlledServiceError(msg)
+        validated_framework_rule_sets.append(
+            FrameworkSyncRuleSet(
+                framework_type=normalized_framework_type,
+                rules=tuple(
+                    _validate_configured_rule(
+                        rule,
+                        context=(
+                            f"framework sync rule for '{normalized_framework_type}'"
+                        ),
+                    )
+                    for rule in rule_set.rules
+                ),
+            )
+        )
+    return AdapterSyncScopeSettings(
+        global_rules=validated_global_rules,
+        framework_rule_sets=tuple(validated_framework_rule_sets),
+        use_gitignore_rules=sync_scope_settings.use_gitignore_rules,
+    )
+
+
+def _validate_configured_rule(
+    rule: ConfiguredSyncRule,
+    *,
+    context: str,
+) -> ConfiguredSyncRule:
+    """Validate configured rule.
+
+    Args:
+        rule:
+            Value supplied to this callable.
+        context:
+            Value supplied to this callable.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+
+    Raises:
+        ControlledServiceError:
+            Raised when this callable hits the corresponding error path.
+    """
+    normalized_relative_path = rule.relative_path.strip().strip("/")
+    if normalized_relative_path == "":
+        msg = f"{context.capitalize()} requires a non-empty relative path."
+        raise ControlledServiceError(msg)
+    normalized_description = rule.description.strip()
+    if normalized_description == "":
+        normalized_description = normalized_relative_path
+    return ConfiguredSyncRule(
+        relative_path=normalized_relative_path,
+        filter_type=rule.filter_type,
+        behavior=rule.behavior,
+        description=normalized_description,
+        is_enabled=rule.is_enabled,
+    )
+
+
+def _serialize_sync_scope_settings(
+    sync_scope_settings: AdapterSyncScopeSettings,
+) -> str:
+    """Serialize sync scope settings.
+
+    Args:
+        sync_scope_settings:
+            Value supplied to this callable.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
+    document = "\n[sync_scope]\n"
+    document += (
+        "use_gitignore_rules = "
+        f"{_format_toml_bool(sync_scope_settings.use_gitignore_rules)}\n"
+    )
+    for rule in sync_scope_settings.global_rules:
+        document += "\n[[sync_scope.global_rules]]\n"
+        document += _serialize_configured_rule(rule)
+    for rule_set in sync_scope_settings.framework_rule_sets:
+        for rule in rule_set.rules:
+            document += "\n[[sync_scope.framework_rules]]\n"
+            document += (
+                "framework_type = "
+                f"{_format_toml_string(rule_set.normalized_framework_type())}\n"
+            )
+            document += _serialize_configured_rule(rule)
+    return document
+
+
+def _serialize_configured_rule(rule: ConfiguredSyncRule) -> str:
+    """Serialize configured rule.
+
+    Args:
+        rule:
+            Value supplied to this callable.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
+    return (
+        f"relative_path = {_format_toml_string(rule.relative_path)}\n"
+        f"filter_type = {_format_toml_string(rule.filter_type.value)}\n"
+        f"behavior = {_format_toml_string(rule.behavior.value)}\n"
+        f"description = {_format_toml_string(rule.description)}\n"
+        f"is_enabled = {_format_toml_bool(rule.is_enabled)}\n"
+    )

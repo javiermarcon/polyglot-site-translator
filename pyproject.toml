@@ -37,6 +37,12 @@ classifiers = [
 [tool.setuptools]
 package-dir = {"" = "src"}
 
+[tool.setuptools.package-data]
+polyglot_site_translator = [
+  "presentation/kivy/assets/fonts/*.ttf",
+  "presentation/kivy/assets/fonts/NOTICE.txt",
+]
+
 [tool.setuptools.packages.find]
 where = ["src"]
 
@@ -86,12 +92,13 @@ exclude = [
 [[tool.mypy.overrides]]
 module = [
   "kivy.*",
+  "kivy_garden.filebrowser",
 ]
 ignore_missing_imports = true
 
 [tool.ruff]
 target-version = "py312"
-line-length = 100
+line-length = 88
 extend-exclude = [
   "build",
   "dist",
@@ -123,10 +130,16 @@ select = [
   "EM",
   "BLE",
   "PL",
+  "D",
 ]
 ignore = [
   "TRY003",
+  "D203",
+  "D213",
 ]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**/*.py" = [

@@ -3,11 +3,17 @@
 from __future__ import annotations
 
 from collections.abc import Callable
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
-from polyglot_site_translator.adapters.framework_registry import FrameworkAdapterRegistry
+from polyglot_site_translator.adapters.framework_registry import (
+    FrameworkAdapterRegistry,
+)
+from polyglot_site_translator.domain.po_processing.models import POProcessingProgress
 from polyglot_site_translator.domain.remote_connections.models import (
     NO_REMOTE_CONNECTION_VALUE,
+)
+from polyglot_site_translator.domain.site_registry.locales import (
+    normalize_default_locale,
 )
 from polyglot_site_translator.domain.sync.models import SyncProgressEvent
 from polyglot_site_translator.infrastructure.remote_connections.registry import (
@@ -31,17 +37,26 @@ from polyglot_site_translator.presentation.view_models import (
     SettingsStateViewModel,
     SiteEditorViewModel,
     SyncStatusViewModel,
+    TranslationWorkflowRequestViewModel,
     build_connection_type_options,
     build_default_app_settings,
     build_default_site_editor,
     build_framework_type_options_from_descriptors,
     build_project_editor_state,
     build_settings_state,
+    build_sync_rule_behavior_options,
+    build_sync_rule_filter_type_options,
 )
 from polyglot_site_translator.services.remote_connections import RemoteConnectionService
 
 
 def _default_actions() -> list[ProjectActionViewModel]:
+    """Handle default actions.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
     return [
         ProjectActionViewModel(
             key="sync",
@@ -55,13 +70,21 @@ def _default_actions() -> list[ProjectActionViewModel]:
         ),
         ProjectActionViewModel(
             key="po-processing",
-            label="Process PO",
-            description="Return a deterministic PO-processing summary from a test double.",
+            label="Translate",
+            description=(
+                "Return a deterministic translation summary from a test double."
+            ),
         ),
     ]
 
 
 def _default_connection_type_options() -> list[SettingsOptionViewModel]:
+    """Handle default connection type options.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
     remote_connection_service = RemoteConnectionService(
         registry=RemoteConnectionRegistry.discover_installed()
     )
@@ -70,53 +93,207 @@ def _default_connection_type_options() -> list[SettingsOptionViewModel]:
     )
 
 
+def _build_project_detail_from_editor(
+    project: ProjectSummaryViewModel,
+    editor: SiteEditorViewModel,
+) -> ProjectDetailViewModel:
+    """Handle build project detail from editor.
+
+    Args:
+        project:
+            Value supplied to this callable.
+        editor:
+            Value supplied to this callable.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
+    compile_summary = "enabled" if editor.compile_mo else "disabled"
+    external_summary = "enabled" if editor.use_external_translator else "disabled"
+    cache_summary = "enabled" if editor.use_translation_cache else "disabled"
+    dry_run_summary = "enabled" if editor.dry_run else "disabled"
+    stats_only_summary = "enabled" if editor.stats_only else "disabled"
+    inconsistency_summary = "enabled" if editor.report_inconsistencies else "disabled"
+    return ProjectDetailViewModel(
+        project=project,
+        default_locale=editor.default_locale,
+        configuration_summary=(
+            f"Locale: {editor.default_locale} | Compile MO: {compile_summary} | "
+            f"External translator: {external_summary} | Translation cache: "
+            f"{cache_summary} | "
+            f"Only fuzzy: {'enabled' if editor.only_fuzzy else 'disabled'} | "
+            f"Dry-run: {dry_run_summary} | "
+            f"Stats only: {stats_only_summary} | "
+            f"Report inconsistencies: {inconsistency_summary} | "
+            f"Remote connection: {editor.connection_type.title()}"
+        ),
+        metadata_summary=(
+            "This screen is prepared for site registry, sync, audit and "
+            "translation workflows."
+        ),
+        actions=_default_actions(),
+        compile_mo=editor.compile_mo,
+        use_external_translator=editor.use_external_translator,
+        use_translation_cache=editor.use_translation_cache,
+        only_fuzzy=editor.only_fuzzy,
+        dry_run=editor.dry_run,
+        stats_only=editor.stats_only,
+        report_inconsistencies=editor.report_inconsistencies,
+    )
+
+
 @dataclass
 class InMemoryProjectCatalogService:
-    """In-memory catalog double for frontend tests."""
+    """Test helper for InMemoryProjectCatalogService.
+
+    Attributes:
+        projects:
+            Documented attribute exposed by this type.
+    """
 
     projects: list[ProjectSummaryViewModel]
 
     def list_projects(self) -> list[ProjectSummaryViewModel]:
+        """Handle list projects.
+
+        Args:
+            self:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+        """
         return list(self.projects)
 
     def get_project_detail(self, project_id: str) -> ProjectDetailViewModel:
+        """Handle get project detail.
+
+        Args:
+            self:
+                Value supplied to this callable.
+            project_id:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+
+        Raises:
+            LookupError:
+                Raised when this callable hits the corresponding error path.
+        """
         for project in self.projects:
             if project.id == project_id:
                 return ProjectDetailViewModel(
                     project=project,
-                    configuration_summary="Framework adapter and storage wiring are pending.",
+                    default_locale="en_US",
+                    configuration_summary=(
+                        "Framework adapter and storage wiring are pending."
+                    ),
                     metadata_summary=(
-                        "This screen is prepared for site registry, sync, audit and PO workflows."
+                        "This screen is prepared for site registry, sync, "
+                        "audit and PO workflows."
                     ),
                     actions=_default_actions(),
+                    compile_mo=True,
+                    use_external_translator=True,
+                    only_fuzzy=False,
+                    dry_run=False,
+                    stats_only=False,
+                    report_inconsistencies=False,
                 )
         msg = f"Unknown project id: {project_id}"
         raise LookupError(msg)
 
 
 class FailingSiteRegistryCatalogService:
-    """Catalog double that always surfaces a controlled site registry failure."""
+    """Test helper for FailingSiteRegistryCatalogService.
+
+    Attributes:
+        None: This type does not declare class-level attributes.
+    """
 
     def list_projects(self) -> list[ProjectSummaryViewModel]:
+        """Handle list projects.
+
+        Args:
+            self:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+
+        Raises:
+            ControlledServiceError:
+                Raised when this callable hits the corresponding error path.
+        """
         msg = "SQLite site registry is temporarily unavailable."
         raise ControlledServiceError(msg)
 
     def get_project_detail(self, project_id: str) -> ProjectDetailViewModel:
+        """Handle get project detail.
+
+        Args:
+            self:
+                Value supplied to this callable.
+            project_id:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+
+        Raises:
+            ControlledServiceError:
+                Raised when this callable hits the corresponding error path.
+        """
         msg = f"SQLite site registry is temporarily unavailable for {project_id}."
         raise ControlledServiceError(msg)
 
 
 @dataclass(frozen=True)
 class StubProjectWorkflowService:
-    """Deterministic workflow double for implemented presentation flows."""
+    """Test helper for StubProjectWorkflowService.
+
+    Attributes:
+        fail_sync:
+            Documented attribute exposed by this type.
+        fail_audit:
+            Documented attribute exposed by this type.
+        fail_po_processing:
+            Documented attribute exposed by this type.
+    """
 
     fail_sync: bool = False
+    fail_audit: bool = False
+    fail_po_processing: bool = False
 
     def start_sync(
         self,
         project_id: str,
         progress_callback: Callable[[SyncProgressEvent], None] | None = None,
     ) -> SyncStatusViewModel:
+        """Handle start sync.
+
+        Args:
+            self:
+                Value supplied to this callable.
+            project_id:
+                Value supplied to this callable.
+            progress_callback:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+
+        Raises:
+            ControlledServiceError:
+                Raised when this callable hits the corresponding error path.
+        """
         if self.fail_sync and project_id == "wp-site":
             msg = "Sync preview is unavailable for this project."
             raise ControlledServiceError(msg)
@@ -127,30 +304,151 @@ class StubProjectWorkflowService:
             error_code=None,
         )
 
+    @staticmethod
+    def start_sync_to_remote(
+        project_id: str,
+        progress_callback: Callable[[SyncProgressEvent], None] | None = None,
+    ) -> SyncStatusViewModel:
+        """Handle start sync to remote.
+
+        Args:
+            project_id:
+                Value supplied to this callable.
+            progress_callback:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+        """
+        return SyncStatusViewModel(
+            status="completed",
+            files_synced=7,
+            summary="Uploaded 7 files from the local workspace preview.",
+            error_code=None,
+        )
+
+    @staticmethod
+    def trust_remote_host_key(project_id: str) -> RemoteConnectionTestResultViewModel:
+        """Handle trust remote host key.
+
+        Args:
+            project_id:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+        """
+        return RemoteConnectionTestResultViewModel(
+            success=True,
+            message=f"Trusted SSH host key for {project_id}.",
+            error_code=None,
+        )
+
     def start_audit(self, project_id: str) -> AuditSummaryViewModel:
+        """Handle start audit.
+
+        Args:
+            self:
+                Value supplied to this callable.
+            project_id:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+
+        Raises:
+            ControlledServiceError:
+                Raised when this callable hits the corresponding error path.
+        """
+        if self.fail_audit and project_id == "wp-site":
+            msg = "Audit preview is unavailable for this project."
+            raise ControlledServiceError(msg)
         return AuditSummaryViewModel(
             status="completed",
             findings_count=0,
             findings_summary="No supported framework was detected for this project.",
         )
 
-    def start_po_processing(self, project_id: str) -> POProcessingSummaryViewModel:
+    def start_po_processing(
+        self,
+        project_id: str,
+        request: TranslationWorkflowRequestViewModel | None = None,
+        progress_callback: Callable[[POProcessingProgress], None] | None = None,
+    ) -> POProcessingSummaryViewModel:
+        """Handle start po processing.
+
+        Args:
+            self:
+                Value supplied to this callable.
+            project_id:
+                Value supplied to this callable.
+            request:
+                Value supplied to this callable.
+            progress_callback:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+
+        Raises:
+            ControlledServiceError:
+                Raised when this callable hits the corresponding error path.
+        """
+        if self.fail_po_processing and project_id == "wp-site":
+            msg = "Translation workflow is unavailable for this project."
+            raise ControlledServiceError(msg)
         return POProcessingSummaryViewModel(
             status="completed",
             processed_families=4,
-            summary="Prepared 4 locale families for future PO synchronization.",
+            progress_current=0,
+            progress_total=0,
+            progress_is_indeterminate=False,
+            summary=(
+                "Families processed: 4 | PO files discovered: 4 | "
+                "Synchronized entries: 0 | Translated entries: 0 | Failed entries: 0 | "
+                "Written PO files: 0 | Compiled MO files: 0"
+            ),
+            current_file=None,
+            current_entry=None,
         )
 
 
 @dataclass
 class InMemorySettingsService:
-    """In-memory settings double for frontend tests."""
+    """Test helper for InMemorySettingsService.
+
+    Attributes:
+        _saved_settings:
+            Documented attribute exposed by this type.
+        fail_load:
+            Documented attribute exposed by this type.
+        fail_save:
+            Documented attribute exposed by this type.
+    """
 
     _saved_settings: AppSettingsViewModel
     fail_load: bool = False
     fail_save: bool = False
 
     def load_settings(self) -> SettingsStateViewModel:
+        """Handle load settings.
+
+        Args:
+            self:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+
+        Raises:
+            ControlledServiceError:
+                Raised when this callable hits the corresponding error path.
+        """
         if self.fail_load:
             msg = "App settings are temporarily unavailable."
             raise ControlledServiceError(msg)
@@ -160,11 +458,35 @@ class InMemorySettingsService:
             status_message="Settings loaded.",
         )
 
-    def save_settings(self, app_settings: AppSettingsViewModel) -> SettingsStateViewModel:
+    def save_settings(
+        self, app_settings: AppSettingsViewModel
+    ) -> SettingsStateViewModel:
+        """Handle save settings.
+
+        Args:
+            self:
+                Value supplied to this callable.
+            app_settings:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+
+        Raises:
+            ControlledServiceError:
+                Raised when this callable hits the corresponding error path.
+        """
         if self.fail_save:
             msg = "App settings could not be saved."
             raise ControlledServiceError(msg)
-        self._saved_settings = app_settings
+        self._saved_settings = replace(
+            app_settings,
+            default_project_locale=normalize_default_locale(
+                app_settings.default_project_locale,
+                label="Default project locale",
+            ),
+        )
         return build_settings_state(
             app_settings=self._saved_settings,
             status="saved",
@@ -172,6 +494,16 @@ class InMemorySettingsService:
         )
 
     def reset_settings(self) -> SettingsStateViewModel:
+        """Handle reset settings.
+
+        Args:
+            self:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+        """
         self._saved_settings = build_default_app_settings()
         return build_settings_state(
             app_settings=self._saved_settings,
@@ -182,11 +514,26 @@ class InMemorySettingsService:
 
 @dataclass
 class InMemoryProjectRegistryManagementService:
-    """In-memory registry-management double for frontend tests."""
+    """Test helper for InMemoryProjectRegistryManagementService.
+
+    Attributes:
+        catalog:
+            Documented attribute exposed by this type.
+    """
 
     catalog: InMemoryProjectCatalogService
 
     def build_create_project_editor(self) -> ProjectEditorStateViewModel:
+        """Handle build create project editor.
+
+        Args:
+            self:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+        """
         return build_project_editor_state(
             mode="create",
             editor=build_default_site_editor(),
@@ -194,13 +541,31 @@ class InMemoryProjectRegistryManagementService:
                 FrameworkAdapterRegistry.discover_installed().list_framework_descriptors()
             ),
             connection_type_options=_default_connection_type_options(),
+            sync_rule_filter_type_options=build_sync_rule_filter_type_options(),
+            sync_rule_behavior_options=build_sync_rule_behavior_options(),
             connection_test_enabled=False,
             connection_test_result=None,
+            sync_scope_status="framework_unresolved",
+            sync_scope_message=(
+                "No framework scope has been resolved in the frontend test double."
+            ),
             status="editing",
             status_message="Provide the project metadata to register a new site.",
         )
 
     def build_edit_project_editor(self, project_id: str) -> ProjectEditorStateViewModel:
+        """Handle build edit project editor.
+
+        Args:
+            self:
+                Value supplied to this callable.
+            project_id:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+        """
         detail = self.catalog.get_project_detail(project_id)
         return build_project_editor_state(
             mode="edit",
@@ -209,7 +574,7 @@ class InMemoryProjectRegistryManagementService:
                 name=detail.project.name,
                 framework_type=detail.project.framework.lower(),
                 local_path=detail.project.local_path,
-                default_locale="en_US",
+                default_locale=detail.default_locale,
                 connection_type=NO_REMOTE_CONNECTION_VALUE,
                 remote_host="",
                 remote_port="",
@@ -217,18 +582,43 @@ class InMemoryProjectRegistryManagementService:
                 remote_password="",
                 remote_path="",
                 is_active=True,
+                compile_mo=detail.compile_mo,
+                use_external_translator=detail.use_external_translator,
+                use_translation_cache=detail.use_translation_cache,
+                only_fuzzy=detail.only_fuzzy,
+                dry_run=detail.dry_run,
+                stats_only=detail.stats_only,
+                report_inconsistencies=detail.report_inconsistencies,
             ),
             framework_options=build_framework_type_options_from_descriptors(
                 FrameworkAdapterRegistry.discover_installed().list_framework_descriptors()
             ),
             connection_type_options=_default_connection_type_options(),
+            sync_rule_filter_type_options=build_sync_rule_filter_type_options(),
+            sync_rule_behavior_options=build_sync_rule_behavior_options(),
             connection_test_enabled=False,
             connection_test_result=None,
+            sync_scope_status="framework_unresolved",
+            sync_scope_message=(
+                "No framework scope has been resolved in the frontend test double."
+            ),
             status="editing",
             status_message="Update the persisted site registry record.",
         )
 
     def create_project(self, editor: SiteEditorViewModel) -> ProjectDetailViewModel:
+        """Handle create project.
+
+        Args:
+            self:
+                Value supplied to this callable.
+            editor:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+        """
         project = ProjectSummaryViewModel(
             id="created-site",
             name=editor.name,
@@ -237,35 +627,63 @@ class InMemoryProjectRegistryManagementService:
             status="Active" if editor.is_active else "Inactive",
         )
         self.catalog.projects = [*self.catalog.projects, project]
-        return self.catalog.get_project_detail(project.id)
+        return _build_project_detail_from_editor(project, editor)
 
     def update_project(
         self,
         project_id: str,
         editor: SiteEditorViewModel,
     ) -> ProjectDetailViewModel:
+        """Handle update project.
+
+        Args:
+            self:
+                Value supplied to this callable.
+            project_id:
+                Value supplied to this callable.
+            editor:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+        """
         updated_projects: list[ProjectSummaryViewModel] = []
         for project in self.catalog.projects:
             if project.id == project_id:
-                updated_projects.append(
-                    ProjectSummaryViewModel(
-                        id=project.id,
-                        name=editor.name,
-                        framework=editor.framework_type.title(),
-                        local_path=editor.local_path,
-                        status="Active" if editor.is_active else "Inactive",
-                    )
+                updated_project = ProjectSummaryViewModel(
+                    id=project.id,
+                    name=editor.name,
+                    framework=editor.framework_type.title(),
+                    local_path=editor.local_path,
+                    status="Active" if editor.is_active else "Inactive",
                 )
+                updated_projects.append(updated_project)
             else:
                 updated_projects.append(project)
         self.catalog.projects = updated_projects
-        return self.catalog.get_project_detail(project_id)
+        return _build_project_detail_from_editor(updated_project, editor)
 
     def test_remote_connection(
         self,
         editor: SiteEditorViewModel,
     ) -> RemoteConnectionTestResultViewModel:
-        success = editor.connection_type != NO_REMOTE_CONNECTION_VALUE and editor.remote_host != ""
+        """Verify remote connection.
+
+        Args:
+            self:
+                Value supplied to this callable.
+            editor:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+        """
+        success = (
+            editor.connection_type != NO_REMOTE_CONNECTION_VALUE
+            and editor.remote_host != ""
+        )
         message = "Connected successfully using the frontend test double."
         if not success:
             message = "Remote connection test requires a configured remote connection."
@@ -275,14 +693,71 @@ class InMemoryProjectRegistryManagementService:
             error_code=None if success else "invalid_remote_config",
         )
 
+    @staticmethod
+    def preview_project_editor(
+        editor: SiteEditorViewModel,
+        *,
+        mode: str,
+    ) -> ProjectEditorStateViewModel:
+        """Handle preview project editor.
+
+        Args:
+            editor:
+                Value supplied to this callable.
+            mode:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+        """
+        return build_project_editor_state(
+            mode=mode,
+            editor=editor,
+            framework_options=build_framework_type_options_from_descriptors(
+                FrameworkAdapterRegistry.discover_installed().list_framework_descriptors()
+            ),
+            connection_type_options=_default_connection_type_options(),
+            sync_rule_filter_type_options=build_sync_rule_filter_type_options(),
+            sync_rule_behavior_options=build_sync_rule_behavior_options(),
+            connection_test_enabled=False,
+            connection_test_result=None,
+            sync_scope_status="filtered"
+            if editor.use_adapter_sync_filters
+            else "no_filters",
+            sync_scope_message=(
+                "Project editor preview rebuilt by the frontend test double."
+            ),
+            status="editing",
+            status_message="Project editor draft updated.",
+        )
+
 
 def build_seeded_services() -> FrontendServices:
+    """Handle build seeded services.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
     return build_seeded_services_with_settings(
         InMemorySettingsService(_saved_settings=build_default_app_settings())
     )
 
 
-def build_seeded_services_with_settings(settings_service: SettingsService) -> FrontendServices:
+def build_seeded_services_with_settings(
+    settings_service: SettingsService,
+) -> FrontendServices:
+    """Handle build seeded services with settings.
+
+    Args:
+        settings_service:
+            Value supplied to this callable.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
     projects = [
         ProjectSummaryViewModel(
             id="wp-site",
@@ -309,6 +784,12 @@ def build_seeded_services_with_settings(settings_service: SettingsService) -> Fr
 
 
 def build_empty_services() -> FrontendServices:
+    """Handle build empty services.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
     catalog = InMemoryProjectCatalogService(projects=[])
     return FrontendServices(
         catalog=catalog,
@@ -319,6 +800,12 @@ def build_empty_services() -> FrontendServices:
 
 
 def build_failing_sync_services() -> FrontendServices:
+    """Handle build failing sync services.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
     services = build_seeded_services()
     return FrontendServices(
         catalog=services.catalog,
@@ -328,7 +815,45 @@ def build_failing_sync_services() -> FrontendServices:
     )
 
 
+def build_failing_audit_services() -> FrontendServices:
+    """Handle build failing audit services.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
+    services = build_seeded_services()
+    return FrontendServices(
+        catalog=services.catalog,
+        workflows=StubProjectWorkflowService(fail_audit=True),
+        settings=services.settings,
+        registry=services.registry,
+    )
+
+
+def build_failing_po_processing_services() -> FrontendServices:
+    """Handle build failing po processing services.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
+    services = build_seeded_services()
+    return FrontendServices(
+        catalog=services.catalog,
+        workflows=StubProjectWorkflowService(fail_po_processing=True),
+        settings=services.settings,
+        registry=services.registry,
+    )
+
+
 def build_failing_settings_load_services() -> FrontendServices:
+    """Handle build failing settings load services.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
     services = build_seeded_services()
     return FrontendServices(
         catalog=services.catalog,
@@ -342,6 +867,12 @@ def build_failing_settings_load_services() -> FrontendServices:
 
 
 def build_failing_settings_save_services() -> FrontendServices:
+    """Handle build failing settings save services.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
     services = build_seeded_services()
     return FrontendServices(
         catalog=services.catalog,

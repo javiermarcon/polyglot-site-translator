@@ -64,6 +64,14 @@ A task is not done unless all of the following are true:
   - PEP484
   - Ruff
   - mypy
+- Python source lines must stay within 88 characters unless a narrower, tool-supported exception is
+  explicitly justified.
+- All modules, classes, functions, and methods introduced or modified by the change, public or
+  private, have clear, multi-line docstrings that explain intent, important behavior, inputs,
+  outputs, and relevant side effects or failure conditions.
+- One-line docstrings are not acceptable for behavioral symbols. Docstrings must be structured and
+  must include sections such as `Args:`, `Returns:`, `Raises:`, and `Attributes:` whenever those
+  sections are relevant to the symbol being documented.
 - The change includes tests for the main behavior introduced or modified.
 - Implemented workflows are wired to real services in production entrypoints; test doubles for those workflows live in test support, not in runtime bundles under `src/`.
 - The implementation respects DRY, SOLID, SRP, and OCP.
@@ -84,6 +92,10 @@ Before finishing any non-trivial change, verify explicitly:
 
 - Ruff passes.
 - mypy passes.
+- The changed code still satisfies PEP8, PEP257, and PEP484 explicitly, not only “whatever the
+  current tool defaults happen to enforce”.
+- The repository docstring audit passes, including private symbols and structured multi-line
+  docstring requirements.
 - pytest passes for the affected scope.
 - Documentation is aligned with the final code.
 - New dependencies, if any, are declared in the correct `requirements/` file and nowhere inconsistent.
@@ -100,6 +112,10 @@ Before finishing any non-trivial change, verify explicitly:
 
 - Small, cohesive modules.
 - Typed dataclasses or explicit models for structured data.
+- Clear docstrings for all modules, classes, functions, and methods, public or private; do not
+  leave new or modified behavior undocumented.
+- Use structured multi-line docstrings, not one-line placeholders. Include `Args:`, `Returns:`,
+  `Raises:`, and `Attributes:` sections whenever they apply to the documented symbol.
 - Clear separation between:
   - Kivy UI
   - application services
@@ -255,6 +271,7 @@ Examples:
 python -m ruff check .
 python -m ruff format --check .
 python -m mypy src
+python tests/run_docstring_audit.py
 python -m pytest
 ```
 
@@ -276,6 +293,7 @@ All non-trivial functionality must be developed using this sequence:
    - happy path
    - edge cases
    - expected failures and exceptions
+   - end-to-end behavior for every touched user-visible workflow
 4. Add or update unit and integration tests for the same behavior.
 5. Run the tests and confirm they fail before implementation.
 6. Implement the minimum code required to satisfy the tests and scenarios.
@@ -287,6 +305,8 @@ Do not implement a feature first and add tests later.
 For every meaningful feature:
 
 - acceptance behavior must be specified first
+- `.feature` coverage must exist for the externally visible workflow from end to end
+- touched user-visible workflows must not rely only on unit or integration tests
 - test coverage must precede implementation
 - regression tests must be added for bug fixes
 
@@ -308,7 +328,50 @@ For any non-trivial new or modified logic, unit tests must:
 - cover important edge cases
 - cover expected errors and exceptions
 - include regression tests for bug fixes
-- reach at least 95% coverage for the relevant unit-tested logic unless a narrow, explicit exception is justified
+- reach at least 99% coverage for the relevant unit-tested logic unless a narrow, explicit exception is justified
+
+For touched production modules, tests are also expected to cover all relevant:
+
+- functions
+- methods
+- classes with behavior
+- meaningful branches
+
+Coverage work must be intentional, not incidental. Tests must explicitly exercise:
+
+- the normal success path
+- edge and boundary cases
+- invalid or malformed input
+- operational failures
+- explicit exceptions and typed error paths
+
+The repository target is to keep coverage as close as possible to 99% for touched logic and to avoid leaving meaningful branches, methods, or helper behaviors untested. If any relevant branch, function, method, class behavior, or error path remains uncovered, that gap must be called out explicitly in the final report with a concrete reason.
 
 Do not treat “some tests exist” as sufficient completion.
 A task is not done if meaningful branches and failure modes remain untested.
+
+For any non-trivial new or modified user-visible workflow, `.feature` scenarios must also cover all relevant end-to-end:
+
+- happy paths
+- important edge cases
+- invalid input and validation outcomes visible to the operator
+- controlled operational failures
+- expected exceptions or surfaced error states
+
+A task is not done if a touched workflow is only covered at unit level but not through the relevant end-to-end feature scenarios.
+
+---
+
+## Explicit style and typing compliance
+
+Every change must explicitly respect:
+
+- PEP8
+- PEP257
+- PEP484
+- Ruff
+- mypy
+
+Do not assume those standards are optional just because a specific file already existed in a
+weaker state. New and modified code must move the repository toward explicit compliance, not away
+from it.

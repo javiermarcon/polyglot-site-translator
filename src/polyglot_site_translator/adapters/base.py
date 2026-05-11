@@ -8,10 +8,20 @@ from pathlib import Path
 from polyglot_site_translator.domain.framework_detection.models import (
     FrameworkDetectionResult,
 )
+from polyglot_site_translator.domain.sync.scope import AdapterSyncScope, SyncFilterSpec
 
 
 class BaseFrameworkAdapter(ABC):
-    """Abstract discoverable framework adapter."""
+    """Abstract discoverable framework adapter.
+
+    Attributes:
+        framework_type:
+            Documented attribute exposed by this type.
+        adapter_name:
+            Documented attribute exposed by this type.
+        display_name:
+            Documented attribute exposed by this type.
+    """
 
     framework_type: str
     adapter_name: str
@@ -19,4 +29,44 @@ class BaseFrameworkAdapter(ABC):
 
     @abstractmethod
     def detect(self, project_path: Path) -> FrameworkDetectionResult:
-        """Inspect a path and return a structured detection result."""
+        """Inspect a path and return a structured detection result.
+
+        Args:
+            self:
+                Value supplied to this callable.
+            project_path:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+        """
+
+    def get_sync_scope(self, project_path: Path) -> AdapterSyncScope:
+        """Return adapter-defined include/exclude sync rules for the given project path.
+
+        Args:
+            self:
+                Value supplied to this callable.
+            project_path:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+        """
+        return AdapterSyncScope(filters=self.get_sync_filters(project_path))
+
+    @staticmethod
+    def get_sync_filters(project_path: Path) -> tuple[SyncFilterSpec, ...]:
+        """Return adapter-defined sync filters for the given project path.
+
+        Args:
+            project_path:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+        """
+        return ()

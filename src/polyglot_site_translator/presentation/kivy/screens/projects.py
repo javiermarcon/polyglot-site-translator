@@ -6,13 +6,34 @@ from kivy.uix.screenmanager import ScreenManager
 
 from polyglot_site_translator.presentation.frontend_shell import FrontendShell
 from polyglot_site_translator.presentation.kivy.screens.base import BaseShellScreen
-from polyglot_site_translator.presentation.kivy.widgets.common import AppButton, WrappedLabel
+from polyglot_site_translator.presentation.kivy.widgets.common import (
+    AppButton,
+    WrappedLabel,
+)
 
 
 class ProjectsScreen(BaseShellScreen):
-    """Screen showing registered projects."""
+    """Screen showing registered projects.
+
+    Attributes:
+        None: This type does not declare class-level attributes.
+    """
 
     def __init__(self, *, shell: FrontendShell, manager_ref: ScreenManager) -> None:
+        """Build the project list screen and its navigation actions.
+
+        Args:
+            self:
+                Value supplied to this callable.
+            shell:
+                Value supplied to this callable.
+            manager_ref:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+        """
         super().__init__(
             screen_name="projects",
             title="Projects",
@@ -21,32 +42,83 @@ class ProjectsScreen(BaseShellScreen):
             manager_ref=manager_ref,
         )
         self.add_nav_button("Back to Dashboard", self._go_dashboard)
-        self.add_nav_button("Register Project", self._open_create_project, primary=False)
+        self.add_nav_button(
+            "Register Project", self._open_create_project, primary=False
+        )
         self._list_label = WrappedLabel(font_size=15)
         self._content.add_widget(self._list_label)
         self._project_buttons: list[AppButton] = []
         self.refresh()
 
     def _go_dashboard(self, *_args: object) -> None:
+        """Handle go dashboard.
+
+        Args:
+            self:
+                Value supplied to this callable.
+            *_args:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+        """
         self._shell.open_dashboard()
         self.show_route("dashboard")
 
     def _open_project(self, project_id: str) -> None:
+        """Open project.
+
+        Args:
+            self:
+                Value supplied to this callable.
+            project_id:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+        """
         self._shell.select_project(project_id)
         self.show_route("project_detail")
 
     def _open_create_project(self, *_args: object) -> None:
+        """Open create project.
+
+        Args:
+            self:
+                Value supplied to this callable.
+            *_args:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+        """
         self._shell.open_project_editor_create()
         self.show_route("project_editor")
 
     def refresh(self) -> None:
+        """Refresh the visible project list from the catalog-backed shell state.
+
+        Args:
+            self:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+        """
         for button in self._project_buttons:
             self._content.remove_widget(button)
         self._project_buttons = []
 
         if self._shell.projects_state.projects:
             self._list_label.text = "\n".join(
-                (f"{project.name} [{project.framework}] {project.local_path} ({project.status})")
+                (
+                    f"{project.name} [{project.framework}] "
+                    f"{project.local_path} ({project.status})"
+                )
                 for project in self._shell.projects_state.projects
             )
             for project in self._shell.projects_state.projects:
@@ -54,7 +126,9 @@ class ProjectsScreen(BaseShellScreen):
                     text=f"Open {project.name}",
                     primary=False,
                 )
-                button.bind(on_release=lambda *_args, pid=project.id: self._open_project(pid))
+                button.bind(
+                    on_release=lambda *_args, pid=project.id: self._open_project(pid)
+                )
                 self._project_buttons.append(button)
                 self._content.add_widget(button)
         else:

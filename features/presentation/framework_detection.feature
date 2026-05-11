@@ -46,6 +46,14 @@ Feature: Framework adapter detection
     Then the audit preview shows zero framework findings
     And the audit preview explains that no supported framework was detected
 
+  Scenario: Show an audit preview with matched framework findings
+    Given the frontend shell is wired with framework detection and SQLite-backed site registry services
+    And a local WordPress project exists
+    When the operator registers the local project using the detected path
+    And the operator starts the audit workflow from the detected project
+    Then the audit preview shows matched framework findings
+    And the audit preview lists framework evidence
+
   Scenario: Show the auto-discovered framework options in the project editor
     Given the frontend shell is wired with framework detection and SQLite-backed site registry services
     When the operator opens the create project workflow for framework selection

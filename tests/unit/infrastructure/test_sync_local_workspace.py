@@ -11,30 +11,104 @@ from polyglot_site_translator.infrastructure.sync_local import LocalSyncWorkspac
 
 
 class _RootLikePath:
+    """Test helper for RootLikePath.
+
+    Attributes:
+        None: This type does not declare class-level attributes.
+    """
+
     def __init__(self) -> None:
+        """Initialize the test helper state.
+
+        Args:
+            self:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+        """
         self.parent = self
         self.mkdir_calls: list[tuple[bool, bool]] = []
 
     def exists(self) -> bool:
+        """Handle exists.
+
+        Args:
+            self:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+        """
         return False
 
     def is_dir(self) -> bool:
+        """Handle is dir.
+
+        Args:
+            self:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+        """
         return False
 
     def mkdir(self, *, parents: bool, exist_ok: bool) -> None:
+        """Handle mkdir.
+
+        Args:
+            self:
+                Value supplied to this callable.
+            parents:
+                Value supplied to this callable.
+            exist_ok:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+        """
         self.mkdir_calls.append((parents, exist_ok))
 
 
 def test_local_sync_workspace_creates_missing_directories(tmp_path: Path) -> None:
+    """Verify local sync workspace creates missing directories.
+
+    Args:
+        tmp_path:
+            Value supplied to this callable.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
     workspace = LocalSyncWorkspace()
 
-    created_segments = workspace.ensure_directory(tmp_path / "workspace" / "site" / "locale")
+    created_segments = workspace.ensure_directory(
+        tmp_path / "workspace" / "site" / "locale"
+    )
 
     assert created_segments == 3
     assert (tmp_path / "workspace" / "site" / "locale").is_dir()
 
 
-def test_local_sync_workspace_returns_zero_when_directory_already_exists(tmp_path: Path) -> None:
+def test_local_sync_workspace_returns_zero_when_directory_already_exists(
+    tmp_path: Path,
+) -> None:
+    """Verify local sync workspace returns zero when directory already exists.
+
+    Args:
+        tmp_path:
+            Value supplied to this callable.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
     workspace = LocalSyncWorkspace()
     existing_directory = tmp_path / "workspace"
     existing_directory.mkdir()
@@ -45,6 +119,16 @@ def test_local_sync_workspace_returns_zero_when_directory_already_exists(tmp_pat
 
 
 def test_local_sync_workspace_rejects_file_paths(tmp_path: Path) -> None:
+    """Verify local sync workspace rejects file paths.
+
+    Args:
+        tmp_path:
+            Value supplied to this callable.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
     workspace = LocalSyncWorkspace()
     occupied_path = tmp_path / "occupied"
     occupied_path.write_text("occupied", encoding="utf-8")
@@ -54,6 +138,16 @@ def test_local_sync_workspace_rejects_file_paths(tmp_path: Path) -> None:
 
 
 def test_local_sync_workspace_writes_downloaded_file_bytes(tmp_path: Path) -> None:
+    """Verify local sync workspace writes downloaded file bytes.
+
+    Args:
+        tmp_path:
+            Value supplied to this callable.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
     workspace = LocalSyncWorkspace()
     target_file = tmp_path / "workspace" / "site" / "locale" / "es.po"
     workspace.ensure_directory(target_file.parent)
@@ -64,6 +158,12 @@ def test_local_sync_workspace_writes_downloaded_file_bytes(tmp_path: Path) -> No
 
 
 def test_local_sync_workspace_stops_counting_at_self_parent_roots() -> None:
+    """Verify local sync workspace stops counting at self parent roots.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
     workspace = LocalSyncWorkspace()
     root_path = _RootLikePath()
 
@@ -71,3 +171,95 @@ def test_local_sync_workspace_stops_counting_at_self_parent_roots() -> None:
 
     assert created_segments == 1
     assert root_path.mkdir_calls == [(True, True)]
+
+
+def test_local_sync_workspace_lists_local_files_recursively(tmp_path: Path) -> None:
+    """Verify local sync workspace lists local files recursively.
+
+    Args:
+        tmp_path:
+            Value supplied to this callable.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
+    workspace = LocalSyncWorkspace()
+    local_root = tmp_path / "workspace" / "site"
+    workspace.ensure_directory(local_root / "locale")
+    workspace.ensure_directory(local_root / "templates")
+    (local_root / "locale" / "es.po").write_text("hola", encoding="utf-8")
+    (local_root / "templates" / "home.html").write_text(
+        "<h1>Hola</h1>", encoding="utf-8"
+    )
+
+    local_files = list(workspace.iter_local_files(local_root))
+
+    assert [local_file.relative_path for local_file in local_files] == [
+        "locale/es.po",
+        "templates/home.html",
+    ]
+    assert [local_file.local_path for local_file in local_files] == [
+        local_root / "locale" / "es.po",
+        local_root / "templates" / "home.html",
+    ]
+
+
+def test_local_sync_workspace_reads_local_file_bytes(tmp_path: Path) -> None:
+    """Verify local sync workspace reads local file bytes.
+
+    Args:
+        tmp_path:
+            Value supplied to this callable.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
+    workspace = LocalSyncWorkspace()
+    target_file = tmp_path / "workspace" / "site" / "locale" / "es.po"
+    workspace.ensure_directory(target_file.parent)
+    target_file.write_bytes(b'msgid "hello"\n')
+
+    payload = workspace.read_file(target_file)
+
+    assert payload == b'msgid "hello"\n'
+
+
+def test_local_sync_workspace_returns_no_local_files_for_missing_roots(
+    tmp_path: Path,
+) -> None:
+    """Verify local sync workspace returns no local files for missing roots.
+
+    Args:
+        tmp_path:
+            Value supplied to this callable.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
+    workspace = LocalSyncWorkspace()
+
+    local_files = list(workspace.iter_local_files(tmp_path / "missing"))
+
+    assert local_files == []
+
+
+def test_local_sync_workspace_rejects_non_directory_roots(tmp_path: Path) -> None:
+    """Verify local sync workspace rejects non directory roots.
+
+    Args:
+        tmp_path:
+            Value supplied to this callable.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
+    workspace = LocalSyncWorkspace()
+    occupied_path = tmp_path / "not-a-directory"
+    occupied_path.write_text("occupied", encoding="utf-8")
+
+    with pytest.raises(OSError, match="Local sync root is not a directory"):
+        list(workspace.iter_local_files(occupied_path))

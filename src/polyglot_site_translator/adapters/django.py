@@ -13,18 +13,93 @@ from polyglot_site_translator.adapters.common import (
 from polyglot_site_translator.domain.framework_detection.models import (
     FrameworkDetectionResult,
 )
+from polyglot_site_translator.domain.sync.scope import (
+    AdapterSyncScope,
+    SyncFilterSpec,
+    SyncFilterType,
+)
 
 
 @dataclass(frozen=True)
 class DjangoFrameworkAdapter(BaseFrameworkAdapter):
-    """Detect Django project layouts."""
+    """Detect Django project layouts.
+
+    Attributes:
+        framework_type:
+            Documented attribute exposed by this type.
+        adapter_name:
+            Documented attribute exposed by this type.
+        display_name:
+            Documented attribute exposed by this type.
+    """
 
     framework_type: str = "django"
     adapter_name: str = "django_adapter"
     display_name: str = "Django"
 
+    def get_sync_scope(self, project_path: Path) -> AdapterSyncScope:
+        """Return the default Django sync scope.
+
+        Args:
+            self:
+                Value supplied to this callable.
+            project_path:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+        """
+        return AdapterSyncScope(
+            filters=(
+                SyncFilterSpec(
+                    relative_path="locale",
+                    filter_type=SyncFilterType.DIRECTORY,
+                    description="Django locale catalogs.",
+                ),
+            ),
+            excludes=(
+                SyncFilterSpec(
+                    relative_path=".venv",
+                    filter_type=SyncFilterType.DIRECTORY,
+                    description="Project virtual environment.",
+                ),
+                SyncFilterSpec(
+                    relative_path="venv",
+                    filter_type=SyncFilterType.DIRECTORY,
+                    description="Project virtual environment.",
+                ),
+                SyncFilterSpec(
+                    relative_path="__pycache__",
+                    filter_type=SyncFilterType.DIRECTORY,
+                    description="Python bytecode cache.",
+                ),
+                SyncFilterSpec(
+                    relative_path=".mypy_cache",
+                    filter_type=SyncFilterType.DIRECTORY,
+                    description="mypy cache.",
+                ),
+                SyncFilterSpec(
+                    relative_path=".pytest_cache",
+                    filter_type=SyncFilterType.DIRECTORY,
+                    description="pytest cache.",
+                ),
+            ),
+        )
+
     def detect(self, project_path: Path) -> FrameworkDetectionResult:
-        """Inspect a local path for Django markers."""
+        """Inspect a local path for Django markers.
+
+        Args:
+            self:
+                Value supplied to this callable.
+            project_path:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+        """
         manage_py = project_path / "manage.py"
         settings_py = find_first_level_file(project_path, "settings.py")
         wsgi_py = find_first_level_file(project_path, "wsgi.py")
@@ -42,7 +117,9 @@ class DjangoFrameworkAdapter(BaseFrameworkAdapter):
             relevant_paths.append(str(manage_py))
             confidence += 45
         if settings_py is not None:
-            evidence.append("settings.py was found in the Django configuration package.")
+            evidence.append(
+                "settings.py was found in the Django configuration package."
+            )
             relevant_paths.append(str(settings_py))
             config_files.append(str(settings_py))
             confidence += 35
@@ -77,8 +154,8 @@ class DjangoFrameworkAdapter(BaseFrameworkAdapter):
 
         if evidence:
             warnings.append(
-                "Partial Django evidence was found, but manage.py and a settings entrypoint "
-                "were not both available."
+                "Partial Django evidence was found, but manage.py and a "
+                "settings entrypoint were not both available."
             )
         return FrameworkDetectionResult.unmatched(
             project_path=str(project_path),

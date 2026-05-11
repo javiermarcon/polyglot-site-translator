@@ -9,18 +9,76 @@ from polyglot_site_translator.adapters.base import BaseFrameworkAdapter
 from polyglot_site_translator.domain.framework_detection.models import (
     FrameworkDetectionResult,
 )
+from polyglot_site_translator.domain.sync.scope import (
+    AdapterSyncScope,
+    SyncFilterSpec,
+    SyncFilterType,
+)
 
 
 @dataclass(frozen=True)
 class WordPressFrameworkAdapter(BaseFrameworkAdapter):
-    """Detect WordPress project layouts."""
+    """Detect WordPress project layouts.
+
+    Attributes:
+        framework_type:
+            Documented attribute exposed by this type.
+        adapter_name:
+            Documented attribute exposed by this type.
+        display_name:
+            Documented attribute exposed by this type.
+    """
 
     framework_type: str = "wordpress"
     adapter_name: str = "wordpress_adapter"
     display_name: str = "WordPress"
 
+    def get_sync_scope(self, project_path: Path) -> AdapterSyncScope:
+        """Return the default WordPress sync scope.
+
+        Args:
+            self:
+                Value supplied to this callable.
+            project_path:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+        """
+        return AdapterSyncScope(
+            filters=(
+                SyncFilterSpec(
+                    relative_path="wp-content/languages",
+                    filter_type=SyncFilterType.DIRECTORY,
+                    description="WordPress translation catalogs.",
+                ),
+                SyncFilterSpec(
+                    relative_path="wp-content/themes",
+                    filter_type=SyncFilterType.DIRECTORY,
+                    description="WordPress theme sources and language assets.",
+                ),
+                SyncFilterSpec(
+                    relative_path="wp-content/plugins",
+                    filter_type=SyncFilterType.DIRECTORY,
+                    description="WordPress plugin sources and language assets.",
+                ),
+            ),
+        )
+
     def detect(self, project_path: Path) -> FrameworkDetectionResult:
-        """Inspect a local path for WordPress markers."""
+        """Inspect a local path for WordPress markers.
+
+        Args:
+            self:
+                Value supplied to this callable.
+            project_path:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+        """
         wp_config = project_path / "wp-config.php"
         wp_content = project_path / "wp-content"
         wp_includes = project_path / "wp-includes"

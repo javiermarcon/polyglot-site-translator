@@ -5,16 +5,20 @@ from __future__ import annotations
 from typing import Any, cast
 
 from kivy.core.window import Window
+from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.button import Button
 from kivy.uix.label import Label
 from kivy.uix.spinner import Spinner
 from kivy.uix.textinput import TextInput
+from kivy.uix.widget import Widget
 import pytest
 
 from polyglot_site_translator.app import create_kivy_app
-from polyglot_site_translator.presentation.kivy.screens.settings import (
-    _find_option_label,
-    _find_option_value,
+from polyglot_site_translator.presentation.contracts import FrontendServices
+from polyglot_site_translator.presentation.errors import ControlledServiceError
+from polyglot_site_translator.presentation.kivy.site_editor_form import (
+    find_option_label,
+    find_option_value,
 )
 from polyglot_site_translator.presentation.kivy.theme import (
     get_active_theme_mode,
@@ -22,11 +26,24 @@ from polyglot_site_translator.presentation.kivy.theme import (
     set_active_theme_mode,
 )
 from polyglot_site_translator.presentation.kivy.widgets.common import WrappedLabel
-from polyglot_site_translator.presentation.view_models import SettingsOptionViewModel
+from polyglot_site_translator.presentation.view_models import (
+    SettingsOptionViewModel,
+    SettingsStateViewModel,
+)
+from tests.support.frontend_doubles import (
+    InMemorySettingsService,
+    build_seeded_services,
+)
 
 
 @pytest.fixture(autouse=True)
 def restore_runtime_settings() -> object:
+    """Handle restore runtime settings.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
     previous_size = tuple(Window.size)
     previous_theme_mode = get_active_theme_mode()
     yield
@@ -34,7 +51,39 @@ def restore_runtime_settings() -> object:
     set_active_theme_mode(previous_theme_mode)
 
 
+class FailingResetSettingsService(InMemorySettingsService):
+    """Test helper for FailingResetSettingsService.
+
+    Attributes:
+        None: This type does not declare class-level attributes.
+    """
+
+    def reset_settings(self) -> SettingsStateViewModel:
+        """Handle reset settings.
+
+        Args:
+            self:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+
+        Raises:
+            ControlledServiceError:
+                Raised when this callable hits the corresponding error path.
+        """
+        msg = "Settings defaults are temporarily unavailable."
+        raise ControlledServiceError(msg)
+
+
 def test_settings_screen_can_refresh_without_button_keyword_conflicts() -> None:
+    """Verify settings screen can refresh without button keyword conflicts.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
     app = cast(Any, create_kivy_app())
     root = app.build()
     settings_screen = root.get_screen("settings")
@@ -45,7 +94,32 @@ def test_settings_screen_can_refresh_without_button_keyword_conflicts() -> None:
     assert root.has_screen("settings")
 
 
+def test_settings_screen_refresh_without_loaded_state_shows_information_card() -> None:
+    """Verify settings screen refresh without loaded state shows information card.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
+    app = cast(Any, create_kivy_app())
+    root = app.build()
+    settings_screen = root.get_screen("settings")
+
+    settings_screen._shell.settings_state = None
+    settings_screen.refresh()
+
+    assert "Open the settings workflow to load the current configuration." in (
+        _collect_label_texts(settings_screen)
+    )
+
+
 def test_save_changes_button_refreshes_the_visible_status_message() -> None:
+    """Verify save changes button refreshes the visible status message.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
     app = cast(Any, create_kivy_app())
     root = app.build()
     settings_screen = root.get_screen("settings")
@@ -65,6 +139,12 @@ def test_save_changes_button_refreshes_the_visible_status_message() -> None:
 
 
 def test_save_changes_persists_theme_and_resolution_from_the_screen_form() -> None:
+    """Verify save changes persists theme and resolution from the screen form.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
     app = cast(Any, create_kivy_app())
     root = app.build()
     settings_screen = root.get_screen("settings")
@@ -99,6 +179,12 @@ def test_save_changes_persists_theme_and_resolution_from_the_screen_form() -> No
 
 
 def test_settings_screen_switches_to_compact_layout_for_narrow_windows() -> None:
+    """Verify settings screen switches to compact layout for narrow windows.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
     app = cast(Any, create_kivy_app())
     root = app.build()
     settings_screen = root.get_screen("settings")
@@ -120,7 +206,15 @@ def test_settings_screen_switches_to_compact_layout_for_narrow_windows() -> None
     assert tuple(Window.size) == (550, 700)
 
 
-def test_settings_screen_handles_section_selection_defaults_and_dashboard_navigation() -> None:
+def test_settings_screen_handles_section_selectio_defa_9336() -> None:
+    """Verify settings screen handles section selection defaults and dashboard.
+
+    navigation.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
     app = cast(Any, create_kivy_app())
     root = app.build()
     settings_screen = root.get_screen("settings")
@@ -132,7 +226,7 @@ def test_settings_screen_handles_section_selection_defaults_and_dashboard_naviga
     settings_screen._select_settings_section("translation")
     assert settings_screen._shell.settings_state is not None
     assert settings_screen._shell.settings_state.selected_section_key == "translation"
-    assert "Planned Section" in _collect_label_texts(settings_screen)
+    assert "Default Project Locale" in _collect_label_texts(settings_screen)
 
     settings_screen._select_settings_section("app-ui-kivy")
     remember_label = WrappedLabel(text="")
@@ -158,7 +252,621 @@ def test_settings_screen_handles_section_selection_defaults_and_dashboard_naviga
     assert root.current == "dashboard"
 
 
-def test_settings_screen_raises_for_missing_state_or_draft_and_option_lookup_failures() -> None:
+def test_settings_screen_keeps_the_sections_menu_top_aligned() -> None:
+    """Verify settings screen keeps the sections menu top aligned.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
+    app = cast(Any, create_kivy_app())
+    root = app.build()
+    settings_screen = root.get_screen("settings")
+
+    settings_screen._shell.open_settings()
+    root.current = "settings"
+    settings_screen.refresh()
+
+    main_layout = settings_screen._content.children[0]
+    sections_column = main_layout.children[1]
+
+    assert isinstance(sections_column, BoxLayout)
+    assert sections_column.size_hint_x is None
+    assert sections_column.width == settings_screen._layout_spec.sections_width
+    assert len(sections_column.children) == 2
+    assert isinstance(sections_column.children[0], Widget)
+    assert isinstance(sections_column.children[1], BoxLayout)
+
+
+def test_settings_screen_shows_planned_section_placeho_c536() -> None:
+    """Verify settings screen shows planned section placeholder for unavailable.
+
+    categories.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
+    app = cast(Any, create_kivy_app())
+    root = app.build()
+    settings_screen = root.get_screen("settings")
+
+    settings_screen._shell.open_settings()
+    root.current = "settings"
+    settings_screen._select_settings_section("ftp-reporting")
+
+    texts = _collect_label_texts(settings_screen)
+    assert "Planned Section" in texts
+    assert "FTP / Reporting Settings will be available later." in texts
+
+
+def test_settings_screen_can_edit_translation_defaults() -> None:
+    """Verify settings screen can edit translation defaults.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
+    app = cast(Any, create_kivy_app())
+    root = app.build()
+    settings_screen = root.get_screen("settings")
+
+    settings_screen._shell.open_settings()
+    root.current = "settings"
+    settings_screen._select_settings_section("translation")
+
+    translation_input = settings_screen._require_text_input(
+        settings_screen._default_project_locale_input
+    )
+    translation_input.text = "es_ES, es_AR"
+    settings_screen._default_compile_mo_switch.active = False
+    settings_screen._default_use_external_translator_switch.active = False
+    settings_screen._default_use_translation_cache_switch.active = False
+    settings_screen._translation_cache_path_input.text = (
+        "/tmp/polyglot-cache/runtime-cache"
+    )
+    settings_screen._default_dry_run_switch.active = True
+    settings_screen._default_stats_only_switch.active = True
+    settings_screen._default_report_inconsistencies_switch.active = True
+
+    save_button = _find_button_by_text(settings_screen, "Save Changes")
+    save_button.dispatch("on_release")
+
+    assert settings_screen._shell.settings_state is not None
+    assert (
+        settings_screen._shell.settings_state.app_settings.default_project_locale
+        == ("es_ES,es_AR")
+    )
+    assert (
+        settings_screen._shell.settings_state.app_settings.default_compile_mo is False
+    )
+    assert (
+        settings_screen._shell.settings_state.app_settings.default_use_external_translator
+        is False
+    )
+    assert (
+        settings_screen._shell.settings_state.app_settings.default_use_translation_cache
+        is False
+    )
+    assert (
+        settings_screen._shell.settings_state.app_settings.translation_cache_path
+        == "/tmp/polyglot-cache/runtime-cache"
+    )
+    assert settings_screen._shell.settings_state.app_settings.default_dry_run is True
+    assert settings_screen._shell.settings_state.app_settings.default_stats_only is True
+    assert (
+        settings_screen._shell.settings_state.app_settings.default_report_inconsistencies
+        is True
+    )
+
+
+def test_settings_screen_shows_framework_sync_scope_controls() -> None:
+    """Verify settings screen shows framework sync scope controls.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
+    app = cast(Any, create_kivy_app())
+    root = app.build()
+    settings_screen = root.get_screen("settings")
+
+    settings_screen._shell.open_settings()
+    root.current = "settings"
+    settings_screen._select_settings_section("frameworks")
+
+    label_texts = _collect_label_texts(settings_screen)
+
+    assert "Global Sync Rules" in label_texts
+    assert "Use .gitignore Exclusions" in label_texts
+    assert "Add Framework Sync Rule" in label_texts
+
+
+def test_settings_screen_can_add_and_persist_sync_scope_rules() -> None:
+    """Verify settings screen can add and persist sync scope rules.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
+    app = cast(Any, create_kivy_app())
+    root = app.build()
+    settings_screen = root.get_screen("settings")
+
+    settings_screen._shell.open_settings()
+    root.current = "settings"
+    settings_screen._select_settings_section("frameworks")
+    settings_screen._require_text_input(
+        settings_screen._global_rule_path_input
+    ).text = ".cache"
+    settings_screen._require_text_input(
+        settings_screen._global_rule_description_input
+    ).text = "Ignore caches"
+    settings_screen._add_global_rule()
+    settings_screen._require_spinner(
+        settings_screen._framework_rule_type_spinner
+    ).text = "Django"
+    settings_screen._require_text_input(
+        settings_screen._framework_rule_path_input
+    ).text = ".venv"
+    settings_screen._require_text_input(
+        settings_screen._framework_rule_description_input
+    ).text = "Ignore virtualenv"
+    settings_screen._add_framework_rule()
+
+    save_button = _find_button_by_text(settings_screen, "Save Changes")
+    save_button.dispatch("on_release")
+
+    assert settings_screen._shell.settings_state is not None
+    sync_scope_settings = (
+        settings_screen._shell.settings_state.app_settings.sync_scope_settings
+    )
+    assert ".cache" in [rule.relative_path for rule in sync_scope_settings.global_rules]
+    assert "django" in [
+        rule_set.framework_type for rule_set in sync_scope_settings.framework_rule_sets
+    ]
+
+
+def test_settings_screen_reports_validation_errors_for_blank_sync_rule_paths() -> None:
+    """Verify settings screen reports validation errors for blank sync rule paths.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
+    app = cast(Any, create_kivy_app())
+    root = app.build()
+    settings_screen = root.get_screen("settings")
+
+    settings_screen._shell.open_settings()
+    root.current = "settings"
+    settings_screen._select_settings_section("frameworks")
+
+    assert settings_screen._draft_settings is not None
+    initial_global_rules = (
+        settings_screen._draft_settings.sync_scope_settings.global_rules
+    )
+    initial_framework_rule_sets = (
+        settings_screen._draft_settings.sync_scope_settings.framework_rule_sets
+    )
+
+    settings_screen._require_text_input(
+        settings_screen._global_rule_path_input
+    ).text = " "
+    settings_screen._require_text_input(
+        settings_screen._global_rule_description_input
+    ).text = "Ignore nothing"
+    settings_screen._add_global_rule()
+
+    assert (
+        settings_screen._shell.latest_error
+        == "Sync rules require a non-empty relative path or pattern."
+    )
+    assert settings_screen._draft_settings is not None
+    assert (
+        settings_screen._draft_settings.sync_scope_settings.global_rules
+        == initial_global_rules
+    )
+
+    settings_screen._shell.latest_error = None
+    settings_screen.update_error_label()
+    settings_screen._require_spinner(
+        settings_screen._framework_rule_type_spinner
+    ).text = "Django"
+    settings_screen._require_text_input(
+        settings_screen._framework_rule_path_input
+    ).text = " "
+    settings_screen._require_text_input(
+        settings_screen._framework_rule_description_input
+    ).text = "Ignore nothing"
+    settings_screen._add_framework_rule()
+
+    assert (
+        settings_screen._shell.latest_error
+        == "Sync rules require a non-empty relative path or pattern."
+    )
+    assert settings_screen._draft_settings is not None
+    assert (
+        settings_screen._draft_settings.sync_scope_settings.framework_rule_sets
+        == initial_framework_rule_sets
+    )
+
+
+def test_settings_screen_reports_validation_errors_for_invalid_numeric_inputs() -> None:
+    """Verify settings screen reports validation errors for invalid numeric inputs.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
+    app = cast(Any, create_kivy_app())
+    root = app.build()
+    settings_screen = root.get_screen("settings")
+
+    settings_screen._shell.open_settings()
+    root.current = "settings"
+    settings_screen._select_settings_section("app-ui-kivy")
+
+    assert settings_screen._draft_settings is not None
+    original_draft = settings_screen._draft_settings
+
+    settings_screen._require_text_input(settings_screen._width_input).text = "abc"
+    settings_screen._require_text_input(settings_screen._height_input).text = "700"
+    settings_screen._apply_settings()
+
+    assert (
+        settings_screen._shell.latest_error == "Numeric settings must be whole numbers."
+    )
+    assert settings_screen._draft_settings == original_draft
+
+    settings_screen._shell.latest_error = None
+    settings_screen.update_error_label()
+    settings_screen._require_text_input(
+        settings_screen._sync_progress_log_limit_input
+    ).text = "ten"
+    settings_screen._apply_settings()
+
+    assert (
+        settings_screen._shell.latest_error == "Numeric settings must be whole numbers."
+    )
+    assert settings_screen._draft_settings == original_draft
+
+
+def test_settings_screen_reports_lookup_errors_invalid_4264() -> None:
+    """Verify settings screen reports lookup errors for invalid theme and language.
+
+    labels.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
+    app = cast(Any, create_kivy_app())
+    root = app.build()
+    settings_screen = root.get_screen("settings")
+
+    settings_screen._shell.open_settings()
+    root.current = "settings"
+    settings_screen._select_settings_section("app-ui-kivy")
+
+    assert settings_screen._draft_settings is not None
+    original_draft = settings_screen._draft_settings
+
+    settings_screen._on_theme_mode_selected(None, "Broken")
+    assert settings_screen._shell.latest_error == "Unknown option label: Broken"
+    assert settings_screen._draft_settings == original_draft
+
+    settings_screen._shell.latest_error = None
+    settings_screen.update_error_label()
+    settings_screen._on_ui_language_selected(None, "Nonsense")
+    assert settings_screen._shell.latest_error == "Unknown option label: Nonsense"
+    assert settings_screen._draft_settings == original_draft
+
+
+def test_settings_screen_reports_lookup_error_for_invalid_framework_rule_type() -> None:
+    """Verify settings screen reports lookup error for invalid framework rule type.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
+    app = cast(Any, create_kivy_app())
+    root = app.build()
+    settings_screen = root.get_screen("settings")
+
+    settings_screen._shell.open_settings()
+    root.current = "settings"
+    settings_screen._select_settings_section("frameworks")
+
+    assert settings_screen._draft_settings is not None
+    initial_framework_rule_sets = (
+        settings_screen._draft_settings.sync_scope_settings.framework_rule_sets
+    )
+
+    settings_screen._require_spinner(
+        settings_screen._framework_rule_type_spinner
+    ).text = "UnknownFramework"
+    settings_screen._require_text_input(
+        settings_screen._framework_rule_path_input
+    ).text = ".venv"
+    settings_screen._require_text_input(
+        settings_screen._framework_rule_description_input
+    ).text = "Ignore virtualenv"
+    settings_screen._add_framework_rule()
+
+    assert (
+        settings_screen._shell.latest_error == "Unknown option label: UnknownFramework"
+    )
+    assert (
+        settings_screen._draft_settings.sync_scope_settings.framework_rule_sets
+        == initial_framework_rule_sets
+    )
+
+
+def test_settings_screen_can_toggle_and_save_gitignore_exclusions() -> None:
+    """Verify settings screen can toggle and save gitignore exclusions.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
+    app = cast(Any, create_kivy_app())
+    root = app.build()
+    settings_screen = root.get_screen("settings")
+
+    settings_screen._shell.open_settings()
+    root.current = "settings"
+    settings_screen._select_settings_section("frameworks")
+
+    label = WrappedLabel(text="")
+    settings_screen._toggle_use_gitignore_rules(
+        _widget=object(),
+        value=True,
+        state_label=label,
+    )
+    assert label.text == "Enabled"
+
+    save_button = _find_button_by_text(settings_screen, "Save Changes")
+    save_button.dispatch("on_release")
+
+    assert settings_screen._shell.settings_state is not None
+    assert (
+        settings_screen._shell.settings_state.app_settings.sync_scope_settings.use_gitignore_rules
+        is True
+    )
+
+
+def test_settings_screen_database_hint_runtime_callbac_948d() -> None:
+    """Verify settings screen database hint and runtime callbacks cover remaining paths.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
+    applied_settings: list[object] = []
+    app = cast(Any, create_kivy_app())
+    root = app.build()
+    settings_screen = root.get_screen("settings")
+
+    def _capture_runtime_settings(settings: object) -> None:
+        """Handle capture runtime settings.
+
+        Args:
+            settings:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+        """
+        applied_settings.append(settings)
+
+    settings_screen._apply_runtime_settings = _capture_runtime_settings
+
+    settings_screen._shell.open_settings()
+    root.current = "settings"
+    settings_screen._select_settings_section("app-ui-kivy")
+
+    settings_screen._database_directory_input = None
+    settings_screen._database_filename_input = None
+    assert settings_screen._database_file_browse_hint() == ""
+
+    settings_screen.refresh()
+    settings_screen._select_settings_section("app-ui-kivy")
+    directory_input = settings_screen._require_text_input(
+        settings_screen._database_directory_input
+    )
+    filename_input = settings_screen._require_text_input(
+        settings_screen._database_filename_input
+    )
+
+    directory_input.text = "/tmp/polyglot"
+    filename_input.text = ""
+    assert settings_screen._database_file_browse_hint() == "/tmp/polyglot"
+
+    filename_input.text = "app.sqlite3"
+    assert settings_screen._database_file_browse_hint().endswith(
+        "/tmp/polyglot/app.sqlite3"
+    )
+
+    directory_input.text = ""
+    assert settings_screen._database_file_browse_hint() == "app.sqlite3"
+
+    settings_screen._require_text_input(settings_screen._width_input).text = "1200"
+    settings_screen._require_text_input(settings_screen._height_input).text = "800"
+    settings_screen._require_text_input(
+        settings_screen._sync_progress_log_limit_input
+    ).text = "75"
+
+    settings_screen._apply_settings()
+    settings_screen._restore_defaults()
+
+    assert len(applied_settings) == 2
+
+
+def test_settings_screen_apply_and_restore_cover_optional_skip_paths() -> None:
+    """Verify settings screen apply and restore cover optional skip paths.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
+    app = cast(Any, create_kivy_app())
+    root = app.build()
+    settings_screen = root.get_screen("settings")
+
+    settings_screen._shell.open_settings()
+    root.current = "settings"
+    settings_screen._select_settings_section("app-ui-kivy")
+
+    settings_screen._require_text_input(settings_screen._width_input).text = ""
+    settings_screen._require_text_input(settings_screen._height_input).text = "700"
+    settings_screen._require_text_input(
+        settings_screen._sync_progress_log_limit_input
+    ).text = ""
+    settings_screen._database_directory_input = None
+    settings_screen._database_filename_input = None
+
+    settings_screen._apply_settings()
+    settings_screen._restore_defaults()
+
+    assert settings_screen._shell.settings_state is not None
+    assert settings_screen._shell.settings_state.status == "defaults-restored"
+
+
+def test_settings_screen_apply_skips_missing_numeric_inputs() -> None:
+    """Verify settings screen apply skips missing numeric inputs.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
+    app = cast(Any, create_kivy_app())
+    root = app.build()
+    settings_screen = root.get_screen("settings")
+
+    settings_screen._shell.open_settings()
+    root.current = "settings"
+    settings_screen._select_settings_section("app-ui-kivy")
+
+    original_width = settings_screen._require_state().app_settings.window_width
+    original_limit = (
+        settings_screen._require_state().app_settings.sync_progress_log_limit
+    )
+    settings_screen._width_input = None
+    settings_screen._height_input = None
+    settings_screen._sync_progress_log_limit_input = None
+
+    settings_screen._apply_settings()
+
+    assert settings_screen._shell.settings_state is not None
+    assert (
+        settings_screen._shell.settings_state.app_settings.window_width
+        == original_width
+    )
+    assert (
+        settings_screen._shell.settings_state.app_settings.sync_progress_log_limit
+        == original_limit
+    )
+
+
+def test_settings_screen_skips_runtime_callback_when_save_or_reset_fail() -> None:
+    """Verify settings screen skips runtime callback when save or reset fail.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
+    applied_settings: list[object] = []
+    seeded_services = build_seeded_services()
+    failing_save_services = FrontendServices(
+        catalog=seeded_services.catalog,
+        workflows=seeded_services.workflows,
+        settings=InMemorySettingsService(
+            _saved_settings=seeded_services.settings.load_settings().app_settings,
+            fail_save=True,
+        ),
+        registry=seeded_services.registry,
+    )
+    save_app = cast(Any, create_kivy_app(services=failing_save_services))
+    save_root = save_app.build()
+    save_screen = save_root.get_screen("settings")
+
+    def _capture_failed_save_runtime_settings(settings: object) -> None:
+        """Handle capture failed save runtime settings.
+
+        Args:
+            settings:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+        """
+        applied_settings.append(settings)
+
+    save_screen._apply_runtime_settings = _capture_failed_save_runtime_settings
+    save_screen._shell.open_settings()
+    save_root.current = "settings"
+    save_screen._select_settings_section("app-ui-kivy")
+    save_screen._require_text_input(save_screen._width_input).text = ""
+    save_screen._require_text_input(save_screen._height_input).text = "720"
+    save_screen._require_text_input(
+        save_screen._sync_progress_log_limit_input
+    ).text = ""
+
+    save_screen._apply_settings()
+
+    assert save_screen._shell.settings_state is not None
+    assert save_screen._shell.settings_state.status == "failed"
+    assert applied_settings == []
+
+    failing_reset_services = FrontendServices(
+        catalog=seeded_services.catalog,
+        workflows=seeded_services.workflows,
+        settings=FailingResetSettingsService(
+            _saved_settings=seeded_services.settings.load_settings().app_settings,
+        ),
+        registry=seeded_services.registry,
+    )
+    reset_app = cast(Any, create_kivy_app(services=failing_reset_services))
+    reset_root = reset_app.build()
+    reset_screen = reset_root.get_screen("settings")
+
+    def _capture_failed_reset_runtime_settings(settings: object) -> None:
+        """Handle capture failed reset runtime settings.
+
+        Args:
+            settings:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+        """
+        applied_settings.append(settings)
+
+    reset_screen._apply_runtime_settings = _capture_failed_reset_runtime_settings
+    reset_screen._shell.open_settings()
+    reset_root.current = "settings"
+    reset_screen._select_settings_section("app-ui-kivy")
+
+    reset_screen._restore_defaults()
+
+    assert reset_screen._shell.settings_state is not None
+    assert reset_screen._shell.settings_state.status == "failed"
+    assert applied_settings == []
+
+
+def test_settings_screen_raises_missing_state_draft_op_7cfe() -> None:
+    """Verify settings screen raises for missing state or draft and option lookup.
+
+    failures.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
     app = cast(Any, create_kivy_app())
     root = app.build()
     settings_screen = root.get_screen("settings")
@@ -183,13 +891,29 @@ def test_settings_screen_raises_for_missing_state_or_draft_and_option_lookup_fai
     options = [SettingsOptionViewModel(value="en", label="English")]
 
     with pytest.raises(LookupError, match="Unknown option value: es"):
-        _find_option_label(options, "es")
+        find_option_label(options, "es")
 
     with pytest.raises(LookupError, match="Unknown option label: Spanish"):
-        _find_option_value(options, "Spanish")
+        find_option_value(options, "Spanish")
 
 
 def _find_button_by_text(root_widget: object, text: str) -> Button:
+    """Handle find button by text.
+
+    Args:
+        root_widget:
+            Value supplied to this callable.
+        text:
+            Value supplied to this callable.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+
+    Raises:
+        LookupError:
+            Raised when this callable hits the corresponding error path.
+    """
     for widget in cast(Any, root_widget).walk():
         if isinstance(widget, Button) and widget.text == text:
             return widget
@@ -198,6 +922,16 @@ def _find_button_by_text(root_widget: object, text: str) -> Button:
 
 
 def _collect_label_texts(root_widget: object) -> list[str]:
+    """Handle collect label texts.
+
+    Args:
+        root_widget:
+            Value supplied to this callable.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
     texts: list[str] = []
     for widget in cast(Any, root_widget).walk():
         if isinstance(widget, Label) and widget.text:
@@ -206,6 +940,22 @@ def _collect_label_texts(root_widget: object) -> list[str]:
 
 
 def _find_spinner_by_text(root_widget: object, text: str) -> Spinner:
+    """Handle find spinner by text.
+
+    Args:
+        root_widget:
+            Value supplied to this callable.
+        text:
+            Value supplied to this callable.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+
+    Raises:
+        LookupError:
+            Raised when this callable hits the corresponding error path.
+    """
     for widget in cast(Any, root_widget).walk():
         if isinstance(widget, Spinner) and widget.text == text:
             return widget
@@ -214,6 +964,20 @@ def _find_spinner_by_text(root_widget: object, text: str) -> Spinner:
 
 
 def _find_window_inputs(root_widget: object) -> tuple[TextInput, TextInput]:
+    """Handle find window inputs.
+
+    Args:
+        root_widget:
+            Value supplied to this callable.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+
+    Raises:
+        LookupError:
+            Raised when this callable hits the corresponding error path.
+    """
     inputs = [
         widget
         for widget in cast(Any, root_widget).walk()

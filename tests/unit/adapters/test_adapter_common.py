@@ -6,14 +6,113 @@ from pathlib import Path
 
 import pytest
 
+from polyglot_site_translator.adapters.base import BaseFrameworkAdapter
 from polyglot_site_translator.adapters.common import (
     find_first_level_directory,
     find_first_level_file,
     read_text_if_present,
 )
+from polyglot_site_translator.domain.framework_detection.models import (
+    FrameworkDetectionResult,
+)
+from polyglot_site_translator.domain.sync.scope import SyncFilterSpec, SyncFilterType
+
+
+class _AdapterWithDefaultSyncScope(BaseFrameworkAdapter):
+    """Test helper for AdapterWithDefaultSyncScope.
+
+    Attributes:
+        framework_type:
+            Documented attribute exposed by this type.
+        adapter_name:
+            Documented attribute exposed by this type.
+        display_name:
+            Documented attribute exposed by this type.
+    """
+
+    framework_type = "example"
+    adapter_name = "example_adapter"
+    display_name = "Example"
+
+    def detect(self, project_path: Path) -> FrameworkDetectionResult:
+        """Handle detect.
+
+        Args:
+            self:
+                Value supplied to this callable.
+            project_path:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+        """
+        return FrameworkDetectionResult.unmatched(project_path=str(project_path))
+
+    @staticmethod
+    def get_sync_filters(project_path: Path) -> tuple[SyncFilterSpec, ...]:
+        """Handle get sync filters.
+
+        Args:
+            project_path:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+        """
+        return (
+            SyncFilterSpec(
+                relative_path="locale",
+                filter_type=SyncFilterType.DIRECTORY,
+                description="Example catalogs.",
+            ),
+        )
+
+
+class _AdapterWithNoCustomFilters(BaseFrameworkAdapter):
+    """Test helper for AdapterWithNoCustomFilters.
+
+    Attributes:
+        framework_type:
+            Documented attribute exposed by this type.
+        adapter_name:
+            Documented attribute exposed by this type.
+        display_name:
+            Documented attribute exposed by this type.
+    """
+
+    framework_type = "empty"
+    adapter_name = "empty_adapter"
+    display_name = "Empty"
+
+    def detect(self, project_path: Path) -> FrameworkDetectionResult:
+        """Handle detect.
+
+        Args:
+            self:
+                Value supplied to this callable.
+            project_path:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+        """
+        return FrameworkDetectionResult.unmatched(project_path=str(project_path))
 
 
 def test_find_first_level_file_prefers_root_and_nested_matches(tmp_path: Path) -> None:
+    """Verify find first level file prefers root and nested matches.
+
+    Args:
+        tmp_path:
+            Value supplied to this callable.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
     root_file = tmp_path / "settings.py"
     root_file.write_text("ROOT = True\n", encoding="utf-8")
     nested_dir = tmp_path / "config"
@@ -28,7 +127,19 @@ def test_find_first_level_file_prefers_root_and_nested_matches(tmp_path: Path) -
     assert find_first_level_file(tmp_path, "settings.py") == nested_file
 
 
-def test_find_first_level_directory_finds_root_and_nested_matches(tmp_path: Path) -> None:
+def test_find_first_level_directory_finds_root_and_nested_matches(
+    tmp_path: Path,
+) -> None:
+    """Verify find first level directory finds root and nested matches.
+
+    Args:
+        tmp_path:
+            Value supplied to this callable.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
     root_dir = tmp_path / "locale"
     root_dir.mkdir()
     nested_parent = tmp_path / "project"
@@ -47,6 +158,22 @@ def test_read_text_if_present_handles_missing_binary_and_read_errors(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    """Verify read text if present handles missing binary and read errors.
+
+    Args:
+        tmp_path:
+            Value supplied to this callable.
+        monkeypatch:
+            Value supplied to this callable.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+
+    Raises:
+        OSError:
+            Raised when this callable hits the corresponding error path.
+    """
     assert read_text_if_present(tmp_path / "missing.txt") == ""
 
     binary_file = tmp_path / "binary.txt"
@@ -58,9 +185,50 @@ def test_read_text_if_present_handles_missing_binary_and_read_errors(
     text_file.write_text("hello\n", encoding="utf-8")
 
     def raise_os_error(*_args: object, **_kwargs: object) -> str:
+        """Handle raise os error.
+
+        Args:
+            *_args:
+                Value supplied to this callable.
+            **_kwargs:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+
+        Raises:
+            OSError:
+                Raised when this callable hits the corresponding error path.
+        """
         msg = "boom"
         raise OSError(msg)
 
     monkeypatch.setattr(Path, "read_text", raise_os_error)
 
     assert read_text_if_present(text_file) == ""
+
+
+def test_base_framework_adapter_default_scope_delegates_to_sync_filters() -> None:
+    """Verify base framework adapter default scope delegates to sync filters.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
+    scope = _AdapterWithDefaultSyncScope().get_sync_scope(Path("/workspace/project"))
+
+    assert [sync_filter.relative_path for sync_filter in scope.filters] == ["locale"]
+    assert scope.excludes == ()
+
+
+def test_base_framework_adapter_default_filters_are_empty_when_not_overridden() -> None:
+    """Verify base framework adapter default filters are empty when not overridden.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
+    adapter = _AdapterWithNoCustomFilters()
+
+    assert adapter.get_sync_filters(Path("/workspace/project")) == ()

@@ -8,6 +8,12 @@ from tests.support.frontend_doubles import build_seeded_services
 
 
 def test_navigation_flow_keeps_selected_project_context() -> None:
+    """Verify navigation flow keeps selected project context.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
     shell = create_frontend_shell(build_seeded_services())
 
     shell.open_dashboard()

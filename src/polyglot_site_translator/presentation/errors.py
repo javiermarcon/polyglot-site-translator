@@ -4,4 +4,8 @@ from __future__ import annotations
 
 
 class ControlledServiceError(RuntimeError):
-    """Known operational error surfaced to the presentation layer."""
+    """Known operational error surfaced to the presentation layer.
+
+    Attributes:
+        None: This type does not declare class-level attributes.
+    """

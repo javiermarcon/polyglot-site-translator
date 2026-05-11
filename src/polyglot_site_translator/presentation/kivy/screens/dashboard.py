@@ -10,13 +10,33 @@ from polyglot_site_translator.presentation.kivy.widgets.common import WrappedLab
 
 
 class DashboardScreen(BaseShellScreen):
-    """Entry screen for the application shell."""
+    """Entry screen for the application shell.
+
+    Attributes:
+        None: This type does not declare class-level attributes.
+    """
 
     def __init__(self, *, shell: FrontendShell, manager_ref: ScreenManager) -> None:
+        """Build the dashboard actions and descriptive overview labels.
+
+        Args:
+            self:
+                Value supplied to this callable.
+            shell:
+                Value supplied to this callable.
+            manager_ref:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+        """
         super().__init__(
             screen_name="dashboard",
             title="Dashboard",
-            subtitle="Main entry point for projects, operations and system configuration.",
+            subtitle=(
+                "Main entry point for projects, operations and system configuration."
+            ),
             shell=shell,
             manager_ref=manager_ref,
         )
@@ -27,14 +47,48 @@ class DashboardScreen(BaseShellScreen):
         self.refresh()
 
     def _open_projects(self, *_args: object) -> None:
+        """Open projects.
+
+        Args:
+            self:
+                Value supplied to this callable.
+            *_args:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+        """
         self._shell.open_projects()
         self.show_route("projects")
 
     def _open_settings(self, *_args: object) -> None:
+        """Open settings.
+
+        Args:
+            self:
+                Value supplied to this callable.
+            *_args:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+        """
         self._shell.open_settings()
         self.show_route("settings")
 
     def refresh(self) -> None:
+        """Refresh dashboard copy from the current shell state.
+
+        Args:
+            self:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+        """
         self._sections_label.text = "\n".join(
             f"{section.title}: {section.description}"
             for section in self._shell.dashboard_state.sections

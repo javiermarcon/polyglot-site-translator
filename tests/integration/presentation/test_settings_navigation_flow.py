@@ -8,6 +8,12 @@ from tests.support.frontend_doubles import build_seeded_services
 
 
 def test_dashboard_to_settings_and_back_keeps_saved_state() -> None:
+    """Verify dashboard to settings and back keeps saved state.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
     shell = create_frontend_shell(build_seeded_services())
 
     shell.open_dashboard()

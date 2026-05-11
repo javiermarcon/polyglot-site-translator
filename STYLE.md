@@ -12,6 +12,12 @@ The repository should also remain compatible with:
 - mypy for static type checking
 - pytest for tests
 
+Python source lines must stay within 88 characters so the formatter and linter enforce the same
+explicit limit across the repository.
+
+All new and modified code must explicitly satisfy those standards. Do not rely on accidental
+compatibility or on whichever subset a tool happens to be checking by default.
+
 ---
 
 ## Core design principles
@@ -23,7 +29,7 @@ All code must follow these principles:
 - OCP
 
 Interpretation for this repository:
-- **DRY**: scanning rules, classification rules, persistence helpers, adapter registration, and reporting logic must not be duplicated.
+- **DRY**: scanning rules, classification rules, persistence helpers, locale-validation rules, translation-memory logic, adapter registration, and reporting logic must not be duplicated.
 - **SRP**: each module should have one reason to change.
 - **OCP**: new scanners, reports, or framework adapters should be added through extension, not through widespread rewrites.
 - **SOLID** should guide service boundaries and abstractions, especially between UI, services, adapters, storage, and infrastructure.
@@ -47,10 +53,19 @@ Interpretation for this repository:
 
 ## Docstrings
 
-- Public modules, classes, and non-trivial functions should have meaningful docstrings.
+- All modules, classes, functions, and methods, public or private, must have meaningful
+  docstrings.
+- Docstrings must be multi-line and structured; one-line placeholder docstrings are not acceptable
+  for behavioral symbols.
 - Docstrings must explain intent and important behavior, not restate the name.
+- Docstrings should describe relevant inputs, outputs, side effects, and failure behavior when
+  that context matters to maintainers.
+- Functions and methods should use sections such as `Args:`, `Returns:`, and `Raises:` whenever
+  they apply.
+- Classes should use sections such as `Attributes:` when they expose meaningful state.
 - Avoid filler text.
 - Keep docstrings aligned with actual behavior.
+- Follow PEP257 explicitly; do not treat docstrings as optional commentary.
 
 ---
 

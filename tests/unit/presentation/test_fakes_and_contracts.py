@@ -7,6 +7,12 @@ from tests.support.frontend_doubles import build_empty_services, build_seeded_se
 
 
 def test_seeded_catalog_matches_ui_contract() -> None:
+    """Verify seeded catalog matches ui contract.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
     services = build_seeded_services()
 
     catalog: ProjectCatalogService = services.catalog
@@ -19,6 +25,12 @@ def test_seeded_catalog_matches_ui_contract() -> None:
 
 
 def test_empty_catalog_returns_no_projects() -> None:
+    """Verify empty catalog returns no projects.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
     services = build_empty_services()
 
     assert services.catalog.list_projects() == []

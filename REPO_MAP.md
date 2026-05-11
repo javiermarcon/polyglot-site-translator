@@ -12,12 +12,15 @@ This map describes the intended repository layout.
 Update it whenever the structure changes.
 
 ### Root
+
 - `src/`
   Main Python package(s) for the application.
   Current package: `polyglot_site_translator/`
 
 - `tests/`
   Automated tests.
+  Also contains repository-level quality scripts such as `run_docstring_audit.py` used to enforce
+  structured docstrings across public and private symbols.
 
 - `requirements/`
   Canonical dependency declaration directory.
@@ -67,7 +70,7 @@ Possible areas under `src/`:
 Current frontend base:
 
 - `polyglot_site_translator/app.py`
-  Public Kivy app factory.
+  Public Kivy app factory plus safe Kivy runtime defaults applied before importing Kivy-heavy modules.
 
 - `polyglot_site_translator/__main__.py`
   Executable GUI module.
@@ -76,22 +79,34 @@ Current frontend base:
   Presentation-shell wiring and injectable service bundle assembly.
 
 - `polyglot_site_translator/infrastructure/settings.py`
-  TOML-backed settings persistence, validation, and per-user config-path resolution.
+  TOML-backed settings persistence, validation, per-user config-path resolution, and persistence of general app settings such as the SQLite location plus translation defaults (`default_project_locale`, `default_compile_mo`, `default_use_external_translator`, `default_dry_run`, `default_stats_only`, `default_report_inconsistencies`) for new projects.
+
+- `polyglot_site_translator/infrastructure/sync_scope_sqlite.py`
+  SQLite-backed persistence for shared global/framework sync rules and the `use_gitignore_rules` toggle used by sync scope resolution.
+
+- `polyglot_site_translator/infrastructure/sync_gitignore.py`
+  Supported translation of `.gitignore` patterns into sync exclusions.
+
+- `polyglot_site_translator/infrastructure/remote_connections/base.py`
+  Shared provider and reusable-session base classes, structured remote-operation errors and subtypes, controlled connect retry behavior, bounded `list_remote_files()` materialization, and incremental traversal helpers.
 
 - `polyglot_site_translator/infrastructure/database_location.py`
   Resolution and validation of the configured SQLite directory/filename into a final database path.
 
 - `polyglot_site_translator/infrastructure/site_registry_sqlite.py`
-  Real SQLite repository for the site registry, including schema setup, legacy FTP migration, related remote-connection persistence, and configured runtime wiring from settings.
+  Real SQLite repository for the site registry, including schema setup, legacy FTP migration, related remote-connection persistence, persisted filtered-vs-full sync preference, persisted project sync-rule overrides, configured runtime wiring from settings, and typed wrapping for corrupted encrypted-secret reads.
 
 - `polyglot_site_translator/infrastructure/site_secrets.py`
-  Local reversible encryption helper used to store remote passwords encrypted at rest.
+  Local reversible encryption helper used to store remote passwords encrypted at rest, with explicit decode/integrity failures mapped to typed persistence errors.
 
 - `polyglot_site_translator/domain/remote_connections/`
-  Typed remote-connection descriptors, configs, test results, and provider contracts.
+  Typed remote-connection descriptors, configs, session state, test results, and provider/session contracts.
 
 - `polyglot_site_translator/domain/sync/`
-  Typed sync direction, remote file descriptors, summaries, results, and explicit sync errors.
+  Typed sync direction, remote/local file descriptors, summaries, results, and explicit sync errors.
+
+- `polyglot_site_translator/domain/sync/scope.py`
+  Typed adapter-owned sync include/exclude specs, project-level override models, resolved rule catalogs, filter matching rules, and explicit resolved-scope outcomes.
 
 - `polyglot_site_translator/domain/framework_detection/`
   Typed framework-detection contracts, result models, and explicit ambiguity errors.
@@ -103,7 +118,10 @@ Current frontend base:
   Discoverable adapter base class, dynamic adapter registry, and concrete WordPress, Django, and Flask project detectors.
 
 - `polyglot_site_translator/services/framework_detection.py`
-  Registry-backed framework detection orchestration with path validation and framework catalog exposure.
+  Registry-backed framework detection orchestration with path validation, framework catalog exposure, and typed wrapping of adapter-registry runtime failures.
+
+- `polyglot_site_translator/services/framework_sync_scope.py`
+  Explicit resolution of global sync rules, framework-level settings rules, adapter-defined include/exclude rules, optional `.gitignore` exclusions, and persisted project overrides from the current framework type, without hardcoding framework paths in generic sync services or Kivy UI modules; failures in those external inputs are wrapped into typed sync-configuration errors.
 
 - `polyglot_site_translator/services/site_registry.py`
   Site registry CRUD orchestration and validation independent from Kivy or SQLite details, with optional remote-connection integration and optional framework detection integration.
@@ -112,22 +130,37 @@ Current frontend base:
   Validation, discoverable catalog exposure, and connection-test orchestration for remote connection providers.
 
 - `polyglot_site_translator/services/project_sync.py`
-  Remote-to-local sync orchestration over the existing remote provider registry, including typed results and controlled failures.
+  Bidirectional sync orchestration over the existing remote provider registry, including one reusable remote session per sync run, optional adapter-resolved sync scopes, typed results, controlled failures, and explicit handling of sync-scope resolution failures.
+
+- `polyglot_site_translator/domain/po_processing/`
+  Typed PO processing models, contracts, and explicit domain/infrastructure errors.
+
+- `polyglot_site_translator/services/po_processing.py`
+  Shared PO workflow orchestration for discovery, locale-family grouping, translation-memory reuse across families, optional persistent translation-cache reuse, cross-variant synchronization, optional external translation, optional `only_fuzzy`, optional `dry-run` / `stats-only` execution, optional inconsistency reporting, controlled `.mo` compilation with per-file failure collection, and legacy-equivalent processing metrics such as fuzzy counts, initial-sync completions, reused-from-other-variant counts, sync-only skips, and variant-difference details.
+
+- `polyglot_site_translator/infrastructure/po_files.py`
+  Real PO repository based on `polib` for reading/writing project PO catalogs and compiling sibling `.mo` files.
+
+- `polyglot_site_translator/infrastructure/po_translation_cache_shelve.py`
+  Persistent translation-cache adapter backed by the Python standard-library `shelve` store, isolated behind the shared PO translation-cache contract.
+
+- `polyglot_site_translator/infrastructure/po_translator_googletrans.py`
+  External translation-provider adapter for PO processing, isolated behind the shared PO translation contract, with typed wrapping of configuration, HTTP/protocol, and invalid-response failures.
 
 - `polyglot_site_translator/infrastructure/remote_connections/`
-  Discoverable FTP/FTPS/SFTP/SCP provider implementations and the runtime provider registry.
+  Discoverable FTP/FTPS/SFTP/SCP provider implementations, reusable transport sessions, typed operation failure normalization, and the runtime provider registry.
 
 - `polyglot_site_translator/infrastructure/sync_local.py`
-  Local workspace directory creation and downloaded-file persistence for sync workflows.
+  Local workspace directory creation, local file discovery/reads, and downloaded-file persistence for sync workflows.
 
 - `polyglot_site_translator/presentation/contracts.py`
   UI-facing service protocols, including frontend settings operations and project-registry create/edit flows.
 
 - `polyglot_site_translator/presentation/view_models.py`
-  Typed dataclasses for dashboard, project list/detail, sync, audit, PO processing, and settings.
+  Typed dataclasses for dashboard, project list/detail, sync, audit, translation workflow state, settings, translation defaults, translation-run option payloads, and project-editor section/sync-rule state.
 
 - `polyglot_site_translator/presentation/frontend_shell.py`
-  Navigation menu state, settings editing, project editor orchestration, sync background execution state, and route-safe CRUD wiring independent from Kivy rendering.
+  Navigation menu state, settings editing, project editor orchestration, project-editor preview refreshes, sync background execution state, route-safe CRUD wiring, and visible surfacing of recoverable unhandled runtime failures independent from Kivy rendering.
 
 - `polyglot_site_translator/presentation/fakes.py`
   Default runtime wiring for the real TOML + SQLite-backed frontend services. This module must not keep fake bundles for workflows that already have production implementations.
@@ -138,6 +171,9 @@ Current frontend base:
 - `polyglot_site_translator/presentation/kivy/`
   Thin Kivy `ScreenManager`, screens, and reusable widget area.
 
+- `polyglot_site_translator/presentation/kivy/app.py`
+  Thin Kivy `App` wrapper that applies runtime settings and installs global exception routing for main thread, worker threads, and Kivy callbacks.
+
 - `polyglot_site_translator/presentation/kivy/theme.py`
   Runtime theme palette tokens and active theme selection for the Kivy frontend.
 
@@ -145,13 +181,28 @@ Current frontend base:
   Responsive layout rules for the settings screen so compact windows switch to a usable stacked layout.
 
 - `polyglot_site_translator/presentation/kivy/screens/settings.py`
-  Extensible settings screen with the initial App / UI / Kivy section, including editable SQLite directory/filename fields.
+  Extensible settings screen with editable App / UI / Kivy settings, a real `Translation Settings` section for default locale plus default `.mo` compilation, external-translator usage, translation-cache defaults/path, `only_fuzzy`, `dry-run`, `stats-only`, and inconsistency reporting inheritance, and general sync-rule administration for global rules, framework rules, and `.gitignore` integration.
 
 - `polyglot_site_translator/presentation/kivy/screens/project_editor.py`
-  Thin create/edit screen for site registry records driven entirely by typed presentation state, including the discoverable remote connection selector and "Test Connection" action.
+  Thin create/edit screen for site registry records driven entirely by typed presentation state, including sectioned project settings where `General` only owns non-translation/non-remote/non-sync fields, inherited translation defaults for create flows, the persisted per-project `Compile MO Files`, `Use External Translator`, `Use Translation Cache`, `Only Fuzzy Entries`, `Dry-run`, `Stats Only`, and `Report Inconsistencies` preferences, draft preservation while switching sections, the discoverable remote connection selector, the persisted "Use Adapter Sync Filters" switch, the visible sync-scope catalog, per-rule toggles, project-level rule editing, and the "Test Connection" action. Labeled inputs, spinners, and the remote password row are built via `site_editor_form.py` so create and edit stay aligned.
+
+- `polyglot_site_translator/presentation/kivy/site_editor_form.py`
+  Shared Kivy helpers for the project editor form (create and edit use the same screen): text inputs, spinners, field cards, remote password with visibility toggle, and `find_option_label` / `find_option_value` for spinner option lists (also used by the settings screen).
 
 - `polyglot_site_translator/presentation/kivy/widgets/sync_progress_popup.py`
-  Dedicated Kivy popup that renders background sync progress and command-log output without moving remote work into widgets.
+  Dedicated Kivy popup that renders background sync progress and a bounded command-log output without moving remote work into widgets.
+
+- `polyglot_site_translator/presentation/kivy/widgets/path_picker.py`
+  Kivy Garden `FileBrowser`-backed modal picker and path-input rows for local filesystem paths (for example project `local_path` and SQLite directory/filename fields). Directory pickers use a filter so listings show folders only, plus disabled filename/filter fields to keep that mode consistent.
+
+- `polyglot_site_translator/presentation/kivy/widgets/ssh_host_key_trust_dialog.py`
+  Shared confirmation popup for trusting an unknown SSH host key (`known_hosts` TOFU), used by the sync progress window and the project editor connection test.
+
+- `polyglot_site_translator/presentation/kivy/assets/fonts/`
+  Bundled **Material Icons** font (Apache 2.0, see ``NOTICE.txt`` in that folder) so icon glyphs render the same on every platform without relying on system emoji fonts.
+
+- `polyglot_site_translator/presentation/kivy/widgets/password_visibility.py`
+  Horizontal layout that pairs a masked ``TextInput`` with a Material Icons toggle (visibility / visibility_off codepoints) using the packaged ``MaterialIcons-Regular.ttf``.
 
 - `services/`
   - use-case orchestration
@@ -215,6 +266,7 @@ Current frontend coverage:
 - `tests/unit/adapters/test_flask_adapter.py`
 - `tests/unit/services/test_framework_detection_service.py`
 - `tests/unit/services/test_project_sync_service.py`
+- `tests/unit/services/test_framework_sync_scope_service.py`
 - `tests/unit/presentation/test_site_registry_services.py`
 - `tests/unit/presentation/test_sync_workflow_services.py`
 - `tests/integration/presentation/test_project_editor_screen_runtime.py`
@@ -228,6 +280,10 @@ Current frontend coverage:
 - `features/presentation/framework_detection.feature`
 - `features/presentation/remote_connections.feature`
 - `features/presentation/sync.feature`
+- `features/presentation/sync_filters.feature`
+- `features/presentation/po_processing.feature`
+- `features/steps/po_processing_steps.py`
+- `tests/unit/services/test_po_processing_service.py`
 
 If UI tests are added, they should remain isolated and clearly labeled.
 
@@ -251,23 +307,29 @@ Keep this map updated if the strategy changes.
 ## Where to add new code
 
 ### New UI screen
+
 Add under the UI/presentation package and wire it from the app entrypoint.
 Update:
+
 - `ARCHITECTURE.md`
 - `REPO_MAP.md`
 - `CODEBASE_ENTRYPOINTS.md`
 
 ### New shared service
+
 Add under services/domain as appropriate.
 Update:
+
 - `ARCHITECTURE.md`
 - `DOMAIN_MAP.md`
 - `CODEBASE_ENTRYPOINTS.md`
 - tests
 
 ### New framework adapter/plugin
+
 Add under `adapters/` or `plugins/`.
 Update:
+
 - `ARCHITECTURE.md`
 - `DOMAIN_MAP.md`
 - `CODEBASE_ENTRYPOINTS.md`
@@ -275,15 +337,19 @@ Update:
 - tests
 
 ### New persistence/repository module
+
 Add under infrastructure/persistence.
 Update:
+
 - `ARCHITECTURE.md`
 - `REPO_MAP.md`
 - tests
 
 ### New report format
+
 Add under reporting.
 Update:
+
 - `ARCHITECTURE.md`
 - `CODEBASE_ENTRYPOINTS.md`
 - tests
@@ -294,6 +360,7 @@ Update:
 ## Repository hygiene expectations
 
 Any structural change must keep:
+
 - module responsibilities explicit
 - documentation aligned
 - tests discoverable

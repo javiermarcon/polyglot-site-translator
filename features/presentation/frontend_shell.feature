@@ -49,3 +49,17 @@ Feature: Kivy frontend shell for multi-framework localization workflows
     When the operator starts the sync workflow
     Then the sync panel shows a failed status
     And the frontend shell shows the controlled error message
+
+  Scenario: Surface a controlled audit error
+    Given the frontend shell is wired with a failing audit test double
+    And the operator has opened the detail for project "wp-site"
+    When the operator starts the audit workflow
+    Then the audit panel shows a failed status
+    And the frontend shell shows the controlled audit error message
+
+  Scenario: Surface a controlled translation error
+    Given the frontend shell is wired with a failing translation test double
+    And the operator has opened the detail for project "wp-site"
+    When the operator starts the po processing workflow
+    Then the po processing panel shows a failed status
+    And the frontend shell shows the controlled translation error message

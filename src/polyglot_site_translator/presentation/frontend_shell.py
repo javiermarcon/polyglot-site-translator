@@ -5,8 +5,16 @@ from __future__ import annotations
 from collections.abc import Callable
 from dataclasses import dataclass, replace
 from threading import Lock, Thread
+from types import TracebackType
 
-from polyglot_site_translator.domain.sync.models import SyncProgressEvent, SyncProgressStage
+from polyglot_site_translator.domain.po_processing.models import POProcessingProgress
+from polyglot_site_translator.domain.site_registry.locales import (
+    normalize_default_locale,
+)
+from polyglot_site_translator.domain.sync.models import (
+    SyncProgressEvent,
+    SyncProgressStage,
+)
 from polyglot_site_translator.presentation.contracts import FrontendServices
 from polyglot_site_translator.presentation.errors import ControlledServiceError
 from polyglot_site_translator.presentation.router import FrontendRouter, RouteName
@@ -26,13 +34,23 @@ from polyglot_site_translator.presentation.view_models import (
     SyncCommandLogEntryViewModel,
     SyncProgressStateViewModel,
     SyncStatusViewModel,
+    TranslationOptionsViewModel,
+    TranslationWorkflowRequestViewModel,
     build_default_app_settings,
     build_navigation_menu_state,
     build_settings_state,
+    build_translation_options,
+    select_project_editor_section,
 )
 
 
 def _build_dashboard_state() -> DashboardStateViewModel:
+    """Build dashboard state.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
     return DashboardStateViewModel(
         sections=[
             DashboardSectionViewModel(
@@ -43,22 +61,31 @@ def _build_dashboard_state() -> DashboardStateViewModel:
             DashboardSectionViewModel(
                 key="sync",
                 title="Sync",
-                description="Run a remote synchronization workflow through service contracts.",
+                description=(
+                    "Run a remote synchronization workflow through service contracts."
+                ),
             ),
             DashboardSectionViewModel(
                 key="audit",
                 title="Audit",
-                description="Review upcoming localization scans and findings summaries.",
+                description=(
+                    "Review upcoming localization scans and findings summaries."
+                ),
             ),
             DashboardSectionViewModel(
                 key="po-processing",
-                title="PO Processing",
-                description="Prepare PO and MO workflows behind injectable service interfaces.",
+                title="Translation",
+                description=(
+                    "Prepare translation workflows behind injectable service "
+                    "interfaces."
+                ),
             ),
             DashboardSectionViewModel(
                 key="settings",
                 title="Settings",
-                description="Configure frontend behavior through extensible settings sections.",
+                description=(
+                    "Configure frontend behavior through extensible settings sections."
+                ),
             ),
         ]
     )
@@ -66,7 +93,36 @@ def _build_dashboard_state() -> DashboardStateViewModel:
 
 @dataclass
 class FrontendShell:
-    """Stateful UI orchestrator consumed by screens and tests."""
+    """Stateful UI orchestrator consumed by screens and tests.
+
+    Attributes:
+        router:
+            Documented attribute exposed by this type.
+        services:
+            Documented attribute exposed by this type.
+        dashboard_state:
+            Documented attribute exposed by this type.
+        projects_state:
+            Documented attribute exposed by this type.
+        project_detail_state:
+            Documented attribute exposed by this type.
+        sync_state:
+            Documented attribute exposed by this type.
+        audit_state:
+            Documented attribute exposed by this type.
+        po_processing_state:
+            Documented attribute exposed by this type.
+        settings_state:
+            Documented attribute exposed by this type.
+        project_editor_state:
+            Documented attribute exposed by this type.
+        sync_progress_state:
+            Documented attribute exposed by this type.
+        navigation_menu:
+            Documented attribute exposed by this type.
+        latest_error:
+            Documented attribute exposed by this type.
+    """
 
     router: FrontendRouter
     services: FrontendServices
@@ -83,6 +139,20 @@ class FrontendShell:
     latest_error: str | None
 
     def __init__(self, router: FrontendRouter, services: FrontendServices) -> None:
+        """Initialize shell state, service dependencies, and workflow locks.
+
+        Args:
+            self:
+                Value supplied to this callable.
+            router:
+                Value supplied to this callable.
+            services:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+        """
         self.router = router
         self.services = services
         self.dashboard_state = _build_dashboard_state()
@@ -102,14 +172,34 @@ class FrontendShell:
         self.latest_error = None
         self._sync_state_lock = Lock()
         self._active_sync_thread: Thread | None = None
+        self._po_processing_lock = Lock()
+        self._active_po_processing_thread: Thread | None = None
 
     def open_dashboard(self) -> None:
-        """Open the dashboard route."""
+        """Open the dashboard route.
+
+        Args:
+            self:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+        """
         self.latest_error = None
         self._set_route(RouteName.DASHBOARD)
 
     def open_projects(self) -> None:
-        """Load project summaries and open the projects route."""
+        """Load project summaries and open the projects route.
+
+        Args:
+            self:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+        """
         try:
             projects = self.services.catalog.list_projects()
             self.latest_error = None
@@ -129,14 +219,32 @@ class FrontendShell:
         self._set_route(RouteName.PROJECTS)
 
     def select_project(self, project_id: str) -> None:
-        """Load a project detail and open its route."""
+        """Load a project detail and open its route.
+
+        Args:
+            self:
+                Value supplied to this callable.
+            project_id:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+        """
         try:
             detail = self.services.catalog.get_project_detail(project_id)
             self.project_detail_state = ProjectDetailStateViewModel(
                 project=detail.project,
+                default_locale=detail.default_locale,
                 configuration_summary=detail.configuration_summary,
                 metadata_summary=detail.metadata_summary,
                 actions=_build_project_actions(detail.actions),
+                compile_mo=detail.compile_mo,
+                use_external_translator=detail.use_external_translator,
+                use_translation_cache=detail.use_translation_cache,
+                dry_run=detail.dry_run,
+                stats_only=detail.stats_only,
+                report_inconsistencies=detail.report_inconsistencies,
             )
             self.latest_error = None
         except ControlledServiceError as error:
@@ -145,58 +253,281 @@ class FrontendShell:
         self._set_route(RouteName.PROJECT_DETAIL, project_id=project_id)
 
     def start_sync(self) -> None:
-        """Trigger sync through the workflow contract."""
+        """Trigger sync through the workflow contract.
+
+        Args:
+            self:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+        """
         project_id = self._require_project_id()
         self._run_sync(
             project_id=project_id,
             route_to_sync=True,
             progress_callback=None,
+            run_workflow=self.services.workflows.start_sync,
+        )
+
+    def start_sync_to_remote(self) -> None:
+        """Trigger local-to-remote sync through the workflow contract.
+
+        Args:
+            self:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+        """
+        project_id = self._require_project_id()
+        self._run_sync(
+            project_id=project_id,
+            route_to_sync=True,
+            progress_callback=None,
+            run_workflow=self.services.workflows.start_sync_to_remote,
         )
 
     def start_sync_async(self) -> None:
-        """Trigger sync in a background thread for popup-based progress rendering."""
+        """Trigger sync in a background thread for popup-based progress rendering.
+
+        Args:
+            self:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+        """
+        self._start_sync_async_with_message(
+            run_workflow=self.services.workflows.start_sync,
+            initial_message="Starting remote sync.",
+        )
+
+    def start_sync_to_remote_async(self) -> None:
+        """Trigger local-to-remote sync in a background thread for popup rendering.
+
+        Args:
+            self:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+        """
+        self._start_sync_async_with_message(
+            run_workflow=self.services.workflows.start_sync_to_remote,
+            initial_message="Starting local to remote sync.",
+        )
+
+    def _start_sync_async_with_message(
+        self,
+        *,
+        run_workflow: Callable[
+            [str, Callable[[SyncProgressEvent], None] | None],
+            SyncStatusViewModel,
+        ],
+        initial_message: str,
+    ) -> None:
+        """Initialize background sync state and start the worker thread.
+
+        Args:
+            self:
+                Value supplied to this callable.
+            run_workflow:
+                Value supplied to this callable.
+            initial_message:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+        """
         project_id = self._require_project_id()
         project_name = project_id
         if self.project_detail_state is not None:
             project_name = self.project_detail_state.project.name
         with self._sync_state_lock:
-            if self._active_sync_thread is not None and self._active_sync_thread.is_alive():
+            if (
+                self._active_sync_thread is not None
+                and self._active_sync_thread.is_alive()
+            ):
                 return
+            self.sync_state = None
             self.sync_progress_state = SyncProgressStateViewModel(
                 project_id=project_id,
                 project_name=project_name,
                 status="running",
-                message="Starting remote sync.",
+                message=initial_message,
                 progress_current=0,
                 progress_total=0,
                 progress_is_indeterminate=True,
+                command_log_limit=self._resolve_sync_progress_log_limit(),
                 command_log=[],
             )
         worker = Thread(
             target=self._run_sync_in_background,
-            args=(project_id,),
+            args=(project_id, run_workflow),
             daemon=True,
             name=f"sync-{project_id}",
         )
         self._active_sync_thread = worker
         worker.start()
 
-    def start_audit(self) -> None:
-        """Trigger audit through the workflow contract."""
+    def trust_selected_project_remote_host_key(self) -> None:
+        """Trust the selected project's SSH host key and retry sync.
+
+        Args:
+            self:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+        """
         project_id = self._require_project_id()
+        try:
+            result = self.services.workflows.trust_remote_host_key(project_id)
+        except ControlledServiceError as error:
+            self.latest_error = str(error)
+            self._record_sync_progress_event(
+                SyncProgressEvent(
+                    stage=SyncProgressStage.FAILED,
+                    message=str(error),
+                )
+            )
+            return
+        if not result.success:
+            self.latest_error = result.message
+            self._record_sync_progress_event(
+                SyncProgressEvent(
+                    stage=SyncProgressStage.FAILED,
+                    message=result.message,
+                )
+            )
+            return
         self.latest_error = None
-        self.audit_state = self.services.workflows.start_audit(project_id)
+        self.start_sync_async()
+
+    def start_audit(self) -> None:
+        """Trigger audit through the workflow contract.
+
+        Args:
+            self:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+        """
+        project_id = self._require_project_id()
+        try:
+            self.audit_state = self.services.workflows.start_audit(project_id)
+            self.latest_error = None
+        except ControlledServiceError as error:
+            self.audit_state = AuditSummaryViewModel(
+                status="failed",
+                findings_count=0,
+                findings_summary=str(error),
+            )
+            self.latest_error = str(error)
         self._set_route(RouteName.AUDIT, project_id=project_id)
 
-    def start_po_processing(self) -> None:
-        """Trigger PO processing through the workflow contract."""
+    def start_po_processing(self, locales: str | None = None) -> None:
+        """Trigger PO processing through the workflow contract.
+
+        Args:
+            self:
+                Value supplied to this callable.
+            locales:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+        """
         project_id = self._require_project_id()
-        self.latest_error = None
-        self.po_processing_state = self.services.workflows.start_po_processing(project_id)
+        request = None if locales is None else self._build_translation_request(locales)
+        try:
+            self.po_processing_state = self.services.workflows.start_po_processing(
+                project_id,
+                request,
+            )
+            self.latest_error = None
+        except ControlledServiceError as error:
+            self.po_processing_state = POProcessingSummaryViewModel(
+                status="failed",
+                processed_families=0,
+                progress_current=0,
+                progress_total=0,
+                progress_is_indeterminate=False,
+                summary=str(error),
+                current_file=None,
+                current_entry=None,
+            )
+            self.latest_error = str(error)
         self._set_route(RouteName.PO_PROCESSING, project_id=project_id)
 
+    def start_po_processing_async(
+        self,
+        locales: str,
+        *,
+        options: TranslationOptionsViewModel | None = None,
+    ) -> None:
+        """Trigger PO processing in a background thread after translation selection.
+
+        Args:
+            self:
+                Value supplied to this callable.
+            locales:
+                Value supplied to this callable.
+            options:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+        """
+        project_id = self._require_project_id()
+        request = self._build_translation_request(locales, options=options)
+        with self._po_processing_lock:
+            if (
+                self._active_po_processing_thread is not None
+                and self._active_po_processing_thread.is_alive()
+            ):
+                return
+            self.po_processing_state = POProcessingSummaryViewModel(
+                status="running",
+                processed_families=0,
+                progress_current=0,
+                progress_total=0,
+                progress_is_indeterminate=True,
+                summary=f"Running translation workflow for locales: {request.locales}",
+                current_file=None,
+                current_entry=None,
+            )
+        worker = Thread(
+            target=self._run_po_processing_in_background,
+            args=(project_id, request),
+            daemon=True,
+            name=f"po-processing-{project_id}",
+        )
+        self._active_po_processing_thread = worker
+        worker.start()
+
     def open_settings(self) -> None:
-        """Load settings and open the settings route."""
+        """Load settings and open the settings route.
+
+        Args:
+            self:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+        """
         try:
             self.settings_state = self.services.settings.load_settings()
             self.latest_error = None
@@ -210,11 +541,35 @@ class FrontendShell:
         self._set_route(RouteName.SETTINGS)
 
     def open_application_menu(self) -> None:
-        """Mark the application menu as open for the current route context."""
+        """Mark the application menu as open for the current route context.
+
+        Args:
+            self:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+        """
         self._refresh_navigation_menu(is_open=True)
 
     def open_route_from_menu(self, route_key: str) -> None:
-        """Open a route selected from the grouped application menu."""
+        """Open a route selected from the grouped application menu.
+
+        Args:
+            self:
+                Value supplied to this callable.
+            route_key:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+
+        Raises:
+            ValueError:
+                Raised when this callable hits the corresponding error path.
+        """
         action_map: dict[str, Callable[[], None]] = {
             RouteName.DASHBOARD.value: self.open_dashboard,
             RouteName.PROJECTS.value: self.open_projects,
@@ -232,7 +587,22 @@ class FrontendShell:
         raise ValueError(msg)
 
     def set_settings_theme_mode(self, theme_mode: str) -> None:
-        """Update the draft theme mode."""
+        """Update the draft theme mode.
+
+        Args:
+            self:
+                Value supplied to this callable.
+            theme_mode:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+
+        Raises:
+            ValueError:
+                Raised when this callable hits the corresponding error path.
+        """
         state = self._require_settings_state()
         allowed_theme_modes = {"system", "light", "dark"}
         if theme_mode not in allowed_theme_modes:
@@ -246,7 +616,16 @@ class FrontendShell:
         )
 
     def toggle_remember_last_screen(self) -> None:
-        """Toggle remember-last-screen behavior in the draft settings."""
+        """Toggle remember-last-screen behavior in the draft settings.
+
+        Args:
+            self:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+        """
         state = self._require_settings_state()
         self.settings_state = replace(
             state,
@@ -259,7 +638,16 @@ class FrontendShell:
         )
 
     def toggle_developer_mode(self) -> None:
-        """Toggle developer-mode behavior in the draft settings."""
+        """Toggle developer-mode behavior in the draft settings.
+
+        Args:
+            self:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+        """
         state = self._require_settings_state()
         self.settings_state = replace(
             state,
@@ -272,7 +660,24 @@ class FrontendShell:
         )
 
     def set_settings_window_size(self, *, width: int, height: int) -> None:
-        """Update the draft default window size."""
+        """Update the draft default window size.
+
+        Args:
+            self:
+                Value supplied to this callable.
+            width:
+                Value supplied to this callable.
+            height:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+
+        Raises:
+            ValueError:
+                Raised when this callable hits the corresponding error path.
+        """
         if width <= 0 or height <= 0:
             msg = "Window dimensions must be positive integers."
             raise ValueError(msg)
@@ -289,7 +694,22 @@ class FrontendShell:
         )
 
     def set_settings_ui_language(self, ui_language: str) -> None:
-        """Update the draft UI language."""
+        """Update the draft UI language.
+
+        Args:
+            self:
+                Value supplied to this callable.
+            ui_language:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+
+        Raises:
+            ValueError:
+                Raised when this callable hits the corresponding error path.
+        """
         state = self._require_settings_state()
         allowed_languages = {"en", "es"}
         if ui_language not in allowed_languages:
@@ -302,28 +722,285 @@ class FrontendShell:
             status_message="Settings draft updated.",
         )
 
-    def set_settings_database_directory(self, database_directory: str) -> None:
-        """Update the draft SQLite database directory."""
+    def set_settings_default_project_locale(self, default_project_locale: str) -> None:
+        """Update the default project locale used by new project drafts.
+
+        Args:
+            self:
+                Value supplied to this callable.
+            default_project_locale:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+        """
         state = self._require_settings_state()
         self.settings_state = replace(
             state,
-            app_settings=replace(state.app_settings, database_directory=database_directory),
+            app_settings=replace(
+                state.app_settings,
+                default_project_locale=default_project_locale,
+            ),
+            status="editing",
+            status_message="Settings draft updated.",
+        )
+
+    def set_settings_default_compile_mo(self, default_compile_mo: bool) -> None:
+        """Update the default MO-compilation preference for new project drafts.
+
+        Args:
+            self:
+                Value supplied to this callable.
+            default_compile_mo:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+        """
+        state = self._require_settings_state()
+        self.settings_state = replace(
+            state,
+            app_settings=replace(
+                state.app_settings,
+                default_compile_mo=default_compile_mo,
+            ),
+            status="editing",
+            status_message="Settings draft updated.",
+        )
+
+    def set_settings_default_use_external_translator(
+        self,
+        default_use_external_translator: bool,
+    ) -> None:
+        """Update the default external-translation preference for new project drafts.
+
+        Args:
+            self:
+                Value supplied to this callable.
+            default_use_external_translator:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+        """
+        state = self._require_settings_state()
+        self.settings_state = replace(
+            state,
+            app_settings=replace(
+                state.app_settings,
+                default_use_external_translator=default_use_external_translator,
+            ),
+            status="editing",
+            status_message="Settings draft updated.",
+        )
+
+    def set_settings_default_use_translation_cache(
+        self,
+        default_use_translation_cache: bool,
+    ) -> None:
+        """Update the default translation-cache preference for new project drafts.
+
+        Args:
+            self:
+                Value supplied to this callable.
+            default_use_translation_cache:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+        """
+        state = self._require_settings_state()
+        self.settings_state = replace(
+            state,
+            app_settings=replace(
+                state.app_settings,
+                default_use_translation_cache=default_use_translation_cache,
+            ),
+            status="editing",
+            status_message="Settings draft updated.",
+        )
+
+    def set_settings_default_only_fuzzy(self, default_only_fuzzy: bool) -> None:
+        """Update the default only-fuzzy preference for new project drafts.
+
+        Args:
+            self:
+                Value supplied to this callable.
+            default_only_fuzzy:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+        """
+        state = self._require_settings_state()
+        self.settings_state = replace(
+            state,
+            app_settings=replace(
+                state.app_settings, default_only_fuzzy=default_only_fuzzy
+            ),
+            status="editing",
+            status_message="Settings draft updated.",
+        )
+
+    def set_settings_translation_cache_path(self, translation_cache_path: str) -> None:
+        """Update the draft translation cache path.
+
+        Args:
+            self:
+                Value supplied to this callable.
+            translation_cache_path:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+        """
+        state = self._require_settings_state()
+        self.settings_state = replace(
+            state,
+            app_settings=replace(
+                state.app_settings,
+                translation_cache_path=translation_cache_path,
+            ),
+            status="editing",
+            status_message="Settings draft updated.",
+        )
+
+    def set_settings_default_dry_run(self, default_dry_run: bool) -> None:
+        """Update the default dry-run preference for new project drafts.
+
+        Args:
+            self:
+                Value supplied to this callable.
+            default_dry_run:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+        """
+        state = self._require_settings_state()
+        self.settings_state = replace(
+            state,
+            app_settings=replace(state.app_settings, default_dry_run=default_dry_run),
+            status="editing",
+            status_message="Settings draft updated.",
+        )
+
+    def set_settings_default_stats_only(self, default_stats_only: bool) -> None:
+        """Update the default stats-only preference for new project drafts.
+
+        Args:
+            self:
+                Value supplied to this callable.
+            default_stats_only:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+        """
+        state = self._require_settings_state()
+        self.settings_state = replace(
+            state,
+            app_settings=replace(
+                state.app_settings, default_stats_only=default_stats_only
+            ),
+            status="editing",
+            status_message="Settings draft updated.",
+        )
+
+    def set_settings_default_report_inconsistencies(
+        self,
+        default_report_inconsistencies: bool,
+    ) -> None:
+        """Update the default inconsistency-reporting preference for new project drafts.
+
+        Args:
+            self:
+                Value supplied to this callable.
+            default_report_inconsistencies:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+        """
+        state = self._require_settings_state()
+        self.settings_state = replace(
+            state,
+            app_settings=replace(
+                state.app_settings,
+                default_report_inconsistencies=default_report_inconsistencies,
+            ),
+            status="editing",
+            status_message="Settings draft updated.",
+        )
+
+    def set_settings_database_directory(self, database_directory: str) -> None:
+        """Update the draft SQLite database directory.
+
+        Args:
+            self:
+                Value supplied to this callable.
+            database_directory:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+        """
+        state = self._require_settings_state()
+        self.settings_state = replace(
+            state,
+            app_settings=replace(
+                state.app_settings, database_directory=database_directory
+            ),
             status="editing",
             status_message="Settings draft updated.",
         )
 
     def set_settings_database_filename(self, database_filename: str) -> None:
-        """Update the draft SQLite database filename."""
+        """Update the draft SQLite database filename.
+
+        Args:
+            self:
+                Value supplied to this callable.
+            database_filename:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+        """
         state = self._require_settings_state()
         self.settings_state = replace(
             state,
-            app_settings=replace(state.app_settings, database_filename=database_filename),
+            app_settings=replace(
+                state.app_settings, database_filename=database_filename
+            ),
             status="editing",
             status_message="Settings draft updated.",
         )
 
     def update_settings_draft(self, app_settings: AppSettingsViewModel) -> None:
-        """Replace the current settings draft with a full form snapshot."""
+        """Replace the current settings draft with a full form snapshot.
+
+        Args:
+            self:
+                Value supplied to this callable.
+            app_settings:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+        """
         state = self._require_settings_state()
         self.settings_state = build_settings_state(
             app_settings=app_settings,
@@ -333,7 +1010,18 @@ class FrontendShell:
         )
 
     def select_settings_section(self, section_key: str) -> None:
-        """Change the selected settings section without bypassing the shell."""
+        """Change the selected settings section without bypassing the shell.
+
+        Args:
+            self:
+                Value supplied to this callable.
+            section_key:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+        """
         state = self._require_settings_state()
         next_state = build_settings_state(
             app_settings=state.app_settings,
@@ -342,16 +1030,33 @@ class FrontendShell:
             selected_section_key=section_key,
         )
         if next_state.selected_section_is_available:
-            status_message = "App / UI / Kivy settings are ready to edit."
+            status_message = f"{next_state.selected_section_title} are ready to edit."
         else:
-            status_message = f"{next_state.selected_section_title} will be available later."
+            status_message = (
+                f"{next_state.selected_section_title} will be available later."
+            )
         self.settings_state = replace(next_state, status_message=status_message)
 
     def save_settings(self) -> None:
-        """Persist the current draft settings through the settings contract."""
+        """Persist the current draft settings through the settings contract.
+
+        Args:
+            self:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+        """
         state = self._require_settings_state()
         try:
-            self.settings_state = self.services.settings.save_settings(state.app_settings)
+            saved_state = self.services.settings.save_settings(state.app_settings)
+            self.settings_state = build_settings_state(
+                app_settings=saved_state.app_settings,
+                status=saved_state.status,
+                status_message=saved_state.status_message,
+                selected_section_key=state.selected_section_key,
+            )
             self.latest_error = None
         except ControlledServiceError as error:
             self.settings_state = replace(
@@ -363,12 +1068,27 @@ class FrontendShell:
         self._set_route(RouteName.SETTINGS)
 
     def restore_default_settings(self) -> None:
-        """Restore settings defaults through the settings contract."""
+        """Restore settings defaults through the settings contract.
+
+        Args:
+            self:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+        """
+        state = self._require_settings_state()
         try:
-            self.settings_state = self.services.settings.reset_settings()
+            reset_state = self.services.settings.reset_settings()
+            self.settings_state = build_settings_state(
+                app_settings=reset_state.app_settings,
+                status=reset_state.status,
+                status_message=reset_state.status_message,
+                selected_section_key=state.selected_section_key,
+            )
             self.latest_error = None
         except ControlledServiceError as error:
-            state = self._require_settings_state()
             self.settings_state = replace(
                 state,
                 status="failed",
@@ -378,9 +1098,20 @@ class FrontendShell:
         self._set_route(RouteName.SETTINGS)
 
     def open_project_editor_create(self) -> None:
-        """Open the create-project editor workflow."""
+        """Open the create-project editor workflow.
+
+        Args:
+            self:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+        """
         try:
-            self.project_editor_state = self.services.registry.build_create_project_editor()
+            self.project_editor_state = (
+                self.services.registry.build_create_project_editor()
+            )
             self.latest_error = None
         except ControlledServiceError as error:
             self.project_editor_state = None
@@ -388,24 +1119,73 @@ class FrontendShell:
         self._set_route(RouteName.PROJECT_EDITOR)
 
     def open_project_editor_edit(self, project_id: str) -> None:
-        """Open the edit-project editor workflow."""
+        """Open the edit-project editor workflow.
+
+        Args:
+            self:
+                Value supplied to this callable.
+            project_id:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+        """
         try:
-            self.project_editor_state = self.services.registry.build_edit_project_editor(project_id)
+            self.project_editor_state = (
+                self.services.registry.build_edit_project_editor(project_id)
+            )
             self.latest_error = None
         except ControlledServiceError as error:
             self.project_editor_state = None
             self.latest_error = str(error)
         self._set_route(RouteName.PROJECT_EDITOR, project_id=project_id)
 
+    def select_project_editor_section(self, section_key: str) -> None:
+        """Change the selected project-editor section.
+
+        Args:
+            self:
+                Value supplied to this callable.
+            section_key:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+        """
+        state = self._require_project_editor_state()
+        self.project_editor_state = select_project_editor_section(
+            state, section_key=section_key
+        )
+
     def save_new_project(self, editor: SiteEditorViewModel) -> None:
-        """Create a project registry record from the editor draft."""
+        """Create a project registry record from the editor draft.
+
+        Args:
+            self:
+                Value supplied to this callable.
+            editor:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+        """
         try:
             detail = self.services.registry.create_project(editor)
             self.project_detail_state = ProjectDetailStateViewModel(
                 project=detail.project,
+                default_locale=detail.default_locale,
                 configuration_summary=detail.configuration_summary,
                 metadata_summary=detail.metadata_summary,
                 actions=_build_project_actions(detail.actions),
+                compile_mo=detail.compile_mo,
+                use_external_translator=detail.use_external_translator,
+                use_translation_cache=detail.use_translation_cache,
+                dry_run=detail.dry_run,
+                stats_only=detail.stats_only,
+                report_inconsistencies=detail.report_inconsistencies,
             )
             self.latest_error = None
         except ControlledServiceError as error:
@@ -422,14 +1202,34 @@ class FrontendShell:
         self._set_route(RouteName.PROJECT_DETAIL, project_id=detail.project.id)
 
     def save_project_edits(self, project_id: str, editor: SiteEditorViewModel) -> None:
-        """Update a project registry record from the editor draft."""
+        """Update a project registry record from the editor draft.
+
+        Args:
+            self:
+                Value supplied to this callable.
+            project_id:
+                Value supplied to this callable.
+            editor:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+        """
         try:
             detail = self.services.registry.update_project(project_id, editor)
             self.project_detail_state = ProjectDetailStateViewModel(
                 project=detail.project,
+                default_locale=detail.default_locale,
                 configuration_summary=detail.configuration_summary,
                 metadata_summary=detail.metadata_summary,
                 actions=_build_project_actions(detail.actions),
+                compile_mo=detail.compile_mo,
+                use_external_translator=detail.use_external_translator,
+                use_translation_cache=detail.use_translation_cache,
+                dry_run=detail.dry_run,
+                stats_only=detail.stats_only,
+                report_inconsistencies=detail.report_inconsistencies,
             )
             self.latest_error = None
         except ControlledServiceError as error:
@@ -446,11 +1246,24 @@ class FrontendShell:
         self._set_route(RouteName.PROJECT_DETAIL, project_id=detail.project.id)
 
     def test_project_connection(self, editor: SiteEditorViewModel) -> None:
-        """Run a remote connection test for the current editor draft."""
+        """Run a remote connection test for the current editor draft.
+
+        Args:
+            self:
+                Value supplied to this callable.
+            editor:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+        """
         state = self._require_project_editor_state()
         try:
-            connection_test_result = self.services.registry.test_remote_connection(editor)
-            self.project_editor_state = replace(
+            connection_test_result = self.services.registry.test_remote_connection(
+                editor
+            )
+            next_state = replace(
                 state,
                 editor=editor,
                 connection_test_enabled=True,
@@ -458,9 +1271,13 @@ class FrontendShell:
                 status="connection-tested",
                 status_message=connection_test_result.message,
             )
+            self.project_editor_state = select_project_editor_section(
+                next_state,
+                section_key=state.selected_section_key,
+            )
             self.latest_error = None
         except ControlledServiceError as error:
-            self.project_editor_state = replace(
+            next_state = replace(
                 state,
                 editor=editor,
                 connection_test_result=None,
@@ -468,10 +1285,84 @@ class FrontendShell:
                 status="failed",
                 status_message=str(error),
             )
+            self.project_editor_state = select_project_editor_section(
+                next_state,
+                section_key=state.selected_section_key,
+            )
+            self.latest_error = str(error)
+        self._set_route(RouteName.PROJECT_EDITOR, project_id=editor.site_id)
+
+    def trust_project_editor_remote_host_key(self, editor: SiteEditorViewModel) -> None:
+        """Re-run the connection test after confirmation (Paramiko TOFU adds the host.
+
+        key).
+
+        Args:
+            self:
+                Value supplied to this callable.
+            editor:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+        """
+        trusted_editor = replace(editor, remote_verify_host=False)
+        self.test_project_connection(trusted_editor)
+
+    def preview_project_editor(self, editor: SiteEditorViewModel) -> None:
+        """Rebuild the current project-editor draft without persisting changes.
+
+        Args:
+            self:
+                Value supplied to this callable.
+            editor:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+        """
+        state = self._require_project_editor_state()
+        try:
+            next_state = self.services.registry.preview_project_editor(
+                editor,
+                mode=state.mode,
+            )
+            self.project_editor_state = select_project_editor_section(
+                next_state,
+                section_key=state.selected_section_key,
+            )
+            self.latest_error = None
+        except ControlledServiceError as error:
+            next_state = replace(
+                state,
+                editor=editor,
+                status="failed",
+                status_message=str(error),
+            )
+            self.project_editor_state = select_project_editor_section(
+                next_state,
+                section_key=state.selected_section_key,
+            )
             self.latest_error = str(error)
         self._set_route(RouteName.PROJECT_EDITOR, project_id=editor.site_id)
 
     def _require_project_id(self) -> str:
+        """Validate and return project id.
+
+        Args:
+            self:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+
+        Raises:
+            ValueError:
+                Raised when this callable hits the corresponding error path.
+        """
         route = self.router.current
         project_id = route.project_id
         if project_id is None and self.project_detail_state is not None:
@@ -487,12 +1378,31 @@ class FrontendShell:
         project_id: str,
         route_to_sync: bool,
         progress_callback: Callable[[SyncProgressEvent], None] | None,
+        run_workflow: Callable[
+            [str, Callable[[SyncProgressEvent], None] | None],
+            SyncStatusViewModel,
+        ],
     ) -> None:
+        """Run sync.
+
+        Args:
+            self:
+                Value supplied to this callable.
+            project_id:
+                Value supplied to this callable.
+            route_to_sync:
+                Value supplied to this callable.
+            progress_callback:
+                Value supplied to this callable.
+            run_workflow:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+        """
         try:
-            self.sync_state = self.services.workflows.start_sync(
-                project_id,
-                progress_callback=progress_callback,
-            )
+            self.sync_state = run_workflow(project_id, progress_callback)
             self.latest_error = None
         except ControlledServiceError as error:
             self.sync_state = SyncStatusViewModel(
@@ -505,12 +1415,43 @@ class FrontendShell:
         if route_to_sync:
             self._set_route(RouteName.SYNC, project_id=project_id)
 
-    def _run_sync_in_background(self, project_id: str) -> None:
-        self._run_sync(
-            project_id=project_id,
-            route_to_sync=False,
-            progress_callback=self._record_sync_progress_event,
-        )
+    def _run_sync_in_background(
+        self,
+        project_id: str,
+        run_workflow: Callable[
+            [str, Callable[[SyncProgressEvent], None] | None],
+            SyncStatusViewModel,
+        ],
+    ) -> None:
+        """Run sync in background.
+
+        Args:
+            self:
+                Value supplied to this callable.
+            project_id:
+                Value supplied to this callable.
+            run_workflow:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+        """
+        try:
+            self._run_sync(
+                project_id=project_id,
+                route_to_sync=False,
+                progress_callback=self._record_sync_progress_event,
+                run_workflow=run_workflow,
+            )
+        except (
+            AttributeError,
+            LookupError,
+            OSError,
+            RuntimeError,
+            ValueError,
+        ) as error:
+            self._surface_background_sync_failure(error)
         with self._sync_state_lock:
             current_state = self.sync_progress_state
             if current_state is None or self.sync_state is None:
@@ -521,12 +1462,327 @@ class FrontendShell:
                 status=self.sync_state.status,
                 message=self.sync_state.summary,
                 progress_current=self.sync_state.files_synced,
-                progress_total=max(current_state.progress_total, self.sync_state.files_synced),
+                progress_total=max(
+                    current_state.progress_total, self.sync_state.files_synced
+                ),
                 progress_is_indeterminate=False,
             )
             self._active_sync_thread = None
 
+    def _run_po_processing_in_background(
+        self,
+        project_id: str,
+        request: TranslationWorkflowRequestViewModel,
+    ) -> None:
+        """Run po processing in background.
+
+        Args:
+            self:
+                Value supplied to this callable.
+            project_id:
+                Value supplied to this callable.
+            request:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+        """
+        try:
+            self.po_processing_state = self.services.workflows.start_po_processing(
+                project_id,
+                request,
+                progress_callback=self._record_po_processing_progress,
+            )
+            self.latest_error = None
+        except ControlledServiceError as error:
+            self.po_processing_state = POProcessingSummaryViewModel(
+                status="failed",
+                processed_families=0,
+                progress_current=0,
+                progress_total=0,
+                progress_is_indeterminate=False,
+                summary=str(error),
+                current_file=None,
+                current_entry=None,
+            )
+            self.latest_error = str(error)
+        finally:
+            with self._po_processing_lock:
+                self._active_po_processing_thread = None
+
+    def _build_translation_request(
+        self,
+        locales: str,
+        *,
+        options: TranslationOptionsViewModel | None = None,
+    ) -> TranslationWorkflowRequestViewModel:
+        """Build translation request.
+
+        Args:
+            self:
+                Value supplied to this callable.
+            locales:
+                Value supplied to this callable.
+            options:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+        """
+        normalized_locales = normalize_default_locale(locales, label="Selected locales")
+        detail = self.project_detail_state
+        if options is None and detail is not None:
+            options = build_translation_options(
+                compile_mo=detail.compile_mo,
+                use_external_translator=detail.use_external_translator,
+                use_translation_cache=detail.use_translation_cache,
+                only_fuzzy=detail.only_fuzzy,
+                dry_run=detail.dry_run,
+                stats_only=detail.stats_only,
+                report_inconsistencies=detail.report_inconsistencies,
+            )
+        resolved_options = build_translation_options() if options is None else options
+        return TranslationWorkflowRequestViewModel(
+            locales=normalized_locales,
+            options=resolved_options,
+        )
+
+    def _record_po_processing_progress(self, event: POProcessingProgress) -> None:
+        """Handle record po processing progress.
+
+        Args:
+            self:
+                Value supplied to this callable.
+            event:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+        """
+        current_state = self.po_processing_state
+        if current_state is None:
+            return
+        self.po_processing_state = replace(
+            current_state,
+            status="running",
+            processed_families=event.processed_families,
+            progress_current=event.completed_entries,
+            progress_total=event.total_entries,
+            progress_is_indeterminate=False,
+            summary=(
+                f"{event.message} | PO files discovered: {event.files_discovered} | "
+                f"Synchronized entries: {event.entries_synchronized} | "
+                f"Translated entries: {event.entries_translated} | "
+                f"Failed entries: {event.entries_failed}"
+            ),
+            current_file=event.current_file,
+            current_entry=event.current_entry,
+        )
+
+    def surface_unhandled_runtime_error(
+        self,
+        error: BaseException,
+        *,
+        context: str,
+        thread_name: str | None = None,
+        traceback: TracebackType | None = None,
+    ) -> None:
+        """Convert an unhandled runtime error into visible UI state.
+
+        Args:
+            self:
+                Value supplied to this callable.
+            error:
+                Value supplied to this callable.
+            context:
+                Value supplied to this callable.
+            thread_name:
+                Value supplied to this callable.
+            traceback:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+        """
+        cause = str(error).strip() or error.__class__.__name__
+        error_message = (
+            f"Unhandled runtime error in {context}. Cause: "
+            f"{error.__class__.__name__}: {cause}"
+        )
+        self.latest_error = error_message
+
+        if thread_name is not None and thread_name.startswith("po-processing-"):
+            self._surface_unhandled_po_processing_error(error_message)
+            return
+
+        if thread_name is not None and thread_name.startswith("sync-"):
+            self._surface_unhandled_sync_error(error_message)
+            return
+
+        route_handled = self._surface_unhandled_route_error(error_message)
+        if not route_handled and self.router.current.name is RouteName.SYNC:
+            self._surface_unhandled_sync_error(error_message)
+
+    def _surface_unhandled_po_processing_error(self, error_message: str) -> None:
+        """Handle surface unhandled po processing error.
+
+        Args:
+            self:
+                Value supplied to this callable.
+            error_message:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+        """
+        current_state = self.po_processing_state
+        if current_state is None:
+            self.po_processing_state = POProcessingSummaryViewModel(
+                status="failed",
+                processed_families=0,
+                progress_current=0,
+                progress_total=0,
+                progress_is_indeterminate=False,
+                summary=error_message,
+                current_file=None,
+                current_entry=None,
+            )
+            return
+        self.po_processing_state = replace(
+            current_state,
+            status="failed",
+            progress_is_indeterminate=False,
+            summary=error_message,
+        )
+
+    def _surface_unhandled_sync_error(self, error_message: str) -> None:
+        """Handle surface unhandled sync error.
+
+        Args:
+            self:
+                Value supplied to this callable.
+            error_message:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+        """
+        self.sync_state = SyncStatusViewModel(
+            status="failed",
+            files_synced=0,
+            summary=error_message,
+            error_code="sync_runtime_failure",
+        )
+        if self.sync_progress_state is not None:
+            self.sync_progress_state = replace(
+                self.sync_progress_state,
+                status="failed",
+                message=error_message,
+                progress_is_indeterminate=False,
+            )
+
+    def _surface_unhandled_route_error(self, error_message: str) -> bool:
+        """Handle surface unhandled route error.
+
+        Args:
+            self:
+                Value supplied to this callable.
+            error_message:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+        """
+        current_route = self.router.current.name
+        if current_route is RouteName.AUDIT:
+            self.audit_state = AuditSummaryViewModel(
+                status="failed",
+                findings_count=0,
+                findings_summary=error_message,
+            )
+            return True
+        if current_route is RouteName.PO_PROCESSING:
+            self._surface_unhandled_po_processing_error(error_message)
+            return True
+        if current_route is RouteName.SETTINGS and self.settings_state is not None:
+            self.settings_state = replace(
+                self.settings_state,
+                status="failed",
+                status_message=error_message,
+            )
+            return True
+        if (
+            current_route is RouteName.PROJECT_EDITOR
+            and self.project_editor_state is not None
+        ):
+            self.project_editor_state = replace(
+                self.project_editor_state,
+                status="failed",
+                status_message=error_message,
+            )
+            return True
+        return False
+
+    def _surface_background_sync_failure(
+        self,
+        error: AttributeError | LookupError | OSError | RuntimeError | ValueError,
+    ) -> None:
+        """Handle surface background sync failure.
+
+        Args:
+            self:
+                Value supplied to this callable.
+            error:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+        """
+        project_id = (
+            self.project_detail_state.project.id
+            if self.project_detail_state is not None
+            else "unknown"
+        )
+        cause = str(error).strip() or error.__class__.__name__
+        error_message = (
+            "Unexpected background sync failure while synchronizing project "
+            f"'{project_id}'. Cause: {cause}"
+        )
+        self.sync_state = SyncStatusViewModel(
+            status="failed",
+            files_synced=0,
+            summary=error_message,
+            error_code="sync_runtime_failure",
+        )
+        self.latest_error = error_message
+        self._record_sync_progress_event(
+            SyncProgressEvent(
+                stage=SyncProgressStage.FAILED,
+                message=error_message,
+            )
+        )
+
     def _record_sync_progress_event(self, event: SyncProgressEvent) -> None:
+        """Handle record sync progress event.
+
+        Args:
+            self:
+                Value supplied to this callable.
+            event:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+        """
         with self._sync_state_lock:
             current_state = self.sync_progress_state
             if current_state is None:
@@ -539,6 +1795,7 @@ class FrontendShell:
                         message=event.message,
                     )
                 )
+                command_log = command_log[-current_state.command_log_limit :]
             progress_total = current_state.progress_total
             if event.total_files is not None:
                 progress_total = event.total_files
@@ -560,7 +1817,41 @@ class FrontendShell:
                 command_log=command_log,
             )
 
+    def _resolve_sync_progress_log_limit(self) -> int:
+        """Resolve sync progress log limit.
+
+        Args:
+            self:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+        """
+        state = self.settings_state
+        if state is not None and state.status != "failed":
+            return state.app_settings.sync_progress_log_limit
+        try:
+            loaded_state = self.services.settings.load_settings()
+        except ControlledServiceError:
+            return build_default_app_settings().sync_progress_log_limit
+        return loaded_state.app_settings.sync_progress_log_limit
+
     def _require_settings_state(self) -> SettingsStateViewModel:
+        """Validate and return settings state.
+
+        Args:
+            self:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+
+        Raises:
+            ValueError:
+                Raised when this callable hits the corresponding error path.
+        """
         state = self.settings_state
         if state is None:
             msg = "Settings must be loaded before editing them."
@@ -568,6 +1859,20 @@ class FrontendShell:
         return state
 
     def _require_project_editor_state(self) -> ProjectEditorStateViewModel:
+        """Validate and return project editor state.
+
+        Args:
+            self:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+
+        Raises:
+            ValueError:
+                Raised when this callable hits the corresponding error path.
+        """
         state = self.project_editor_state
         if state is None:
             msg = "Project editor state must be loaded before editing."
@@ -575,11 +1880,37 @@ class FrontendShell:
         return state
 
     def _set_route(self, route_name: RouteName, project_id: str | None = None) -> None:
+        """Set route.
+
+        Args:
+            self:
+                Value supplied to this callable.
+            route_name:
+                Value supplied to this callable.
+            project_id:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+        """
         self.router.go_to(route_name, project_id=project_id)
         self._refresh_navigation_menu(is_open=False)
         self._persist_last_opened_screen(route_name)
 
     def _refresh_navigation_menu(self, *, is_open: bool) -> None:
+        """Refresh navigation menu.
+
+        Args:
+            self:
+                Value supplied to this callable.
+            is_open:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+        """
         self.navigation_menu = build_navigation_menu_state(
             active_route_key=self.router.current.name.value,
             operations_enabled=self._has_project_context(),
@@ -587,12 +1918,33 @@ class FrontendShell:
         )
 
     def _has_project_context(self) -> bool:
+        """Handle has project context.
+
+        Args:
+            self:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+        """
         if self.project_detail_state is not None:
             return True
         return self.router.current.project_id is not None
 
     def _persist_last_opened_screen(self, route_name: RouteName) -> None:
-        """Persist the last opened screen when the preference is enabled."""
+        """Persist the last opened screen when the preference is enabled.
+
+        Args:
+            self:
+                Value supplied to this callable.
+            route_name:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+        """
         settings_state = self.settings_state
         if settings_state is None or settings_state.status == "failed":
             return
@@ -612,7 +1964,16 @@ class FrontendShell:
 def _build_project_actions(
     actions: list[ProjectActionViewModel],
 ) -> list[ProjectActionViewModel]:
-    """Return stable action descriptors for the detail screen."""
+    """Return stable action descriptors for the detail screen.
+
+    Args:
+        actions:
+            Value supplied to this callable.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
     return [
         ProjectActionViewModel(
             key=action.key,

@@ -13,16 +13,25 @@ This document maps the main functional domains of the repository and their bound
 Manage the local record of sites or projects known to the application.
 
 ### Includes
+
 - site/project name
 - local workspace path
 - framework type
 - optional remote connection linkage
+- persisted per-project sync-mode preference for adapter-filtered vs full remote sync
+- persisted project-specific sync rule overrides layered on top of adapter defaults
 - encrypted remote password persistence
 - preferred locales
+- persisted per-project `.mo` compilation preference
+- persisted per-project external-translator preference
+- persisted per-project translation-cache preference
+- persisted per-project `only_fuzzy` preference
+- persisted per-project `dry-run`, `stats-only`, and inconsistency-reporting preferences
 - site-specific processing options
 - active/inactive status
 
 ### Excludes
+
 - UI rendering details
 - raw screen state
 - report formatting
@@ -37,18 +46,29 @@ Manage the local record of sites or projects known to the application.
 Configure, validate, test, and later synchronize optional remote sources into local workspaces.
 
 ### Includes
+
 - discoverable connection-type catalogs
 - optional remote connection configs
 - structured connection-test results
+- reusable remote session contracts and session state
 - typed sync direction and structured sync results
+- typed adapter-defined sync include/exclude specs and explicit resolved sync scopes
+- typed resolved rule catalogs used by the project editor
+- persisted filtered-vs-full sync preference applied by sync services in both directions
+- persisted per-project include/exclude overrides and per-rule enablement
 - typed sync progress events and command-log reporting
-- remote file discovery descriptors
+- remote/local file discovery descriptors
 - connection validation
 - remote path handling
-- download/sync orchestration
+- download/upload sync orchestration
+- framework-specific sync scope resolution
+- shared global sync-rule settings
+- shared framework-level sync-rule settings
+- opt-in `.gitignore`-derived sync exclusions
 - local target preparation
 
 ### Excludes
+
 - UI widget logic
 - report generation
 - direct persistence concerns not related to remote operations
@@ -62,15 +82,36 @@ Configure, validate, test, and later synchronize optional remote sources into lo
 Handle reusable localization and translation logic.
 
 ### Includes
+
 - `.po` discovery
 - locale extraction
 - family grouping
 - translation synchronization
 - translation reuse
 - optional translation provider use
+- optional persistent translation-cache use
+- optional `only_fuzzy`
 - optional `.mo` compilation
+- optional `dry-run`
+- optional `stats-only`
+- optional inconsistency reporting
+
+Current implemented slice:
+
+- recursive workspace discovery of `.po` files
+- grouping by family key and locale suffix
+- exact locale-list selection with normalized comma-separated persistence
+- base-language expansion when only one locale is configured
+- synchronization of missing singular and plural entries between locale variants
+- translation-memory reuse across files and families for sibling locales
+- optional external translation through the shared provider contract
+- optional persistent translation cache resolved from general settings and project/run toggles
+- per-run override of external-translator usage, `only_fuzzy`, and execution modes from the presentation workflow
+- sibling `.mo` compilation after persisted `.po` updates when enabled by the effective project/run preference
+- typed processing summary for presentation workflows, including legacy-equivalent metrics for found/processed families, total/missing/fuzzy entries, initial-sync completions, reused-from-other-variant counts, cache-hit/provider counters, sync-only skips, variant-difference details, files written, and per-file MO compilation failures
 
 ### Excludes
+
 - framework-specific configuration discovery
 - UI concerns
 - report rendering
@@ -84,6 +125,7 @@ Handle reusable localization and translation logic.
 Encapsulate framework-specific conventions and extraction rules.
 
 ### Includes
+
 - project type detection
 - typed evidence, warnings, and relevant paths for matches or non-matches
 - source-root conventions
@@ -92,11 +134,13 @@ Encapsulate framework-specific conventions and extraction rules.
 - framework-aware enrichment of findings
 
 ### Examples
+
 - WordPress adapter parsing `wp-config.php`
 - Django adapter resolving `settings.py` or related settings modules
 - Flask adapter inspecting config modules or factory conventions
 
 ### Current concrete implementation
+
 - ordered adapter registry with explicit ambiguity handling and package auto-discovery
 - typed `FrameworkDetectionResult` values
 - typed framework descriptors for selectors/catalogs
@@ -105,6 +149,7 @@ Encapsulate framework-specific conventions and extraction rules.
 - Flask detection via `app.py`, `wsgi.py`, factory markers, `babel.cfg`, and `translations/`
 
 ### Excludes
+
 - shared PO logic
 - report rendering
 - UI behavior
@@ -118,6 +163,7 @@ Encapsulate framework-specific conventions and extraction rules.
 Inspect source trees for localization-related issues beyond PO files.
 
 ### Includes
+
 - PHP/Python/JS/template scanning
 - hardcoded string detection
 - gettext misuse detection
@@ -125,6 +171,7 @@ Inspect source trees for localization-related issues beyond PO files.
 - target-specific candidate discovery where relevant
 
 ### Excludes
+
 - rendering reports
 - remote connection logic
 - UI behavior
@@ -138,6 +185,7 @@ Inspect source trees for localization-related issues beyond PO files.
 Export normalized findings and summaries.
 
 ### Includes
+
 - Markdown
 - JSON
 - CSV
@@ -145,6 +193,7 @@ Export normalized findings and summaries.
 - grouped summaries
 
 ### Excludes
+
 - scanning
 - persistence
 - UI orchestration
@@ -158,8 +207,10 @@ Export normalized findings and summaries.
 Provide the graphical user experience through Kivy.
 
 ### Includes
+
 - screens
 - widgets
+- local path browser widgets (Kivy Garden `FileBrowser` via `path_picker`, without embedding domain or persistence rules)
 - navigation router
 - selected-project UI context
 - presentation shell/controller orchestration
@@ -169,6 +220,7 @@ Provide the graphical user experience through Kivy.
 - display of progress, summaries, errors, and outputs
 
 ### Excludes
+
 - domain rules
 - raw SQL
 - remote sessions
@@ -185,13 +237,16 @@ Provide the graphical user experience through Kivy.
 Store and retrieve application-owned data locally.
 
 ### Includes
+
 - SQLite schema access
 - repositories
 - mapping between rows and models
 - final database-path resolution from typed frontend settings
+- `settings.toml` persistence for general app state and SQLite persistence for shared global/framework sync rules plus the `.gitignore` toggle
 - local secret-key handling for encrypted persisted credentials
 
 ### Excludes
+
 - UI-driven direct SQL
 - scanner logic
 - remote operations
