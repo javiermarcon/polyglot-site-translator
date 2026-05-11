@@ -11,6 +11,14 @@ from polyglot_site_translator.presentation.view_models import SiteEditorViewMode
 
 
 def test_projects_flow_uses_the_real_sqlite_site_registry(tmp_path: Path) -> None:
+    """Verify projects flow uses the real sqlite site registry.
+
+    Args:
+        tmp_path (Path): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     isolated_config_dir = tmp_path / "isolated-config"
     settings_service = build_default_settings_service(config_dir=isolated_config_dir)
     services = build_default_frontend_services(settings_service=settings_service)
@@ -47,6 +55,14 @@ def test_projects_flow_uses_the_real_sqlite_site_registry(tmp_path: Path) -> Non
 
 
 def test_editing_a_site_persists_remote_connection_configuration(tmp_path: Path) -> None:
+    """Verify editing a site persists remote connection configuration.
+
+    Args:
+        tmp_path (Path): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     isolated_config_dir = tmp_path / "isolated-config"
     settings_service = build_default_settings_service(config_dir=isolated_config_dir)
     services = build_default_frontend_services(settings_service=settings_service)
@@ -108,6 +124,14 @@ def test_editing_a_site_persists_remote_connection_configuration(tmp_path: Path)
 
 
 def test_site_registry_flow_normalizes_and_persists_default_locale_lists(tmp_path: Path) -> None:
+    """Verify site registry flow normalizes and persists default locale lists.
+
+    Args:
+        tmp_path (Path): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     isolated_config_dir = tmp_path / "isolated-config"
     settings_service = build_default_settings_service(config_dir=isolated_config_dir)
     services = build_default_frontend_services(settings_service=settings_service)
@@ -143,6 +167,14 @@ def test_site_registry_flow_normalizes_and_persists_default_locale_lists(tmp_pat
 
 
 def test_site_registry_flow_rejects_invalid_default_locale_lists(tmp_path: Path) -> None:
+    """Verify site registry flow rejects invalid default locale lists.
+
+    Args:
+        tmp_path (Path): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     isolated_config_dir = tmp_path / "isolated-config"
     settings_service = build_default_settings_service(config_dir=isolated_config_dir)
     services = build_default_frontend_services(settings_service=settings_service)
@@ -177,6 +209,14 @@ def test_site_registry_flow_rejects_invalid_default_locale_lists(tmp_path: Path)
 
 
 def test_settings_flow_persists_database_directory_and_filename(tmp_path: Path) -> None:
+    """Verify settings flow persists database directory and filename.
+
+    Args:
+        tmp_path (Path): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     isolated_config_dir = tmp_path / "isolated-config"
     settings_service = build_default_settings_service(config_dir=isolated_config_dir)
     services = build_default_frontend_services(settings_service=settings_service)

@@ -26,7 +26,15 @@ from polyglot_site_translator.presentation.view_models import SettingsOptionView
 
 
 def build_site_editor_text_input(value: str, *, password: bool = False) -> TextInput:
-    """Styled single-line ``TextInput`` for site editor fields."""
+    """Styled single-line ``TextInput`` for site editor fields.
+
+    Args:
+        value (str): Value supplied to this callable.
+        password (bool): Value supplied to this callable.
+
+    Returns:
+        TextInput: Structured value returned by this callable.
+    """
     palette = get_active_theme()
     return TextInput(
         text=value,
@@ -41,7 +49,15 @@ def build_site_editor_text_input(value: str, *, password: bool = False) -> TextI
 
 
 def build_site_editor_spinner(*, values: list[str], current_label: str) -> Spinner:
-    """Styled ``Spinner`` for framework and connection-type options."""
+    """Styled ``Spinner`` for framework and connection-type options.
+
+    Args:
+        values (list[str]): Value supplied to this callable.
+        current_label (str): Value supplied to this callable.
+
+    Returns:
+        Spinner: Structured value returned by this callable.
+    """
     palette = get_active_theme()
     return Spinner(
         text=current_label,
@@ -54,7 +70,15 @@ def build_site_editor_spinner(*, values: list[str], current_label: str) -> Spinn
 
 
 def build_site_editor_field_card(label: str, field: Widget) -> SurfaceBoxLayout:
-    """Label plus control, matching other site editor sections."""
+    """Label plus control, matching other site editor sections.
+
+    Args:
+        label (str): Value supplied to this callable.
+        field (Widget): Value supplied to this callable.
+
+    Returns:
+        SurfaceBoxLayout: Structured value returned by this callable.
+    """
     card = SurfaceBoxLayout(
         orientation="vertical",
         spacing=8,
@@ -69,14 +93,32 @@ def build_site_editor_field_card(label: str, field: Widget) -> SurfaceBoxLayout:
 
 
 def build_remote_password_field_card(initial_password: str) -> tuple[TextInput, SurfaceBoxLayout]:
-    """Remote password ``TextInput`` with show/hide toggle inside a labeled card."""
+    """Remote password ``TextInput`` with show/hide toggle inside a labeled card.
+
+    Args:
+        initial_password (str): Value supplied to this callable.
+
+    Returns:
+        tuple[TextInput, SurfaceBoxLayout]: Structured value returned by this callable.
+    """
     text_input = build_site_editor_text_input(initial_password, password=True)
     row = build_password_row_with_visibility_toggle(text_input)
     return text_input, build_site_editor_field_card("Remote Password", row)
 
 
 def find_option_label(options: list[SettingsOptionViewModel], value: str) -> str:
-    """Resolve a stored option value to its display label."""
+    """Resolve a stored option value to its display label.
+
+    Args:
+        options (list[SettingsOptionViewModel]): Value supplied to this callable.
+        value (str): Value supplied to this callable.
+
+    Returns:
+        str: Structured value returned by this callable.
+
+    Raises:
+        LookupError: Raised when this callable hits the corresponding error path.
+    """
     for option in options:
         if option.value == value:
             return option.label
@@ -85,7 +127,18 @@ def find_option_label(options: list[SettingsOptionViewModel], value: str) -> str
 
 
 def find_option_value(options: list[SettingsOptionViewModel], label: str) -> str:
-    """Resolve a spinner label to its persisted option value."""
+    """Resolve a spinner label to its persisted option value.
+
+    Args:
+        options (list[SettingsOptionViewModel]): Value supplied to this callable.
+        label (str): Value supplied to this callable.
+
+    Returns:
+        str: Structured value returned by this callable.
+
+    Raises:
+        LookupError: Raised when this callable hits the corresponding error path.
+    """
     for option in options:
         if option.label == label:
             return option.value

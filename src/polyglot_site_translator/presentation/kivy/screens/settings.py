@@ -52,7 +52,11 @@ from polyglot_site_translator.presentation.view_models import (
 
 
 class SettingsScreen(BaseShellScreen):
-    """Screen showing the extensible frontend settings area."""
+    """Screen showing the extensible frontend settings area.
+
+    Attributes:
+        None: This type does not declare additional class-level attributes.
+    """
 
     def __init__(
         self,
@@ -61,6 +65,18 @@ class SettingsScreen(BaseShellScreen):
         manager_ref: ScreenManager,
         apply_runtime_settings: Callable[[AppSettingsViewModel], None] | None = None,
     ) -> None:
+        """Build the sectioned settings UI and capture runtime-apply callback wiring.
+
+        Args:
+            shell (FrontendShell): Value supplied to this callable.
+            manager_ref (ScreenManager): Value supplied to this callable.
+            apply_runtime_settings (Callable[[AppSettingsViewModel], None] | None): Value supplied
+        to this
+            callable.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         super().__init__(
             screen_name="settings",
             title="Settings",
@@ -100,6 +116,11 @@ class SettingsScreen(BaseShellScreen):
         self.refresh()
 
     def refresh(self) -> None:
+        """Rebuild the sectioned settings form from the current settings state.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         self.clear_content()
         state = self._shell.settings_state
         if state is None:
@@ -138,6 +159,11 @@ class SettingsScreen(BaseShellScreen):
         self.update_error_label()
 
     def _build_main_layout(self) -> GridLayout:
+        """Build main layout.
+
+        Returns:
+            GridLayout: Structured value returned by this callable.
+        """
         layout = GridLayout(
             cols=self._layout_spec.main_columns,
             spacing=16,
@@ -149,6 +175,11 @@ class SettingsScreen(BaseShellScreen):
         return layout
 
     def _build_sections_column(self) -> BoxLayout:
+        """Build sections column.
+
+        Returns:
+            BoxLayout: Structured value returned by this callable.
+        """
         column = BoxLayout(
             orientation="vertical",
             spacing=0,
@@ -162,6 +193,11 @@ class SettingsScreen(BaseShellScreen):
         return column
 
     def _build_sections_panel(self) -> SurfaceBoxLayout:
+        """Build sections panel.
+
+        Returns:
+            SurfaceBoxLayout: Structured value returned by this callable.
+        """
         state = self._require_state()
         panel = SurfaceBoxLayout(
             orientation="vertical",
@@ -196,6 +232,11 @@ class SettingsScreen(BaseShellScreen):
         return panel
 
     def _build_section_content(self) -> SurfaceBoxLayout:
+        """Build section content.
+
+        Returns:
+            SurfaceBoxLayout: Structured value returned by this callable.
+        """
         state = self._require_state()
         panel = SurfaceBoxLayout(
             orientation="vertical",
@@ -234,6 +275,11 @@ class SettingsScreen(BaseShellScreen):
         return panel
 
     def _build_section_form(self) -> GridLayout:
+        """Build section form.
+
+        Returns:
+            GridLayout: Structured value returned by this callable.
+        """
         state = self._require_state()
         if state.selected_section_key == "frameworks":
             return self._build_framework_sync_rules_panel()
@@ -242,6 +288,11 @@ class SettingsScreen(BaseShellScreen):
         return self._build_app_settings_form_panel()
 
     def _build_translation_settings_form_panel(self) -> GridLayout:
+        """Build translation settings form panel.
+
+        Returns:
+            GridLayout: Structured value returned by this callable.
+        """
         draft = self._require_draft()
         form = GridLayout(cols=1, spacing=12, size_hint_y=None)
         form.bind(minimum_height=form.setter("height"))
@@ -293,6 +344,11 @@ class SettingsScreen(BaseShellScreen):
         return form
 
     def _build_app_settings_form_panel(self) -> GridLayout:
+        """Build app settings form panel.
+
+        Returns:
+            GridLayout: Structured value returned by this callable.
+        """
         state = self._require_state()
         draft = self._require_draft()
         form = GridLayout(cols=1, spacing=12, size_hint_y=None)
@@ -377,6 +433,11 @@ class SettingsScreen(BaseShellScreen):
         return form
 
     def _build_framework_sync_rules_panel(self) -> GridLayout:
+        """Build framework sync rules panel.
+
+        Returns:
+            GridLayout: Structured value returned by this callable.
+        """
         draft = self._require_draft()
         sync_scope_settings = draft.sync_scope_settings
         form = GridLayout(cols=1, spacing=12, size_hint_y=None)
@@ -443,6 +504,18 @@ class SettingsScreen(BaseShellScreen):
         current_label: str,
         on_select: object,
     ) -> SurfaceBoxLayout:
+        """Build spinner field.
+
+        Args:
+            label (str): Value supplied to this callable.
+            help_text (str): Value supplied to this callable.
+            values (list[str]): Value supplied to this callable.
+            current_label (str): Value supplied to this callable.
+            on_select (object): Value supplied to this callable.
+
+        Returns:
+            SurfaceBoxLayout: Structured value returned by this callable.
+        """
         palette = get_active_theme()
         card = _build_field_card(title=label, help_text=help_text)
         spinner = Spinner(
@@ -459,6 +532,15 @@ class SettingsScreen(BaseShellScreen):
         return card
 
     def _build_window_field(self, *, width_value: str, height_value: str) -> SurfaceBoxLayout:
+        """Build window field.
+
+        Args:
+            width_value (str): Value supplied to this callable.
+            height_value (str): Value supplied to this callable.
+
+        Returns:
+            SurfaceBoxLayout: Structured value returned by this callable.
+        """
         palette = get_active_theme()
         card = _build_field_card(
             title="Default Window Size",
@@ -501,6 +583,14 @@ class SettingsScreen(BaseShellScreen):
         return card
 
     def _build_default_project_locale_field(self, *, value: str) -> SurfaceBoxLayout:
+        """Build default project locale field.
+
+        Args:
+            value (str): Value supplied to this callable.
+
+        Returns:
+            SurfaceBoxLayout: Structured value returned by this callable.
+        """
         palette = get_active_theme()
         card = _build_field_card(
             title="Default Project Locale",
@@ -523,6 +613,14 @@ class SettingsScreen(BaseShellScreen):
         return card
 
     def _build_default_compile_mo_field(self, *, value: bool) -> SurfaceBoxLayout:
+        """Build default compile mo field.
+
+        Args:
+            value (bool): Value supplied to this callable.
+
+        Returns:
+            SurfaceBoxLayout: Structured value returned by this callable.
+        """
         card = _build_field_card(
             title="Default MO Compilation",
             help_text=(
@@ -542,6 +640,14 @@ class SettingsScreen(BaseShellScreen):
         return card
 
     def _build_default_use_external_translator_field(self, *, value: bool) -> SurfaceBoxLayout:
+        """Build default use external translator field.
+
+        Args:
+            value (bool): Value supplied to this callable.
+
+        Returns:
+            SurfaceBoxLayout: Structured value returned by this callable.
+        """
         card = _build_field_card(
             title="Default External Translator",
             help_text=(
@@ -561,6 +667,14 @@ class SettingsScreen(BaseShellScreen):
         return card
 
     def _build_default_dry_run_field(self, *, value: bool) -> SurfaceBoxLayout:
+        """Build default dry run field.
+
+        Args:
+            value (bool): Value supplied to this callable.
+
+        Returns:
+            SurfaceBoxLayout: Structured value returned by this callable.
+        """
         card = _build_field_card(
             title="Default Dry-run Mode",
             help_text=(
@@ -576,6 +690,14 @@ class SettingsScreen(BaseShellScreen):
         return card
 
     def _build_default_use_translation_cache_field(self, *, value: bool) -> SurfaceBoxLayout:
+        """Build default use translation cache field.
+
+        Args:
+            value (bool): Value supplied to this callable.
+
+        Returns:
+            SurfaceBoxLayout: Structured value returned by this callable.
+        """
         card = _build_field_card(
             title="Default Translation Cache",
             help_text=(
@@ -595,6 +717,14 @@ class SettingsScreen(BaseShellScreen):
         return card
 
     def _build_default_only_fuzzy_field(self, *, value: bool) -> SurfaceBoxLayout:
+        """Build default only fuzzy field.
+
+        Args:
+            value (bool): Value supplied to this callable.
+
+        Returns:
+            SurfaceBoxLayout: Structured value returned by this callable.
+        """
         card = _build_field_card(
             title="Default Only-fuzzy Mode",
             help_text=(
@@ -613,11 +743,24 @@ class SettingsScreen(BaseShellScreen):
         return card
 
     def _translation_cache_browse_hint(self) -> str:
+        """Handle translation cache browse hint.
+
+        Returns:
+            str: Structured value returned by this callable.
+        """
         if self._translation_cache_path_input is None:
             return ""
         return str(self._translation_cache_path_input.text).strip()
 
     def _build_translation_cache_path_field(self, *, value: str) -> SurfaceBoxLayout:
+        """Build translation cache path field.
+
+        Args:
+            value (str): Value supplied to this callable.
+
+        Returns:
+            SurfaceBoxLayout: Structured value returned by this callable.
+        """
         palette = get_active_theme()
         card = _build_field_card(
             title="Translation Cache Path",
@@ -649,6 +792,14 @@ class SettingsScreen(BaseShellScreen):
         return card
 
     def _build_default_stats_only_field(self, *, value: bool) -> SurfaceBoxLayout:
+        """Build default stats only field.
+
+        Args:
+            value (bool): Value supplied to this callable.
+
+        Returns:
+            SurfaceBoxLayout: Structured value returned by this callable.
+        """
         card = _build_field_card(
             title="Default Stats-only Mode",
             help_text=(
@@ -668,6 +819,14 @@ class SettingsScreen(BaseShellScreen):
         return card
 
     def _build_default_report_inconsistencies_field(self, *, value: bool) -> SurfaceBoxLayout:
+        """Build default report inconsistencies field.
+
+        Args:
+            value (bool): Value supplied to this callable.
+
+        Returns:
+            SurfaceBoxLayout: Structured value returned by this callable.
+        """
         card = _build_field_card(
             title="Default Inconsistency Reporting",
             help_text="Enable variant inconsistency reporting across translated locale families.",
@@ -684,7 +843,11 @@ class SettingsScreen(BaseShellScreen):
         return card
 
     def _database_file_browse_hint(self) -> str:
-        """Return a path hint for opening the SQLite file picker."""
+        """Return a path hint for opening the SQLite file picker.
+
+        Returns:
+            str: Structured value returned by this callable.
+        """
         if self._database_directory_input is None or self._database_filename_input is None:
             return ""
         directory = str(self._database_directory_input.text).strip()
@@ -701,6 +864,15 @@ class SettingsScreen(BaseShellScreen):
         directory_value: str,
         filename_value: str,
     ) -> SurfaceBoxLayout:
+        """Build database field.
+
+        Args:
+            directory_value (str): Value supplied to this callable.
+            filename_value (str): Value supplied to this callable.
+
+        Returns:
+            SurfaceBoxLayout: Structured value returned by this callable.
+        """
         palette = get_active_theme()
         card = _build_field_card(
             title="SQLite Site Registry",
@@ -767,6 +939,18 @@ class SettingsScreen(BaseShellScreen):
         active: bool,
         on_toggle: Callable[[object, bool, WrappedLabel], None],
     ) -> SurfaceBoxLayout:
+        """Build toggle field.
+
+        Args:
+            label (str): Value supplied to this callable.
+            help_text (str): Value supplied to this callable.
+            active (bool): Value supplied to this callable.
+            on_toggle (Callable[[object, bool, WrappedLabel], None]): Value supplied to this
+        callable.
+
+        Returns:
+            SurfaceBoxLayout: Structured value returned by this callable.
+        """
         card = _build_field_card(title=label, help_text=help_text)
         row = BoxLayout(
             orientation=self._layout_spec.toggle_row_orientation,
@@ -786,6 +970,14 @@ class SettingsScreen(BaseShellScreen):
         return card
 
     def _build_sync_progress_field(self, *, limit_value: str) -> SurfaceBoxLayout:
+        """Build sync progress field.
+
+        Args:
+            limit_value (str): Value supplied to this callable.
+
+        Returns:
+            SurfaceBoxLayout: Structured value returned by this callable.
+        """
         palette = get_active_theme()
         card = _build_field_card(
             title="Sync Progress Command Log",
@@ -820,6 +1012,18 @@ class SettingsScreen(BaseShellScreen):
         scope_type: str,
         framework_type: str | None,
     ) -> SurfaceBoxLayout:
+        """Build configured rules catalog.
+
+        Args:
+            title (str): Value supplied to this callable.
+            help_text (str): Value supplied to this callable.
+            rules (tuple[ConfiguredSyncRule, ...]): Value supplied to this callable.
+            scope_type (str): Value supplied to this callable.
+            framework_type (str | None): Value supplied to this callable.
+
+        Returns:
+            SurfaceBoxLayout: Structured value returned by this callable.
+        """
         card = _build_field_card(title=title, help_text=help_text)
         if rules == ():
             card.add_widget(
@@ -886,6 +1090,11 @@ class SettingsScreen(BaseShellScreen):
         return card
 
     def _build_add_global_rule_form(self) -> SurfaceBoxLayout:
+        """Build add global rule form.
+
+        Returns:
+            SurfaceBoxLayout: Structured value returned by this callable.
+        """
         palette = get_active_theme()
         card = _build_field_card(
             title="Add Global Sync Rule",
@@ -942,6 +1151,11 @@ class SettingsScreen(BaseShellScreen):
         return card
 
     def _build_add_framework_rule_form(self) -> SurfaceBoxLayout:
+        """Build add framework rule form.
+
+        Returns:
+            SurfaceBoxLayout: Structured value returned by this callable.
+        """
         palette = get_active_theme()
         card = _build_field_card(
             title="Add Framework Sync Rule",
@@ -1009,10 +1223,26 @@ class SettingsScreen(BaseShellScreen):
         return card
 
     def _back_to_dashboard(self, *_args: object) -> None:
+        """Handle back to dashboard.
+
+        Args:
+            _args (object): Value supplied to this callable.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         self._shell.open_dashboard()
         self.show_route("dashboard")
 
     def _apply_settings(self, *_args: object) -> None:
+        """Apply settings.
+
+        Args:
+            _args (object): Value supplied to this callable.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         self._clear_form_error()
         draft = self._require_draft()
         try:
@@ -1033,6 +1263,14 @@ class SettingsScreen(BaseShellScreen):
         self.show_route("settings")
 
     def _apply_window_size_settings(self, draft: AppSettingsViewModel) -> AppSettingsViewModel:
+        """Apply window size settings.
+
+        Args:
+            draft (AppSettingsViewModel): Value supplied to this callable.
+
+        Returns:
+            AppSettingsViewModel: Structured value returned by this callable.
+        """
         if self._width_input is None or self._height_input is None:
             return draft
         width_text = self._width_input.text.strip()
@@ -1046,6 +1284,14 @@ class SettingsScreen(BaseShellScreen):
         )
 
     def _apply_database_settings(self, draft: AppSettingsViewModel) -> AppSettingsViewModel:
+        """Apply database settings.
+
+        Args:
+            draft (AppSettingsViewModel): Value supplied to this callable.
+
+        Returns:
+            AppSettingsViewModel: Structured value returned by this callable.
+        """
         if self._database_directory_input is None or self._database_filename_input is None:
             return draft
         return replace(
@@ -1055,6 +1301,14 @@ class SettingsScreen(BaseShellScreen):
         )
 
     def _apply_translation_settings(self, draft: AppSettingsViewModel) -> AppSettingsViewModel:
+        """Apply translation settings.
+
+        Args:
+            draft (AppSettingsViewModel): Value supplied to this callable.
+
+        Returns:
+            AppSettingsViewModel: Structured value returned by this callable.
+        """
         updated_draft = draft
         if self._default_project_locale_input is not None:
             updated_draft = replace(
@@ -1106,6 +1360,14 @@ class SettingsScreen(BaseShellScreen):
         return updated_draft
 
     def _apply_sync_progress_settings(self, draft: AppSettingsViewModel) -> AppSettingsViewModel:
+        """Apply sync progress settings.
+
+        Args:
+            draft (AppSettingsViewModel): Value supplied to this callable.
+
+        Returns:
+            AppSettingsViewModel: Structured value returned by this callable.
+        """
         if self._sync_progress_log_limit_input is None:
             return draft
         limit_text = self._sync_progress_log_limit_input.text.strip()
@@ -1114,6 +1376,14 @@ class SettingsScreen(BaseShellScreen):
         return replace(draft, sync_progress_log_limit=int(limit_text))
 
     def _restore_defaults(self, *_args: object) -> None:
+        """Handle restore defaults.
+
+        Args:
+            _args (object): Value supplied to this callable.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         self._shell.restore_default_settings()
         self._draft_settings = self._require_state().app_settings
         if self._apply_runtime_settings is not None and self._require_state().status != "failed":
@@ -1121,6 +1391,14 @@ class SettingsScreen(BaseShellScreen):
         self.show_route("settings")
 
     def _select_settings_section(self, section_key: str) -> None:
+        """Select settings section.
+
+        Args:
+            section_key (str): Value supplied to this callable.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         self._shell.select_settings_section(section_key)
         self._draft_settings = self._require_state().app_settings
         self.refresh()
@@ -1131,6 +1409,16 @@ class SettingsScreen(BaseShellScreen):
         value: bool,
         state_label: WrappedLabel,
     ) -> None:
+        """Handle toggle remember last screen.
+
+        Args:
+            _widget (object): Value supplied to this callable.
+            value (bool): Value supplied to this callable.
+            state_label (WrappedLabel): Value supplied to this callable.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         draft = self._require_draft()
         self._draft_settings = replace(draft, remember_last_screen=value)
         state_label.text = "Enabled" if value else "Disabled"
@@ -1141,6 +1429,16 @@ class SettingsScreen(BaseShellScreen):
         value: bool,
         state_label: WrappedLabel,
     ) -> None:
+        """Handle toggle developer mode.
+
+        Args:
+            _widget (object): Value supplied to this callable.
+            value (bool): Value supplied to this callable.
+            state_label (WrappedLabel): Value supplied to this callable.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         draft = self._require_draft()
         self._draft_settings = replace(draft, developer_mode=value)
         state_label.text = "Enabled" if value else "Disabled"
@@ -1151,6 +1449,16 @@ class SettingsScreen(BaseShellScreen):
         value: bool,
         state_label: WrappedLabel,
     ) -> None:
+        """Handle toggle use gitignore rules.
+
+        Args:
+            _widget (object): Value supplied to this callable.
+            value (bool): Value supplied to this callable.
+            state_label (WrappedLabel): Value supplied to this callable.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         draft = self._require_draft()
         self._draft_settings = replace(
             draft,
@@ -1162,6 +1470,15 @@ class SettingsScreen(BaseShellScreen):
         state_label.text = "Enabled" if value else "Disabled"
 
     def _on_theme_mode_selected(self, _widget: object, text: str) -> None:
+        """Handle on theme mode selected.
+
+        Args:
+            _widget (object): Value supplied to this callable.
+            text (str): Value supplied to this callable.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         try:
             value = find_option_value(self._require_state().theme_mode_field.options, text)
         except LookupError as error:
@@ -1171,6 +1488,15 @@ class SettingsScreen(BaseShellScreen):
         self._draft_settings = replace(draft, theme_mode=value)
 
     def _on_ui_language_selected(self, _widget: object, text: str) -> None:
+        """Handle on ui language selected.
+
+        Args:
+            _widget (object): Value supplied to this callable.
+            text (str): Value supplied to this callable.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         try:
             value = find_option_value(self._require_state().ui_language_field.options, text)
         except LookupError as error:
@@ -1180,6 +1506,14 @@ class SettingsScreen(BaseShellScreen):
         self._draft_settings = replace(draft, ui_language=value)
 
     def _require_state(self) -> SettingsStateViewModel:
+        """Validate and return state.
+
+        Returns:
+            SettingsStateViewModel: Structured value returned by this callable.
+
+        Raises:
+            ValueError: Raised when this callable hits the corresponding error path.
+        """
         state = self._shell.settings_state
         if state is None:
             msg = "Settings must be loaded before rendering the settings screen."
@@ -1187,6 +1521,14 @@ class SettingsScreen(BaseShellScreen):
         return state
 
     def _require_draft(self) -> AppSettingsViewModel:
+        """Validate and return draft.
+
+        Returns:
+            AppSettingsViewModel: Structured value returned by this callable.
+
+        Raises:
+            ValueError: Raised when this callable hits the corresponding error path.
+        """
         draft = self._draft_settings
         if draft is None:
             msg = "Settings draft must be initialized before editing."
@@ -1194,6 +1536,14 @@ class SettingsScreen(BaseShellScreen):
         return draft
 
     def _add_global_rule(self, *_args: object) -> None:
+        """Handle add global rule.
+
+        Args:
+            _args (object): Value supplied to this callable.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         self._clear_form_error()
         draft = self._require_draft()
         try:
@@ -1218,6 +1568,14 @@ class SettingsScreen(BaseShellScreen):
         self.refresh()
 
     def _add_framework_rule(self, *_args: object) -> None:
+        """Handle add framework rule.
+
+        Args:
+            _args (object): Value supplied to this callable.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         self._clear_form_error()
         draft = self._require_draft()
         try:
@@ -1251,10 +1609,23 @@ class SettingsScreen(BaseShellScreen):
         self.refresh()
 
     def _clear_form_error(self) -> None:
+        """Handle clear form error.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         self._shell.latest_error = None
         self.update_error_label()
 
     def _show_form_error(self, error: Exception) -> None:
+        """Handle show form error.
+
+        Args:
+            error (Exception): Value supplied to this callable.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         self._shell.latest_error = str(error)
         self.update_error_label()
 
@@ -1269,6 +1640,20 @@ class SettingsScreen(BaseShellScreen):
         scope_type: str,
         framework_type: str | None,
     ) -> None:
+        """Handle toggle configured rule.
+
+        Args:
+            _widget (object): Value supplied to this callable.
+            relative_path (str): Value supplied to this callable.
+            filter_type (SyncFilterType): Value supplied to this callable.
+            behavior (SyncRuleBehavior): Value supplied to this callable.
+            is_enabled (bool): Value supplied to this callable.
+            scope_type (str): Value supplied to this callable.
+            framework_type (str | None): Value supplied to this callable.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         self._toggle_configured_rule(
             relative_path=relative_path,
             filter_type=filter_type,
@@ -1288,6 +1673,19 @@ class SettingsScreen(BaseShellScreen):
         scope_type: str,
         framework_type: str | None,
     ) -> None:
+        """Handle remove configured rule.
+
+        Args:
+            _widget (object): Value supplied to this callable.
+            relative_path (str): Value supplied to this callable.
+            filter_type (SyncFilterType): Value supplied to this callable.
+            behavior (SyncRuleBehavior): Value supplied to this callable.
+            scope_type (str): Value supplied to this callable.
+            framework_type (str | None): Value supplied to this callable.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         self._remove_configured_rule(
             relative_path=relative_path,
             filter_type=filter_type,
@@ -1306,6 +1704,19 @@ class SettingsScreen(BaseShellScreen):
         scope_type: str,
         framework_type: str | None,
     ) -> None:
+        """Handle toggle configured rule.
+
+        Args:
+            relative_path (str): Value supplied to this callable.
+            filter_type (SyncFilterType): Value supplied to this callable.
+            behavior (SyncRuleBehavior): Value supplied to this callable.
+            is_enabled (bool): Value supplied to this callable.
+            scope_type (str): Value supplied to this callable.
+            framework_type (str | None): Value supplied to this callable.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         self._draft_settings = replace(
             self._require_draft(),
             sync_scope_settings=_toggle_configured_rule(
@@ -1329,6 +1740,18 @@ class SettingsScreen(BaseShellScreen):
         scope_type: str,
         framework_type: str | None,
     ) -> None:
+        """Handle remove configured rule.
+
+        Args:
+            relative_path (str): Value supplied to this callable.
+            filter_type (SyncFilterType): Value supplied to this callable.
+            behavior (SyncRuleBehavior): Value supplied to this callable.
+            scope_type (str): Value supplied to this callable.
+            framework_type (str | None): Value supplied to this callable.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         self._draft_settings = replace(
             self._require_draft(),
             sync_scope_settings=_remove_configured_rule(
@@ -1344,6 +1767,17 @@ class SettingsScreen(BaseShellScreen):
 
     @staticmethod
     def _require_text_input(widget: TextInput | None) -> TextInput:
+        """Validate and return text input.
+
+        Args:
+            widget (TextInput | None): Value supplied to this callable.
+
+        Returns:
+            TextInput: Structured value returned by this callable.
+
+        Raises:
+            ValueError: Raised when this callable hits the corresponding error path.
+        """
         if widget is None:
             msg = "Text input must exist before using the settings form."
             raise ValueError(msg)
@@ -1351,12 +1785,28 @@ class SettingsScreen(BaseShellScreen):
 
     @staticmethod
     def _build_framework_type_options() -> list[SettingsOptionViewModel]:
+        """Build framework type options.
+
+        Returns:
+            list[SettingsOptionViewModel]: Structured value returned by this callable.
+        """
         return build_framework_type_options_from_descriptors(
             FrameworkAdapterRegistry.discover_installed().list_framework_descriptors()
         )
 
     @staticmethod
     def _require_spinner(widget: Spinner | None) -> Spinner:
+        """Validate and return spinner.
+
+        Args:
+            widget (Spinner | None): Value supplied to this callable.
+
+        Returns:
+            Spinner: Structured value returned by this callable.
+
+        Raises:
+            ValueError: Raised when this callable hits the corresponding error path.
+        """
         if widget is None:
             msg = "Spinner must exist before using the settings form."
             raise ValueError(msg)
@@ -1364,6 +1814,15 @@ class SettingsScreen(BaseShellScreen):
 
 
 def _build_information_card(*, title: str, body: str) -> SurfaceBoxLayout:
+    """Build information card.
+
+    Args:
+        title (str): Value supplied to this callable.
+        body (str): Value supplied to this callable.
+
+    Returns:
+        SurfaceBoxLayout: Structured value returned by this callable.
+    """
     card = SurfaceBoxLayout(
         orientation="vertical",
         spacing=6,
@@ -1378,6 +1837,15 @@ def _build_information_card(*, title: str, body: str) -> SurfaceBoxLayout:
 
 
 def _build_field_card(*, title: str, help_text: str) -> SurfaceBoxLayout:
+    """Build field card.
+
+    Args:
+        title (str): Value supplied to this callable.
+        help_text (str): Value supplied to this callable.
+
+    Returns:
+        SurfaceBoxLayout: Structured value returned by this callable.
+    """
     card = SurfaceBoxLayout(
         orientation="vertical",
         spacing=8,
@@ -1398,6 +1866,20 @@ def _build_configured_rule(
     filter_type_label: str,
     behavior_label: str,
 ) -> ConfiguredSyncRule:
+    """Build configured rule.
+
+    Args:
+        relative_path (str): Value supplied to this callable.
+        description (str): Value supplied to this callable.
+        filter_type_label (str): Value supplied to this callable.
+        behavior_label (str): Value supplied to this callable.
+
+    Returns:
+        ConfiguredSyncRule: Structured value returned by this callable.
+
+    Raises:
+        ValueError: Raised when this callable hits the corresponding error path.
+    """
     normalized_relative_path = relative_path.strip().strip("/")
     if normalized_relative_path == "":
         msg = "Sync rules require a non-empty relative path or pattern."
@@ -1417,6 +1899,19 @@ def _append_framework_rule(
     framework_type: str,
     rule: ConfiguredSyncRule,
 ) -> AdapterSyncScopeSettings:
+    """Handle append framework rule.
+
+    Args:
+        sync_scope_settings (AdapterSyncScopeSettings): Value supplied to this callable.
+        framework_type (str): Value supplied to this callable.
+        rule (ConfiguredSyncRule): Value supplied to this callable.
+
+    Returns:
+        AdapterSyncScopeSettings: Structured value returned by this callable.
+
+    Raises:
+        ValueError: Raised when this callable hits the corresponding error path.
+    """
     normalized_framework_type = framework_type.strip().lower()
     if normalized_framework_type == "":
         msg = "Framework sync rules require a non-empty framework type."
@@ -1457,6 +1952,23 @@ def _toggle_configured_rule(  # noqa: PLR0913
     scope_type: str,
     framework_type: str | None,
 ) -> AdapterSyncScopeSettings:
+    """Handle toggle configured rule.
+
+    Args:
+        sync_scope_settings (AdapterSyncScopeSettings): Value supplied to this callable.
+        relative_path (str): Value supplied to this callable.
+        filter_type (SyncFilterType): Value supplied to this callable.
+        behavior (SyncRuleBehavior): Value supplied to this callable.
+        new_enabled (bool): Value supplied to this callable.
+        scope_type (str): Value supplied to this callable.
+        framework_type (str | None): Value supplied to this callable.
+
+    Returns:
+        AdapterSyncScopeSettings: Structured value returned by this callable.
+
+    Raises:
+        ValueError: Raised when this callable hits the corresponding error path.
+    """
     if scope_type == "global":
         return replace(
             sync_scope_settings,
@@ -1507,6 +2019,22 @@ def _remove_configured_rule(  # noqa: PLR0913
     scope_type: str,
     framework_type: str | None,
 ) -> AdapterSyncScopeSettings:
+    """Handle remove configured rule.
+
+    Args:
+        sync_scope_settings (AdapterSyncScopeSettings): Value supplied to this callable.
+        relative_path (str): Value supplied to this callable.
+        filter_type (SyncFilterType): Value supplied to this callable.
+        behavior (SyncRuleBehavior): Value supplied to this callable.
+        scope_type (str): Value supplied to this callable.
+        framework_type (str | None): Value supplied to this callable.
+
+    Returns:
+        AdapterSyncScopeSettings: Structured value returned by this callable.
+
+    Raises:
+        ValueError: Raised when this callable hits the corresponding error path.
+    """
     if scope_type == "global":
         return replace(
             sync_scope_settings,
@@ -1557,6 +2085,17 @@ def _matches_configured_rule(
     filter_type: SyncFilterType,
     behavior: SyncRuleBehavior,
 ) -> bool:
+    """Handle matches configured rule.
+
+    Args:
+        rule (ConfiguredSyncRule): Value supplied to this callable.
+        relative_path (str): Value supplied to this callable.
+        filter_type (SyncFilterType): Value supplied to this callable.
+        behavior (SyncRuleBehavior): Value supplied to this callable.
+
+    Returns:
+        bool: Structured value returned by this callable.
+    """
     return (
         rule.relative_path == relative_path
         and rule.filter_type is filter_type
@@ -1565,6 +2104,17 @@ def _matches_configured_rule(
 
 
 def _map_filter_type_label(label: str) -> SyncFilterType:
+    """Map filter type label.
+
+    Args:
+        label (str): Value supplied to this callable.
+
+    Returns:
+        SyncFilterType: Structured value returned by this callable.
+
+    Raises:
+        ValueError: Raised when this callable hits the corresponding error path.
+    """
     normalized_label = label.strip().lower()
     label_mapping = {
         "directory": SyncFilterType.DIRECTORY,
@@ -1579,6 +2129,17 @@ def _map_filter_type_label(label: str) -> SyncFilterType:
 
 
 def _map_behavior_label(label: str) -> SyncRuleBehavior:
+    """Map behavior label.
+
+    Args:
+        label (str): Value supplied to this callable.
+
+    Returns:
+        SyncRuleBehavior: Structured value returned by this callable.
+
+    Raises:
+        ValueError: Raised when this callable hits the corresponding error path.
+    """
     normalized_label = label.strip().lower()
     label_mapping = {
         "include": SyncRuleBehavior.INCLUDE,

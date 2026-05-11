@@ -12,6 +12,14 @@ from polyglot_site_translator.presentation.view_models import SiteEditorViewMode
 
 
 def test_project_flow_detects_wordpress_and_enriches_detail(tmp_path: Path) -> None:
+    """Verify project flow detects wordpress and enriches detail.
+
+    Args:
+        tmp_path (Path): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     project_path = tmp_path / "wordpress-site"
     project_path.mkdir()
     (project_path / "wp-config.php").write_text("<?php\n", encoding="utf-8")
@@ -43,6 +51,14 @@ def test_project_flow_detects_wordpress_and_enriches_detail(tmp_path: Path) -> N
 
 
 def test_project_flow_reports_no_framework_detected_for_generic_paths(tmp_path: Path) -> None:
+    """Verify project flow reports no framework detected for generic paths.
+
+    Args:
+        tmp_path (Path): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     project_path = tmp_path / "generic-site"
     project_path.mkdir()
     (project_path / "README.txt").write_text("generic project\n", encoding="utf-8")
@@ -74,6 +90,14 @@ def test_project_flow_reports_no_framework_detected_for_generic_paths(tmp_path: 
 def test_framework_aware_audit_preview_reports_zero_findings_for_generic_paths(
     tmp_path: Path,
 ) -> None:
+    """Verify framework aware audit preview reports zero findings for generic paths.
+
+    Args:
+        tmp_path (Path): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     project_path = tmp_path / "generic-site"
     project_path.mkdir()
     (project_path / "README.txt").write_text("generic project\n", encoding="utf-8")
@@ -104,6 +128,14 @@ def test_framework_aware_audit_preview_reports_zero_findings_for_generic_paths(
 
 
 def _build_runtime_shell(tmp_path: Path) -> FrontendShell:
+    """Handle build runtime shell.
+
+    Args:
+        tmp_path (Path): Value supplied to this callable.
+
+    Returns:
+        FrontendShell: Structured value returned by this callable.
+    """
     settings_service = build_default_settings_service(config_dir=tmp_path / "config")
     services = build_default_frontend_services(settings_service=settings_service)
     return create_kivy_app(services=services)._shell

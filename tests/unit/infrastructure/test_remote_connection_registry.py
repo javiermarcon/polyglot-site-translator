@@ -8,6 +8,11 @@ from polyglot_site_translator.infrastructure.remote_connections.registry import 
 
 
 def test_remote_connection_registry_discovers_builtin_connection_types() -> None:
+    """Verify remote connection registry discovers builtin connection types.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     registry = RemoteConnectionRegistry.discover_installed()
 
     assert [
@@ -16,6 +21,11 @@ def test_remote_connection_registry_discovers_builtin_connection_types() -> None
 
 
 def test_remote_connection_registry_resolves_a_provider_by_type() -> None:
+    """Verify remote connection registry resolves a provider by type.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     registry = RemoteConnectionRegistry.discover_installed()
 
     provider = registry.get_provider("sftp")

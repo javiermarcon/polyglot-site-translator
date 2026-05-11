@@ -48,24 +48,54 @@ then = cast(Callable[[str], Callable[[StepFunction], StepFunction]], behave_modu
 
 
 class BehaveShellContext(Protocol):
-    """Typed subset of behave context used by this feature."""
+    """BDD helper for BehaveShellContext.
+
+    Attributes:
+        shell (FrontendShell): Documented attribute exposed by this type.
+        settings_temp_dir (tempfile.TemporaryDirectory[str]): Documented attribute exposed by this
+    type.
+    """
 
     shell: FrontendShell
     settings_temp_dir: tempfile.TemporaryDirectory[str]
 
 
 def _context_with_shell(context: object) -> BehaveShellContext:
+    """Handle context with shell.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        BehaveShellContext: Structured value returned by this callable.
+    """
     return cast(BehaveShellContext, context)
 
 
 @given("the frontend shell is wired with seeded frontend test doubles")
 def step_seeded_shell(context: object) -> None:
+    """Run the BDD step for seeded shell.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     typed_context = _context_with_shell(context)
     typed_context.shell = create_frontend_shell(build_seeded_services())
 
 
 @given("the frontend shell is wired with TOML-backed settings persistence")
 def step_seeded_toml_shell(context: object) -> None:
+    """Run the BDD step for seeded toml shell.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     typed_context = _context_with_shell(context)
     typed_context.settings_temp_dir = tempfile.TemporaryDirectory()
     settings_service = build_default_settings_service(
@@ -78,42 +108,99 @@ def step_seeded_toml_shell(context: object) -> None:
 
 @given("the frontend shell is wired with an empty frontend test catalog")
 def step_empty_shell(context: object) -> None:
+    """Run the BDD step for empty shell.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     typed_context = _context_with_shell(context)
     typed_context.shell = create_frontend_shell(build_empty_services())
 
 
 @given("the frontend shell is wired with a failing sync test double")
 def step_failing_sync_shell(context: object) -> None:
+    """Run the BDD step for failing sync shell.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     typed_context = _context_with_shell(context)
     typed_context.shell = create_frontend_shell(build_failing_sync_services())
 
 
 @given("the frontend shell is wired with a failing audit test double")
 def step_failing_audit_shell(context: object) -> None:
+    """Run the BDD step for failing audit shell.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     typed_context = _context_with_shell(context)
     typed_context.shell = create_frontend_shell(build_failing_audit_services())
 
 
 @given("the frontend shell is wired with a failing translation test double")
 def step_failing_po_shell(context: object) -> None:
+    """Run the BDD step for failing po shell.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     typed_context = _context_with_shell(context)
     typed_context.shell = create_frontend_shell(build_failing_po_processing_services())
 
 
 @given("the frontend shell is wired with a failing settings-load test double")
 def step_failing_settings_load_shell(context: object) -> None:
+    """Run the BDD step for failing settings load shell.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     typed_context = _context_with_shell(context)
     typed_context.shell = create_frontend_shell(build_failing_settings_load_services())
 
 
 @given("the frontend shell is wired with a failing settings-save test double")
 def step_failing_settings_save_shell(context: object) -> None:
+    """Run the BDD step for failing settings save shell.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     typed_context = _context_with_shell(context)
     typed_context.shell = create_frontend_shell(build_failing_settings_save_services())
 
 
 @given('the operator has opened the detail for project "{project_id}"')
 def step_open_project_detail(context: object, project_id: str) -> None:
+    """Run the BDD step for open project detail.
+
+    Args:
+        context (object): Value supplied to this callable.
+        project_id (str): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     typed_context = _context_with_shell(context)
     typed_context.shell.open_projects()
     typed_context.shell.select_project(project_id)
@@ -121,12 +208,28 @@ def step_open_project_detail(context: object, project_id: str) -> None:
 
 @given("the operator has opened the settings screen")
 def step_open_settings_screen(context: object) -> None:
+    """Run the BDD step for open settings screen.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     typed_context = _context_with_shell(context)
     typed_context.shell.open_settings()
 
 
 @given("the operator has saved custom settings")
 def step_saved_custom_settings(context: object) -> None:
+    """Run the BDD step for saved custom settings.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     typed_context = _context_with_shell(context)
     typed_context.shell.open_settings()
     typed_context.shell.set_settings_theme_mode("dark")
@@ -138,6 +241,14 @@ def step_saved_custom_settings(context: object) -> None:
 
 @when("the operator restarts the frontend shell")
 def step_restart_frontend_shell(context: object) -> None:
+    """Run the BDD step for restart frontend shell.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     typed_context = _context_with_shell(context)
     settings_service = build_default_settings_service(
         config_dir=Path(typed_context.settings_temp_dir.name)
@@ -149,150 +260,354 @@ def step_restart_frontend_shell(context: object) -> None:
 
 @when("the operator opens the application")
 def step_open_application(context: object) -> None:
+    """Run the BDD step for open application.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     typed_context = _context_with_shell(context)
     typed_context.shell.open_dashboard()
 
 
 @when("the operator opens the projects list")
 def step_open_projects(context: object) -> None:
+    """Run the BDD step for open projects.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     typed_context = _context_with_shell(context)
     typed_context.shell.open_projects()
 
 
 @when('the operator selects the project "{project_id}"')
 def step_select_project(context: object, project_id: str) -> None:
+    """Run the BDD step for select project.
+
+    Args:
+        context (object): Value supplied to this callable.
+        project_id (str): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     typed_context = _context_with_shell(context)
     typed_context.shell.select_project(project_id)
 
 
 @when("the operator starts the sync workflow")
 def step_start_sync(context: object) -> None:
+    """Run the BDD step for start sync.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     typed_context = _context_with_shell(context)
     typed_context.shell.start_sync()
 
 
 @when("the operator starts the audit workflow")
 def step_start_audit(context: object) -> None:
+    """Run the BDD step for start audit.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     typed_context = _context_with_shell(context)
     typed_context.shell.start_audit()
 
 
 @when("the operator starts the po processing workflow")
 def step_start_po_processing(context: object) -> None:
+    """Run the BDD step for start po processing.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     typed_context = _context_with_shell(context)
     typed_context.shell.start_po_processing()
 
 
 @when("the operator opens the settings screen")
 def step_open_settings(context: object) -> None:
+    """Run the BDD step for open settings.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     typed_context = _context_with_shell(context)
     typed_context.shell.open_settings()
 
 
 @when("the operator opens the application menu")
 def step_open_application_menu(context: object) -> None:
+    """Run the BDD step for open application menu.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     typed_context = _context_with_shell(context)
     typed_context.shell.open_application_menu()
 
 
 @when("the operator opens the settings screen from the application menu")
 def step_open_settings_from_menu(context: object) -> None:
+    """Run the BDD step for open settings from menu.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     typed_context = _context_with_shell(context)
     typed_context.shell.open_settings()
 
 
 @when("the operator enables remember last screen")
 def step_enable_remember_last_screen(context: object) -> None:
+    """Run the BDD step for enable remember last screen.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     typed_context = _context_with_shell(context)
     typed_context.shell.toggle_remember_last_screen()
 
 
 @when("the operator enables developer mode")
 def step_enable_developer_mode(context: object) -> None:
+    """Run the BDD step for enable developer mode.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     typed_context = _context_with_shell(context)
     typed_context.shell.toggle_developer_mode()
 
 
 @when('the operator sets the theme mode to "{theme_mode}"')
 def step_set_theme_mode(context: object, theme_mode: str) -> None:
+    """Run the BDD step for set theme mode.
+
+    Args:
+        context (object): Value supplied to this callable.
+        theme_mode (str): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     typed_context = _context_with_shell(context)
     typed_context.shell.set_settings_theme_mode(theme_mode)
 
 
 @when('the operator sets the default project locale to "{default_locale}"')
 def step_set_default_project_locale(context: object, default_locale: str) -> None:
+    """Run the BDD step for set default project locale.
+
+    Args:
+        context (object): Value supplied to this callable.
+        default_locale (str): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     typed_context = _context_with_shell(context)
     typed_context.shell.set_settings_default_project_locale(default_locale)
 
 
 @when("the operator enables default MO compilation")
 def step_enable_default_mo_compilation(context: object) -> None:
+    """Run the BDD step for enable default mo compilation.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     typed_context = _context_with_shell(context)
     typed_context.shell.set_settings_default_compile_mo(True)
 
 
 @when("the operator disables default MO compilation")
 def step_disable_default_mo_compilation(context: object) -> None:
+    """Run the BDD step for disable default mo compilation.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     typed_context = _context_with_shell(context)
     typed_context.shell.set_settings_default_compile_mo(False)
 
 
 @when("the operator enables the default external translator")
 def step_enable_default_external_translator(context: object) -> None:
+    """Run the BDD step for enable default external translator.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     typed_context = _context_with_shell(context)
     typed_context.shell.set_settings_default_use_external_translator(True)
 
 
 @when("the operator disables the default external translator")
 def step_disable_default_external_translator(context: object) -> None:
+    """Run the BDD step for disable default external translator.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     typed_context = _context_with_shell(context)
     typed_context.shell.set_settings_default_use_external_translator(False)
 
 
 @when("the operator disables the default translation cache")
 def step_disable_default_translation_cache(context: object) -> None:
+    """Run the BDD step for disable default translation cache.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     typed_context = _context_with_shell(context)
     typed_context.shell.set_settings_default_use_translation_cache(False)
 
 
 @when("the operator enables default only-fuzzy mode")
 def step_enable_default_only_fuzzy(context: object) -> None:
+    """Run the BDD step for enable default only fuzzy.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     typed_context = _context_with_shell(context)
     typed_context.shell.set_settings_default_only_fuzzy(True)
 
 
 @when('the operator sets the translation cache path to "{cache_path}"')
 def step_set_translation_cache_path(context: object, cache_path: str) -> None:
+    """Run the BDD step for set translation cache path.
+
+    Args:
+        context (object): Value supplied to this callable.
+        cache_path (str): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     typed_context = _context_with_shell(context)
     typed_context.shell.set_settings_translation_cache_path(cache_path)
 
 
 @when("the operator enables default dry-run mode")
 def step_enable_default_dry_run(context: object) -> None:
+    """Run the BDD step for enable default dry run.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     typed_context = _context_with_shell(context)
     typed_context.shell.set_settings_default_dry_run(True)
 
 
 @when("the operator disables default stats-only mode")
 def step_disable_default_stats_only(context: object) -> None:
+    """Run the BDD step for disable default stats only.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     typed_context = _context_with_shell(context)
     typed_context.shell.set_settings_default_stats_only(False)
 
 
 @when("the operator enables default stats-only mode")
 def step_enable_default_stats_only(context: object) -> None:
+    """Run the BDD step for enable default stats only.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     typed_context = _context_with_shell(context)
     typed_context.shell.set_settings_default_stats_only(True)
 
 
 @when("the operator enables default inconsistency reporting")
 def step_enable_default_inconsistency_reporting(context: object) -> None:
+    """Run the BDD step for enable default inconsistency reporting.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     typed_context = _context_with_shell(context)
     typed_context.shell.set_settings_default_report_inconsistencies(True)
 
 
 @when("the operator sets the window size to 1440 by 900")
 def step_set_window_size(context: object) -> None:
+    """Run the BDD step for set window size.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     typed_context = _context_with_shell(context)
     typed_context.shell.set_settings_window_size(
         width=CUSTOM_WINDOW_WIDTH,
@@ -302,6 +617,14 @@ def step_set_window_size(context: object) -> None:
 
 @when("the operator sets the compact window size to 550 by 700")
 def step_set_compact_window_size(context: object) -> None:
+    """Run the BDD step for set compact window size.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     typed_context = _context_with_shell(context)
     typed_context.shell.set_settings_window_size(
         width=COMPACT_WINDOW_WIDTH,
@@ -311,24 +634,60 @@ def step_set_compact_window_size(context: object) -> None:
 
 @when("the operator applies the settings changes")
 def step_apply_settings(context: object) -> None:
+    """Run the BDD step for apply settings.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     typed_context = _context_with_shell(context)
     typed_context.shell.save_settings()
 
 
 @when("the operator restores the default settings")
 def step_restore_settings(context: object) -> None:
+    """Run the BDD step for restore settings.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     typed_context = _context_with_shell(context)
     typed_context.shell.restore_default_settings()
 
 
 @when('the operator selects the settings section "{section_key}"')
 def step_select_settings_section(context: object, section_key: str) -> None:
+    """Run the BDD step for select settings section.
+
+    Args:
+        context (object): Value supplied to this callable.
+        section_key (str): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     typed_context = _context_with_shell(context)
     typed_context.shell.select_settings_section(section_key)
 
 
 @when("the operator enables gitignore-based sync exclusions")
 def step_enable_gitignore_sync_exclusions(context: object) -> None:
+    """Run the BDD step for enable gitignore sync exclusions.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+
+    Raises:
+        AssertionError: Raised when this callable hits the corresponding error path.
+    """
     typed_context = _context_with_shell(context)
     state = typed_context.shell.settings_state
     if state is None:
@@ -352,6 +711,20 @@ def step_add_global_sync_rule(
     behavior: str,
     filter_type: str,
 ) -> None:
+    """Run the BDD step for add global sync rule.
+
+    Args:
+        context (object): Value supplied to this callable.
+        relative_path (str): Value supplied to this callable.
+        behavior (str): Value supplied to this callable.
+        filter_type (str): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+
+    Raises:
+        AssertionError: Raised when this callable hits the corresponding error path.
+    """
     typed_context = _context_with_shell(context)
     state = typed_context.shell.settings_state
     if state is None:
@@ -389,6 +762,21 @@ def step_add_framework_sync_rule(
     behavior: str,
     filter_type: str,
 ) -> None:
+    """Run the BDD step for add framework sync rule.
+
+    Args:
+        context (object): Value supplied to this callable.
+        relative_path (str): Value supplied to this callable.
+        framework_type (str): Value supplied to this callable.
+        behavior (str): Value supplied to this callable.
+        filter_type (str): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+
+    Raises:
+        AssertionError: Raised when this callable hits the corresponding error path.
+    """
     typed_context = _context_with_shell(context)
     state = typed_context.shell.settings_state
     if state is None:
@@ -421,12 +809,31 @@ def step_add_framework_sync_rule(
 
 @then("the dashboard is the active route")
 def step_assert_dashboard_route(context: object) -> None:
+    """Run the BDD step for assert dashboard route.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     typed_context = _context_with_shell(context)
     assert typed_context.shell.router.current.name is RouteName.DASHBOARD
 
 
 @then("the saved settings enable gitignore-based sync exclusions")
 def step_assert_saved_gitignore_sync_exclusions(context: object) -> None:
+    """Run the BDD step for assert saved gitignore sync exclusions.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+
+    Raises:
+        AssertionError: Raised when this callable hits the corresponding error path.
+    """
     typed_context = _context_with_shell(context)
     assert typed_context.shell.settings_state is not None
     if not typed_context.shell.settings_state.app_settings.sync_scope_settings.use_gitignore_rules:
@@ -435,6 +842,18 @@ def step_assert_saved_gitignore_sync_exclusions(context: object) -> None:
 
 @then('the saved settings contain the global sync rule "{relative_path}"')
 def step_assert_saved_global_sync_rule(context: object, relative_path: str) -> None:
+    """Run the BDD step for assert saved global sync rule.
+
+    Args:
+        context (object): Value supplied to this callable.
+        relative_path (str): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+
+    Raises:
+        AssertionError: Raised when this callable hits the corresponding error path.
+    """
     typed_context = _context_with_shell(context)
     assert typed_context.shell.settings_state is not None
     if relative_path not in [
@@ -450,6 +869,19 @@ def step_assert_saved_framework_sync_rule(
     relative_path: str,
     framework_type: str,
 ) -> None:
+    """Run the BDD step for assert saved framework sync rule.
+
+    Args:
+        context (object): Value supplied to this callable.
+        relative_path (str): Value supplied to this callable.
+        framework_type (str): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+
+    Raises:
+        AssertionError: Raised when this callable hits the corresponding error path.
+    """
     typed_context = _context_with_shell(context)
     assert typed_context.shell.settings_state is not None
     framework_rule_sets = (
@@ -466,6 +898,14 @@ def step_assert_saved_framework_sync_rule(
 
 @then("the dashboard shows the main workflow sections")
 def step_assert_dashboard_sections(context: object) -> None:
+    """Run the BDD step for assert dashboard sections.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     typed_context = _context_with_shell(context)
     section_keys = [section.key for section in typed_context.shell.dashboard_state.sections]
     assert section_keys == ["projects", "sync", "audit", "po-processing", "settings"]
@@ -473,6 +913,15 @@ def step_assert_dashboard_sections(context: object) -> None:
 
 @then('the project detail route is active for "{project_id}"')
 def step_assert_project_detail_route(context: object, project_id: str) -> None:
+    """Run the BDD step for assert project detail route.
+
+    Args:
+        context (object): Value supplied to this callable.
+        project_id (str): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     typed_context = _context_with_shell(context)
     assert typed_context.shell.router.current.name is RouteName.PROJECT_DETAIL
     assert typed_context.shell.router.current.project_id == project_id
@@ -480,6 +929,14 @@ def step_assert_project_detail_route(context: object, project_id: str) -> None:
 
 @then("the project detail shows available workflow actions")
 def step_assert_project_actions(context: object) -> None:
+    """Run the BDD step for assert project actions.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     typed_context = _context_with_shell(context)
     assert typed_context.shell.project_detail_state is not None
     action_keys = [action.key for action in typed_context.shell.project_detail_state.actions]
@@ -488,6 +945,14 @@ def step_assert_project_actions(context: object) -> None:
 
 @then("the sync panel shows a completed status")
 def step_assert_sync_completed(context: object) -> None:
+    """Run the BDD step for assert sync completed.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     typed_context = _context_with_shell(context)
     assert typed_context.shell.sync_state is not None
     assert typed_context.shell.sync_state.status == "completed"
@@ -495,6 +960,14 @@ def step_assert_sync_completed(context: object) -> None:
 
 @then("the sync panel reports the synchronized file count")
 def step_assert_sync_file_count(context: object) -> None:
+    """Run the BDD step for assert sync file count.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     typed_context = _context_with_shell(context)
     assert typed_context.shell.sync_state is not None
     assert typed_context.shell.sync_state.files_synced == SYNCED_FILES
@@ -502,6 +975,14 @@ def step_assert_sync_file_count(context: object) -> None:
 
 @then("the audit panel shows a completed status")
 def step_assert_audit_completed(context: object) -> None:
+    """Run the BDD step for assert audit completed.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     typed_context = _context_with_shell(context)
     assert typed_context.shell.audit_state is not None
     assert typed_context.shell.audit_state.status == "completed"
@@ -509,6 +990,14 @@ def step_assert_audit_completed(context: object) -> None:
 
 @then("the audit panel reports the finding summary")
 def step_assert_audit_summary(context: object) -> None:
+    """Run the BDD step for assert audit summary.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     typed_context = _context_with_shell(context)
     assert typed_context.shell.audit_state is not None
     assert (
@@ -519,6 +1008,17 @@ def step_assert_audit_summary(context: object) -> None:
 
 @then("the audit panel shows a failed status")
 def step_assert_audit_failed(context: object) -> None:
+    """Run the BDD step for assert audit failed.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+
+    Raises:
+        AssertionError: Raised when this callable hits the corresponding error path.
+    """
     typed_context = _context_with_shell(context)
     assert typed_context.shell.audit_state is not None
     if typed_context.shell.audit_state.status != "failed":
@@ -527,6 +1027,14 @@ def step_assert_audit_failed(context: object) -> None:
 
 @then("the po processing panel shows a completed status")
 def step_assert_po_completed(context: object) -> None:
+    """Run the BDD step for assert po completed.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     typed_context = _context_with_shell(context)
     assert typed_context.shell.po_processing_state is not None
     assert typed_context.shell.po_processing_state.status == "completed"
@@ -534,6 +1042,14 @@ def step_assert_po_completed(context: object) -> None:
 
 @then("the po processing panel reports the processed family count")
 def step_assert_po_family_count(context: object) -> None:
+    """Run the BDD step for assert po family count.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     typed_context = _context_with_shell(context)
     assert typed_context.shell.po_processing_state is not None
     assert typed_context.shell.po_processing_state.processed_families == PROCESSED_FAMILIES
@@ -541,6 +1057,17 @@ def step_assert_po_family_count(context: object) -> None:
 
 @then("the po processing panel shows a failed status")
 def step_assert_po_failed(context: object) -> None:
+    """Run the BDD step for assert po failed.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+
+    Raises:
+        AssertionError: Raised when this callable hits the corresponding error path.
+    """
     typed_context = _context_with_shell(context)
     assert typed_context.shell.po_processing_state is not None
     if typed_context.shell.po_processing_state.status != "failed":
@@ -549,18 +1076,42 @@ def step_assert_po_failed(context: object) -> None:
 
 @then("the projects list is empty")
 def step_assert_empty_projects(context: object) -> None:
+    """Run the BDD step for assert empty projects.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     typed_context = _context_with_shell(context)
     assert typed_context.shell.projects_state.projects == []
 
 
 @then("the projects screen shows an empty state message")
 def step_assert_empty_state_message(context: object) -> None:
+    """Run the BDD step for assert empty state message.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     typed_context = _context_with_shell(context)
     assert typed_context.shell.projects_state.empty_message == "No projects registered yet."
 
 
 @then("the sync panel shows a failed status")
 def step_assert_sync_failed(context: object) -> None:
+    """Run the BDD step for assert sync failed.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     typed_context = _context_with_shell(context)
     assert typed_context.shell.sync_state is not None
     assert typed_context.shell.sync_state.status == "failed"
@@ -568,12 +1119,31 @@ def step_assert_sync_failed(context: object) -> None:
 
 @then("the frontend shell shows the controlled error message")
 def step_assert_error_message(context: object) -> None:
+    """Run the BDD step for assert error message.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     typed_context = _context_with_shell(context)
     assert typed_context.shell.latest_error == "Sync preview is unavailable for this project."
 
 
 @then("the frontend shell shows the controlled audit error message")
 def step_assert_audit_error_message(context: object) -> None:
+    """Run the BDD step for assert audit error message.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+
+    Raises:
+        AssertionError: Raised when this callable hits the corresponding error path.
+    """
     typed_context = _context_with_shell(context)
     if typed_context.shell.latest_error != "Audit preview is unavailable for this project.":
         raise AssertionError
@@ -581,6 +1151,17 @@ def step_assert_audit_error_message(context: object) -> None:
 
 @then("the frontend shell shows the controlled translation error message")
 def step_assert_translation_error_message(context: object) -> None:
+    """Run the BDD step for assert translation error message.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+
+    Raises:
+        AssertionError: Raised when this callable hits the corresponding error path.
+    """
     typed_context = _context_with_shell(context)
     if typed_context.shell.latest_error != "Translation workflow is unavailable for this project.":
         raise AssertionError
@@ -588,12 +1169,28 @@ def step_assert_translation_error_message(context: object) -> None:
 
 @then("the settings route is active")
 def step_assert_settings_route(context: object) -> None:
+    """Run the BDD step for assert settings route.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     typed_context = _context_with_shell(context)
     assert typed_context.shell.router.current.name is RouteName.SETTINGS
 
 
 @then("the settings screen shows the App / UI / Kivy section")
 def step_assert_settings_section(context: object) -> None:
+    """Run the BDD step for assert settings section.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     typed_context = _context_with_shell(context)
     assert typed_context.shell.settings_state is not None
     section_keys = [section.key for section in typed_context.shell.settings_state.sections]
@@ -602,6 +1199,14 @@ def step_assert_settings_section(context: object) -> None:
 
 @then("the application menu shows the main navigation groups")
 def step_assert_application_menu_groups(context: object) -> None:
+    """Run the BDD step for assert application menu groups.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     typed_context = _context_with_shell(context)
     section_keys = [section.key for section in typed_context.shell.navigation_menu.sections]
     assert section_keys == ["workspace", "operations", "system"]
@@ -609,6 +1214,14 @@ def step_assert_application_menu_groups(context: object) -> None:
 
 @then("the settings draft uses the default window size")
 def step_assert_default_window_size(context: object) -> None:
+    """Run the BDD step for assert default window size.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     typed_context = _context_with_shell(context)
     assert typed_context.shell.settings_state is not None
     assert typed_context.shell.settings_state.app_settings.window_width == DEFAULT_WINDOW_WIDTH
@@ -617,6 +1230,14 @@ def step_assert_default_window_size(context: object) -> None:
 
 @then("the settings draft keeps remember last screen disabled")
 def step_assert_default_remember_last_screen(context: object) -> None:
+    """Run the BDD step for assert default remember last screen.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     typed_context = _context_with_shell(context)
     assert typed_context.shell.settings_state is not None
     assert typed_context.shell.settings_state.app_settings.remember_last_screen is False
@@ -624,6 +1245,14 @@ def step_assert_default_remember_last_screen(context: object) -> None:
 
 @then("the settings screen shows a single theme selector with explanations")
 def step_assert_theme_selector(context: object) -> None:
+    """Run the BDD step for assert theme selector.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     typed_context = _context_with_shell(context)
     assert typed_context.shell.settings_state is not None
     assert typed_context.shell.settings_state.theme_mode_field.control_type == "choice"
@@ -633,6 +1262,14 @@ def step_assert_theme_selector(context: object) -> None:
 
 @then("the settings screen shows the changes as saved")
 def step_assert_settings_saved(context: object) -> None:
+    """Run the BDD step for assert settings saved.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     typed_context = _context_with_shell(context)
     assert typed_context.shell.settings_state is not None
     assert typed_context.shell.settings_state.status == "saved"
@@ -640,6 +1277,14 @@ def step_assert_settings_saved(context: object) -> None:
 
 @then("the settings save exposes a saved confirmation message")
 def step_assert_settings_saved_message(context: object) -> None:
+    """Run the BDD step for assert settings saved message.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     typed_context = _context_with_shell(context)
     assert typed_context.shell.settings_state is not None
     assert typed_context.shell.settings_state.status_message == "Settings saved."
@@ -647,6 +1292,14 @@ def step_assert_settings_saved_message(context: object) -> None:
 
 @then("the saved settings keep remember last screen enabled")
 def step_assert_saved_remember_last_screen(context: object) -> None:
+    """Run the BDD step for assert saved remember last screen.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     typed_context = _context_with_shell(context)
     assert typed_context.shell.settings_state is not None
     assert typed_context.shell.settings_state.app_settings.remember_last_screen is True
@@ -654,6 +1307,14 @@ def step_assert_saved_remember_last_screen(context: object) -> None:
 
 @then("the saved settings keep the selected window size")
 def step_assert_saved_window_size(context: object) -> None:
+    """Run the BDD step for assert saved window size.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     typed_context = _context_with_shell(context)
     assert typed_context.shell.settings_state is not None
     assert typed_context.shell.settings_state.app_settings.window_width == CUSTOM_WINDOW_WIDTH
@@ -662,6 +1323,14 @@ def step_assert_saved_window_size(context: object) -> None:
 
 @then("the saved settings keep the compact window size")
 def step_assert_saved_compact_window_size(context: object) -> None:
+    """Run the BDD step for assert saved compact window size.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     typed_context = _context_with_shell(context)
     assert typed_context.shell.settings_state is not None
     assert typed_context.shell.settings_state.app_settings.window_width == COMPACT_WINDOW_WIDTH
@@ -670,6 +1339,14 @@ def step_assert_saved_compact_window_size(context: object) -> None:
 
 @then("the settings draft shows the persisted custom values")
 def step_assert_persisted_settings(context: object) -> None:
+    """Run the BDD step for assert persisted settings.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     typed_context = _context_with_shell(context)
     assert typed_context.shell.settings_state is not None
     assert typed_context.shell.settings_state.app_settings.theme_mode == "dark"
@@ -681,6 +1358,14 @@ def step_assert_persisted_settings(context: object) -> None:
 
 @then("the settings screen shows a failed status")
 def step_assert_settings_failed(context: object) -> None:
+    """Run the BDD step for assert settings failed.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     typed_context = _context_with_shell(context)
     assert typed_context.shell.settings_state is not None
     assert typed_context.shell.settings_state.status == "failed"
@@ -688,6 +1373,14 @@ def step_assert_settings_failed(context: object) -> None:
 
 @then("the frontend shell shows the controlled settings error message")
 def step_assert_settings_error_message(context: object) -> None:
+    """Run the BDD step for assert settings error message.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     typed_context = _context_with_shell(context)
     assert typed_context.shell.latest_error in {
         "App settings are temporarily unavailable.",
@@ -697,6 +1390,14 @@ def step_assert_settings_error_message(context: object) -> None:
 
 @then("the settings screen shows the translation settings section")
 def step_assert_translation_settings_section(context: object) -> None:
+    """Run the BDD step for assert translation settings section.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     typed_context = _context_with_shell(context)
     assert typed_context.shell.settings_state is not None
     assert typed_context.shell.settings_state.selected_section_key == "translation"
@@ -705,6 +1406,18 @@ def step_assert_translation_settings_section(context: object) -> None:
 
 @then('the saved settings keep the default project locale "{default_locale}"')
 def step_assert_saved_default_project_locale(context: object, default_locale: str) -> None:
+    """Run the BDD step for assert saved default project locale.
+
+    Args:
+        context (object): Value supplied to this callable.
+        default_locale (str): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+
+    Raises:
+        AssertionError: Raised when this callable hits the corresponding error path.
+    """
     typed_context = _context_with_shell(context)
     assert typed_context.shell.settings_state is not None
     if typed_context.shell.settings_state.app_settings.default_project_locale != default_locale:
@@ -713,6 +1426,17 @@ def step_assert_saved_default_project_locale(context: object, default_locale: st
 
 @then("the saved settings keep default MO compilation enabled")
 def step_assert_saved_default_mo_compilation_enabled(context: object) -> None:
+    """Run the BDD step for assert saved default mo compilation enabled.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+
+    Raises:
+        AssertionError: Raised when this callable hits the corresponding error path.
+    """
     typed_context = _context_with_shell(context)
     assert typed_context.shell.settings_state is not None
     if typed_context.shell.settings_state.app_settings.default_compile_mo is not True:
@@ -721,6 +1445,17 @@ def step_assert_saved_default_mo_compilation_enabled(context: object) -> None:
 
 @then("the saved settings keep the default external translator disabled")
 def step_assert_saved_default_external_translator_disabled(context: object) -> None:
+    """Run the BDD step for assert saved default external translator disabled.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+
+    Raises:
+        AssertionError: Raised when this callable hits the corresponding error path.
+    """
     typed_context = _context_with_shell(context)
     assert typed_context.shell.settings_state is not None
     if typed_context.shell.settings_state.app_settings.default_use_external_translator is not False:
@@ -729,6 +1464,17 @@ def step_assert_saved_default_external_translator_disabled(context: object) -> N
 
 @then("the saved settings keep the default translation cache disabled")
 def step_assert_saved_default_translation_cache_disabled(context: object) -> None:
+    """Run the BDD step for assert saved default translation cache disabled.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+
+    Raises:
+        AssertionError: Raised when this callable hits the corresponding error path.
+    """
     typed_context = _context_with_shell(context)
     assert typed_context.shell.settings_state is not None
     if typed_context.shell.settings_state.app_settings.default_use_translation_cache is not False:
@@ -737,6 +1483,18 @@ def step_assert_saved_default_translation_cache_disabled(context: object) -> Non
 
 @then('the saved settings keep the translation cache path "{cache_path}"')
 def step_assert_saved_translation_cache_path(context: object, cache_path: str) -> None:
+    """Run the BDD step for assert saved translation cache path.
+
+    Args:
+        context (object): Value supplied to this callable.
+        cache_path (str): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+
+    Raises:
+        AssertionError: Raised when this callable hits the corresponding error path.
+    """
     typed_context = _context_with_shell(context)
     assert typed_context.shell.settings_state is not None
     if typed_context.shell.settings_state.app_settings.translation_cache_path != cache_path:
@@ -745,6 +1503,17 @@ def step_assert_saved_translation_cache_path(context: object, cache_path: str) -
 
 @then("the saved settings keep default only-fuzzy mode enabled")
 def step_assert_saved_default_only_fuzzy_enabled(context: object) -> None:
+    """Run the BDD step for assert saved default only fuzzy enabled.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+
+    Raises:
+        AssertionError: Raised when this callable hits the corresponding error path.
+    """
     typed_context = _context_with_shell(context)
     assert typed_context.shell.settings_state is not None
     if typed_context.shell.settings_state.app_settings.default_only_fuzzy is not True:
@@ -753,6 +1522,17 @@ def step_assert_saved_default_only_fuzzy_enabled(context: object) -> None:
 
 @then("the saved settings keep default dry-run mode enabled")
 def step_assert_saved_default_dry_run_enabled(context: object) -> None:
+    """Run the BDD step for assert saved default dry run enabled.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+
+    Raises:
+        AssertionError: Raised when this callable hits the corresponding error path.
+    """
     typed_context = _context_with_shell(context)
     assert typed_context.shell.settings_state is not None
     if typed_context.shell.settings_state.app_settings.default_dry_run is not True:
@@ -761,6 +1541,17 @@ def step_assert_saved_default_dry_run_enabled(context: object) -> None:
 
 @then("the saved settings keep default stats-only mode disabled")
 def step_assert_saved_default_stats_only_disabled(context: object) -> None:
+    """Run the BDD step for assert saved default stats only disabled.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+
+    Raises:
+        AssertionError: Raised when this callable hits the corresponding error path.
+    """
     typed_context = _context_with_shell(context)
     assert typed_context.shell.settings_state is not None
     if typed_context.shell.settings_state.app_settings.default_stats_only is not False:
@@ -769,6 +1560,17 @@ def step_assert_saved_default_stats_only_disabled(context: object) -> None:
 
 @then("the saved settings keep default inconsistency reporting enabled")
 def step_assert_saved_default_inconsistency_reporting_enabled(context: object) -> None:
+    """Run the BDD step for assert saved default inconsistency reporting enabled.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+
+    Raises:
+        AssertionError: Raised when this callable hits the corresponding error path.
+    """
     typed_context = _context_with_shell(context)
     assert typed_context.shell.settings_state is not None
     if typed_context.shell.settings_state.app_settings.default_report_inconsistencies is not True:

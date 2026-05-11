@@ -50,6 +50,23 @@ then = cast(Callable[[str], Callable[[StepFunction], StepFunction]], behave_modu
 
 
 class _BehavePOContext(Protocol):
+    """BDD helper for BehavePOContext.
+
+    Attributes:
+        workflow_service (SiteRegistryPresentationWorkflowService): Documented attribute exposed by
+    this
+        type.
+        po_result_status (str): Documented attribute exposed by this type.
+        po_result_families (int): Documented attribute exposed by this type.
+        po_result_summary (str): Documented attribute exposed by this type.
+        processed_po_text (str): Documented attribute exposed by this type.
+        compiled_mo_paths (tuple[Path, ...]): Documented attribute exposed by this type.
+        po_progress_events (list[POProcessingProgress]): Documented attribute exposed by this type.
+        temp_dir (tempfile.TemporaryDirectory[str]): Documented attribute exposed by this type.
+        site_id (str): Documented attribute exposed by this type.
+        site (RegisteredSite): Documented attribute exposed by this type.
+    """
+
     workflow_service: SiteRegistryPresentationWorkflowService
     po_result_status: str
     po_result_families: int
@@ -63,10 +80,35 @@ class _BehavePOContext(Protocol):
 
 
 class _InMemorySiteWorkflowService:
+    """BDD helper for InMemorySiteWorkflowService.
+
+    Attributes:
+        None: This type does not declare additional class-level attributes.
+    """
+
     def __init__(self, site: RegisteredSite) -> None:
+        """Initialize the test helper state.
+
+        Args:
+            site (RegisteredSite): Value supplied to this callable.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         self._site = site
 
     def get_site(self, site_id: str) -> RegisteredSite:
+        """Handle get site.
+
+        Args:
+            site_id (str): Value supplied to this callable.
+
+        Returns:
+            RegisteredSite: Structured value returned by this callable.
+
+        Raises:
+            SiteRegistryNotFoundError: Raised when this callable hits the corresponding error path.
+        """
         if site_id != self._site.id:
             msg = f"Unknown site id: {site_id}"
             raise SiteRegistryNotFoundError(msg)
@@ -74,6 +116,14 @@ class _InMemorySiteWorkflowService:
 
     @staticmethod
     def detect_framework(project_path: str) -> FrameworkDetectionResult:
+        """Handle detect framework.
+
+        Args:
+            project_path (str): Value supplied to this callable.
+
+        Returns:
+            FrameworkDetectionResult: Structured value returned by this callable.
+        """
         return FrameworkDetectionResult.unmatched(
             project_path=project_path,
             warnings=["Framework detection not required for PO workflow BDD."],
@@ -81,6 +131,14 @@ class _InMemorySiteWorkflowService:
 
     @staticmethod
     def test_remote_connection(registration: object) -> RemoteConnectionTestResult:
+        """Verify remote connection.
+
+        Args:
+            registration (object): Value supplied to this callable.
+
+        Returns:
+            RemoteConnectionTestResult: Structured value returned by this callable.
+        """
         return RemoteConnectionTestResult(
             success=True,
             connection_type="none",
@@ -92,11 +150,27 @@ class _InMemorySiteWorkflowService:
 
 
 class _SyncStub:
+    """BDD helper for SyncStub.
+
+    Attributes:
+        None: This type does not declare additional class-level attributes.
+    """
+
     @staticmethod
     def sync_remote_to_local(
         site: RegisteredSite,
         progress_callback: Callable[[SyncProgressEvent], None] | None = None,
     ) -> SyncResult:
+        """Handle sync remote to local.
+
+        Args:
+            site (RegisteredSite): Value supplied to this callable.
+            progress_callback (Callable[[SyncProgressEvent], None] | None): Value supplied to this
+        callable.
+
+        Returns:
+            SyncResult: Structured value returned by this callable.
+        """
         return SyncResult(
             direction=SyncDirection.REMOTE_TO_LOCAL,
             success=True,
@@ -117,6 +191,16 @@ class _SyncStub:
         site: RegisteredSite,
         progress_callback: Callable[[SyncProgressEvent], None] | None = None,
     ) -> SyncResult:
+        """Handle sync local to remote.
+
+        Args:
+            site (RegisteredSite): Value supplied to this callable.
+            progress_callback (Callable[[SyncProgressEvent], None] | None): Value supplied to this
+        callable.
+
+        Returns:
+            SyncResult: Structured value returned by this callable.
+        """
         return SyncResult(
             direction=SyncDirection.LOCAL_TO_REMOTE,
             success=True,
@@ -136,8 +220,23 @@ class _SyncStub:
 
 
 class _BehaveTranslationProvider:
+    """BDD helper for BehaveTranslationProvider.
+
+    Attributes:
+        None: This type does not declare additional class-level attributes.
+    """
+
     @staticmethod
     def translate_text(*, text: str, target_locale: str) -> str:
+        """Handle translate text.
+
+        Args:
+            text (str): Value supplied to this callable.
+            target_locale (str): Value supplied to this callable.
+
+        Returns:
+            str: Structured value returned by this callable.
+        """
         translations = {
             ("es_ES", "Save"): "Guardar",
             ("es_AR", "Save"): "Guardar",
@@ -148,8 +247,27 @@ class _BehaveTranslationProvider:
 
 
 class _BehavePartiallyFailingTranslationProvider:
+    """BDD helper for BehavePartiallyFailingTranslationProvider.
+
+    Attributes:
+        None: This type does not declare additional class-level attributes.
+    """
+
     @staticmethod
     def translate_text(*, text: str, target_locale: str) -> str:
+        """Handle translate text.
+
+        Args:
+            text (str): Value supplied to this callable.
+            target_locale (str): Value supplied to this callable.
+
+        Returns:
+            str: Structured value returned by this callable.
+
+        Raises:
+            POProcessingTranslationError: Raised when this callable hits the corresponding error
+        path.
+        """
         if text == "Broken":
             msg = f"provider exploded for {target_locale}:{text}"
             raise POProcessingTranslationError(msg)
@@ -160,16 +278,55 @@ class _BehavePartiallyFailingTranslationProvider:
 
 
 class _CompileFailingRepository:
+    """BDD helper for CompileFailingRepository.
+
+    Attributes:
+        None: This type does not declare additional class-level attributes.
+    """
+
     def __init__(self) -> None:
+        """Initialize the test helper state.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         self._repository = PolibPOCatalogRepository()
 
     def discover_po_files(self, workspace_root: Path) -> tuple[POFileData, ...]:
+        """Handle discover po files.
+
+        Args:
+            workspace_root (Path): Value supplied to this callable.
+
+        Returns:
+            tuple[POFileData, ...]: Structured value returned by this callable.
+        """
         return self._repository.discover_po_files(workspace_root)
 
     def save_po_files(self, files: tuple[POFileData, ...]) -> None:
+        """Handle save po files.
+
+        Args:
+            files (tuple[POFileData, ...]): Value supplied to this callable.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         self._repository.save_po_files(files)
 
     def compile_mo_file(self, file_data: POFileData) -> None:
+        """Handle compile mo file.
+
+        Args:
+            file_data (POFileData): Value supplied to this callable.
+
+        Returns:
+            None: This callable does not return a value.
+
+        Raises:
+            POProcessingCompilationError: Raised when this callable hits the corresponding error
+        path.
+        """
         if file_data.locale == "es_ES":
             msg = f"PO file '{file_data.source_path}' could not be compiled in the BDD stub."
             raise POProcessingCompilationError(msg)
@@ -177,6 +334,16 @@ class _CompileFailingRepository:
 
 
 def _seed_translation_cache(workspace: Path, *, text: str, translated_text: str) -> None:
+    """Handle seed translation cache.
+
+    Args:
+        workspace (Path): Value supplied to this callable.
+        text (str): Value supplied to this callable.
+        translated_text (str): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     cache_path = workspace / ".po_translation_cache"
     cache_path.parent.mkdir(parents=True, exist_ok=True)
     with shelve.open(str(cache_path), writeback=False) as cache:
@@ -184,11 +351,27 @@ def _seed_translation_cache(workspace: Path, *, text: str, translated_text: str)
 
 
 def _context(context: object) -> _BehavePOContext:
+    """Handle context.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        _BehavePOContext: Structured value returned by this callable.
+    """
     return cast(_BehavePOContext, context)
 
 
 @given("a site project with PO locale variants in the local workspace")
 def step_given_site_with_variants(context: object) -> None:
+    """Run the BDD step for given site with variants.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     typed = _context(context)
     typed.temp_dir = tempfile.TemporaryDirectory()
     workspace = Path(typed.temp_dir.name)
@@ -218,6 +401,14 @@ def step_given_site_with_variants(context: object) -> None:
 
 @given("a site project with untranslated PO locale variants in the local workspace")
 def step_given_site_with_untranslated_variants(context: object) -> None:
+    """Run the BDD step for given site with untranslated variants.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     typed = _context(context)
     typed.temp_dir = tempfile.TemporaryDirectory()
     workspace = Path(typed.temp_dir.name)
@@ -239,6 +430,14 @@ def step_given_site_with_untranslated_variants(context: object) -> None:
 
 @given("a site project with untranslated PO locale variants and MO compilation disabled")
 def step_given_site_with_untranslated_variants_and_disabled_mo(context: object) -> None:
+    """Run the BDD step for given site with untranslated variants and disabled mo.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     typed = _context(context)
     typed.temp_dir = tempfile.TemporaryDirectory()
     workspace = Path(typed.temp_dir.name)
@@ -262,6 +461,14 @@ def step_given_site_with_untranslated_variants_and_disabled_mo(context: object) 
 def step_given_site_with_untranslated_variants_and_disabled_external_translator(
     context: object,
 ) -> None:
+    """Run the BDD step for given site with untranslated variants and disabled external….
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     typed = _context(context)
     typed.temp_dir = tempfile.TemporaryDirectory()
     workspace = Path(typed.temp_dir.name)
@@ -283,6 +490,14 @@ def step_given_site_with_untranslated_variants_and_disabled_external_translator(
 
 @given("a site project with untranslated PO locale variants and dry-run enabled")
 def step_given_site_with_untranslated_variants_and_dry_run(context: object) -> None:
+    """Run the BDD step for given site with untranslated variants and dry run.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     typed = _context(context)
     typed.temp_dir = tempfile.TemporaryDirectory()
     workspace = Path(typed.temp_dir.name)
@@ -304,6 +519,14 @@ def step_given_site_with_untranslated_variants_and_dry_run(context: object) -> N
 
 @given("a site project with untranslated PO locale variants and stats-only enabled")
 def step_given_site_with_untranslated_variants_and_stats_only(context: object) -> None:
+    """Run the BDD step for given site with untranslated variants and stats only.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     typed = _context(context)
     typed.temp_dir = tempfile.TemporaryDirectory()
     workspace = Path(typed.temp_dir.name)
@@ -325,6 +548,14 @@ def step_given_site_with_untranslated_variants_and_stats_only(context: object) -
 
 @given("a site project with fuzzy and non-fuzzy untranslated PO entries")
 def step_given_site_with_fuzzy_and_non_fuzzy_entries(context: object) -> None:
+    """Run the BDD step for given site with fuzzy and non fuzzy entries.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     typed = _context(context)
     typed.temp_dir = tempfile.TemporaryDirectory()
     workspace = Path(typed.temp_dir.name)
@@ -349,6 +580,14 @@ def step_given_site_with_fuzzy_and_non_fuzzy_entries(context: object) -> None:
 
 @given("a site project with untranslated PO locale variants and a preseeded translation cache")
 def step_given_site_with_untranslated_variants_and_cache(context: object) -> None:
+    """Run the BDD step for given site with untranslated variants and cache.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     typed = _context(context)
     typed.temp_dir = tempfile.TemporaryDirectory()
     workspace = Path(typed.temp_dir.name)
@@ -371,6 +610,14 @@ def step_given_site_with_untranslated_variants_and_cache(context: object) -> Non
 
 @given("a site project with inconsistent translated PO locale variants")
 def step_given_site_with_inconsistent_translated_variants(context: object) -> None:
+    """Run the BDD step for given site with inconsistent translated variants.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     typed = _context(context)
     typed.temp_dir = tempfile.TemporaryDirectory()
     workspace = Path(typed.temp_dir.name)
@@ -390,6 +637,14 @@ def step_given_site_with_inconsistent_translated_variants(context: object) -> No
 
 @given("a site project with reusable translations across locale families")
 def step_given_site_with_reusable_translations_across_families(context: object) -> None:
+    """Run the BDD step for given site with reusable translations across families.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     typed = _context(context)
     typed.temp_dir = tempfile.TemporaryDirectory()
     workspace = Path(typed.temp_dir.name)
@@ -413,6 +668,14 @@ def step_given_site_with_reusable_translations_across_families(context: object) 
 
 @given("a site project with several untranslated entries in one PO file")
 def step_given_site_with_multiple_untranslated_entries(context: object) -> None:
+    """Run the BDD step for given site with multiple untranslated entries.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     typed = _context(context)
     typed.temp_dir = tempfile.TemporaryDirectory()
     workspace = Path(typed.temp_dir.name)
@@ -436,6 +699,14 @@ def step_given_site_with_multiple_untranslated_entries(context: object) -> None:
 
 @given("a site project without PO locale variants in the local workspace")
 def step_given_site_without_variants(context: object) -> None:
+    """Run the BDD step for given site without variants.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     typed = _context(context)
     typed.temp_dir = tempfile.TemporaryDirectory()
     workspace = Path(typed.temp_dir.name)
@@ -451,6 +722,14 @@ def step_given_site_without_variants(context: object) -> None:
 
 @given("a site project with Portuguese PO locale variants in the local workspace")
 def step_given_site_with_portuguese_variants(context: object) -> None:
+    """Run the BDD step for given site with portuguese variants.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     typed = _context(context)
     typed.temp_dir = tempfile.TemporaryDirectory()
     workspace = Path(typed.temp_dir.name)
@@ -480,6 +759,14 @@ def step_given_site_with_portuguese_variants(context: object) -> None:
 
 @given("a site project with one failing PO entry and one translatable entry")
 def step_given_site_with_partial_translation_failure(context: object) -> None:
+    """Run the BDD step for given site with partial translation failure.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     typed = _context(context)
     typed.temp_dir = tempfile.TemporaryDirectory()
     workspace = Path(typed.temp_dir.name)
@@ -500,6 +787,14 @@ def step_given_site_with_partial_translation_failure(context: object) -> None:
 
 @given("a site project with one MO compilation failure and one compilable locale variant")
 def step_given_site_with_partial_mo_compilation_failure(context: object) -> None:
+    """Run the BDD step for given site with partial mo compilation failure.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     typed = _context(context)
     typed.temp_dir = tempfile.TemporaryDirectory()
     workspace = Path(typed.temp_dir.name)
@@ -519,6 +814,14 @@ def step_given_site_with_partial_mo_compilation_failure(context: object) -> None
 
 @when("the operator runs the PO processing workflow for that site")
 def step_when_run_po(context: object) -> None:
+    """Run the BDD step for when run po.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     typed = _context(context)
     typed.po_progress_events = []
     result = typed.workflow_service.start_po_processing(
@@ -551,6 +854,15 @@ def step_when_run_po(context: object) -> None:
 
 @when('the operator runs the PO processing workflow for that site with selected locale "{locale}"')
 def step_when_run_po_with_selected_locale(context: object, locale: str) -> None:
+    """Run the BDD step for when run po with selected locale.
+
+    Args:
+        context (object): Value supplied to this callable.
+        locale (str): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     typed = _context(context)
     typed.po_progress_events = []
     result = typed.workflow_service.start_po_processing(
@@ -577,6 +889,14 @@ def step_when_run_po_with_selected_locale(context: object, locale: str) -> None:
 
 @when("the operator runs the PO processing workflow with inconsistency reporting enabled")
 def step_when_run_po_with_inconsistency_reporting_enabled(context: object) -> None:
+    """Run the BDD step for when run po with inconsistency reporting enabled.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     typed = _context(context)
     typed.po_progress_events = []
     result = typed.workflow_service.start_po_processing(
@@ -603,6 +923,14 @@ def step_when_run_po_with_inconsistency_reporting_enabled(context: object) -> No
 
 @when("the operator runs the PO processing workflow with translation cache disabled")
 def step_when_run_po_with_translation_cache_disabled(context: object) -> None:
+    """Run the BDD step for when run po with translation cache disabled.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     typed = _context(context)
     typed.po_progress_events = []
     result = typed.workflow_service.start_po_processing(
@@ -635,6 +963,17 @@ def step_when_run_po_with_translation_cache_disabled(context: object) -> None:
 
 @then("the PO processing result reports completed status")
 def step_then_completed(context: object) -> None:
+    """Run the BDD step for then completed.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+
+    Raises:
+        AssertionError: Raised when this callable hits the corresponding error path.
+    """
     typed = _context(context)
     if typed.po_result_status != "completed":
         raise AssertionError
@@ -642,6 +981,17 @@ def step_then_completed(context: object) -> None:
 
 @then("the PO processing result reports completed with errors status")
 def step_then_completed_with_errors(context: object) -> None:
+    """Run the BDD step for then completed with errors.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+
+    Raises:
+        AssertionError: Raised when this callable hits the corresponding error path.
+    """
     typed = _context(context)
     if typed.po_result_status != "completed_with_errors":
         raise AssertionError
@@ -649,6 +999,17 @@ def step_then_completed_with_errors(context: object) -> None:
 
 @then("the PO processing result reports one processed family")
 def step_then_one_family(context: object) -> None:
+    """Run the BDD step for then one family.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+
+    Raises:
+        AssertionError: Raised when this callable hits the corresponding error path.
+    """
     typed = _context(context)
     if typed.po_result_families != 1:
         raise AssertionError
@@ -656,6 +1017,17 @@ def step_then_one_family(context: object) -> None:
 
 @then("the PO processing result reports two processed families")
 def step_then_two_families(context: object) -> None:
+    """Run the BDD step for then two families.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+
+    Raises:
+        AssertionError: Raised when this callable hits the corresponding error path.
+    """
     typed = _context(context)
     if typed.po_result_families != _TWO_FAMILIES:
         raise AssertionError
@@ -663,6 +1035,17 @@ def step_then_two_families(context: object) -> None:
 
 @then("the PO processing result reports one found family")
 def step_then_one_found_family(context: object) -> None:
+    """Run the BDD step for then one found family.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+
+    Raises:
+        AssertionError: Raised when this callable hits the corresponding error path.
+    """
     typed = _context(context)
     if "Families found: 1" not in typed.po_result_summary:
         raise AssertionError
@@ -670,6 +1053,17 @@ def step_then_one_found_family(context: object) -> None:
 
 @then("the PO processing result reports two found families")
 def step_then_two_found_families(context: object) -> None:
+    """Run the BDD step for then two found families.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+
+    Raises:
+        AssertionError: Raised when this callable hits the corresponding error path.
+    """
     typed = _context(context)
     if "Families found: 2" not in typed.po_result_summary:
         raise AssertionError
@@ -677,6 +1071,17 @@ def step_then_two_found_families(context: object) -> None:
 
 @then("the PO processing result reports one entry completed from initial sync")
 def step_then_one_completed_from_initial_sync(context: object) -> None:
+    """Run the BDD step for then one completed from initial sync.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+
+    Raises:
+        AssertionError: Raised when this callable hits the corresponding error path.
+    """
     typed = _context(context)
     if "Completed from initial sync: 1" not in typed.po_result_summary:
         raise AssertionError
@@ -684,6 +1089,17 @@ def step_then_one_completed_from_initial_sync(context: object) -> None:
 
 @then("the PO processing result reports synchronized entries")
 def step_then_synced_entries(context: object) -> None:
+    """Run the BDD step for then synced entries.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+
+    Raises:
+        AssertionError: Raised when this callable hits the corresponding error path.
+    """
     typed = _context(context)
     if "Synchronized entries: 1" not in typed.po_result_summary:
         raise AssertionError
@@ -691,6 +1107,17 @@ def step_then_synced_entries(context: object) -> None:
 
 @then("the PO processing result reports translated entries")
 def step_then_translated_entries(context: object) -> None:
+    """Run the BDD step for then translated entries.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+
+    Raises:
+        AssertionError: Raised when this callable hits the corresponding error path.
+    """
     typed = _context(context)
     if "Translated entries: 1" not in typed.po_result_summary:
         raise AssertionError
@@ -698,6 +1125,17 @@ def step_then_translated_entries(context: object) -> None:
 
 @then("the PO processing result reports zero translated entries")
 def step_then_zero_translated_entries(context: object) -> None:
+    """Run the BDD step for then zero translated entries.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+
+    Raises:
+        AssertionError: Raised when this callable hits the corresponding error path.
+    """
     typed = _context(context)
     if "Translated entries: 0" not in typed.po_result_summary:
         raise AssertionError
@@ -705,6 +1143,17 @@ def step_then_zero_translated_entries(context: object) -> None:
 
 @then("the PO processing result reports three translated entries")
 def step_then_three_translated_entries(context: object) -> None:
+    """Run the BDD step for then three translated entries.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+
+    Raises:
+        AssertionError: Raised when this callable hits the corresponding error path.
+    """
     typed = _context(context)
     if "Translated entries: 3" not in typed.po_result_summary:
         raise AssertionError
@@ -712,6 +1161,17 @@ def step_then_three_translated_entries(context: object) -> None:
 
 @then("the PO processing result reports failed entries for the source file")
 def step_then_failed_entries_for_source_file(context: object) -> None:
+    """Run the BDD step for then failed entries for source file.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+
+    Raises:
+        AssertionError: Raised when this callable hits the corresponding error path.
+    """
     typed = _context(context)
     if "Failed entries: 1" not in typed.po_result_summary:
         raise AssertionError
@@ -723,6 +1183,17 @@ def step_then_failed_entries_for_source_file(context: object) -> None:
 
 @then("the PO processing result reports failed mo files for the source file")
 def step_then_failed_mo_files_for_source_file(context: object) -> None:
+    """Run the BDD step for then failed mo files for source file.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+
+    Raises:
+        AssertionError: Raised when this callable hits the corresponding error path.
+    """
     typed = _context(context)
     if "Failed MO files:" not in typed.po_result_summary:
         raise AssertionError
@@ -734,6 +1205,17 @@ def step_then_failed_mo_files_for_source_file(context: object) -> None:
 
 @then("the PO processing result reports compiled mo files")
 def step_then_compiled_mo_files(context: object) -> None:
+    """Run the BDD step for then compiled mo files.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+
+    Raises:
+        AssertionError: Raised when this callable hits the corresponding error path.
+    """
     typed = _context(context)
     if "Compiled MO files: 2" not in typed.po_result_summary:
         raise AssertionError
@@ -741,6 +1223,17 @@ def step_then_compiled_mo_files(context: object) -> None:
 
 @then("the processed locale variants contain compiled mo files")
 def step_then_compiled_mo_files_exist(context: object) -> None:
+    """Run the BDD step for then compiled mo files exist.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+
+    Raises:
+        AssertionError: Raised when this callable hits the corresponding error path.
+    """
     typed = _context(context)
     if typed.compiled_mo_paths != (
         Path(typed.temp_dir.name) / "locale" / "messages-es_AR.mo",
@@ -751,6 +1244,17 @@ def step_then_compiled_mo_files_exist(context: object) -> None:
 
 @then("the PO processing result reports zero compiled mo files")
 def step_then_zero_compiled_mo_files(context: object) -> None:
+    """Run the BDD step for then zero compiled mo files.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+
+    Raises:
+        AssertionError: Raised when this callable hits the corresponding error path.
+    """
     typed = _context(context)
     if "Compiled MO files: 0" not in typed.po_result_summary:
         raise AssertionError
@@ -758,6 +1262,17 @@ def step_then_zero_compiled_mo_files(context: object) -> None:
 
 @then("the PO processing result reports zero written PO files")
 def step_then_zero_written_po_files(context: object) -> None:
+    """Run the BDD step for then zero written po files.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+
+    Raises:
+        AssertionError: Raised when this callable hits the corresponding error path.
+    """
     typed = _context(context)
     if "Written PO files: 0" not in typed.po_result_summary:
         raise AssertionError
@@ -765,6 +1280,17 @@ def step_then_zero_written_po_files(context: object) -> None:
 
 @then("the processed locale variants do not contain compiled mo files")
 def step_then_no_compiled_mo_files_exist(context: object) -> None:
+    """Run the BDD step for then no compiled mo files exist.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+
+    Raises:
+        AssertionError: Raised when this callable hits the corresponding error path.
+    """
     typed = _context(context)
     if typed.compiled_mo_paths != ():
         raise AssertionError
@@ -772,6 +1298,17 @@ def step_then_no_compiled_mo_files_exist(context: object) -> None:
 
 @then("the processed PO file contains the translated text")
 def step_then_processed_po_contains_translation(context: object) -> None:
+    """Run the BDD step for then processed po contains translation.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+
+    Raises:
+        AssertionError: Raised when this callable hits the corresponding error path.
+    """
     typed = _context(context)
     if "Save=Guardar" not in typed.processed_po_text:
         raise AssertionError
@@ -779,6 +1316,17 @@ def step_then_processed_po_contains_translation(context: object) -> None:
 
 @then("the processed PO file keeps the untranslated text")
 def step_then_processed_po_keeps_untranslated_text(context: object) -> None:
+    """Run the BDD step for then processed po keeps untranslated text.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+
+    Raises:
+        AssertionError: Raised when this callable hits the corresponding error path.
+    """
     typed = _context(context)
     if "Save=" not in typed.processed_po_text:
         raise AssertionError
@@ -788,6 +1336,17 @@ def step_then_processed_po_keeps_untranslated_text(context: object) -> None:
 
 @then("the processed PO file translates only fuzzy entries")
 def step_then_processed_po_translates_only_fuzzy_entries(context: object) -> None:
+    """Run the BDD step for then processed po translates only fuzzy entries.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+
+    Raises:
+        AssertionError: Raised when this callable hits the corresponding error path.
+    """
     typed = _context(context)
     if "Save=Guardar" not in typed.processed_po_text:
         raise AssertionError
@@ -799,6 +1358,17 @@ def step_then_processed_po_translates_only_fuzzy_entries(context: object) -> Non
 
 @then("the processed PO file contains all translated texts")
 def step_then_processed_po_contains_all_translations(context: object) -> None:
+    """Run the BDD step for then processed po contains all translations.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+
+    Raises:
+        AssertionError: Raised when this callable hits the corresponding error path.
+    """
     typed = _context(context)
     if "Save=Guardar" not in typed.processed_po_text:
         raise AssertionError
@@ -810,6 +1380,17 @@ def step_then_processed_po_contains_all_translations(context: object) -> None:
 
 @then("the PO processing progress reports the current file and entry")
 def step_then_progress_reports_current_file_and_entry(context: object) -> None:
+    """Run the BDD step for then progress reports current file and entry.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+
+    Raises:
+        AssertionError: Raised when this callable hits the corresponding error path.
+    """
     typed = _context(context)
     if not any(
         event.current_file == "locale/messages-es_ES.po" and event.current_entry == "Save"
@@ -825,6 +1406,17 @@ def step_then_progress_reports_current_file_and_entry(context: object) -> None:
 
 @then("the PO processing result reports zero processed families")
 def step_then_zero_family(context: object) -> None:
+    """Run the BDD step for then zero family.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+
+    Raises:
+        AssertionError: Raised when this callable hits the corresponding error path.
+    """
     typed = _context(context)
     if typed.po_result_families != 0:
         raise AssertionError
@@ -832,6 +1424,17 @@ def step_then_zero_family(context: object) -> None:
 
 @then("the PO processing result reports one translation inconsistency")
 def step_then_one_translation_inconsistency(context: object) -> None:
+    """Run the BDD step for then one translation inconsistency.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+
+    Raises:
+        AssertionError: Raised when this callable hits the corresponding error path.
+    """
     typed = _context(context)
     if "Translation inconsistencies: 1" not in typed.po_result_summary:
         raise AssertionError
@@ -839,6 +1442,17 @@ def step_then_one_translation_inconsistency(context: object) -> None:
 
 @then("the PO processing result reports one variant difference")
 def step_then_one_variant_difference(context: object) -> None:
+    """Run the BDD step for then one variant difference.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+
+    Raises:
+        AssertionError: Raised when this callable hits the corresponding error path.
+    """
     typed = _context(context)
     if "Variant differences found: 1" not in typed.po_result_summary:
         raise AssertionError
@@ -846,6 +1460,17 @@ def step_then_one_variant_difference(context: object) -> None:
 
 @then("the PO processing result reports zero translation inconsistencies")
 def step_then_zero_translation_inconsistencies(context: object) -> None:
+    """Run the BDD step for then zero translation inconsistencies.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+
+    Raises:
+        AssertionError: Raised when this callable hits the corresponding error path.
+    """
     typed = _context(context)
     if "Translation inconsistencies: 0" not in typed.po_result_summary:
         raise AssertionError
@@ -853,6 +1478,17 @@ def step_then_zero_translation_inconsistencies(context: object) -> None:
 
 @then("the PO processing result reports one cached translation")
 def step_then_one_cached_translation(context: object) -> None:
+    """Run the BDD step for then one cached translation.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+
+    Raises:
+        AssertionError: Raised when this callable hits the corresponding error path.
+    """
     typed = _context(context)
     if "Translated from cache: 1" not in typed.po_result_summary:
         raise AssertionError
@@ -860,6 +1496,17 @@ def step_then_one_cached_translation(context: object) -> None:
 
 @then("the PO processing result reports zero cached translations")
 def step_then_zero_cached_translations(context: object) -> None:
+    """Run the BDD step for then zero cached translations.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+
+    Raises:
+        AssertionError: Raised when this callable hits the corresponding error path.
+    """
     typed = _context(context)
     if "Translated from cache: 0" not in typed.po_result_summary:
         raise AssertionError
@@ -867,6 +1514,17 @@ def step_then_zero_cached_translations(context: object) -> None:
 
 @then("the PO processing result reports one provider translation")
 def step_then_one_provider_translation(context: object) -> None:
+    """Run the BDD step for then one provider translation.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+
+    Raises:
+        AssertionError: Raised when this callable hits the corresponding error path.
+    """
     typed = _context(context)
     if "Translated via provider: 1" not in typed.po_result_summary:
         raise AssertionError
@@ -874,6 +1532,17 @@ def step_then_one_provider_translation(context: object) -> None:
 
 @then("the PO processing result reports zero provider translations")
 def step_then_zero_provider_translations(context: object) -> None:
+    """Run the BDD step for then zero provider translations.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+
+    Raises:
+        AssertionError: Raised when this callable hits the corresponding error path.
+    """
     typed = _context(context)
     if "Translated via provider: 0" not in typed.po_result_summary:
         raise AssertionError
@@ -881,6 +1550,17 @@ def step_then_zero_provider_translations(context: object) -> None:
 
 @then("the PO processing result reports only-fuzzy mode enabled")
 def step_then_only_fuzzy_mode_enabled(context: object) -> None:
+    """Run the BDD step for then only fuzzy mode enabled.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+
+    Raises:
+        AssertionError: Raised when this callable hits the corresponding error path.
+    """
     typed = _context(context)
     if "Only fuzzy: enabled" not in typed.po_result_summary:
         raise AssertionError
@@ -888,6 +1568,17 @@ def step_then_only_fuzzy_mode_enabled(context: object) -> None:
 
 @then("the PO processing result reports one fuzzy entry")
 def step_then_one_fuzzy_entry(context: object) -> None:
+    """Run the BDD step for then one fuzzy entry.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+
+    Raises:
+        AssertionError: Raised when this callable hits the corresponding error path.
+    """
     typed = _context(context)
     if "Fuzzy entries: 1" not in typed.po_result_summary:
         raise AssertionError
@@ -895,6 +1586,17 @@ def step_then_one_fuzzy_entry(context: object) -> None:
 
 @then("the PO processing result reports two skipped sync-only entries")
 def step_then_skipped_sync_only_entries(context: object) -> None:
+    """Run the BDD step for then skipped sync only entries.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+
+    Raises:
+        AssertionError: Raised when this callable hits the corresponding error path.
+    """
     typed = _context(context)
     if "Skipped by sync-only: 2" not in typed.po_result_summary:
         raise AssertionError
@@ -902,6 +1604,17 @@ def step_then_skipped_sync_only_entries(context: object) -> None:
 
 @then("the PO processing result reports one reused translation from another variant")
 def step_then_one_reused_translation_from_another_variant(context: object) -> None:
+    """Run the BDD step for then one reused translation from another variant.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+
+    Raises:
+        AssertionError: Raised when this callable hits the corresponding error path.
+    """
     typed = _context(context)
     if "Reused from other variant: 1" not in typed.po_result_summary:
         raise AssertionError
@@ -909,6 +1622,18 @@ def step_then_one_reused_translation_from_another_variant(context: object) -> No
 
 @then('the PO processing result reports the inconsistency detail for "{msgid}"')
 def step_then_inconsistency_detail(context: object, msgid: str) -> None:
+    """Run the BDD step for then inconsistency detail.
+
+    Args:
+        context (object): Value supplied to this callable.
+        msgid (str): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+
+    Raises:
+        AssertionError: Raised when this callable hits the corresponding error path.
+    """
     typed = _context(context)
     if "Variant difference details:" not in typed.po_result_summary:
         raise AssertionError
@@ -921,6 +1646,15 @@ def _build_site(
     *,
     modes: dict[str, bool] | None = None,
 ) -> RegisteredSite:
+    """Handle build site.
+
+    Args:
+        workspace (Path): Value supplied to this callable.
+        modes (dict[str, bool] | None): Value supplied to this callable.
+
+    Returns:
+        RegisteredSite: Structured value returned by this callable.
+    """
     resolved_modes = {
         "compile_mo": True,
         "use_external_translator": True,
@@ -954,6 +1688,15 @@ def _build_site(
 
 
 def _write_po(path: Path, entries: list[tuple[str, str]]) -> None:
+    """Handle write po.
+
+    Args:
+        path (Path): Value supplied to this callable.
+        entries (list[tuple[str, str]]): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     po_file = polib.POFile()
     po_file.metadata = {"Language": path.stem.split("-")[-1]}
     for msgid, msgstr in entries:

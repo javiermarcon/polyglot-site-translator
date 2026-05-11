@@ -133,6 +133,10 @@ Update:
 - No hidden destructive sync behavior
 - No silent fallback that masks operational failures
 - No untyped public APIs without justification
+- No undocumented APIs or behaviorally significant helpers, public or private, without
+  justification
+- No one-line placeholder docstrings for classes, functions, or methods; structured multi-line
+  docstrings are required for public and private symbols when they carry behavior.
 - No bypassing repository/service boundaries from UI code
 - No hardcoded WordPress-only assumptions in shared modules
 
@@ -147,6 +151,7 @@ Before concluding a non-trivial change, verify:
 - docs are updated
 - tests exist for the changed behavior
 - code remains type-checkable
+- code and docs still satisfy PEP8, PEP257, PEP484, Ruff, and mypy expectations explicitly
 - the UI layer did not absorb infrastructure concerns
 - framework-specific rules remain isolated behind adapters/plugins
 

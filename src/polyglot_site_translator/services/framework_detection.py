@@ -15,13 +15,35 @@ from polyglot_site_translator.domain.framework_detection.models import (
 
 
 class FrameworkDetectionService:
-    """Orchestrate adapter registry resolution for project paths."""
+    """Orchestrate adapter registry resolution for project paths.
+
+    Attributes:
+        None: This type does not declare additional class-level attributes.
+    """
 
     def __init__(self, *, registry: FrameworkAdapterRegistry) -> None:
+        """Store the framework adapter registry used for path inspection.
+
+        Args:
+            registry (FrameworkAdapterRegistry): Value supplied to this callable.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         self._registry = registry
 
     def detect_project(self, project_path: Path | str) -> FrameworkDetectionResult:
-        """Return the best framework detection result for a local project path."""
+        """Return the best framework detection result for a local project path.
+
+        Args:
+            project_path (Path | str): Value supplied to this callable.
+
+        Returns:
+            FrameworkDetectionResult: Structured value returned by this callable.
+
+        Raises:
+            FrameworkDetectionError: Raised when this callable hits the corresponding error path.
+        """
         resolved_path = Path(project_path)
         try:
             if not resolved_path.exists():
@@ -43,7 +65,14 @@ class FrameworkDetectionService:
             raise FrameworkDetectionError(msg) from error
 
     def list_supported_frameworks(self) -> list[FrameworkDescriptor]:
-        """Return framework metadata suitable for selectors and labels."""
+        """Return framework metadata suitable for selectors and labels.
+
+        Returns:
+            list[FrameworkDescriptor]: Structured value returned by this callable.
+
+        Raises:
+            FrameworkDetectionError: Raised when this callable hits the corresponding error path.
+        """
         try:
             return self._registry.list_framework_descriptors()
         except (LookupError, OSError, RuntimeError, ValueError) as error:

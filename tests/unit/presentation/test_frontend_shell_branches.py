@@ -40,37 +40,106 @@ from tests.support.frontend_doubles import (
 
 
 class ResetFailingSettingsService(InMemorySettingsService):
-    """Settings fake that fails on reset for branch coverage."""
+    """Test helper for ResetFailingSettingsService.
+
+    Attributes:
+        None: This type does not declare additional class-level attributes.
+    """
 
     def reset_settings(self) -> SettingsStateViewModel:
+        """Handle reset settings.
+
+        Returns:
+            SettingsStateViewModel: Structured value returned by this callable.
+
+        Raises:
+            ControlledServiceError: Raised when this callable hits the corresponding error path.
+        """
         msg = "Settings defaults are temporarily unavailable."
         raise ControlledServiceError(msg)
 
 
 class FailingCatalogService:
-    """Catalog fake that fails on both list and detail requests."""
+    """Test helper for FailingCatalogService.
+
+    Attributes:
+        None: This type does not declare additional class-level attributes.
+    """
 
     def list_projects(self) -> list[ProjectSummaryViewModel]:
+        """Handle list projects.
+
+        Returns:
+            list[ProjectSummaryViewModel]: Structured value returned by this callable.
+
+        Raises:
+            ControlledServiceError: Raised when this callable hits the corresponding error path.
+        """
         msg = "SQLite site registry is temporarily unavailable."
         raise ControlledServiceError(msg)
 
     def get_project_detail(self, project_id: str) -> ProjectDetailViewModel:
+        """Handle get project detail.
+
+        Args:
+            project_id (str): Value supplied to this callable.
+
+        Returns:
+            ProjectDetailViewModel: Structured value returned by this callable.
+
+        Raises:
+            ControlledServiceError: Raised when this callable hits the corresponding error path.
+        """
         msg = f"SQLite site registry is temporarily unavailable for {project_id}."
         raise ControlledServiceError(msg)
 
 
 class FailingRegistryService:
-    """Registry fake that fails on create/edit workflows."""
+    """Test helper for FailingRegistryService.
+
+    Attributes:
+        None: This type does not declare additional class-level attributes.
+    """
 
     def build_create_project_editor(self) -> ProjectEditorStateViewModel:
+        """Handle build create project editor.
+
+        Returns:
+            ProjectEditorStateViewModel: Structured value returned by this callable.
+
+        Raises:
+            ControlledServiceError: Raised when this callable hits the corresponding error path.
+        """
         msg = "Create workflow unavailable."
         raise ControlledServiceError(msg)
 
     def build_edit_project_editor(self, project_id: str) -> ProjectEditorStateViewModel:
+        """Handle build edit project editor.
+
+        Args:
+            project_id (str): Value supplied to this callable.
+
+        Returns:
+            ProjectEditorStateViewModel: Structured value returned by this callable.
+
+        Raises:
+            ControlledServiceError: Raised when this callable hits the corresponding error path.
+        """
         msg = f"Edit workflow unavailable for {project_id}."
         raise ControlledServiceError(msg)
 
     def create_project(self, editor: SiteEditorViewModel) -> ProjectDetailViewModel:
+        """Handle create project.
+
+        Args:
+            editor (SiteEditorViewModel): Value supplied to this callable.
+
+        Returns:
+            ProjectDetailViewModel: Structured value returned by this callable.
+
+        Raises:
+            ControlledServiceError: Raised when this callable hits the corresponding error path.
+        """
         msg = f"Project could not be created for {editor.name}."
         raise ControlledServiceError(msg)
 
@@ -79,6 +148,18 @@ class FailingRegistryService:
         project_id: str,
         editor: SiteEditorViewModel,
     ) -> ProjectDetailViewModel:
+        """Handle update project.
+
+        Args:
+            project_id (str): Value supplied to this callable.
+            editor (SiteEditorViewModel): Value supplied to this callable.
+
+        Returns:
+            ProjectDetailViewModel: Structured value returned by this callable.
+
+        Raises:
+            ControlledServiceError: Raised when this callable hits the corresponding error path.
+        """
         msg = f"Project could not be updated for {project_id}."
         raise ControlledServiceError(msg)
 
@@ -86,6 +167,17 @@ class FailingRegistryService:
         self,
         editor: SiteEditorViewModel,
     ) -> RemoteConnectionTestResultViewModel:
+        """Verify remote connection.
+
+        Args:
+            editor (SiteEditorViewModel): Value supplied to this callable.
+
+        Returns:
+            RemoteConnectionTestResultViewModel: Structured value returned by this callable.
+
+        Raises:
+            ControlledServiceError: Raised when this callable hits the corresponding error path.
+        """
         msg = f"Remote connection test unavailable for {editor.name}."
         raise ControlledServiceError(msg)
 
@@ -95,14 +187,41 @@ class FailingRegistryService:
         *,
         mode: str,
     ) -> ProjectEditorStateViewModel:
+        """Handle preview project editor.
+
+        Args:
+            editor (SiteEditorViewModel): Value supplied to this callable.
+            mode (str): Value supplied to this callable.
+
+        Returns:
+            ProjectEditorStateViewModel: Structured value returned by this callable.
+
+        Raises:
+            ControlledServiceError: Raised when this callable hits the corresponding error path.
+        """
         msg = f"Project editor preview unavailable for {mode}:{editor.name}."
         raise ControlledServiceError(msg)
 
 
 class FailingAuditAndPOWorkflowService(StubProjectWorkflowService):
-    """Workflow fake that fails on audit and PO processing."""
+    """Test helper for FailingAuditAndPOWorkflowService.
+
+    Attributes:
+        None: This type does not declare additional class-level attributes.
+    """
 
     def start_audit(self, project_id: str) -> AuditSummaryViewModel:
+        """Handle start audit.
+
+        Args:
+            project_id (str): Value supplied to this callable.
+
+        Returns:
+            AuditSummaryViewModel: Structured value returned by this callable.
+
+        Raises:
+            ControlledServiceError: Raised when this callable hits the corresponding error path.
+        """
         msg = f"Audit failed for {project_id}."
         raise ControlledServiceError(msg)
 
@@ -112,38 +231,110 @@ class FailingAuditAndPOWorkflowService(StubProjectWorkflowService):
         request: TranslationWorkflowRequestViewModel | None = None,
         progress_callback: Callable[[POProcessingProgress], None] | None = None,
     ) -> POProcessingSummaryViewModel:
+        """Handle start po processing.
+
+        Args:
+            project_id (str): Value supplied to this callable.
+            request (TranslationWorkflowRequestViewModel | None): Value supplied to this callable.
+            progress_callback (Callable[[POProcessingProgress], None] | None): Value supplied to
+        this
+            callable.
+
+        Returns:
+            POProcessingSummaryViewModel: Structured value returned by this callable.
+
+        Raises:
+            ControlledServiceError: Raised when this callable hits the corresponding error path.
+        """
         msg = f"PO processing failed for {project_id}."
         raise ControlledServiceError(msg)
 
 
 class FailingSaveSettingsService(InMemorySettingsService):
-    """Settings fake that fails on save for route-persistence coverage."""
+    """Test helper for FailingSaveSettingsService.
+
+    Attributes:
+        None: This type does not declare additional class-level attributes.
+    """
 
     def save_settings(self, app_settings: AppSettingsViewModel) -> SettingsStateViewModel:
+        """Handle save settings.
+
+        Args:
+            app_settings (AppSettingsViewModel): Value supplied to this callable.
+
+        Returns:
+            SettingsStateViewModel: Structured value returned by this callable.
+
+        Raises:
+            ControlledServiceError: Raised when this callable hits the corresponding error path.
+        """
         msg = "Last opened screen could not be persisted."
         raise ControlledServiceError(msg)
 
 
 class _AliveThread:
+    """Test helper for AliveThread.
+
+    Attributes:
+        None: This type does not declare additional class-level attributes.
+    """
+
     @staticmethod
     def is_alive() -> bool:
+        """Handle is alive.
+
+        Returns:
+            bool: Structured value returned by this callable.
+        """
         return True
 
 
 class _CapturedThread:
+    """Test helper for CapturedThread.
+
+    Attributes:
+        None: This type does not declare additional class-level attributes.
+    """
+
     def __init__(self, *args: object, name: str, **kwargs: object) -> None:
+        """Initialize the test helper state.
+
+        Args:
+            name (str): Value supplied to this callable.
+            args (object): Value supplied to this callable.
+            kwargs (object): Value supplied to this callable.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         self.name = name
         self.started = False
 
     @staticmethod
     def is_alive() -> bool:
+        """Handle is alive.
+
+        Returns:
+            bool: Structured value returned by this callable.
+        """
         return False
 
     def start(self) -> None:
+        """Handle start.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         self.started = True
 
 
 def test_open_application_menu_marks_navigation_state_as_open() -> None:
+    """Verify open application menu marks navigation state as open.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     shell = create_frontend_shell(build_seeded_services())
 
     shell.open_application_menu()
@@ -152,6 +343,11 @@ def test_open_application_menu_marks_navigation_state_as_open() -> None:
 
 
 def test_open_route_from_menu_dispatches_supported_routes() -> None:
+    """Verify open route from menu dispatches supported routes.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     shell = create_frontend_shell(build_seeded_services())
     shell.open_route_from_menu("dashboard")
     assert shell.router.current.name.value == "dashboard"
@@ -186,6 +382,11 @@ def test_open_route_from_menu_dispatches_supported_routes() -> None:
 
 
 def test_open_route_from_menu_rejects_unknown_routes() -> None:
+    """Verify open route from menu rejects unknown routes.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     shell = create_frontend_shell(build_seeded_services())
 
     with pytest.raises(ValueError, match="Unsupported route key: reports"):
@@ -193,6 +394,11 @@ def test_open_route_from_menu_rejects_unknown_routes() -> None:
 
 
 def test_settings_validators_reject_invalid_values() -> None:
+    """Verify settings validators reject invalid values.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     shell = create_frontend_shell(build_seeded_services())
     shell.open_settings()
 
@@ -207,6 +413,11 @@ def test_settings_validators_reject_invalid_values() -> None:
 
 
 def test_update_settings_draft_keeps_selected_settings_section() -> None:
+    """Verify update settings draft keeps selected settings section.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     shell = create_frontend_shell(build_seeded_services())
     shell.open_settings()
     shell.select_settings_section("translation")
@@ -226,6 +437,11 @@ def test_update_settings_draft_keeps_selected_settings_section() -> None:
 
 
 def test_restore_default_settings_failure_keeps_failed_state() -> None:
+    """Verify restore default settings failure keeps failed state.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     seeded_services = build_seeded_services()
     services = FrontendServices(
         catalog=seeded_services.catalog,
@@ -246,6 +462,11 @@ def test_restore_default_settings_failure_keeps_failed_state() -> None:
 
 
 def test_project_context_falls_back_to_loaded_detail_when_route_has_no_project_id() -> None:
+    """Verify project context falls back to loaded detail when route has no project id.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     shell = create_frontend_shell(build_seeded_services())
     shell.open_projects()
     shell.select_project("wp-site")
@@ -258,6 +479,11 @@ def test_project_context_falls_back_to_loaded_detail_when_route_has_no_project_i
 
 
 def test_project_context_is_required_before_running_workflows() -> None:
+    """Verify project context is required before running workflows.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     shell = create_frontend_shell(build_seeded_services())
 
     with pytest.raises(
@@ -268,6 +494,11 @@ def test_project_context_is_required_before_running_workflows() -> None:
 
 
 def test_settings_state_is_required_before_editing() -> None:
+    """Verify settings state is required before editing.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     shell = create_frontend_shell(build_seeded_services())
 
     with pytest.raises(ValueError, match=r"Settings must be loaded before editing them\."):
@@ -275,6 +506,11 @@ def test_settings_state_is_required_before_editing() -> None:
 
 
 def test_has_project_context_is_false_without_detail_or_route_project() -> None:
+    """Verify has project context is false without detail or route project.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     shell = create_frontend_shell(build_seeded_services())
 
     shell.open_dashboard()
@@ -283,6 +519,11 @@ def test_has_project_context_is_false_without_detail_or_route_project() -> None:
 
 
 def test_fake_catalog_raises_lookup_error_for_unknown_project() -> None:
+    """Verify fake catalog raises lookup error for unknown project.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     catalog = InMemoryProjectCatalogService(
         projects=build_seeded_services().catalog.list_projects()
     )
@@ -292,6 +533,11 @@ def test_fake_catalog_raises_lookup_error_for_unknown_project() -> None:
 
 
 def test_project_workflow_fake_can_sync_non_wp_site_without_failure() -> None:
+    """Verify project workflow fake can sync non wp site without failure.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     workflow = StubProjectWorkflowService(fail_sync=True)
 
     sync_state = workflow.start_sync("dj-admin")
@@ -300,6 +546,11 @@ def test_project_workflow_fake_can_sync_non_wp_site_without_failure() -> None:
 
 
 def test_shell_wraps_project_catalog_failures_and_registry_failures() -> None:
+    """Verify shell wraps project catalog failures and registry failures.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     seeded_services = build_seeded_services()
     shell = create_frontend_shell(
         FrontendServices(
@@ -328,6 +579,11 @@ def test_shell_wraps_project_catalog_failures_and_registry_failures() -> None:
 
 
 def test_shell_surfaces_audit_and_po_failures_without_raising() -> None:
+    """Verify shell surfaces audit and po failures without raising.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     seeded_services = build_seeded_services()
     shell = create_frontend_shell(
         FrontendServices(
@@ -354,6 +610,11 @@ def test_shell_surfaces_audit_and_po_failures_without_raising() -> None:
 
 
 def test_shell_handles_project_editor_failures_and_missing_editor_state() -> None:
+    """Verify shell handles project editor failures and missing editor state.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     seeded_services = build_seeded_services()
     shell = create_frontend_shell(
         FrontendServices(
@@ -400,6 +661,11 @@ def test_shell_handles_project_editor_failures_and_missing_editor_state() -> Non
 
 
 def test_shell_previews_project_editor_drafts_and_surfaces_failures() -> None:
+    """Verify shell previews project editor drafts and surfaces failures.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     services = build_seeded_services()
     shell = create_frontend_shell(services)
     shell.open_project_editor_create()
@@ -435,6 +701,11 @@ def test_shell_previews_project_editor_drafts_and_surfaces_failures() -> None:
 
 
 def test_frontend_shell_covers_runtime_helper_and_error_branches() -> None:
+    """Verify frontend shell covers runtime helper and error branches.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     shell = create_frontend_shell(build_seeded_services())
 
     shell.surface_unhandled_runtime_error(RuntimeError("general boom"), context="callback")
@@ -462,6 +733,17 @@ def test_frontend_shell_covers_runtime_helper_and_error_branches() -> None:
 def test_frontend_shell_sync_progress_helpers_cover_completed_failed_and_runtime_fallbacks(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    """Verify frontend shell sync progress helpers cover completed failed and runtime fallbacks.
+
+    Args:
+        monkeypatch (pytest.MonkeyPatch): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+
+    Raises:
+        AssertionError: Raised when this callable hits the corresponding error path.
+    """
     shell = create_frontend_shell(build_seeded_services())
     shell.open_projects()
     shell.select_project("wp-site")
@@ -520,6 +802,19 @@ def test_frontend_shell_sync_progress_helpers_cover_completed_failed_and_runtime
         _project_id: str,
         _progress_callback: Callable[[SyncProgressEvent], None] | None = None,
     ) -> SyncStatusViewModel:
+        """Handle unused workflow.
+
+        Args:
+            _project_id (str): Value supplied to this callable.
+            _progress_callback (Callable[[SyncProgressEvent], None] | None): Value supplied to this
+            callable.
+
+        Returns:
+            SyncStatusViewModel: Structured value returned by this callable.
+
+        Raises:
+            AssertionError: Raised when this callable hits the corresponding error path.
+        """
         msg = "This workflow should not be used directly."
         raise AssertionError(msg)
 
@@ -528,6 +823,11 @@ def test_frontend_shell_sync_progress_helpers_cover_completed_failed_and_runtime
 
 
 def test_frontend_shell_requirement_and_persist_helpers_cover_remaining_branches() -> None:
+    """Verify frontend shell requirement and persist helpers cover remaining branches.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     shell = create_frontend_shell(build_seeded_services())
 
     with pytest.raises(ValueError, match="Settings must be loaded before editing them"):
@@ -554,6 +854,11 @@ def test_frontend_shell_requirement_and_persist_helpers_cover_remaining_branches
 
 
 def test_frontend_shell_covers_remaining_po_route_and_settings_update_branches() -> None:
+    """Verify frontend shell covers remaining po route and settings update branches.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     seeded_services = build_seeded_services()
     services = FrontendServices(
         catalog=seeded_services.catalog,
@@ -634,6 +939,14 @@ def test_frontend_shell_covers_remaining_po_route_and_settings_update_branches()
 def test_frontend_shell_covers_thread_short_circuits_and_success_branches(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    """Verify frontend shell covers thread short circuits and success branches.
+
+    Args:
+        monkeypatch (pytest.MonkeyPatch): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     shell = create_frontend_shell(build_seeded_services())
     shell.open_projects()
     shell.select_project("wp-site")
@@ -650,6 +963,16 @@ def test_frontend_shell_covers_thread_short_circuits_and_success_branches(
         _project_id: str,
         _progress_callback: Callable[[SyncProgressEvent], None] | None = None,
     ) -> SyncStatusViewModel:
+        """Handle unused sync workflow.
+
+        Args:
+            _project_id (str): Value supplied to this callable.
+            _progress_callback (Callable[[SyncProgressEvent], None] | None): Value supplied to this
+            callable.
+
+        Returns:
+            SyncStatusViewModel: Structured value returned by this callable.
+        """
         return SyncStatusViewModel(
             status="completed",
             files_synced=0,
@@ -674,6 +997,11 @@ def test_frontend_shell_covers_thread_short_circuits_and_success_branches(
 
 
 def test_frontend_shell_updates_existing_progress_states_for_runtime_errors() -> None:
+    """Verify frontend shell updates existing progress states for runtime errors.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     shell = create_frontend_shell(build_seeded_services())
 
     shell.po_processing_state = POProcessingSummaryViewModel(

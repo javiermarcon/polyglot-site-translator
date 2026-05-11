@@ -18,7 +18,11 @@ from polyglot_site_translator.presentation.kivy.widgets.common import (
 
 
 class BaseShellScreen(Screen):  # type: ignore[misc]
-    """Shared screen scaffold with a contextual application menu."""
+    """Shared screen scaffold with a contextual application menu.
+
+    Attributes:
+        None: This type does not declare additional class-level attributes.
+    """
 
     def __init__(
         self,
@@ -29,6 +33,18 @@ class BaseShellScreen(Screen):  # type: ignore[misc]
         manager_ref: ScreenManager,
         subtitle: str = "",
     ) -> None:
+        """Build the common scaffold shared by all shell-managed screens.
+
+        Args:
+            screen_name (str): Value supplied to this callable.
+            title (str): Value supplied to this callable.
+            shell (FrontendShell): Value supplied to this callable.
+            manager_ref (ScreenManager): Value supplied to this callable.
+            subtitle (str): Value supplied to this callable.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         super().__init__(name=screen_name)
         self._shell = shell
         self._manager_ref = manager_ref
@@ -95,48 +111,103 @@ class BaseShellScreen(Screen):  # type: ignore[misc]
         self.add_widget(self._container)
 
     def set_screen_copy(self, *, title: str, subtitle: str) -> None:
-        """Update the screen title and subtitle."""
+        """Update the screen title and subtitle.
+
+        Args:
+            title (str): Value supplied to this callable.
+            subtitle (str): Value supplied to this callable.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         self._screen_title.text = title
         self._screen_subtitle.text = subtitle
 
     def clear_content(self) -> None:
-        """Remove widgets from the content area."""
+        """Remove widgets from the content area.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         self._content.clear_widgets()
 
     def add_nav_button(self, text: str, callback: object, *, primary: bool = True) -> AppButton:
-        """Add a styled button to the content area."""
+        """Add a styled button to the content area.
+
+        Args:
+            text (str): Value supplied to this callable.
+            callback (object): Value supplied to this callable.
+            primary (bool): Value supplied to this callable.
+
+        Returns:
+            AppButton: Structured value returned by this callable.
+        """
         button = AppButton(text=text, primary=primary)
         button.bind(on_release=callback)
         self._content.add_widget(button)
         return button
 
     def update_error_label(self) -> None:
-        """Refresh the controlled error area."""
+        """Refresh the controlled error area.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         message = self._shell.latest_error or ""
         self._error_label.text = message
         self._error_card.height = 0 if not message else self._error_label.height + 20
         self._error_card.opacity = 0 if not message else 1
 
     def refresh(self) -> None:
-        """Refresh screen content when the route changes."""
+        """Refresh screen content when the route changes.
+
+        Returns:
+            None: This callable does not return a value.
+        """
 
     def on_pre_enter(self, *args: object) -> None:
-        """Refresh content before the screen becomes visible."""
+        """Refresh content before the screen becomes visible.
+
+        Args:
+            args (object): Value supplied to this callable.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         super().on_pre_enter(*args)
         self.refresh()
 
     def show_route(self, route_name: str) -> None:
-        """Switch the ScreenManager to a given route."""
+        """Switch the ScreenManager to a given route.
+
+        Args:
+            route_name (str): Value supplied to this callable.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         if self._manager_ref.current == route_name:
             self.refresh()
             return
         self._manager_ref.current = route_name
 
     def apply_theme(self) -> None:
-        """Apply the active theme to the static screen scaffold."""
+        """Apply the active theme to the static screen scaffold.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         apply_theme_to_widget_tree(self._container)
 
     def _open_application_menu(self, *_args: object) -> None:
+        """Open application menu.
+
+        Args:
+            _args (object): Value supplied to this callable.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         self._shell.open_application_menu()
         dropdown = DropDown(auto_width=False, width=340)
         for section in self._shell.navigation_menu.sections:
@@ -164,6 +235,14 @@ class BaseShellScreen(Screen):  # type: ignore[misc]
         dropdown.open(self._menu_button)
 
     def _open_menu_route(self, route_key: str) -> None:
+        """Open menu route.
+
+        Args:
+            route_key (str): Value supplied to this callable.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         self._shell.open_route_from_menu(route_key)
         if self._menu_dropdown is not None:
             self._menu_dropdown.dismiss()
@@ -171,5 +250,12 @@ class BaseShellScreen(Screen):  # type: ignore[misc]
 
 
 def _route_to_screen_name(route_key: str) -> str:
-    """Map route keys into Kivy screen names."""
+    """Map route keys into Kivy screen names.
+
+    Args:
+        route_key (str): Value supplied to this callable.
+
+    Returns:
+        str: Structured value returned by this callable.
+    """
     return route_key.replace("-", "_")

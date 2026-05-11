@@ -27,7 +27,15 @@ def open_ssh_host_key_trust_confirmation(
     on_trust: Callable[[], None],
     purpose: Literal["sync", "connection_test"] = "sync",
 ) -> None:
-    """Show the confirmation popup; call ``on_trust`` after the user accepts."""
+    """Show the confirmation popup; call ``on_trust`` after the user accepts.
+
+    Args:
+        on_trust (Callable[[], None]): Value supplied to this callable.
+        purpose (Literal["sync", "connection_test"]): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     confirmation = Popup(
         title="Trust SSH Host Key?",
         size_hint=(0.72, 0.42),
@@ -40,6 +48,14 @@ def open_ssh_host_key_trust_confirmation(
     cancel_button = AppButton(text="Cancel", primary=False)
 
     def accept(_instance: object) -> None:
+        """Handle accept.
+
+        Args:
+            _instance (object): Value supplied to this callable.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         confirmation.dismiss()
         on_trust()
 

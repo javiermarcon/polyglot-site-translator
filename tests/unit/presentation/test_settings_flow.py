@@ -20,6 +20,11 @@ from tests.support.frontend_doubles import (
 
 
 def test_open_settings_loads_sections_and_defaults() -> None:
+    """Verify open settings loads sections and defaults.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     shell = create_frontend_shell(build_seeded_services())
 
     shell.open_settings()
@@ -40,6 +45,11 @@ def test_open_settings_loads_sections_and_defaults() -> None:
 
 
 def test_selecting_translation_settings_section_updates_context() -> None:
+    """Verify selecting translation settings section updates context.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     shell = create_frontend_shell(build_seeded_services())
 
     shell.open_settings()
@@ -52,6 +62,11 @@ def test_selecting_translation_settings_section_updates_context() -> None:
 
 
 def test_update_and_save_settings_persists_fake_state() -> None:
+    """Verify update and save settings persists fake state.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     shell = create_frontend_shell(build_seeded_services())
 
     shell.open_settings()
@@ -87,6 +102,11 @@ def test_update_and_save_settings_persists_fake_state() -> None:
 
 
 def test_restore_defaults_uses_settings_service() -> None:
+    """Verify restore defaults uses settings service.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     shell = create_frontend_shell(build_seeded_services())
 
     shell.open_settings()
@@ -103,6 +123,11 @@ def test_restore_defaults_uses_settings_service() -> None:
 
 
 def test_saving_settings_preserves_the_selected_section() -> None:
+    """Verify saving settings preserves the selected section.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     shell = create_frontend_shell(build_seeded_services())
 
     shell.open_settings()
@@ -120,6 +145,11 @@ def test_saving_settings_preserves_the_selected_section() -> None:
 
 
 def test_settings_load_failure_is_exposed() -> None:
+    """Verify settings load failure is exposed.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     shell = create_frontend_shell(build_failing_settings_load_services())
 
     shell.open_settings()
@@ -130,6 +160,11 @@ def test_settings_load_failure_is_exposed() -> None:
 
 
 def test_settings_save_failure_keeps_error_state() -> None:
+    """Verify settings save failure keeps error state.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     shell = create_frontend_shell(build_failing_settings_save_services())
 
     shell.open_settings()
@@ -142,6 +177,11 @@ def test_settings_save_failure_keeps_error_state() -> None:
 
 
 def test_selecting_framework_settings_section_exposes_editable_sync_scope_controls() -> None:
+    """Verify selecting framework settings section exposes editable sync scope controls.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     shell = create_frontend_shell(build_seeded_services())
 
     shell.open_settings()
@@ -153,6 +193,11 @@ def test_selecting_framework_settings_section_exposes_editable_sync_scope_contro
 
 
 def test_update_and_save_settings_persists_global_and_framework_sync_rules() -> None:
+    """Verify update and save settings persists global and framework sync rules.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     shell = create_frontend_shell(build_seeded_services())
 
     shell.open_settings()

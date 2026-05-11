@@ -7,6 +7,11 @@ from tests.support.frontend_doubles import build_seeded_services
 
 
 def test_fake_settings_service_matches_contract() -> None:
+    """Verify fake settings service matches contract.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     services = build_seeded_services()
 
     settings_service: SettingsService = services.settings

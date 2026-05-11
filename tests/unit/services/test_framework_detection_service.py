@@ -18,6 +18,14 @@ from polyglot_site_translator.services.framework_detection import FrameworkDetec
 
 
 def test_framework_detection_service_detects_supported_frameworks(tmp_path: Path) -> None:
+    """Verify framework detection service detects supported frameworks.
+
+    Args:
+        tmp_path (Path): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     wordpress_path = tmp_path / "wordpress-site"
     wordpress_path.mkdir()
     (wordpress_path / "wp-config.php").write_text("<?php\n", encoding="utf-8")
@@ -41,6 +49,14 @@ def test_framework_detection_service_detects_supported_frameworks(tmp_path: Path
 
 
 def test_framework_detection_service_returns_unmatched_for_missing_paths(tmp_path: Path) -> None:
+    """Verify framework detection service returns unmatched for missing paths.
+
+    Args:
+        tmp_path (Path): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     service = FrameworkDetectionService(
         registry=FrameworkAdapterRegistry.default_registry(
             adapters=[
@@ -60,6 +76,14 @@ def test_framework_detection_service_returns_unmatched_for_missing_paths(tmp_pat
 def test_framework_detection_service_returns_unmatched_for_non_directory_paths(
     tmp_path: Path,
 ) -> None:
+    """Verify framework detection service returns unmatched for non directory paths.
+
+    Args:
+        tmp_path (Path): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     project_file = tmp_path / "project.txt"
     project_file.write_text("hello\n", encoding="utf-8")
     service = FrameworkDetectionService(
@@ -79,6 +103,11 @@ def test_framework_detection_service_returns_unmatched_for_non_directory_paths(
 
 
 def test_framework_detection_service_lists_supported_frameworks() -> None:
+    """Verify framework detection service lists supported frameworks.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     service = FrameworkDetectionService(registry=FrameworkAdapterRegistry.discover_installed())
 
     assert service.list_supported_frameworks() == [
@@ -106,14 +135,52 @@ def test_framework_detection_service_lists_supported_frameworks() -> None:
 
 
 def test_framework_detection_service_wraps_registry_runtime_failures(tmp_path: Path) -> None:
+    """Verify framework detection service wraps registry runtime failures.
+
+    Args:
+        tmp_path (Path): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+
+    Raises:
+        OSError: Raised when this callable hits the corresponding error path.
+        RuntimeError: Raised when this callable hits the corresponding error path.
+    """
+
     class _FailingRegistry:
+        """Test helper for FailingRegistry.
+
+        Attributes:
+            None: This type does not declare additional class-level attributes.
+        """
+
         @staticmethod
         def resolve(_project_path: Path) -> object:
+            """Handle resolve.
+
+            Args:
+                _project_path (Path): Value supplied to this callable.
+
+            Returns:
+                object: Structured value returned by this callable.
+
+            Raises:
+                OSError: Raised when this callable hits the corresponding error path.
+            """
             msg = "broken adapter registry"
             raise OSError(msg)
 
         @staticmethod
         def list_framework_descriptors() -> list[FrameworkDescriptor]:
+            """Handle list framework descriptors.
+
+            Returns:
+                list[FrameworkDescriptor]: Structured value returned by this callable.
+
+            Raises:
+                RuntimeError: Raised when this callable hits the corresponding error path.
+            """
             msg = "broken adapter registry"
             raise RuntimeError(msg)
 

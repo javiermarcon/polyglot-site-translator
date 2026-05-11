@@ -21,6 +21,14 @@ from polyglot_site_translator.infrastructure.remote_connections import ftp, ssh
 
 
 def _build_config(connection_type: str) -> RemoteConnectionConfigInput:
+    """Handle build config.
+
+    Args:
+        connection_type (str): Value supplied to this callable.
+
+    Returns:
+        RemoteConnectionConfigInput: Structured value returned by this callable.
+    """
     return RemoteConnectionConfigInput(
         connection_type=connection_type,
         host="example.test",
@@ -32,6 +40,14 @@ def _build_config(connection_type: str) -> RemoteConnectionConfigInput:
 
 
 def _build_remote_config(connection_type: str) -> RemoteConnectionConfig:
+    """Handle build remote config.
+
+    Args:
+        connection_type (str): Value supplied to this callable.
+
+    Returns:
+        RemoteConnectionConfig: Structured value returned by this callable.
+    """
     return RemoteConnectionConfig(
         id="remote-1",
         site_project_id="site-1",
@@ -46,54 +62,150 @@ def _build_remote_config(connection_type: str) -> RemoteConnectionConfig:
 
 @dataclass
 class _BaseFakeFtpClient:
+    """Test helper for BaseFakeFtpClient.
+
+    Attributes:
+        actions (list[str]): Documented attribute exposed by this type.
+        fail_on (str | None): Documented attribute exposed by this type.
+        quit_raises (bool): Documented attribute exposed by this type.
+    """
+
     actions: list[str]
     fail_on: str | None = None
     quit_raises: bool = False
 
     def connect(self, *, host: str, port: int, timeout: int) -> None:
+        """Handle connect.
+
+        Args:
+            host (str): Value supplied to this callable.
+            port (int): Value supplied to this callable.
+            timeout (int): Value supplied to this callable.
+
+        Returns:
+            None: This callable does not return a value.
+
+        Raises:
+            OSError: Raised when this callable hits the corresponding error path.
+        """
         self.actions.append(f"connect:{host}:{port}:{timeout}")
         if self.fail_on == "connect":
             msg = "connect failed"
             raise OSError(msg)
 
     def login(self, *, user: str, passwd: str) -> None:
+        """Handle login.
+
+        Args:
+            user (str): Value supplied to this callable.
+            passwd (str): Value supplied to this callable.
+
+        Returns:
+            None: This callable does not return a value.
+
+        Raises:
+            OSError: Raised when this callable hits the corresponding error path.
+        """
         self.actions.append(f"login:{user}:{passwd}")
         if self.fail_on == "login":
             msg = "login failed"
             raise OSError(msg)
 
     def cwd(self, remote_path: str) -> None:
+        """Handle cwd.
+
+        Args:
+            remote_path (str): Value supplied to this callable.
+
+        Returns:
+            None: This callable does not return a value.
+
+        Raises:
+            OSError: Raised when this callable hits the corresponding error path.
+        """
         self.actions.append(f"cwd:{remote_path}")
         if self.fail_on == "cwd":
             msg = "cwd failed"
             raise OSError(msg)
 
     def mlsd(self, remote_path: str) -> list[tuple[str, dict[str, str]]]:
+        """Handle mlsd.
+
+        Args:
+            remote_path (str): Value supplied to this callable.
+
+        Returns:
+            list[tuple[str, dict[str, str]]]: Structured value returned by this callable.
+        """
         self.actions.append(f"mlsd:{remote_path}")
         return [("messages.po", {"type": "file", "size": "7"})]
 
     def retrbinary(self, command: str, callback: Any) -> None:
+        """Handle retrbinary.
+
+        Args:
+            command (str): Value supplied to this callable.
+            callback (Any): Value supplied to this callable.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         self.actions.append(f"retrbinary:{command}")
         callback(b"payload")
 
     def quit(self) -> None:
+        """Handle quit.
+
+        Returns:
+            None: This callable does not return a value.
+
+        Raises:
+            OSError: Raised when this callable hits the corresponding error path.
+        """
         self.actions.append("quit")
         if self.quit_raises:
             msg = "quit failed"
             raise OSError(msg)
 
     def close(self) -> None:
+        """Handle close.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         self.actions.append("close")
 
 
 class _FakeExplicitFtpsClient(_BaseFakeFtpClient):
+    """Test helper for FakeExplicitFtpsClient.
+
+    Attributes:
+        None: This type does not declare additional class-level attributes.
+    """
+
     def auth(self) -> None:
+        """Handle auth.
+
+        Returns:
+            None: This callable does not return a value.
+
+        Raises:
+            OSError: Raised when this callable hits the corresponding error path.
+        """
         self.actions.append("auth")
         if self.fail_on == "auth":
             msg = "auth failed"
             raise OSError(msg)
 
     def prot_p(self) -> None:
+        """Handle prot p.
+
+        Returns:
+            None: This callable does not return a value.
+
+        Raises:
+            OSError: Raised when this callable hits the corresponding error path.
+        """
         self.actions.append("prot_p")
         if self.fail_on == "prot_p":
             msg = "prot_p failed"
@@ -101,6 +213,12 @@ class _FakeExplicitFtpsClient(_BaseFakeFtpClient):
 
 
 class _FakeImplicitFtpsClient(_BaseFakeFtpClient):
+    """Test helper for FakeImplicitFtpsClient.
+
+    Attributes:
+        None: This type does not declare additional class-level attributes.
+    """
+
     def __init__(
         self,
         *,
@@ -109,10 +227,29 @@ class _FakeImplicitFtpsClient(_BaseFakeFtpClient):
         fail_on: str | None = None,
         quit_raises: bool = False,
     ) -> None:
+        """Initialize the test helper state.
+
+        Args:
+            actions (list[str]): Value supplied to this callable.
+            context (object): Value supplied to this callable.
+            fail_on (str | None): Value supplied to this callable.
+            quit_raises (bool): Value supplied to this callable.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         super().__init__(actions=actions, fail_on=fail_on, quit_raises=quit_raises)
         self.context = context
 
     def prot_p(self) -> None:
+        """Handle prot p.
+
+        Returns:
+            None: This callable does not return a value.
+
+        Raises:
+            OSError: Raised when this callable hits the corresponding error path.
+        """
         self.actions.append("prot_p")
         if self.fail_on == "prot_p":
             msg = "prot_p failed"
@@ -122,6 +259,14 @@ class _FakeImplicitFtpsClient(_BaseFakeFtpClient):
 def test_ftp_provider_returns_success_when_connection_succeeds(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    """Verify ftp provider returns success when connection succeeds.
+
+    Args:
+        monkeypatch (pytest.MonkeyPatch): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     actions: list[str] = []
     fake_client = _BaseFakeFtpClient(actions=actions)
     monkeypatch.setattr(ftp, "FTP", lambda: fake_client)
@@ -144,6 +289,14 @@ def test_ftp_provider_returns_success_when_connection_succeeds(
 def test_ftp_provider_closes_client_when_quit_raises(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    """Verify ftp provider closes client when quit raises.
+
+    Args:
+        monkeypatch (pytest.MonkeyPatch): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     actions: list[str] = []
     fake_client = _BaseFakeFtpClient(actions=actions, fail_on="cwd", quit_raises=True)
     monkeypatch.setattr(ftp, "FTP", lambda: fake_client)
@@ -164,10 +317,40 @@ def test_ftp_provider_closes_client_when_quit_raises(
 def test_ftp_provider_classifies_dns_resolution_failures(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    """Verify ftp provider classifies dns resolution failures.
+
+    Args:
+        monkeypatch (pytest.MonkeyPatch): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+
+    Raises:
+        gaierror: Raised when this callable hits the corresponding error path.
+    """
     actions: list[str] = []
 
     class _DnsFailingFtpClient(_BaseFakeFtpClient):
+        """Test helper for DnsFailingFtpClient.
+
+        Attributes:
+            None: This type does not declare additional class-level attributes.
+        """
+
         def connect(self, *, host: str, port: int, timeout: int) -> None:
+            """Handle connect.
+
+            Args:
+                host (str): Value supplied to this callable.
+                port (int): Value supplied to this callable.
+                timeout (int): Value supplied to this callable.
+
+            Returns:
+                None: This callable does not return a value.
+
+            Raises:
+                gaierror: Raised when this callable hits the corresponding error path.
+            """
             self.actions.append(f"connect:{host}:{port}:{timeout}")
             msg = "Temporary failure in name resolution"
             raise socket.gaierror(msg)
@@ -188,6 +371,11 @@ def test_ftp_provider_classifies_dns_resolution_failures(
 
 
 def test_ftp_error_normalization_covers_timeout_refusal_and_permission_cases() -> None:
+    """Verify ftp error normalization covers timeout refusal and permission cases.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     timeout_error = ftp._normalize_ftp_error(
         OSError("timed out"),
         default_code="ftp_connection_failed",
@@ -207,6 +395,11 @@ def test_ftp_error_normalization_covers_timeout_refusal_and_permission_cases() -
 
 
 def test_ftp_error_normalization_covers_default_and_tls_cases() -> None:
+    """Verify ftp error normalization covers default and tls cases.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     default_error = ftp._normalize_ftp_error(
         OSError("unexpected ftp error"),
         default_code="ftp_connection_failed",
@@ -223,6 +416,14 @@ def test_ftp_error_normalization_covers_default_and_tls_cases() -> None:
 def test_explicit_ftps_provider_authenticates_and_protects_data_channel(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    """Verify explicit ftps provider authenticates and protects data channel.
+
+    Args:
+        monkeypatch (pytest.MonkeyPatch): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     actions: list[str] = []
     fake_client = _FakeExplicitFtpsClient(actions=actions)
     monkeypatch.setattr(ftp, "FTP_TLS", lambda: fake_client)
@@ -246,6 +447,14 @@ def test_explicit_ftps_provider_authenticates_and_protects_data_channel(
 def test_explicit_ftps_provider_returns_failure_on_tls_error(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    """Verify explicit ftps provider returns failure on tls error.
+
+    Args:
+        monkeypatch (pytest.MonkeyPatch): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     actions: list[str] = []
     fake_client = _FakeExplicitFtpsClient(actions=actions, fail_on="auth", quit_raises=True)
     monkeypatch.setattr(ftp, "FTP_TLS", lambda: fake_client)
@@ -264,6 +473,14 @@ def test_explicit_ftps_provider_returns_failure_on_tls_error(
 
 
 def test_explicit_ftps_provider_downloads_remote_file(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Verify explicit ftps provider downloads remote file.
+
+    Args:
+        monkeypatch (pytest.MonkeyPatch): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     actions: list[str] = []
     fake_client = _FakeExplicitFtpsClient(actions=actions)
     provider = ftp.ExplicitFTPSRemoteConnectionProvider()
@@ -288,18 +505,62 @@ def test_explicit_ftps_provider_downloads_remote_file(monkeypatch: pytest.Monkey
 def test_implicit_ftp_tls_wraps_socket_and_reads_server_response(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    """Verify implicit ftp tls wraps socket and reads server response.
+
+    Args:
+        monkeypatch (pytest.MonkeyPatch): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     events: list[str] = []
 
     class _FakeRawSocket:
+        """Test helper for FakeRawSocket.
+
+        Attributes:
+            family: Documented attribute exposed by this type.
+        """
+
         family = 123
 
     class _FakeWrappedSocket:
+        """Test helper for FakeWrappedSocket.
+
+        Attributes:
+            None: This type does not declare additional class-level attributes.
+        """
+
         def makefile(self, mode: str, encoding: str) -> str:
+            """Handle makefile.
+
+            Args:
+                mode (str): Value supplied to this callable.
+                encoding (str): Value supplied to this callable.
+
+            Returns:
+                str: Structured value returned by this callable.
+            """
             events.append(f"makefile:{mode}:{encoding}")
             return "wrapped-file"
 
     class _FakeContext:
+        """Test helper for FakeContext.
+
+        Attributes:
+            None: This type does not declare additional class-level attributes.
+        """
+
         def wrap_socket(self, sock: object, *, server_hostname: str) -> _FakeWrappedSocket:
+            """Handle wrap socket.
+
+            Args:
+                sock (object): Value supplied to this callable.
+                server_hostname (str): Value supplied to this callable.
+
+            Returns:
+                _FakeWrappedSocket: Structured value returned by this callable.
+            """
             assert sock is raw_socket
             events.append(f"wrap_socket:{server_hostname}")
             return wrapped_socket
@@ -312,6 +573,16 @@ def test_implicit_ftp_tls_wraps_socket_and_reads_server_response(
         timeout: float | None,
         source_address: tuple[str, int] | None,
     ) -> _FakeRawSocket:
+        """Handle create connection.
+
+        Args:
+            address (tuple[str, int]): Value supplied to this callable.
+            timeout (float | None): Value supplied to this callable.
+            source_address (tuple[str, int] | None): Value supplied to this callable.
+
+        Returns:
+            _FakeRawSocket: Structured value returned by this callable.
+        """
         events.append(f"create_connection:{address}:{timeout}:{source_address}")
         return raw_socket
 
@@ -351,17 +622,62 @@ def test_implicit_ftp_tls_wraps_socket_and_reads_server_response(
 def test_implicit_ftp_tls_keeps_existing_timeout_when_timeout_is_omitted(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    """Verify implicit ftp tls keeps existing timeout when timeout is omitted.
+
+    Args:
+        monkeypatch (pytest.MonkeyPatch): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
+
     class _FakeRawSocket:
+        """Test helper for FakeRawSocket.
+
+        Attributes:
+            family: Documented attribute exposed by this type.
+        """
+
         family = 123
 
     class _FakeWrappedSocket:
+        """Test helper for FakeWrappedSocket.
+
+        Attributes:
+            None: This type does not declare additional class-level attributes.
+        """
+
         @staticmethod
         def makefile(mode: str, encoding: str) -> str:
+            """Handle makefile.
+
+            Args:
+                mode (str): Value supplied to this callable.
+                encoding (str): Value supplied to this callable.
+
+            Returns:
+                str: Structured value returned by this callable.
+            """
             return "wrapped-file"
 
     class _FakeContext:
+        """Test helper for FakeContext.
+
+        Attributes:
+            None: This type does not declare additional class-level attributes.
+        """
+
         @staticmethod
         def wrap_socket(sock: object, *, server_hostname: str) -> _FakeWrappedSocket:
+            """Handle wrap socket.
+
+            Args:
+                sock (object): Value supplied to this callable.
+                server_hostname (str): Value supplied to this callable.
+
+            Returns:
+                _FakeWrappedSocket: Structured value returned by this callable.
+            """
             assert sock is raw_socket
             assert server_hostname == "example.test"
             return wrapped_socket
@@ -390,11 +706,27 @@ def test_implicit_ftp_tls_keeps_existing_timeout_when_timeout_is_omitted(
 def test_implicit_ftps_provider_uses_tls_context_and_returns_success(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    """Verify implicit ftps provider uses tls context and returns success.
+
+    Args:
+        monkeypatch (pytest.MonkeyPatch): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     actions: list[str] = []
     fake_context = object()
     captured_contexts: list[object] = []
 
     def _build_client(*, context: object) -> _FakeImplicitFtpsClient:
+        """Handle build client.
+
+        Args:
+            context (object): Value supplied to this callable.
+
+        Returns:
+            _FakeImplicitFtpsClient: Structured value returned by this callable.
+        """
         captured_contexts.append(context)
         return _FakeImplicitFtpsClient(actions=actions, context=context)
 
@@ -420,6 +752,14 @@ def test_implicit_ftps_provider_uses_tls_context_and_returns_success(
 def test_implicit_ftps_provider_returns_failure_when_login_fails(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    """Verify implicit ftps provider returns failure when login fails.
+
+    Args:
+        monkeypatch (pytest.MonkeyPatch): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     actions: list[str] = []
     fake_context = object()
     monkeypatch.setattr(ssl, "create_default_context", lambda: fake_context)
@@ -448,6 +788,14 @@ def test_implicit_ftps_provider_returns_failure_when_login_fails(
 
 
 def test_implicit_ftps_provider_lists_remote_files(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Verify implicit ftps provider lists remote files.
+
+    Args:
+        monkeypatch (pytest.MonkeyPatch): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     actions: list[str] = []
     fake_client = _FakeImplicitFtpsClient(actions=actions, context=object())
     provider = ftp.ImplicitFTPSRemoteConnectionProvider()
@@ -468,17 +816,47 @@ def test_implicit_ftps_provider_lists_remote_files(monkeypatch: pytest.MonkeyPat
 def test_close_ftp_client_uses_oserror_branch_when_library_error_tuple_excludes_it(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    """Verify close ftp client uses oserror branch when library error tuple excludes it.
+
+    Args:
+        monkeypatch (pytest.MonkeyPatch): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+
+    Raises:
+        OSError: Raised when this callable hits the corresponding error path.
+    """
     events: list[str] = []
 
     class _OSErrorFtpClient:
+        """Test helper for OSErrorFtpClient.
+
+        Attributes:
+            None: This type does not declare additional class-level attributes.
+        """
+
         @staticmethod
         def quit() -> None:
+            """Handle quit.
+
+            Returns:
+                None: This callable does not return a value.
+
+            Raises:
+                OSError: Raised when this callable hits the corresponding error path.
+            """
             events.append("quit")
             msg = "network down"
             raise OSError(msg)
 
         @staticmethod
         def close() -> None:
+            """Handle close.
+
+            Returns:
+                None: This callable does not return a value.
+            """
             events.append("close")
 
     monkeypatch.setattr(ftp, "all_errors", (EOFError,))
@@ -491,9 +869,35 @@ def test_close_ftp_client_uses_oserror_branch_when_library_error_tuple_excludes_
 def test_close_ftp_socket_uses_oserror_branch_when_library_error_tuple_excludes_it(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    """Verify close ftp socket uses oserror branch when library error tuple excludes it.
+
+    Args:
+        monkeypatch (pytest.MonkeyPatch): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+
+    Raises:
+        OSError: Raised when this callable hits the corresponding error path.
+    """
+
     class _OSErrorSocketClient:
+        """Test helper for OSErrorSocketClient.
+
+        Attributes:
+            None: This type does not declare additional class-level attributes.
+        """
+
         @staticmethod
         def close() -> None:
+            """Handle close.
+
+            Returns:
+                None: This callable does not return a value.
+
+            Raises:
+                OSError: Raised when this callable hits the corresponding error path.
+            """
             msg = "socket close failed"
             raise OSError(msg)
 
@@ -503,21 +907,58 @@ def test_close_ftp_socket_uses_oserror_branch_when_library_error_tuple_excludes_
 
 
 class _FakeSftpClient:
+    """Test helper for FakeSftpClient.
+
+    Attributes:
+        None: This type does not declare additional class-level attributes.
+    """
+
     def __init__(self, actions: list[str], *, fail_on_chdir: bool = False) -> None:
+        """Initialize the test helper state.
+
+        Args:
+            actions (list[str]): Value supplied to this callable.
+            fail_on_chdir (bool): Value supplied to this callable.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         self._actions = actions
         self._fail_on_chdir = fail_on_chdir
 
     def chdir(self, remote_path: str) -> None:
+        """Handle chdir.
+
+        Args:
+            remote_path (str): Value supplied to this callable.
+
+        Returns:
+            None: This callable does not return a value.
+
+        Raises:
+            OSError: Raised when this callable hits the corresponding error path.
+        """
         self._actions.append(f"chdir:{remote_path}")
         if self._fail_on_chdir:
             msg = "missing remote path"
             raise OSError(msg)
 
     def close(self) -> None:
+        """Handle close.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         self._actions.append("sftp_close")
 
 
 class _FakeSshClient:
+    """Test helper for FakeSshClient.
+
+    Attributes:
+        None: This type does not declare additional class-level attributes.
+    """
+
     def __init__(
         self,
         actions: list[str],
@@ -525,17 +966,48 @@ class _FakeSshClient:
         fail_on_connect: bool = False,
         fail_on_chdir: bool = False,
     ) -> None:
+        """Initialize the test helper state.
+
+        Args:
+            actions (list[str]): Value supplied to this callable.
+            fail_on_connect (bool): Value supplied to this callable.
+            fail_on_chdir (bool): Value supplied to this callable.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         self._actions = actions
         self._fail_on_connect = fail_on_connect
         self._fail_on_chdir = fail_on_chdir
 
     def load_system_host_keys(self) -> None:
+        """Handle load system host keys.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         self._actions.append("load_system_host_keys")
 
     def load_host_keys(self, filename: str) -> None:
+        """Handle load host keys.
+
+        Args:
+            filename (str): Value supplied to this callable.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         self._actions.append(f"load_host_keys:{filename}")
 
     def set_missing_host_key_policy(self, policy: object) -> None:
+        """Handle set missing host key policy.
+
+        Args:
+            policy (object): Value supplied to this callable.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         self._actions.append(f"set_missing_host_key_policy:{policy.__class__.__name__}")
 
     def connect(
@@ -547,22 +1019,55 @@ class _FakeSshClient:
         password: str,
         timeout: int,
     ) -> None:
+        """Handle connect.
+
+        Args:
+            hostname (str): Value supplied to this callable.
+            port (int): Value supplied to this callable.
+            username (str): Value supplied to this callable.
+            password (str): Value supplied to this callable.
+            timeout (int): Value supplied to this callable.
+
+        Returns:
+            None: This callable does not return a value.
+
+        Raises:
+            OSError: Raised when this callable hits the corresponding error path.
+        """
         self._actions.append(f"connect:{hostname}:{port}:{username}:{password}:{timeout}")
         if self._fail_on_connect:
             msg = "ssh connect failed"
             raise OSError(msg)
 
     def open_sftp(self) -> _FakeSftpClient:
+        """Handle open sftp.
+
+        Returns:
+            _FakeSftpClient: Structured value returned by this callable.
+        """
         self._actions.append("open_sftp")
         return _FakeSftpClient(self._actions, fail_on_chdir=self._fail_on_chdir)
 
     def close(self) -> None:
+        """Handle close.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         self._actions.append("ssh_close")
 
 
 def test_sftp_provider_returns_success_when_ssh_transport_succeeds(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    """Verify sftp provider returns success when ssh transport succeeds.
+
+    Args:
+        monkeypatch (pytest.MonkeyPatch): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     actions: list[str] = []
     monkeypatch.setattr(ssh, "_build_ssh_client", lambda: _FakeSshClient(actions))
 
@@ -586,9 +1091,24 @@ def test_sftp_provider_can_auto_add_unknown_hosts_when_verification_is_disabled(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
+    """Verify sftp provider can auto add unknown hosts when verification is disabled.
+
+    Args:
+        monkeypatch (pytest.MonkeyPatch): Value supplied to this callable.
+        tmp_path (Path): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     actions: list[str] = []
 
     class _FakeAutoAddPolicy:
+        """Test helper for FakeAutoAddPolicy.
+
+        Attributes:
+            None: This type does not declare additional class-level attributes.
+        """
+
         pass
 
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
@@ -626,6 +1146,14 @@ def test_sftp_provider_can_auto_add_unknown_hosts_when_verification_is_disabled(
 def test_scp_provider_returns_failure_when_ssh_client_errors(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    """Verify scp provider returns failure when ssh client errors.
+
+    Args:
+        monkeypatch (pytest.MonkeyPatch): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     monkeypatch.setattr(
         ssh,
         "_build_ssh_client",
@@ -647,7 +1175,25 @@ def test_scp_provider_returns_failure_when_ssh_client_errors(
 def test_scp_provider_classifies_ssh_dns_resolution_failures(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    """Verify scp provider classifies ssh dns resolution failures.
+
+    Args:
+        monkeypatch (pytest.MonkeyPatch): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+
+    Raises:
+        gaierror: Raised when this callable hits the corresponding error path.
+    """
+
     class _DnsFailingSshClient(_FakeSshClient):
+        """Test helper for DnsFailingSshClient.
+
+        Attributes:
+            None: This type does not declare additional class-level attributes.
+        """
+
         def connect(
             self,
             *,
@@ -657,6 +1203,21 @@ def test_scp_provider_classifies_ssh_dns_resolution_failures(
             password: str,
             timeout: int,
         ) -> None:
+            """Handle connect.
+
+            Args:
+                hostname (str): Value supplied to this callable.
+                port (int): Value supplied to this callable.
+                username (str): Value supplied to this callable.
+                password (str): Value supplied to this callable.
+                timeout (int): Value supplied to this callable.
+
+            Returns:
+                None: This callable does not return a value.
+
+            Raises:
+                gaierror: Raised when this callable hits the corresponding error path.
+            """
             self._actions.append(f"connect:{hostname}:{port}:{username}:{password}:{timeout}")
             msg = "Temporary failure in name resolution"
             raise socket.gaierror(msg)
@@ -682,6 +1243,14 @@ def test_scp_provider_classifies_ssh_dns_resolution_failures(
 def test_sftp_provider_returns_failure_when_remote_path_is_invalid(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    """Verify sftp provider returns failure when remote path is invalid.
+
+    Args:
+        monkeypatch (pytest.MonkeyPatch): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     monkeypatch.setattr(
         ssh,
         "_build_ssh_client",
@@ -701,6 +1270,11 @@ def test_sftp_provider_returns_failure_when_remote_path_is_invalid(
 
 
 def test_ssh_error_normalization_covers_timeout_refusal_auth_host_key_and_transport_io() -> None:
+    """Verify ssh error normalization covers timeout refusal auth host key and transport io.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     timeout_error = ssh._normalize_ssh_error(
         OSError("timed out"),
         default_code="ssh_connection_failed",
@@ -730,6 +1304,11 @@ def test_ssh_error_normalization_covers_timeout_refusal_auth_host_key_and_transp
 
 
 def test_ssh_error_normalization_covers_remote_path_and_default_cases() -> None:
+    """Verify ssh error normalization covers remote path and default cases.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     unknown_host_error = ssh._normalize_ssh_error(
         OSError("Server '127.0.0.1' not found in known_hosts"),
         default_code="ssh_connection_failed",
@@ -751,6 +1330,14 @@ def test_ssh_error_normalization_covers_remote_path_and_default_cases() -> None:
 def test_ssh_providers_report_missing_paramiko_dependency(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    """Verify ssh providers report missing paramiko dependency.
+
+    Args:
+        monkeypatch (pytest.MonkeyPatch): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     monkeypatch.setattr(
         ssh,
         "_build_ssh_client",
@@ -769,6 +1356,14 @@ def test_ssh_providers_report_missing_paramiko_dependency(
 def test_build_ssh_client_uses_paramiko_ssh_client_factory(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    """Verify build ssh client uses paramiko ssh client factory.
+
+    Args:
+        monkeypatch (pytest.MonkeyPatch): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     sentinel = object()
     monkeypatch.setattr(
         ssh,

@@ -23,6 +23,11 @@ from tests.support.frontend_doubles import build_seeded_services
 
 
 def _build_screen() -> tuple[Any, Any, Any]:
+    """Handle build screen.
+
+    Returns:
+        tuple[Any, Any, Any]: Structured value returned by this callable.
+    """
     app = cast(Any, create_kivy_app(services=build_seeded_services()))
     root = app.build()
     screen = root.get_screen("project_editor")
@@ -34,6 +39,11 @@ def _build_screen() -> tuple[Any, Any, Any]:
 
 
 def test_project_editor_screen_renders_remote_error_card_and_retry_button() -> None:
+    """Verify project editor screen renders remote error card and retry button.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     _app, _root, screen = _build_screen()
     shell = screen._shell
 
@@ -66,6 +76,17 @@ def test_project_editor_screen_renders_remote_error_card_and_retry_button() -> N
 def test_project_editor_screen_retests_trusted_hosts_and_tracks_test_button_state(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    """Verify project editor screen retests trusted hosts and tracks test button state.
+
+    Args:
+        monkeypatch (pytest.MonkeyPatch): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+
+    Raises:
+        AssertionError: Raised when this callable hits the corresponding error path.
+    """
     _app, _root, screen = _build_screen()
     shell = screen._shell
     screen._select_project_editor_section("remote")
@@ -105,6 +126,11 @@ def test_project_editor_screen_retests_trusted_hosts_and_tracks_test_button_stat
 
 
 def test_project_editor_screen_ignores_test_button_refresh_when_button_is_missing() -> None:
+    """Verify project editor screen ignores test button refresh when button is missing.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     _app, _root, screen = _build_screen()
 
     screen._select_project_editor_section("remote")
@@ -114,6 +140,11 @@ def test_project_editor_screen_ignores_test_button_refresh_when_button_is_missin
 
 
 def test_project_editor_screen_sync_panels_cover_empty_and_custom_rule_branches() -> None:
+    """Verify project editor screen sync panels cover empty and custom rule branches.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     _app, _root, screen = _build_screen()
     shell = screen._shell
 
@@ -165,6 +196,14 @@ def test_project_editor_screen_sync_panels_cover_empty_and_custom_rule_branches(
 def test_project_editor_screen_test_connection_helpers_and_back_navigation(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    """Verify project editor screen test connection helpers and back navigation.
+
+    Args:
+        monkeypatch (pytest.MonkeyPatch): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     _app, root, screen = _build_screen()
     shell = screen._shell
     screen._select_project_editor_section("remote")
@@ -196,6 +235,11 @@ def test_project_editor_screen_test_connection_helpers_and_back_navigation(
 
 
 def test_project_editor_helper_functions_cover_information_and_rule_updates() -> None:
+    """Verify project editor helper functions cover information and rule updates.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     card = _build_information_card(title="Project Editor", body="Nothing loaded yet.")
     item = SyncRuleEditorItemViewModel(
         rule_key="include:directory:locale",
@@ -220,6 +264,14 @@ def test_project_editor_helper_functions_cover_information_and_rule_updates() ->
 def test_project_editor_screen_covers_sync_rule_mutations_and_refresh_paths(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    """Verify project editor screen covers sync rule mutations and refresh paths.
+
+    Args:
+        monkeypatch (pytest.MonkeyPatch): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     _app, _root, screen = _build_screen()
     shell = screen._shell
     screen._select_project_editor_section("sync")
@@ -269,6 +321,14 @@ def test_project_editor_screen_covers_sync_rule_mutations_and_refresh_paths(
 def test_project_editor_screen_covers_save_branches_and_section_switch_draft_preservation(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    """Verify project editor screen covers save branches and section switch draft preservation.
+
+    Args:
+        monkeypatch (pytest.MonkeyPatch): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     _app, _root, screen = _build_screen()
     shell = screen._shell
 
@@ -300,6 +360,11 @@ def test_project_editor_screen_covers_save_branches_and_section_switch_draft_pre
 
 
 def test_project_editor_screen_collect_and_helper_fallback_branches() -> None:
+    """Verify project editor screen collect and helper fallback branches.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     _app, _root, screen = _build_screen()
     state = screen._require_state()
 
@@ -318,6 +383,11 @@ def test_project_editor_screen_collect_and_helper_fallback_branches() -> None:
 
 
 def test_project_editor_screen_covers_non_trust_connection_card_and_text_helpers() -> None:
+    """Verify project editor screen covers non trust connection card and text helpers.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     _app, _root, screen = _build_screen()
     shell = screen._shell
 

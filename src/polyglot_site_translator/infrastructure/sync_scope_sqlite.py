@@ -23,9 +23,21 @@ from polyglot_site_translator.infrastructure.settings import TomlSettingsService
 
 
 class SqliteSyncScopeRepository:
-    """Persist shared sync scope settings in the configured SQLite database."""
+    """Persist shared sync scope settings in the configured SQLite database.
+
+    Attributes:
+        None: This type does not declare additional class-level attributes.
+    """
 
     def __init__(self, *, location: SQLiteDatabaseLocation) -> None:
+        """Bind the repository to one SQLite location and ensure its schema exists.
+
+        Args:
+            location (SQLiteDatabaseLocation): Value supplied to this callable.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         self._location = location
         self._ensure_schema()
 
@@ -35,8 +47,14 @@ class SqliteSyncScopeRepository:
     ) -> AdapterSyncScopeSettings:
         """Load shared sync scope settings from SQLite.
 
-        If the database does not yet contain sync scope settings, the provided
-        default_settings are returned unchanged.
+        Args:
+            default_settings (AdapterSyncScopeSettings | None): Value supplied to this callable.
+
+        Returns:
+            AdapterSyncScopeSettings: Structured value returned by this callable.
+
+        Raises:
+            SyncScopePersistenceError: Raised when this callable hits the corresponding error path.
         """
         default_settings = default_settings or build_default_sync_scope_settings()
         try:
@@ -63,7 +81,17 @@ class SqliteSyncScopeRepository:
         )
 
     def save_sync_scope_settings(self, sync_scope_settings: AdapterSyncScopeSettings) -> None:
-        """Persist shared sync scope settings into SQLite."""
+        """Persist shared sync scope settings into SQLite.
+
+        Args:
+            sync_scope_settings (AdapterSyncScopeSettings): Value supplied to this callable.
+
+        Returns:
+            None: This callable does not return a value.
+
+        Raises:
+            SyncScopePersistenceError: Raised when this callable hits the corresponding error path.
+        """
         try:
             with self._connect() as connection:
                 connection.execute("DELETE FROM sync_scope_global_rules")
@@ -84,6 +112,14 @@ class SqliteSyncScopeRepository:
             raise SyncScopePersistenceError(msg) from error
 
     def _ensure_schema(self) -> None:
+        """Handle ensure schema.
+
+        Returns:
+            None: This callable does not return a value.
+
+        Raises:
+            SyncScopePersistenceError: Raised when this callable hits the corresponding error path.
+        """
         try:
             self._location.directory.mkdir(parents=True, exist_ok=True)
             with self._connect() as connection:
@@ -103,6 +139,11 @@ class SqliteSyncScopeRepository:
             raise SyncScopePersistenceError(msg) from error
 
     def _connect(self) -> sqlite3.Connection:
+        """Handle connect.
+
+        Returns:
+            sqlite3.Connection: Structured value returned by this callable.
+        """
         connection = sqlite3.connect(self._location.database_path)
         connection.row_factory = sqlite3.Row
         connection.execute("PRAGMA foreign_keys = ON")
@@ -110,15 +151,35 @@ class SqliteSyncScopeRepository:
 
 
 class ConfiguredSqliteSyncScopeRepository:
-    """Resolve the SQLite location from app settings before each sync scope operation."""
+    """Resolve the SQLite location from app settings before each sync scope operation.
+
+    Attributes:
+        None: This type does not declare additional class-level attributes.
+    """
 
     def __init__(self, settings_service: TomlSettingsService) -> None:
+        """Defer repository construction until settings have resolved the database path.
+
+        Args:
+            settings_service (TomlSettingsService): Value supplied to this callable.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         self._settings_service = settings_service
 
     def load_sync_scope_settings(
         self,
         default_settings: AdapterSyncScopeSettings | None = None,
     ) -> AdapterSyncScopeSettings:
+        """Load shared sync scope settings from the configured application database.
+
+        Args:
+            default_settings (AdapterSyncScopeSettings | None): Value supplied to this callable.
+
+        Returns:
+            AdapterSyncScopeSettings: Structured value returned by this callable.
+        """
         settings_state = self._settings_service.load_settings()
         location = resolve_sqlite_database_location(settings_state.app_settings)
         default_settings = default_settings or settings_state.app_settings.sync_scope_settings
@@ -126,6 +187,14 @@ class ConfiguredSqliteSyncScopeRepository:
         return repository.load_sync_scope_settings(default_settings=default_settings)
 
     def save_sync_scope_settings(self, sync_scope_settings: AdapterSyncScopeSettings) -> None:
+        """Persist shared sync scope settings into the configured application database.
+
+        Args:
+            sync_scope_settings (AdapterSyncScopeSettings): Value supplied to this callable.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         settings_state = self._settings_service.load_settings()
         location = resolve_sqlite_database_location(settings_state.app_settings)
         repository = SqliteSyncScopeRepository(location=location)
@@ -133,6 +202,14 @@ class ConfiguredSqliteSyncScopeRepository:
 
 
 def _ensure_sync_scope_global_rules_table(connection: sqlite3.Connection) -> None:
+    """Handle ensure sync scope global rules table.
+
+    Args:
+        connection (sqlite3.Connection): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     connection.execute(
         """
         CREATE TABLE IF NOT EXISTS sync_scope_global_rules (
@@ -148,6 +225,14 @@ def _ensure_sync_scope_global_rules_table(connection: sqlite3.Connection) -> Non
 
 
 def _ensure_sync_scope_framework_rules_table(connection: sqlite3.Connection) -> None:
+    """Handle ensure sync scope framework rules table.
+
+    Args:
+        connection (sqlite3.Connection): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     connection.execute(
         """
         CREATE TABLE IF NOT EXISTS sync_scope_framework_rules (
@@ -164,6 +249,14 @@ def _ensure_sync_scope_framework_rules_table(connection: sqlite3.Connection) -> 
 
 
 def _ensure_sync_scope_configuration_table(connection: sqlite3.Connection) -> None:
+    """Handle ensure sync scope configuration table.
+
+    Args:
+        connection (sqlite3.Connection): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     connection.execute(
         """
         CREATE TABLE IF NOT EXISTS sync_scope_configuration (
@@ -178,6 +271,15 @@ def _fetch_configured_rules(
     connection: sqlite3.Connection,
     table_name: str,
 ) -> tuple[ConfiguredSyncRule, ...]:
+    """Handle fetch configured rules.
+
+    Args:
+        connection (sqlite3.Connection): Value supplied to this callable.
+        table_name (str): Value supplied to this callable.
+
+    Returns:
+        tuple[ConfiguredSyncRule, ...]: Structured value returned by this callable.
+    """
     rows = connection.execute(
         f"""
         SELECT relative_path,
@@ -202,6 +304,14 @@ def _fetch_configured_rules(
 
 
 def _fetch_framework_rule_sets(connection: sqlite3.Connection) -> tuple[FrameworkSyncRuleSet, ...]:
+    """Handle fetch framework rule sets.
+
+    Args:
+        connection (sqlite3.Connection): Value supplied to this callable.
+
+    Returns:
+        tuple[FrameworkSyncRuleSet, ...]: Structured value returned by this callable.
+    """
     rows = connection.execute(
         """
         SELECT framework_type,
@@ -237,6 +347,19 @@ def _fetch_configuration_flag(
     config_key: str,
     default_value: bool,
 ) -> bool:
+    """Handle fetch configuration flag.
+
+    Args:
+        connection (sqlite3.Connection): Value supplied to this callable.
+        config_key (str): Value supplied to this callable.
+        default_value (bool): Value supplied to this callable.
+
+    Returns:
+        bool: Structured value returned by this callable.
+
+    Raises:
+        SyncScopePersistenceError: Raised when this callable hits the corresponding error path.
+    """
     row = connection.execute(
         "SELECT config_value FROM sync_scope_configuration WHERE config_key = ?",
         (config_key,),
@@ -251,6 +374,14 @@ def _fetch_configuration_flag(
 
 
 def _configuration_exists(connection: sqlite3.Connection) -> bool:
+    """Handle configuration exists.
+
+    Args:
+        connection (sqlite3.Connection): Value supplied to this callable.
+
+    Returns:
+        bool: Structured value returned by this callable.
+    """
     row = connection.execute("SELECT 1 FROM sync_scope_configuration LIMIT 1").fetchone()
     return row is not None
 
@@ -259,6 +390,15 @@ def _insert_configured_global_rules(
     connection: sqlite3.Connection,
     configured_rules: tuple[ConfiguredSyncRule, ...],
 ) -> None:
+    """Handle insert configured global rules.
+
+    Args:
+        connection (sqlite3.Connection): Value supplied to this callable.
+        configured_rules (tuple[ConfiguredSyncRule, ...]): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     if not configured_rules:
         return
     connection.executemany(
@@ -294,6 +434,15 @@ def _insert_configured_framework_rules(
     connection: sqlite3.Connection,
     framework_rule_sets: tuple[FrameworkSyncRuleSet, ...],
 ) -> None:
+    """Handle insert configured framework rules.
+
+    Args:
+        connection (sqlite3.Connection): Value supplied to this callable.
+        framework_rule_sets (tuple[FrameworkSyncRuleSet, ...]): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     if not framework_rule_sets:
         return
     records: list[tuple[str, str, str, str, str, str, int]] = []
@@ -337,6 +486,16 @@ def _insert_configuration_flag(
     config_key: str,
     value: bool,
 ) -> None:
+    """Handle insert configuration flag.
+
+    Args:
+        connection (sqlite3.Connection): Value supplied to this callable.
+        config_key (str): Value supplied to this callable.
+        value (bool): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     connection.execute(
         "INSERT INTO sync_scope_configuration (config_key, config_value) VALUES (?, ?)",
         (config_key, "1" if value else "0"),

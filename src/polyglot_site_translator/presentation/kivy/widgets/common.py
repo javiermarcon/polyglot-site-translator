@@ -17,7 +17,14 @@ from polyglot_site_translator.presentation.kivy.theme import (
 
 
 def apply_theme_to_widget_tree(root_widget: Widget) -> None:
-    """Apply the current theme palette to all theme-aware widgets in a tree."""
+    """Apply the current theme palette to all theme-aware widgets in a tree.
+
+    Args:
+        root_widget (Widget): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     if hasattr(root_widget, "apply_theme"):
         root_widget.apply_theme()
     for child in root_widget.children:
@@ -29,6 +36,16 @@ def _resolve_color(
     color_role: str | None,
     fallback_role: str,
 ) -> ColorTuple:
+    """Resolve color.
+
+    Args:
+        explicit_color (ColorTuple | None): Value supplied to this callable.
+        color_role (str | None): Value supplied to this callable.
+        fallback_role (str): Value supplied to this callable.
+
+    Returns:
+        ColorTuple: Structured value returned by this callable.
+    """
     if explicit_color is not None:
         return explicit_color
     palette = get_active_theme()
@@ -37,7 +54,11 @@ def _resolve_color(
 
 
 class SurfaceBoxLayout(BoxLayout):  # type: ignore[misc]
-    """BoxLayout with a simple surface background and border."""
+    """BoxLayout with a simple surface background and border.
+
+    Attributes:
+        None: This type does not declare additional class-level attributes.
+    """
 
     def __init__(
         self,
@@ -48,6 +69,18 @@ class SurfaceBoxLayout(BoxLayout):  # type: ignore[misc]
         border_role: str | None = None,
         **kwargs: object,
     ) -> None:
+        """Create a theme-aware surface with optional explicit colors and roles.
+
+        Args:
+            background_color (ColorTuple | None): Value supplied to this callable.
+            background_role (str | None): Value supplied to this callable.
+            border_color (ColorTuple | None): Value supplied to this callable.
+            border_role (str | None): Value supplied to this callable.
+            kwargs (object): Value supplied to this callable.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         super().__init__(**kwargs)
         self._background_role = background_role
         self._border_role = border_role
@@ -71,12 +104,24 @@ class SurfaceBoxLayout(BoxLayout):  # type: ignore[misc]
         self.bind(pos=self._update_canvas, size=self._update_canvas)
 
     def _update_canvas(self, *_args: object) -> None:
+        """Update canvas.
+
+        Args:
+            _args (object): Value supplied to this callable.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         self._background_rect.pos = self.pos
         self._background_rect.size = self.size
         self._border_line.rectangle = (self.x, self.y, self.width, self.height)
 
     def apply_theme(self) -> None:
-        """Re-apply the current palette to this surface."""
+        """Re-apply the current palette to this surface.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         self._background_instruction.rgba = _resolve_color(
             self._background_color,
             self._background_role,
@@ -90,7 +135,11 @@ class SurfaceBoxLayout(BoxLayout):  # type: ignore[misc]
 
 
 class WrappedLabel(Label):  # type: ignore[misc]
-    """Label that wraps text and grows vertically with its content."""
+    """Label that wraps text and grows vertically with its content.
+
+    Attributes:
+        None: This type does not declare additional class-level attributes.
+    """
 
     def __init__(
         self,
@@ -101,6 +150,18 @@ class WrappedLabel(Label):  # type: ignore[misc]
         color_role: str | None = None,
         **kwargs: object,
     ) -> None:
+        """Create a label that wraps text horizontally and auto-expands vertically.
+
+        Args:
+            font_size (int): Value supplied to this callable.
+            bold (bool): Value supplied to this callable.
+            color (ColorTuple | None): Value supplied to this callable.
+            color_role (str | None): Value supplied to this callable.
+            kwargs (object): Value supplied to this callable.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         self._color = color
         self._color_role = color_role
         super().__init__(
@@ -116,18 +177,42 @@ class WrappedLabel(Label):  # type: ignore[misc]
         self._sync_text_size()
 
     def _sync_text_size(self, *_args: object) -> None:
+        """Synchronize text size.
+
+        Args:
+            _args (object): Value supplied to this callable.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         self.text_size = (self.width, None)
 
     def _sync_height(self, *_args: object) -> None:
+        """Synchronize height.
+
+        Args:
+            _args (object): Value supplied to this callable.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         self.height = max(self.texture_size[1] + 8, self.font_size + 12)
 
     def apply_theme(self) -> None:
-        """Re-apply the current palette to the label text color."""
+        """Re-apply the current palette to the label text color.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         self.color = _resolve_color(self._color, self._color_role, "text_primary")
 
 
 class AppButton(Button):  # type: ignore[misc]
-    """Button with a consistent application style."""
+    """Button with a consistent application style.
+
+    Attributes:
+        None: This type does not declare additional class-level attributes.
+    """
 
     def __init__(
         self,
@@ -135,6 +220,15 @@ class AppButton(Button):  # type: ignore[misc]
         primary: bool = True,
         **kwargs: object,
     ) -> None:
+        """Create a theme-aware button using the primary or secondary palette roles.
+
+        Args:
+            primary (bool): Value supplied to this callable.
+            kwargs (object): Value supplied to this callable.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         resolved_kwargs = dict(kwargs)
         self._primary = primary
         self._uses_theme_background = "background_color" not in resolved_kwargs
@@ -161,7 +255,11 @@ class AppButton(Button):  # type: ignore[misc]
         self._sync_text_size()
 
     def apply_theme(self) -> None:
-        """Re-apply the current palette to the button colors."""
+        """Re-apply the current palette to the button colors.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         palette = get_active_theme()
         if self._uses_theme_background:
             self.background_color = (
@@ -175,4 +273,12 @@ class AppButton(Button):  # type: ignore[misc]
             )
 
     def _sync_text_size(self, *_args: object) -> None:
+        """Synchronize text size.
+
+        Args:
+            _args (object): Value supplied to this callable.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         self.text_size = (max(self.width - 16, 0), None)

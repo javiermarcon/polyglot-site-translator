@@ -30,7 +30,11 @@ from polyglot_site_translator.presentation.view_models import (
 
 
 class POLocaleSelectionPopup(Popup):  # type: ignore[misc]
-    """Modal dialog for selecting the locales used by PO processing."""
+    """Modal dialog for selecting the locales used by PO processing.
+
+    Attributes:
+        None: This type does not declare additional class-level attributes.
+    """
 
     def __init__(
         self,
@@ -39,6 +43,18 @@ class POLocaleSelectionPopup(Popup):  # type: ignore[misc]
         default_options: TranslationOptionsViewModel,
         on_confirm: Callable[[TranslationWorkflowRequestViewModel], None],
     ) -> None:
+        """Build the translation-options modal from project defaults and a callback.
+
+        Args:
+            default_locales (str): Value supplied to this callable.
+            default_options (TranslationOptionsViewModel): Value supplied to this callable.
+            on_confirm (Callable[[TranslationWorkflowRequestViewModel], None]): Value supplied to
+        this
+            callable.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         super().__init__(
             title="Translate Project",
             size_hint=(0.86, 0.9),
@@ -165,6 +181,16 @@ class POLocaleSelectionPopup(Popup):  # type: ignore[misc]
         description: str,
         toggle: Switch,
     ) -> SurfaceBoxLayout:
+        """Build toggle row.
+
+        Args:
+            title (str): Value supplied to this callable.
+            description (str): Value supplied to this callable.
+            toggle (Switch): Value supplied to this callable.
+
+        Returns:
+            SurfaceBoxLayout: Structured value returned by this callable.
+        """
         row = SurfaceBoxLayout(
             orientation="horizontal",
             spacing=12,
@@ -184,6 +210,11 @@ class POLocaleSelectionPopup(Popup):  # type: ignore[misc]
         return row
 
     def _submit(self) -> None:
+        """Handle submit.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         try:
             normalized_locales = normalize_default_locale(
                 self._locales_input.text,

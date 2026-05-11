@@ -58,6 +58,8 @@ When changing this codebase, prioritize:
 - Put target-specific rules into adapters/plugins.
 - Add tests with every meaningful feature or bugfix.
 - Update architectural docs whenever structure or flows change.
+- Keep docstrings multi-line and structured for public and private symbols; the repository now
+  validates that requirement with a dedicated docstring audit script in addition to Ruff and mypy.
 
 ---
 

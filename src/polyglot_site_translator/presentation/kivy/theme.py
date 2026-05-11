@@ -9,7 +9,23 @@ ColorTuple = tuple[float, float, float, float]
 
 @dataclass(frozen=True)
 class ThemePalette:
-    """Color tokens used by the Kivy presentation layer."""
+    """Color tokens used by the Kivy presentation layer.
+
+    Attributes:
+        app_background (ColorTuple): Documented attribute exposed by this type.
+        header_background (ColorTuple): Documented attribute exposed by this type.
+        card_background (ColorTuple): Documented attribute exposed by this type.
+        card_subtle_background (ColorTuple): Documented attribute exposed by this type.
+        border_color (ColorTuple): Documented attribute exposed by this type.
+        primary_button_background (ColorTuple): Documented attribute exposed by this type.
+        primary_button_text (ColorTuple): Documented attribute exposed by this type.
+        secondary_button_background (ColorTuple): Documented attribute exposed by this type.
+        secondary_button_text (ColorTuple): Documented attribute exposed by this type.
+        text_primary (ColorTuple): Documented attribute exposed by this type.
+        text_muted (ColorTuple): Documented attribute exposed by this type.
+        error_background (ColorTuple): Documented attribute exposed by this type.
+        error_text (ColorTuple): Documented attribute exposed by this type.
+    """
 
     app_background: ColorTuple
     header_background: ColorTuple
@@ -62,7 +78,17 @@ _ACTIVE_THEME_STATE = {"mode": "light"}
 
 
 def normalize_theme_mode(theme_mode: str) -> str:
-    """Normalize supported theme modes into an applied palette mode."""
+    """Normalize supported theme modes into an applied palette mode.
+
+    Args:
+        theme_mode (str): Value supplied to this callable.
+
+    Returns:
+        str: Structured value returned by this callable.
+
+    Raises:
+        ValueError: Raised when this callable hits the corresponding error path.
+    """
     if theme_mode == "system":
         return "light"
     if theme_mode in {"light", "dark"}:
@@ -72,21 +98,43 @@ def normalize_theme_mode(theme_mode: str) -> str:
 
 
 def resolve_theme_palette(theme_mode: str) -> ThemePalette:
-    """Resolve a palette for the given theme mode."""
+    """Resolve a palette for the given theme mode.
+
+    Args:
+        theme_mode (str): Value supplied to this callable.
+
+    Returns:
+        ThemePalette: Structured value returned by this callable.
+    """
     normalized_mode = normalize_theme_mode(theme_mode)
     return DARK_THEME if normalized_mode == "dark" else LIGHT_THEME
 
 
 def set_active_theme_mode(theme_mode: str) -> None:
-    """Store the active theme mode for newly rendered widgets."""
+    """Store the active theme mode for newly rendered widgets.
+
+    Args:
+        theme_mode (str): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     _ACTIVE_THEME_STATE["mode"] = normalize_theme_mode(theme_mode)
 
 
 def get_active_theme_mode() -> str:
-    """Return the currently active theme mode."""
+    """Return the currently active theme mode.
+
+    Returns:
+        str: Structured value returned by this callable.
+    """
     return _ACTIVE_THEME_STATE["mode"]
 
 
 def get_active_theme() -> ThemePalette:
-    """Return the currently active theme palette."""
+    """Return the currently active theme palette.
+
+    Returns:
+        ThemePalette: Structured value returned by this callable.
+    """
     return resolve_theme_palette(_ACTIVE_THEME_STATE["mode"])

@@ -6,7 +6,15 @@ from pathlib import Path
 
 
 def find_first_level_file(project_path: Path, filename: str) -> Path | None:
-    """Return the first matching file found at the project root or one level below."""
+    """Return the first matching file found at the project root or one level below.
+
+    Args:
+        project_path (Path): Value supplied to this callable.
+        filename (str): Value supplied to this callable.
+
+    Returns:
+        Path | None: Structured value returned by this callable.
+    """
     root_candidate = project_path / filename
     if root_candidate.is_file():
         return root_candidate
@@ -18,7 +26,15 @@ def find_first_level_file(project_path: Path, filename: str) -> Path | None:
 
 
 def find_first_level_directory(project_path: Path, dirname: str) -> Path | None:
-    """Return the first matching directory found at the project root or one level below."""
+    """Return the first matching directory found at the project root or one level below.
+
+    Args:
+        project_path (Path): Value supplied to this callable.
+        dirname (str): Value supplied to this callable.
+
+    Returns:
+        Path | None: Structured value returned by this callable.
+    """
     root_candidate = project_path / dirname
     if root_candidate.is_dir():
         return root_candidate
@@ -30,7 +46,14 @@ def find_first_level_directory(project_path: Path, dirname: str) -> Path | None:
 
 
 def read_text_if_present(path: Path) -> str:
-    """Read a text file if possible and return an empty string otherwise."""
+    """Read a text file if possible and return an empty string otherwise.
+
+    Args:
+        path (Path): Value supplied to this callable.
+
+    Returns:
+        str: Structured value returned by this callable.
+    """
     if not path.is_file():
         return ""
     try:

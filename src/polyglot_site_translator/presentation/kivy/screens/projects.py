@@ -10,9 +10,22 @@ from polyglot_site_translator.presentation.kivy.widgets.common import AppButton,
 
 
 class ProjectsScreen(BaseShellScreen):
-    """Screen showing registered projects."""
+    """Screen showing registered projects.
+
+    Attributes:
+        None: This type does not declare additional class-level attributes.
+    """
 
     def __init__(self, *, shell: FrontendShell, manager_ref: ScreenManager) -> None:
+        """Build the project list screen and its navigation actions.
+
+        Args:
+            shell (FrontendShell): Value supplied to this callable.
+            manager_ref (ScreenManager): Value supplied to this callable.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         super().__init__(
             screen_name="projects",
             title="Projects",
@@ -28,18 +41,47 @@ class ProjectsScreen(BaseShellScreen):
         self.refresh()
 
     def _go_dashboard(self, *_args: object) -> None:
+        """Handle go dashboard.
+
+        Args:
+            _args (object): Value supplied to this callable.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         self._shell.open_dashboard()
         self.show_route("dashboard")
 
     def _open_project(self, project_id: str) -> None:
+        """Open project.
+
+        Args:
+            project_id (str): Value supplied to this callable.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         self._shell.select_project(project_id)
         self.show_route("project_detail")
 
     def _open_create_project(self, *_args: object) -> None:
+        """Open create project.
+
+        Args:
+            _args (object): Value supplied to this callable.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         self._shell.open_project_editor_create()
         self.show_route("project_editor")
 
     def refresh(self) -> None:
+        """Refresh the visible project list from the catalog-backed shell state.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         for button in self._project_buttons:
             self._content.remove_widget(button)
         self._project_buttons = []

@@ -12,6 +12,9 @@ The repository should also remain compatible with:
 - mypy for static type checking
 - pytest for tests
 
+All new and modified code must explicitly satisfy those standards. Do not rely on accidental
+compatibility or on whichever subset a tool happens to be checking by default.
+
 ---
 
 ## Core design principles
@@ -47,10 +50,19 @@ Interpretation for this repository:
 
 ## Docstrings
 
-- Public modules, classes, and non-trivial functions should have meaningful docstrings.
+- All modules, classes, functions, and methods, public or private, must have meaningful
+  docstrings.
+- Docstrings must be multi-line and structured; one-line placeholder docstrings are not acceptable
+  for behavioral symbols.
 - Docstrings must explain intent and important behavior, not restate the name.
+- Docstrings should describe relevant inputs, outputs, side effects, and failure behavior when
+  that context matters to maintainers.
+- Functions and methods should use sections such as `Args:`, `Returns:`, and `Raises:` whenever
+  they apply.
+- Classes should use sections such as `Attributes:` when they expose meaningful state.
 - Avoid filler text.
 - Keep docstrings aligned with actual behavior.
+- Follow PEP257 explicitly; do not treat docstrings as optional commentary.
 
 ---
 

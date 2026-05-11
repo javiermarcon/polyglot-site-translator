@@ -11,7 +11,11 @@ from polyglot_site_translator.app import create_kivy_app
 
 
 def main() -> None:
-    """Start the Kivy application."""
+    """Start the Kivy application.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     cast(Any, create_kivy_app()).run()
 
 

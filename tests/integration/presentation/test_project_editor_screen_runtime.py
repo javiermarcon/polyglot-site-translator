@@ -25,6 +25,11 @@ from tests.support.frontend_doubles import build_seeded_services
 
 
 def test_project_editor_screen_renders_empty_state_and_requires_loaded_state() -> None:
+    """Verify project editor screen renders empty state and requires loaded state.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     app = cast(Any, create_kivy_app(services=build_seeded_services()))
     root = app.build()
     editor_screen = root.get_screen("project_editor")
@@ -64,6 +69,11 @@ def test_project_editor_screen_renders_empty_state_and_requires_loaded_state() -
 
 
 def test_project_editor_screen_saves_new_projects_and_can_return_to_projects() -> None:
+    """Verify project editor screen saves new projects and can return to projects.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     app = cast(Any, create_kivy_app(services=build_seeded_services()))
     root = app.build()
     editor_screen = root.get_screen("project_editor")
@@ -110,6 +120,11 @@ def test_project_editor_screen_saves_new_projects_and_can_return_to_projects() -
 
 
 def test_project_editor_screen_exposes_dynamic_framework_options() -> None:
+    """Verify project editor screen exposes dynamic framework options.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     app = cast(Any, create_kivy_app(services=build_seeded_services()))
     root = app.build()
     editor_screen = root.get_screen("project_editor")
@@ -144,6 +159,11 @@ def test_project_editor_screen_exposes_dynamic_framework_options() -> None:
 
 
 def test_project_editor_screen_uses_sectioned_layout_and_can_switch_sections() -> None:
+    """Verify project editor screen uses sectioned layout and can switch sections.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     app = cast(Any, create_kivy_app(services=build_seeded_services()))
     root = app.build()
     editor_screen = root.get_screen("project_editor")
@@ -186,6 +206,11 @@ def test_project_editor_screen_uses_sectioned_layout_and_can_switch_sections() -
 
 
 def test_project_editor_screen_keeps_the_sections_menu_top_aligned() -> None:
+    """Verify project editor screen keeps the sections menu top aligned.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     app = cast(Any, create_kivy_app(services=build_seeded_services()))
     root = app.build()
     editor_screen = root.get_screen("project_editor")
@@ -207,6 +232,11 @@ def test_project_editor_screen_keeps_the_sections_menu_top_aligned() -> None:
 
 
 def test_project_editor_screen_saves_edits_and_refreshes_when_not_routed_to_detail() -> None:
+    """Verify project editor screen saves edits and refreshes when not routed to detail.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     app = cast(Any, create_kivy_app(services=build_seeded_services()))
     root = app.build()
     detail_screen = root.get_screen("project_detail")
@@ -236,9 +266,22 @@ def test_project_editor_screen_saves_edits_and_refreshes_when_not_routed_to_deta
     refresh_calls: list[str] = []
 
     def record_refresh() -> None:
+        """Handle record refresh.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         refresh_calls.append("refresh")
 
     def keep_editor_route(_editor: SiteEditorViewModel) -> None:
+        """Handle keep editor route.
+
+        Args:
+            _editor (SiteEditorViewModel): Value supplied to this callable.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         shell.router.go_to(shell.router.current.name)
 
     shell.open_project_editor_create()
@@ -253,6 +296,11 @@ def test_project_editor_screen_saves_edits_and_refreshes_when_not_routed_to_deta
 
 
 def test_project_detail_screen_edit_button_ignores_missing_detail_and_opens_editor() -> None:
+    """Verify project detail screen edit button ignores missing detail and opens editor.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     app = cast(Any, create_kivy_app(services=build_seeded_services()))
     root = app.build()
     detail_screen = root.get_screen("project_detail")
@@ -272,6 +320,11 @@ def test_project_detail_screen_edit_button_ignores_missing_detail_and_opens_edit
 
 
 def test_project_editor_screen_uses_save_new_project_when_site_id_is_missing_in_edit_mode() -> None:
+    """Verify project editor screen uses save new project when site id is missing in edit mode.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     app = cast(Any, create_kivy_app(services=build_seeded_services()))
     root = app.build()
     editor_screen = root.get_screen("project_editor")
@@ -279,6 +332,14 @@ def test_project_editor_screen_uses_save_new_project_when_site_id_is_missing_in_
     calls: list[tuple[str, SiteEditorViewModel]] = []
 
     def record_create(editor: SiteEditorViewModel) -> None:
+        """Handle record create.
+
+        Args:
+            editor (SiteEditorViewModel): Value supplied to this callable.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         calls.append(("create", editor))
 
     shell.open_project_editor_create()
@@ -315,6 +376,14 @@ def test_project_editor_screen_uses_save_new_project_when_site_id_is_missing_in_
 def test_project_editor_screen_refreshes_scope_and_allows_custom_project_rules(
     tmp_path: Path,
 ) -> None:
+    """Verify project editor screen refreshes scope and allows custom project rules.
+
+    Args:
+        tmp_path (Path): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     settings_service = build_default_settings_service(config_dir=tmp_path / "config")
     app = cast(
         Any,
@@ -355,6 +424,14 @@ def test_project_editor_screen_refreshes_scope_and_allows_custom_project_rules(
 def test_project_editor_screen_can_disable_and_remove_project_sync_rules(
     tmp_path: Path,
 ) -> None:
+    """Verify project editor screen can disable and remove project sync rules.
+
+    Args:
+        tmp_path (Path): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     settings_service = build_default_settings_service(config_dir=tmp_path / "config")
     app = cast(
         Any,
@@ -432,6 +509,11 @@ def test_project_editor_screen_can_disable_and_remove_project_sync_rules(
 
 
 def test_project_editor_screen_preserves_hidden_fields_across_section_switches() -> None:
+    """Verify project editor screen preserves hidden fields across section switches.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     app = cast(Any, create_kivy_app(services=build_seeded_services()))
     root = app.build()
     editor_screen = root.get_screen("project_editor")

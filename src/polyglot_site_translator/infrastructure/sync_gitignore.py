@@ -12,7 +12,14 @@ from polyglot_site_translator.domain.sync.scope import (
 
 
 def load_gitignore_sync_rules(project_path: Path) -> tuple[ConfiguredSyncRule, ...]:
-    """Load supported sync exclusions from the project's .gitignore file."""
+    """Load supported sync exclusions from the project's .gitignore file.
+
+    Args:
+        project_path (Path): Value supplied to this callable.
+
+    Returns:
+        tuple[ConfiguredSyncRule, ...]: Structured value returned by this callable.
+    """
     gitignore_path = project_path / ".gitignore"
     if not gitignore_path.exists():
         return ()
@@ -26,6 +33,14 @@ def load_gitignore_sync_rules(project_path: Path) -> tuple[ConfiguredSyncRule, .
 
 
 def _parse_gitignore_line(raw_line: str) -> ConfiguredSyncRule | None:
+    """Parse gitignore line.
+
+    Args:
+        raw_line (str): Value supplied to this callable.
+
+    Returns:
+        ConfiguredSyncRule | None: Structured value returned by this callable.
+    """
     stripped_line = raw_line.strip()
     if stripped_line == "" or stripped_line.startswith("#") or stripped_line.startswith("!"):
         return None

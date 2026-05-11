@@ -130,10 +130,16 @@ select = [
   "EM",
   "BLE",
   "PL",
+  "D",
 ]
 ignore = [
   "TRY003",
+  "D203",
+  "D213",
 ]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**/*.py" = [

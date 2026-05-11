@@ -24,9 +24,22 @@ from polyglot_site_translator.presentation.view_models import (
 
 
 class PolyglotSiteTranslatorApp(App):  # type: ignore[misc]
-    """Thin Kivy application wrapper around the presentation shell."""
+    """Thin Kivy application wrapper around the presentation shell.
+
+    Attributes:
+        None: This type does not declare additional class-level attributes.
+    """
 
     def __init__(self, shell: FrontendShell, **kwargs: object) -> None:
+        """Capture the presentation shell and preserve global exception hooks.
+
+        Args:
+            shell (FrontendShell): Value supplied to this callable.
+            kwargs (object): Value supplied to this callable.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         super().__init__(**kwargs)
         self._shell = shell
         self._built_root: Any | None = None
@@ -35,7 +48,11 @@ class PolyglotSiteTranslatorApp(App):  # type: ignore[misc]
         self._runtime_exception_handler = _RuntimeExceptionHandler(self)
 
     def build(self) -> Any:
-        """Build the root widget tree."""
+        """Build the root widget tree.
+
+        Returns:
+            Any: Structured value returned by this callable.
+        """
         self.title = "Polyglot Site Translator"
         self._install_runtime_error_handlers()
         self._open_initial_route()
@@ -43,14 +60,25 @@ class PolyglotSiteTranslatorApp(App):  # type: ignore[misc]
         return self._built_root
 
     def on_stop(self) -> None:
-        """Restore global runtime exception hooks on shutdown."""
+        """Restore global runtime exception hooks on shutdown.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         ExceptionManager.remove_handler(self._runtime_exception_handler)
         sys.excepthook = self._previous_excepthook
         threading.excepthook = self._previous_threading_excepthook
         super().on_stop()
 
     def apply_runtime_settings(self, app_settings: AppSettingsViewModel) -> None:
-        """Apply runtime Kivy settings after a successful save."""
+        """Apply runtime Kivy settings after a successful save.
+
+        Args:
+            app_settings (AppSettingsViewModel): Value supplied to this callable.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         set_active_theme_mode(app_settings.theme_mode)
         Window.size = (app_settings.window_width, app_settings.window_height)
         root = self.root or self._built_root
@@ -64,7 +92,11 @@ class PolyglotSiteTranslatorApp(App):  # type: ignore[misc]
             current_screen.refresh()
 
     def _open_initial_route(self) -> None:
-        """Load persisted frontend settings before choosing the initial route."""
+        """Load persisted frontend settings before choosing the initial route.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         state = self._load_startup_settings()
         if state is None:
             self._shell.open_dashboard()
@@ -82,7 +114,11 @@ class PolyglotSiteTranslatorApp(App):  # type: ignore[misc]
         self._shell.open_dashboard()
 
     def _load_startup_settings(self) -> SettingsStateViewModel | None:
-        """Load settings for startup without mutating remembered navigation first."""
+        """Load settings for startup without mutating remembered navigation first.
+
+        Returns:
+            SettingsStateViewModel | None: Structured value returned by this callable.
+        """
         try:
             state = self._shell.services.settings.load_settings()
             self._shell.settings_state = state
@@ -98,7 +134,11 @@ class PolyglotSiteTranslatorApp(App):  # type: ignore[misc]
         return self._shell.settings_state
 
     def _install_runtime_error_handlers(self) -> None:
-        """Install app-level exception routing for foreground and background failures."""
+        """Install app-level exception routing for foreground and background failures.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         sys.excepthook = self._handle_main_exception
         threading.excepthook = self._handle_thread_exception
         ExceptionManager.add_handler(self._runtime_exception_handler)
@@ -109,7 +149,16 @@ class PolyglotSiteTranslatorApp(App):  # type: ignore[misc]
         exc_value: BaseException,
         exc_traceback: TracebackType | None,
     ) -> None:
-        """Route uncaught main-thread exceptions into shell state."""
+        """Route uncaught main-thread exceptions into shell state.
+
+        Args:
+            exc_type (type[BaseException]): Value supplied to this callable.
+            exc_value (BaseException): Value supplied to this callable.
+            exc_traceback (TracebackType | None): Value supplied to this callable.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         if issubclass(exc_type, KeyboardInterrupt | SystemExit):
             self._previous_excepthook(exc_type, exc_value, exc_traceback)
             return
@@ -119,7 +168,14 @@ class PolyglotSiteTranslatorApp(App):  # type: ignore[misc]
         )
 
     def _handle_thread_exception(self, args: threading.ExceptHookArgs) -> None:
-        """Route uncaught worker-thread exceptions into shell state."""
+        """Route uncaught worker-thread exceptions into shell state.
+
+        Args:
+            args (threading.ExceptHookArgs): Value supplied to this callable.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         if issubclass(args.exc_type, KeyboardInterrupt | SystemExit):
             self._previous_threading_excepthook(args)
             return
@@ -135,13 +191,33 @@ class PolyglotSiteTranslatorApp(App):  # type: ignore[misc]
 
 
 class _RuntimeExceptionHandler(ExceptionHandler):  # type: ignore[misc]
-    """Kivy exception bridge that surfaces callback failures in the shell."""
+    """Kivy exception bridge that surfaces callback failures in the shell.
+
+    Attributes:
+        None: This type does not declare additional class-level attributes.
+    """
 
     def __init__(self, app: PolyglotSiteTranslatorApp) -> None:
+        """Initialize this object and store its runtime dependencies.
+
+        Args:
+            app (PolyglotSiteTranslatorApp): Value supplied to this callable.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         super().__init__()
         self._app = app
 
     def handle_exception(self, inst: BaseException) -> int:
+        """Handle handle exception.
+
+        Args:
+            inst (BaseException): Value supplied to this callable.
+
+        Returns:
+            int: Structured value returned by this callable.
+        """
         if isinstance(inst, KeyboardInterrupt | SystemExit):
             return cast(int, ExceptionManager.RAISE)
         self._app._shell.surface_unhandled_runtime_error(

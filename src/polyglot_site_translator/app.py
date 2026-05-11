@@ -16,7 +16,14 @@ from polyglot_site_translator.presentation.kivy.app import PolyglotSiteTranslato
 def create_kivy_app(
     services: FrontendServices | None = None,
 ) -> PolyglotSiteTranslatorApp:
-    """Build the Kivy app with injectable presentation services."""
+    """Build the Kivy app with injectable presentation services.
+
+    Args:
+        services (FrontendServices | None): Value supplied to this callable.
+
+    Returns:
+        PolyglotSiteTranslatorApp: Structured value returned by this callable.
+    """
     resolved_services = services or build_default_frontend_services(
         settings_service=build_default_settings_service()
     )

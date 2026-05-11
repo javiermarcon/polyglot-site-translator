@@ -16,6 +16,11 @@ from polyglot_site_translator.presentation.kivy.widgets.password_visibility impo
 
 
 def test_material_icons_font_is_bundled() -> None:
+    """Verify material icons font is bundled.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     path = password_visibility._material_icons_font_path()
     assert path.name == "MaterialIcons-Regular.ttf"
     assert path.is_file()
@@ -23,6 +28,11 @@ def test_material_icons_font_is_bundled() -> None:
 
 def test_password_visibility_toggle_label_matches_mask_state() -> None:
     # Material Icons: visibility (e8f4), visibility_off (e8f5)
+    """Verify password visibility toggle label matches mask state.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     assert password_visibility_toggle_label(password_masked=True) == "\ue8f4"
     assert password_visibility_toggle_label(password_masked=False) == "\ue8f5"
 
@@ -30,6 +40,14 @@ def test_password_visibility_toggle_label_matches_mask_state() -> None:
 def test_material_icons_font_path_raises_when_font_is_missing(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    """Verify material icons font path raises when font is missing.
+
+    Args:
+        monkeypatch (pytest.MonkeyPatch): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     monkeypatch.setattr(Path, "is_file", lambda self: False)
 
     with pytest.raises(FileNotFoundError, match="Bundled Material Icons font not found"):
@@ -37,6 +55,11 @@ def test_material_icons_font_path_raises_when_font_is_missing(
 
 
 def test_build_password_row_with_visibility_toggle_toggles_mask_state() -> None:
+    """Verify build password row with visibility toggle toggles mask state.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     text_input = TextInput(text="secret", password=True)
 
     row = build_password_row_with_visibility_toggle(text_input)

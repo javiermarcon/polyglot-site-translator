@@ -9,14 +9,31 @@ from pathlib import Path
 
 
 class SyncDirection(StrEnum):
-    """Supported synchronization directions."""
+    """Supported synchronization directions.
+
+    Attributes:
+        REMOTE_TO_LOCAL: Documented attribute exposed by this type.
+        LOCAL_TO_REMOTE: Documented attribute exposed by this type.
+    """
 
     REMOTE_TO_LOCAL = "remote_to_local"
     LOCAL_TO_REMOTE = "local_to_remote"
 
 
 class SyncProgressStage(StrEnum):
-    """Supported progress stages reported during sync execution."""
+    """Supported progress stages reported during sync execution.
+
+    Attributes:
+        PREPARING_LOCAL: Documented attribute exposed by this type.
+        PREPARING_REMOTE: Documented attribute exposed by this type.
+        LISTING_LOCAL: Documented attribute exposed by this type.
+        LISTING_REMOTE: Documented attribute exposed by this type.
+        DOWNLOADING_FILE: Documented attribute exposed by this type.
+        UPLOADING_FILE: Documented attribute exposed by this type.
+        WRITING_LOCAL_FILE: Documented attribute exposed by this type.
+        COMPLETED: Documented attribute exposed by this type.
+        FAILED: Documented attribute exposed by this type.
+    """
 
     PREPARING_LOCAL = "preparing_local"
     PREPARING_REMOTE = "preparing_remote"
@@ -31,7 +48,13 @@ class SyncProgressStage(StrEnum):
 
 @dataclass(frozen=True)
 class RemoteSyncFile:
-    """A file discovered in the remote workspace for synchronization."""
+    """A file discovered in the remote workspace for synchronization.
+
+    Attributes:
+        remote_path (str): Documented attribute exposed by this type.
+        relative_path (str): Documented attribute exposed by this type.
+        size_bytes (int): Documented attribute exposed by this type.
+    """
 
     remote_path: str
     relative_path: str
@@ -40,7 +63,13 @@ class RemoteSyncFile:
 
 @dataclass(frozen=True)
 class LocalSyncFile:
-    """A file discovered in the local workspace for synchronization."""
+    """A file discovered in the local workspace for synchronization.
+
+    Attributes:
+        local_path (Path): Documented attribute exposed by this type.
+        relative_path (str): Documented attribute exposed by this type.
+        size_bytes (int): Documented attribute exposed by this type.
+    """
 
     local_path: Path
     relative_path: str
@@ -49,7 +78,19 @@ class LocalSyncFile:
 
 @dataclass(frozen=True)
 class SyncProgressEvent:
-    """Structured progress event emitted during a sync workflow."""
+    """Structured progress event emitted during a sync workflow.
+
+    Attributes:
+        stage (SyncProgressStage): Documented attribute exposed by this type.
+        message (str): Documented attribute exposed by this type.
+        command_text (str | None): Documented attribute exposed by this type.
+        files_discovered (int | None): Documented attribute exposed by this type.
+        files_downloaded (int | None): Documented attribute exposed by this type.
+        files_uploaded (int | None): Documented attribute exposed by this type.
+        total_files (int | None): Documented attribute exposed by this type.
+        bytes_downloaded (int | None): Documented attribute exposed by this type.
+        bytes_uploaded (int | None): Documented attribute exposed by this type.
+    """
 
     stage: SyncProgressStage
     message: str
@@ -64,7 +105,16 @@ class SyncProgressEvent:
 
 @dataclass(frozen=True)
 class SyncSummary:
-    """Structured counters produced by a sync execution."""
+    """Structured counters produced by a sync execution.
+
+    Attributes:
+        files_discovered (int): Documented attribute exposed by this type.
+        files_downloaded (int): Documented attribute exposed by this type.
+        directories_created (int): Documented attribute exposed by this type.
+        bytes_downloaded (int): Documented attribute exposed by this type.
+        files_uploaded (int): Documented attribute exposed by this type.
+        bytes_uploaded (int): Documented attribute exposed by this type.
+    """
 
     files_discovered: int
     files_downloaded: int
@@ -76,7 +126,14 @@ class SyncSummary:
 
 @dataclass(frozen=True)
 class SyncError:
-    """Structured sync failure information."""
+    """Structured sync failure information.
+
+    Attributes:
+        code (str): Documented attribute exposed by this type.
+        message (str): Documented attribute exposed by this type.
+        remote_path (str | None): Documented attribute exposed by this type.
+        local_path (str | None): Documented attribute exposed by this type.
+    """
 
     code: str
     message: str
@@ -86,7 +143,17 @@ class SyncError:
 
 @dataclass(frozen=True)
 class SyncResult:
-    """Structured result returned by a sync workflow."""
+    """Structured result returned by a sync workflow.
+
+    Attributes:
+        direction (SyncDirection): Documented attribute exposed by this type.
+        success (bool): Documented attribute exposed by this type.
+        project_id (str): Documented attribute exposed by this type.
+        connection_type (str | None): Documented attribute exposed by this type.
+        local_path (str): Documented attribute exposed by this type.
+        summary (SyncSummary): Documented attribute exposed by this type.
+        error (SyncError | None): Documented attribute exposed by this type.
+    """
 
     direction: SyncDirection
     success: bool

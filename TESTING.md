@@ -14,6 +14,24 @@ This project combines:
 
 Testing must reflect those responsibilities without making the suite fragile.
 
+Validation expectations for every non-trivial change remain explicit:
+
+- PEP8
+- PEP257
+- PEP484
+- Ruff
+- mypy
+- the repository docstring audit for public and private symbols
+- pytest for the affected scope
+
+Docstring compliance is structural, not cosmetic. For classes, functions, and methods, public or
+private:
+
+- one-line placeholder docstrings are not acceptable
+- docstrings must be multi-line
+- functions and methods must include `Args:`, `Returns:`, and `Raises:` sections when relevant
+- classes must include `Attributes:` when they expose meaningful state
+
 ---
 
 ## Test stack
@@ -33,6 +51,14 @@ Avoid tests that depend on:
 - real user-specific environments
 - real Android packaging
 - GUI timing hacks unless absolutely necessary
+
+Canonical validation commands now include:
+
+- `python -m ruff check .`
+- `python -m ruff format --check .`
+- `python -m mypy .`
+- `python tests/run_docstring_audit.py`
+- `python -m pytest`
 
 ---
 
@@ -57,6 +83,9 @@ For touched production modules, tests should also explicitly aim to cover:
 - every public function
 - every public method
 - every class with behavior
+- private functions and methods whenever they contain real behavior instead of trivial forwarding
+- public docstring-covered behavior and contract expectations, so documentation and tests remain
+  aligned
 - meaningful private helpers when they contain branching, validation, mapping, or error-handling logic
 - all relevant success, edge, and failure branches
 

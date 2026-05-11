@@ -14,6 +14,11 @@ from polyglot_site_translator.presentation.view_models import (
 
 
 def _build_options() -> TranslationOptionsViewModel:
+    """Handle build options.
+
+    Returns:
+        TranslationOptionsViewModel: Structured value returned by this callable.
+    """
     return TranslationOptionsViewModel(
         compile_mo=True,
         use_external_translator=False,
@@ -26,6 +31,11 @@ def _build_options() -> TranslationOptionsViewModel:
 
 
 def test_po_locale_selection_popup_preloads_default_locales() -> None:
+    """Verify po locale selection popup preloads default locales.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     popup = POLocaleSelectionPopup(
         default_locales="es_ES,es_AR",
         default_options=_build_options(),
@@ -50,6 +60,14 @@ def test_po_locale_selection_popup_preloads_default_locales() -> None:
 def test_po_locale_selection_popup_normalizes_and_confirms_locales(
     monkeypatch: MonkeyPatch,
 ) -> None:
+    """Verify po locale selection popup normalizes and confirms locales.
+
+    Args:
+        monkeypatch (MonkeyPatch): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     popup = POLocaleSelectionPopup(
         default_locales="es_ES",
         default_options=TranslationOptionsViewModel(
@@ -67,6 +85,14 @@ def test_po_locale_selection_popup_normalizes_and_confirms_locales(
     dismiss_calls: list[str] = []
 
     def record_confirm(request: TranslationWorkflowRequestViewModel) -> None:
+        """Handle record confirm.
+
+        Args:
+            request (TranslationWorkflowRequestViewModel): Value supplied to this callable.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         confirmed.append(request)
 
     monkeypatch.setattr(popup, "_on_confirm", record_confirm)
@@ -100,6 +126,11 @@ def test_po_locale_selection_popup_normalizes_and_confirms_locales(
 
 
 def test_po_locale_selection_popup_keeps_open_when_locales_are_invalid() -> None:
+    """Verify po locale selection popup keeps open when locales are invalid.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     popup = POLocaleSelectionPopup(
         default_locales="es_ES",
         default_options=TranslationOptionsViewModel(),
@@ -116,6 +147,11 @@ def test_po_locale_selection_popup_keeps_open_when_locales_are_invalid() -> None
 
 
 def test_po_locale_selection_popup_builds_consistent_toggle_row_copy() -> None:
+    """Verify po locale selection popup builds consistent toggle row copy.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     popup = POLocaleSelectionPopup(
         default_locales="es_ES",
         default_options=TranslationOptionsViewModel(),

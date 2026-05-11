@@ -18,14 +18,27 @@ from polyglot_site_translator.domain.sync.scope import (
 
 @dataclass(frozen=True)
 class WordPressFrameworkAdapter(BaseFrameworkAdapter):
-    """Detect WordPress project layouts."""
+    """Detect WordPress project layouts.
+
+    Attributes:
+        framework_type (str): Documented attribute exposed by this type.
+        adapter_name (str): Documented attribute exposed by this type.
+        display_name (str): Documented attribute exposed by this type.
+    """
 
     framework_type: str = "wordpress"
     adapter_name: str = "wordpress_adapter"
     display_name: str = "WordPress"
 
     def get_sync_scope(self, project_path: Path) -> AdapterSyncScope:
-        """Return the default WordPress sync scope."""
+        """Return the default WordPress sync scope.
+
+        Args:
+            project_path (Path): Value supplied to this callable.
+
+        Returns:
+            AdapterSyncScope: Structured value returned by this callable.
+        """
         return AdapterSyncScope(
             filters=(
                 SyncFilterSpec(
@@ -47,7 +60,14 @@ class WordPressFrameworkAdapter(BaseFrameworkAdapter):
         )
 
     def detect(self, project_path: Path) -> FrameworkDetectionResult:
-        """Inspect a local path for WordPress markers."""
+        """Inspect a local path for WordPress markers.
+
+        Args:
+            project_path (Path): Value supplied to this callable.
+
+        Returns:
+            FrameworkDetectionResult: Structured value returned by this callable.
+        """
         wp_config = project_path / "wp-config.php"
         wp_content = project_path / "wp-content"
         wp_includes = project_path / "wp-includes"

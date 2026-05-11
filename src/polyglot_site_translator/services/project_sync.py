@@ -40,14 +40,33 @@ from polyglot_site_translator.infrastructure.sync_local import LocalSyncWorkspac
 
 
 class FrameworkSyncScopeResolver(Protocol):
-    """Resolve adapter-defined sync scopes for a registered site."""
+    """Resolve adapter-defined sync scopes for a registered site.
+
+    Attributes:
+        None: This type does not declare additional class-level attributes.
+    """
 
     def resolve_for_site(self, site: RegisteredSite) -> ResolvedSyncScope:
-        """Return the resolved sync scope for the provided site."""
+        """Return the resolved sync scope for the provided site.
+
+        Args:
+            site (RegisteredSite): Value supplied to this callable.
+
+        Returns:
+            ResolvedSyncScope: Structured value returned by this callable.
+        """
 
 
 @dataclass(frozen=True)
 class _FailureContext:
+    """Provide FailureContext behavior for this module.
+
+    Attributes:
+        site (RegisteredSite): Documented attribute exposed by this type.
+        connection_type (str | None): Documented attribute exposed by this type.
+        summary (SyncSummary): Documented attribute exposed by this type.
+    """
+
     site: RegisteredSite
     connection_type: str | None
     summary: SyncSummary
@@ -55,6 +74,17 @@ class _FailureContext:
 
 @dataclass(frozen=True)
 class _DownloadContext:
+    """Provide DownloadContext behavior for this module.
+
+    Attributes:
+        site (RegisteredSite): Documented attribute exposed by this type.
+        connection_type (str): Documented attribute exposed by this type.
+        local_root (Path): Documented attribute exposed by this type.
+        remote_connection (RemoteConnectionConfig): Documented attribute exposed by this type.
+        provider (RemoteConnectionProvider): Documented attribute exposed by this type.
+        summary (SyncSummary): Documented attribute exposed by this type.
+    """
+
     site: RegisteredSite
     connection_type: str
     local_root: Path
@@ -65,6 +95,17 @@ class _DownloadContext:
 
 @dataclass(frozen=True)
 class _UploadContext:
+    """Provide UploadContext behavior for this module.
+
+    Attributes:
+        site (RegisteredSite): Documented attribute exposed by this type.
+        connection_type (str): Documented attribute exposed by this type.
+        local_root (Path): Documented attribute exposed by this type.
+        remote_connection (RemoteConnectionConfig): Documented attribute exposed by this type.
+        provider (RemoteConnectionProvider): Documented attribute exposed by this type.
+        summary (SyncSummary): Documented attribute exposed by this type.
+    """
+
     site: RegisteredSite
     connection_type: str
     local_root: Path
@@ -74,7 +115,11 @@ class _UploadContext:
 
 
 class ProjectSyncService:
-    """Orchestrate bidirectional file synchronization for registered projects."""
+    """Orchestrate bidirectional file synchronization for registered projects.
+
+    Attributes:
+        None: This type does not declare additional class-level attributes.
+    """
 
     def __init__(
         self,
@@ -83,6 +128,17 @@ class ProjectSyncService:
         local_workspace: LocalSyncWorkspace | None = None,
         framework_sync_scope_service: FrameworkSyncScopeResolver | None = None,
     ) -> None:
+        """Store transport, local-workspace, and sync-scope collaborators.
+
+        Args:
+            registry (RemoteConnectionRegistry): Value supplied to this callable.
+            local_workspace (LocalSyncWorkspace | None): Value supplied to this callable.
+            framework_sync_scope_service (FrameworkSyncScopeResolver | None): Value supplied to this
+            callable.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         self._registry = registry
         self._local_workspace = local_workspace or LocalSyncWorkspace()
         self._framework_sync_scope_service = framework_sync_scope_service
@@ -93,7 +149,19 @@ class ProjectSyncService:
         progress_callback: SyncProgressCallback | None = None,
         resolved_scope: ResolvedSyncScope | None = None,
     ) -> SyncResult:
-        """Synchronize the site's configured remote workspace into the local path."""
+        """Synchronize the site's configured remote workspace into the local path.
+
+        Args:
+            site (RegisteredSite): Value supplied to this callable.
+            progress_callback (SyncProgressCallback | None): Value supplied to this callable.
+            resolved_scope (ResolvedSyncScope | None): Value supplied to this callable.
+
+        Returns:
+            SyncResult: Structured value returned by this callable.
+
+        Raises:
+            AssertionError: Raised when this callable hits the corresponding error path.
+        """
         summary = SyncSummary(
             files_discovered=0,
             files_downloaded=0,
@@ -162,7 +230,19 @@ class ProjectSyncService:
         progress_callback: SyncProgressCallback | None = None,
         resolved_scope: ResolvedSyncScope | None = None,
     ) -> SyncResult:
-        """Synchronize the site's local workspace into the configured remote path."""
+        """Synchronize the site's local workspace into the configured remote path.
+
+        Args:
+            site (RegisteredSite): Value supplied to this callable.
+            progress_callback (SyncProgressCallback | None): Value supplied to this callable.
+            resolved_scope (ResolvedSyncScope | None): Value supplied to this callable.
+
+        Returns:
+            SyncResult: Structured value returned by this callable.
+
+        Raises:
+            AssertionError: Raised when this callable hits the corresponding error path.
+        """
         summary = SyncSummary(
             files_discovered=0,
             files_downloaded=0,
@@ -254,6 +334,18 @@ class ProjectSyncService:
         summary: SyncSummary,
         progress_callback: SyncProgressCallback | None,
     ) -> tuple[SyncSummary, SyncResult | None]:
+        """Prepare local workspace.
+
+        Args:
+            site (RegisteredSite): Value supplied to this callable.
+            connection_type (str): Value supplied to this callable.
+            local_root (Path): Value supplied to this callable.
+            summary (SyncSummary): Value supplied to this callable.
+            progress_callback (SyncProgressCallback | None): Value supplied to this callable.
+
+        Returns:
+            tuple[SyncSummary, SyncResult | None]: Structured value returned by this callable.
+        """
         self._emit_progress(
             progress_callback,
             SyncProgressEvent(
@@ -311,6 +403,19 @@ class ProjectSyncService:
         summary: SyncSummary,
         direction: SyncDirection = SyncDirection.REMOTE_TO_LOCAL,
     ) -> tuple[RemoteConnectionProvider | None, SyncResult | None]:
+        """Resolve provider.
+
+        Args:
+            site (RegisteredSite): Value supplied to this callable.
+            connection_type (str): Value supplied to this callable.
+            summary (SyncSummary): Value supplied to this callable.
+            direction (SyncDirection): Value supplied to this callable.
+
+        Returns:
+            tuple[RemoteConnectionProvider | None, SyncResult | None]: Structured value returned by
+        this
+            callable.
+        """
         try:
             return self._registry.get_provider(connection_type), None
         except LookupError as error:
@@ -335,6 +440,18 @@ class ProjectSyncService:
         direction: SyncDirection,
         resolved_scope: ResolvedSyncScope | None,
     ) -> tuple[ResolvedSyncScope | None, SyncResult | None]:
+        """Resolve requested scope.
+
+        Args:
+            site (RegisteredSite): Value supplied to this callable.
+            summary (SyncSummary): Value supplied to this callable.
+            direction (SyncDirection): Value supplied to this callable.
+            resolved_scope (ResolvedSyncScope | None): Value supplied to this callable.
+
+        Returns:
+            tuple[ResolvedSyncScope | None, SyncResult | None]: Structured value returned by this
+        callable.
+        """
         remote_connection = site.remote_connection
         if resolved_scope is not None:
             return resolved_scope, None
@@ -409,6 +526,17 @@ class ProjectSyncService:
         progress_callback: SyncProgressCallback | None,
         resolved_scope: ResolvedSyncScope | None,
     ) -> SyncResult:
+        """Synchronize local files incrementally.
+
+        Args:
+            context (_UploadContext): Value supplied to this callable.
+            local_files (list[LocalSyncFile]): Value supplied to this callable.
+            progress_callback (SyncProgressCallback | None): Value supplied to this callable.
+            resolved_scope (ResolvedSyncScope | None): Value supplied to this callable.
+
+        Returns:
+            SyncResult: Structured value returned by this callable.
+        """
         files_discovered = 0
         files_uploaded = 0
         directories_created = context.summary.directories_created
@@ -593,6 +721,16 @@ class ProjectSyncService:
         progress_callback: SyncProgressCallback | None,
         resolved_scope: ResolvedSyncScope | None,
     ) -> list[LocalSyncFile]:
+        """List local files.
+
+        Args:
+            local_root (Path): Value supplied to this callable.
+            progress_callback (SyncProgressCallback | None): Value supplied to this callable.
+            resolved_scope (ResolvedSyncScope | None): Value supplied to this callable.
+
+        Returns:
+            list[LocalSyncFile]: Structured value returned by this callable.
+        """
         self._emit_progress(
             progress_callback,
             SyncProgressEvent(
@@ -614,6 +752,16 @@ class ProjectSyncService:
         progress_callback: SyncProgressCallback | None,
         resolved_scope: ResolvedSyncScope | None,
     ) -> SyncResult:
+        """Synchronize remote files incrementally.
+
+        Args:
+            context (_DownloadContext): Value supplied to this callable.
+            progress_callback (SyncProgressCallback | None): Value supplied to this callable.
+            resolved_scope (ResolvedSyncScope | None): Value supplied to this callable.
+
+        Returns:
+            SyncResult: Structured value returned by this callable.
+        """
         files_discovered = 0
         files_downloaded = 0
         directories_created = context.summary.directories_created
@@ -913,6 +1061,15 @@ class ProjectSyncService:
         session: RemoteConnectionSession,
         progress_callback: SyncProgressCallback | None,
     ) -> None:
+        """Close remote session.
+
+        Args:
+            session (RemoteConnectionSession): Value supplied to this callable.
+            progress_callback (SyncProgressCallback | None): Value supplied to this callable.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         try:
             session.close(progress_callback=progress_callback)
         except RemoteConnectionOperationError as error:
@@ -939,6 +1096,16 @@ class ProjectSyncService:
         context: _FailureContext,
         error: SyncError,
     ) -> SyncResult:
+        """Handle failure result.
+
+        Args:
+            direction (SyncDirection): Value supplied to this callable.
+            context (_FailureContext): Value supplied to this callable.
+            error (SyncError): Value supplied to this callable.
+
+        Returns:
+            SyncResult: Structured value returned by this callable.
+        """
         return SyncResult(
             direction=direction,
             success=False,
@@ -954,6 +1121,15 @@ class ProjectSyncService:
         progress_callback: SyncProgressCallback | None,
         event: SyncProgressEvent,
     ) -> None:
+        """Emit progress.
+
+        Args:
+            progress_callback (SyncProgressCallback | None): Value supplied to this callable.
+            event (SyncProgressEvent): Value supplied to this callable.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         if progress_callback is None:
             return
         progress_callback(event)
@@ -963,6 +1139,15 @@ class ProjectSyncService:
         progress_callback: SyncProgressCallback | None,
         result: SyncResult,
     ) -> None:
+        """Emit completion.
+
+        Args:
+            progress_callback (SyncProgressCallback | None): Value supplied to this callable.
+            result (SyncResult): Value supplied to this callable.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         self._emit_progress(
             progress_callback,
             SyncProgressEvent(
@@ -986,6 +1171,15 @@ class ProjectSyncService:
         progress_callback: SyncProgressCallback | None,
         result: SyncResult,
     ) -> None:
+        """Emit failure.
+
+        Args:
+            progress_callback (SyncProgressCallback | None): Value supplied to this callable.
+            result (SyncResult): Value supplied to this callable.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         error = result.error
         if error is None:
             return
@@ -1010,6 +1204,16 @@ def _format_local_workspace_error(
     local_root: Path,
     error: OSError,
 ) -> str:
+    """Format local workspace error.
+
+    Args:
+        site (RegisteredSite): Value supplied to this callable.
+        local_root (Path): Value supplied to this callable.
+        error (OSError): Value supplied to this callable.
+
+    Returns:
+        str: Structured value returned by this callable.
+    """
     return (
         f"Failed to prepare local workspace '{local_root}' for project '{site.name}'. "
         f"Cause: {_format_error_cause(error)}"
@@ -1021,6 +1225,15 @@ def _format_remote_listing_error(
     context: _DownloadContext,
     error: OSError,
 ) -> str:
+    """Format remote listing error.
+
+    Args:
+        context (_DownloadContext): Value supplied to this callable.
+        error (OSError): Value supplied to this callable.
+
+    Returns:
+        str: Structured value returned by this callable.
+    """
     remote_connection = context.remote_connection
     return (
         f"Failed to list remote files for project '{context.site.name}' from "
@@ -1036,6 +1249,16 @@ def _format_remote_download_error(
     local_path: Path,
     error: OSError,
 ) -> str:
+    """Format remote download error.
+
+    Args:
+        remote_path (str): Value supplied to this callable.
+        local_path (Path): Value supplied to this callable.
+        error (OSError): Value supplied to this callable.
+
+    Returns:
+        str: Structured value returned by this callable.
+    """
     return (
         f"Failed to download remote file '{remote_path}' into local path '{local_path}'. "
         f"Cause: {_format_error_cause(error)}"
@@ -1048,6 +1271,16 @@ def _format_local_listing_error(
     local_root: Path,
     error: OSError,
 ) -> str:
+    """Format local listing error.
+
+    Args:
+        site (RegisteredSite): Value supplied to this callable.
+        local_root (Path): Value supplied to this callable.
+        error (OSError): Value supplied to this callable.
+
+    Returns:
+        str: Structured value returned by this callable.
+    """
     return (
         f"Failed to list local files under '{local_root}' for project '{site.name}'. "
         f"Cause: {_format_error_cause(error)}"
@@ -1055,6 +1288,15 @@ def _format_local_listing_error(
 
 
 def _join_remote_sync_path(remote_root: str, relative_path: str) -> str:
+    """Handle join remote sync path.
+
+    Args:
+        remote_root (str): Value supplied to this callable.
+        relative_path (str): Value supplied to this callable.
+
+    Returns:
+        str: Structured value returned by this callable.
+    """
     normalized_root = posixpath.normpath(remote_root)
     if normalized_root == "/":
         return f"/{relative_path.lstrip('/')}"
@@ -1065,10 +1307,27 @@ def _scope_includes(
     resolved_scope: ResolvedSyncScope | None,
     relative_path: str,
 ) -> bool:
+    """Handle scope includes.
+
+    Args:
+        resolved_scope (ResolvedSyncScope | None): Value supplied to this callable.
+        relative_path (str): Value supplied to this callable.
+
+    Returns:
+        bool: Structured value returned by this callable.
+    """
     if resolved_scope is None:
         return True
     return resolved_scope.includes(relative_path)
 
 
 def _format_error_cause(error: BaseException) -> str:
+    """Format error cause.
+
+    Args:
+        error (BaseException): Value supplied to this callable.
+
+    Returns:
+        str: Structured value returned by this callable.
+    """
     return str(error).strip() or error.__class__.__name__

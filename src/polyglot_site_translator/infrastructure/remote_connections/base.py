@@ -21,45 +21,102 @@ from polyglot_site_translator.domain.sync.models import RemoteSyncFile, SyncProg
 
 
 class RemoteConnectionOperationError(OSError):
-    """Concrete remote operation failure with a stable structured error code."""
+    """Concrete remote operation failure with a stable structured error code.
+
+    Attributes:
+        None: This type does not declare additional class-level attributes.
+    """
 
     def __init__(self, *, error_code: str, message: str) -> None:
+        """Capture the stable provider-facing error code alongside the transport message.
+
+        Args:
+            error_code (str): Value supplied to this callable.
+            message (str): Value supplied to this callable.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         super().__init__(message)
         self.error_code = error_code
 
 
 class RemoteConnectionDependencyError(RemoteConnectionOperationError):
-    """Raised when a remote provider cannot run because a dependency is missing."""
+    """Raised when a remote provider cannot run because a dependency is missing.
+
+    Attributes:
+        None: This type does not declare additional class-level attributes.
+    """
 
 
 class RemoteConnectionConfigurationError(RemoteConnectionOperationError):
-    """Raised when local provider configuration prevents a remote operation."""
+    """Raised when local provider configuration prevents a remote operation.
+
+    Attributes:
+        None: This type does not declare additional class-level attributes.
+    """
 
 
 class RemoteConnectionTransportError(RemoteConnectionOperationError):
-    """Raised when opening or using the remote transport fails."""
+    """Raised when opening or using the remote transport fails.
+
+    Attributes:
+        None: This type does not declare additional class-level attributes.
+    """
 
 
 class RemoteConnectionListingError(RemoteConnectionOperationError):
-    """Raised when remote file discovery fails."""
+    """Raised when remote file discovery fails.
+
+    Attributes:
+        None: This type does not declare additional class-level attributes.
+    """
 
 
 class RemoteConnectionDownloadError(RemoteConnectionOperationError):
-    """Raised when a remote file download fails."""
+    """Raised when a remote file download fails.
+
+    Attributes:
+        None: This type does not declare additional class-level attributes.
+    """
 
 
 class RemoteConnectionDirectoryError(RemoteConnectionOperationError):
-    """Raised when remote directory preparation fails."""
+    """Raised when remote directory preparation fails.
+
+    Attributes:
+        None: This type does not declare additional class-level attributes.
+    """
 
 
 class RemoteConnectionUploadError(RemoteConnectionOperationError):
-    """Raised when uploading a remote file fails."""
+    """Raised when uploading a remote file fails.
+
+    Attributes:
+        None: This type does not declare additional class-level attributes.
+    """
 
 
 class BaseRemoteConnectionSession(ABC):
-    """Reusable remote connection session with state and controlled connect retries."""
+    """Reusable remote connection session with state and controlled connect retries.
+
+    Attributes:
+        None: This type does not declare additional class-level attributes.
+    """
 
     def __init__(self, config: RemoteConnectionConfig, *, max_connect_attempts: int = 2) -> None:
+        """Store remote config and initialize lifecycle state for a reusable session.
+
+        Args:
+            config (RemoteConnectionConfig): Value supplied to this callable.
+            max_connect_attempts (int): Value supplied to this callable.
+
+        Returns:
+            None: This callable does not return a value.
+
+        Raises:
+            ValueError: Raised when this callable hits the corresponding error path.
+        """
         if max_connect_attempts <= 0:
             msg = "max_connect_attempts must be a positive integer."
             raise ValueError(msg)
@@ -69,14 +126,25 @@ class BaseRemoteConnectionSession(ABC):
 
     @property
     def state(self) -> RemoteConnectionSessionState:
-        """Return the current session lifecycle state."""
+        """Return the current session lifecycle state.
+
+        Returns:
+            RemoteConnectionSessionState: Structured value returned by this callable.
+        """
         return self._state
 
     def iter_remote_files(
         self,
         progress_callback: SyncProgressCallback | None = None,
     ) -> Iterable[RemoteSyncFile]:
-        """Yield remote files incrementally using the current session."""
+        """Yield remote files incrementally using the current session.
+
+        Args:
+            progress_callback (SyncProgressCallback | None): Value supplied to this callable.
+
+        Returns:
+            Iterable[RemoteSyncFile]: Structured value returned by this callable.
+        """
         self._ensure_open(progress_callback)
         return self._iter_remote_files(progress_callback)
 
@@ -85,7 +153,15 @@ class BaseRemoteConnectionSession(ABC):
         remote_path: str,
         progress_callback: SyncProgressCallback | None = None,
     ) -> bytes:
-        """Download a remote file through the current session."""
+        """Download a remote file through the current session.
+
+        Args:
+            remote_path (str): Value supplied to this callable.
+            progress_callback (SyncProgressCallback | None): Value supplied to this callable.
+
+        Returns:
+            bytes: Structured value returned by this callable.
+        """
         self._ensure_open(progress_callback)
         return self._download_file(remote_path, progress_callback)
 
@@ -93,7 +169,14 @@ class BaseRemoteConnectionSession(ABC):
         self,
         progress_callback: SyncProgressCallback | None = None,
     ) -> None:
-        """Close the session and release remote resources."""
+        """Close the session and release remote resources.
+
+        Args:
+            progress_callback (SyncProgressCallback | None): Value supplied to this callable.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         if self._state is RemoteConnectionSessionState.CLOSED:
             return
         try:
@@ -110,7 +193,15 @@ class BaseRemoteConnectionSession(ABC):
         remote_path: str,
         progress_callback: SyncProgressCallback | None = None,
     ) -> int:
-        """Create a remote directory path through the current session."""
+        """Create a remote directory path through the current session.
+
+        Args:
+            remote_path (str): Value supplied to this callable.
+            progress_callback (SyncProgressCallback | None): Value supplied to this callable.
+
+        Returns:
+            int: Structured value returned by this callable.
+        """
         self._ensure_open(progress_callback)
         return self._ensure_remote_directory(remote_path, progress_callback)
 
@@ -120,11 +211,32 @@ class BaseRemoteConnectionSession(ABC):
         contents: bytes,
         progress_callback: SyncProgressCallback | None = None,
     ) -> None:
-        """Upload file contents through the current session."""
+        """Upload file contents through the current session.
+
+        Args:
+            remote_path (str): Value supplied to this callable.
+            contents (bytes): Value supplied to this callable.
+            progress_callback (SyncProgressCallback | None): Value supplied to this callable.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         self._ensure_open(progress_callback)
         self._upload_file(remote_path, contents, progress_callback)
 
     def _ensure_open(self, progress_callback: SyncProgressCallback | None) -> None:
+        """Handle ensure open.
+
+        Args:
+            progress_callback (SyncProgressCallback | None): Value supplied to this callable.
+
+        Returns:
+            None: This callable does not return a value.
+
+        Raises:
+            RemoteConnectionOperationError: Raised when this callable hits the corresponding error
+        path.
+        """
         if self._state is RemoteConnectionSessionState.OPEN:
             return
         if self._state is RemoteConnectionSessionState.FAILED:
@@ -152,18 +264,40 @@ class BaseRemoteConnectionSession(ABC):
 
     @staticmethod
     def _should_retry_connect(error: RemoteConnectionOperationError) -> bool:
+        """Handle should retry connect.
+
+        Args:
+            error (RemoteConnectionOperationError): Value supplied to this callable.
+
+        Returns:
+            bool: Structured value returned by this callable.
+        """
         return error.error_code in {"connection_timeout", "transport_io_failed"}
 
     @abstractmethod
     def _connect(self, progress_callback: SyncProgressCallback | None) -> None:
-        """Open the concrete transport session."""
+        """Open the concrete transport session.
+
+        Args:
+            progress_callback (SyncProgressCallback | None): Value supplied to this callable.
+
+        Returns:
+            None: This callable does not return a value.
+        """
 
     @abstractmethod
     def _iter_remote_files(
         self,
         progress_callback: SyncProgressCallback | None,
     ) -> Iterable[RemoteSyncFile]:
-        """Yield remote files using an open concrete transport session."""
+        """Yield remote files using an open concrete transport session.
+
+        Args:
+            progress_callback (SyncProgressCallback | None): Value supplied to this callable.
+
+        Returns:
+            Iterable[RemoteSyncFile]: Structured value returned by this callable.
+        """
 
     @abstractmethod
     def _download_file(
@@ -171,7 +305,15 @@ class BaseRemoteConnectionSession(ABC):
         remote_path: str,
         progress_callback: SyncProgressCallback | None,
     ) -> bytes:
-        """Download a remote file using an open concrete transport session."""
+        """Download a remote file using an open concrete transport session.
+
+        Args:
+            remote_path (str): Value supplied to this callable.
+            progress_callback (SyncProgressCallback | None): Value supplied to this callable.
+
+        Returns:
+            bytes: Structured value returned by this callable.
+        """
 
     @abstractmethod
     def _ensure_remote_directory(
@@ -179,7 +321,15 @@ class BaseRemoteConnectionSession(ABC):
         remote_path: str,
         progress_callback: SyncProgressCallback | None,
     ) -> int:
-        """Create a remote directory path using an open concrete transport session."""
+        """Create a remote directory path using an open concrete transport session.
+
+        Args:
+            remote_path (str): Value supplied to this callable.
+            progress_callback (SyncProgressCallback | None): Value supplied to this callable.
+
+        Returns:
+            int: Structured value returned by this callable.
+        """
 
     @abstractmethod
     def _upload_file(
@@ -188,19 +338,43 @@ class BaseRemoteConnectionSession(ABC):
         contents: bytes,
         progress_callback: SyncProgressCallback | None,
     ) -> None:
-        """Upload file contents using an open concrete transport session."""
+        """Upload file contents using an open concrete transport session.
+
+        Args:
+            remote_path (str): Value supplied to this callable.
+            contents (bytes): Value supplied to this callable.
+            progress_callback (SyncProgressCallback | None): Value supplied to this callable.
+
+        Returns:
+            None: This callable does not return a value.
+        """
 
     @abstractmethod
     def _close(self, progress_callback: SyncProgressCallback | None) -> None:
-        """Close the concrete transport session."""
+        """Close the concrete transport session.
+
+        Args:
+            progress_callback (SyncProgressCallback | None): Value supplied to this callable.
+
+        Returns:
+            None: This callable does not return a value.
+        """
 
     @abstractmethod
     def _reset_after_failed_connect(self) -> None:
-        """Reset transport resources after a failed connect attempt."""
+        """Reset transport resources after a failed connect attempt.
+
+        Returns:
+            None: This callable does not return a value.
+        """
 
 
 class BaseRemoteConnectionProvider(ABC):
-    """Abstract discoverable remote connection provider."""
+    """Abstract discoverable remote connection provider.
+
+    Attributes:
+        descriptor (RemoteConnectionTypeDescriptor): Documented attribute exposed by this type.
+    """
 
     descriptor: RemoteConnectionTypeDescriptor
 
@@ -209,11 +383,25 @@ class BaseRemoteConnectionProvider(ABC):
         self,
         config: RemoteConnectionConfigInput,
     ) -> RemoteConnectionTestResult:
-        """Attempt a transport-level connection test."""
+        """Attempt a transport-level connection test.
+
+        Args:
+            config (RemoteConnectionConfigInput): Value supplied to this callable.
+
+        Returns:
+            RemoteConnectionTestResult: Structured value returned by this callable.
+        """
 
     @abstractmethod
     def open_session(self, config: RemoteConnectionConfig) -> RemoteConnectionSession:
-        """Create a reusable remote session for sync workflows."""
+        """Create a reusable remote session for sync workflows.
+
+        Args:
+            config (RemoteConnectionConfig): Value supplied to this callable.
+
+        Returns:
+            RemoteConnectionSession: Structured value returned by this callable.
+        """
 
     def list_remote_files(
         self,
@@ -222,7 +410,19 @@ class BaseRemoteConnectionProvider(ABC):
         *,
         max_files: int = DEFAULT_MATERIALIZED_REMOTE_FILE_LIMIT,
     ) -> list[RemoteSyncFile]:
-        """Return a bounded materialized list of remote files."""
+        """Return a bounded materialized list of remote files.
+
+        Args:
+            config (RemoteConnectionConfig): Value supplied to this callable.
+            progress_callback (SyncProgressCallback | None): Value supplied to this callable.
+            max_files (int): Value supplied to this callable.
+
+        Returns:
+            list[RemoteSyncFile]: Structured value returned by this callable.
+
+        Raises:
+            ValueError: Raised when this callable hits the corresponding error path.
+        """
         if max_files <= 0:
             msg = "max_files must be a positive integer."
             raise ValueError(msg)
@@ -238,7 +438,15 @@ class BaseRemoteConnectionProvider(ABC):
         config: RemoteConnectionConfig,
         progress_callback: SyncProgressCallback | None = None,
     ) -> Iterable[RemoteSyncFile]:
-        """Yield remote files through a short-lived reusable session."""
+        """Yield remote files through a short-lived reusable session.
+
+        Args:
+            config (RemoteConnectionConfig): Value supplied to this callable.
+            progress_callback (SyncProgressCallback | None): Value supplied to this callable.
+
+        Returns:
+            Iterable[RemoteSyncFile]: Structured value returned by this callable.
+        """
         session = self.open_session(config)
         try:
             yield from session.iter_remote_files(progress_callback)
@@ -251,7 +459,16 @@ class BaseRemoteConnectionProvider(ABC):
         remote_path: str,
         progress_callback: SyncProgressCallback | None = None,
     ) -> bytes:
-        """Download one remote file through a short-lived reusable session."""
+        """Download one remote file through a short-lived reusable session.
+
+        Args:
+            config (RemoteConnectionConfig): Value supplied to this callable.
+            remote_path (str): Value supplied to this callable.
+            progress_callback (SyncProgressCallback | None): Value supplied to this callable.
+
+        Returns:
+            bytes: Structured value returned by this callable.
+        """
         session = self.open_session(config)
         try:
             return session.download_file(remote_path, progress_callback)
@@ -264,7 +481,16 @@ class BaseRemoteConnectionProvider(ABC):
         remote_path: str,
         progress_callback: SyncProgressCallback | None = None,
     ) -> int:
-        """Create a remote directory path through a short-lived reusable session."""
+        """Create a remote directory path through a short-lived reusable session.
+
+        Args:
+            config (RemoteConnectionConfig): Value supplied to this callable.
+            remote_path (str): Value supplied to this callable.
+            progress_callback (SyncProgressCallback | None): Value supplied to this callable.
+
+        Returns:
+            int: Structured value returned by this callable.
+        """
         session = self.open_session(config)
         try:
             return session.ensure_remote_directory(remote_path, progress_callback)
@@ -278,7 +504,17 @@ class BaseRemoteConnectionProvider(ABC):
         contents: bytes,
         progress_callback: SyncProgressCallback | None = None,
     ) -> None:
-        """Upload one local file through a short-lived reusable session."""
+        """Upload one local file through a short-lived reusable session.
+
+        Args:
+            config (RemoteConnectionConfig): Value supplied to this callable.
+            remote_path (str): Value supplied to this callable.
+            contents (bytes): Value supplied to this callable.
+            progress_callback (SyncProgressCallback | None): Value supplied to this callable.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         session = self.open_session(config)
         try:
             session.upload_file(remote_path, contents, progress_callback)

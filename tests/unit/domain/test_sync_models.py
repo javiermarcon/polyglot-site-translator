@@ -15,11 +15,21 @@ from polyglot_site_translator.domain.sync.models import (
 
 
 def test_sync_direction_exposes_remote_to_local_value() -> None:
+    """Verify sync direction exposes remote to local value.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     assert SyncDirection.REMOTE_TO_LOCAL.value == "remote_to_local"
     assert SyncDirection.LOCAL_TO_REMOTE.value == "local_to_remote"
 
 
 def test_sync_result_can_represent_a_successful_sync() -> None:
+    """Verify sync result can represent a successful sync.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     result = SyncResult(
         direction=SyncDirection.REMOTE_TO_LOCAL,
         success=True,
@@ -41,6 +51,11 @@ def test_sync_result_can_represent_a_successful_sync() -> None:
 
 
 def test_sync_result_can_represent_a_successful_local_to_remote_sync() -> None:
+    """Verify sync result can represent a successful local to remote sync.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     result = SyncResult(
         direction=SyncDirection.LOCAL_TO_REMOTE,
         success=True,
@@ -64,6 +79,11 @@ def test_sync_result_can_represent_a_successful_local_to_remote_sync() -> None:
 
 
 def test_sync_result_can_represent_a_controlled_failure() -> None:
+    """Verify sync result can represent a controlled failure.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     result = SyncResult(
         direction=SyncDirection.REMOTE_TO_LOCAL,
         success=False,
@@ -90,5 +110,10 @@ def test_sync_result_can_represent_a_controlled_failure() -> None:
 
 
 def test_sync_errors_are_typed() -> None:
+    """Verify sync errors are typed.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     assert str(SyncConfigurationError("missing remote")) == "missing remote"
     assert str(SyncOperationError("download failed")) == "download failed"

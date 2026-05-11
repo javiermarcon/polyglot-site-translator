@@ -34,6 +34,7 @@ Current entrypoints:
 - `polyglot_site_translator.app:create_kivy_app`
 - `polyglot_site_translator.__main__:main`
 - `run_app.py`
+- `tests/run_docstring_audit.py`
 - `polyglot_site_translator.presentation.kivy.app.PolyglotSiteTranslatorApp.apply_runtime_settings`
 - `polyglot_site_translator.presentation.kivy.app.PolyglotSiteTranslatorApp._install_runtime_error_handlers`
 

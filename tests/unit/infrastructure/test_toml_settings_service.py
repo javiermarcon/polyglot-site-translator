@@ -30,6 +30,14 @@ SETTINGS_MODULE = cast(Any, settings_module)
 
 
 def test_load_settings_returns_defaults_when_file_does_not_exist(tmp_path: Path) -> None:
+    """Verify load settings returns defaults when file does not exist.
+
+    Args:
+        tmp_path (Path): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     service = TomlSettingsService(tmp_path / SETTINGS_FILENAME)
 
     settings_state = service.load_settings()
@@ -42,6 +50,14 @@ def test_load_settings_returns_defaults_when_file_does_not_exist(tmp_path: Path)
 def test_load_app_settings_returns_default_persisted_settings_when_file_is_missing(
     tmp_path: Path,
 ) -> None:
+    """Verify load app settings returns default persisted settings when file is missing.
+
+    Args:
+        tmp_path (Path): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     service = TomlSettingsService(tmp_path / SETTINGS_FILENAME)
 
     loaded_settings = service._load_app_settings()
@@ -50,6 +66,14 @@ def test_load_app_settings_returns_default_persisted_settings_when_file_is_missi
 
 
 def test_save_settings_writes_toml_and_roundtrips_values(tmp_path: Path) -> None:
+    """Verify save settings writes toml and roundtrips values.
+
+    Args:
+        tmp_path (Path): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     settings_path = tmp_path / SETTINGS_FILENAME
     service = TomlSettingsService(settings_path)
 
@@ -100,6 +124,14 @@ def test_save_settings_writes_toml_and_roundtrips_values(tmp_path: Path) -> None
 
 
 def test_save_settings_roundtrips_sync_scope_settings(tmp_path: Path) -> None:
+    """Verify save settings roundtrips sync scope settings.
+
+    Args:
+        tmp_path (Path): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     settings_path = tmp_path / SETTINGS_FILENAME
     service = TomlSettingsService(settings_path)
 
@@ -149,6 +181,14 @@ def test_save_settings_roundtrips_sync_scope_settings(tmp_path: Path) -> None:
 
 
 def test_load_settings_rejects_invalid_toml_values(tmp_path: Path) -> None:
+    """Verify load settings rejects invalid toml values.
+
+    Args:
+        tmp_path (Path): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     settings_path = tmp_path / SETTINGS_FILENAME
     settings_path.write_text(
         '[app]\nwindow_width = 0\nlast_opened_screen = "dashboard"\n',
@@ -164,6 +204,14 @@ def test_load_settings_rejects_invalid_toml_values(tmp_path: Path) -> None:
 
 
 def test_load_settings_rejects_invalid_sync_progress_log_limit(tmp_path: Path) -> None:
+    """Verify load settings rejects invalid sync progress log limit.
+
+    Args:
+        tmp_path (Path): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     settings_path = tmp_path / SETTINGS_FILENAME
     settings_path.write_text(
         '[app]\nlast_opened_screen = "dashboard"\nsync_progress_log_limit = 0\n',
@@ -179,6 +227,14 @@ def test_load_settings_rejects_invalid_sync_progress_log_limit(tmp_path: Path) -
 
 
 def test_load_settings_rejects_invalid_translation_defaults(tmp_path: Path) -> None:
+    """Verify load settings rejects invalid translation defaults.
+
+    Args:
+        tmp_path (Path): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     settings_path = tmp_path / SETTINGS_FILENAME
     settings_path.write_text(
         (
@@ -253,6 +309,16 @@ def test_load_settings_rejects_invalid_translation_section_shapes(
     document: str,
     expected_message: str,
 ) -> None:
+    """Verify load settings rejects invalid translation section shapes.
+
+    Args:
+        tmp_path (Path): Value supplied to this callable.
+        document (str): Value supplied to this callable.
+        expected_message (str): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     settings_path = tmp_path / SETTINGS_FILENAME
     settings_path.write_text(document, encoding="utf-8")
     service = TomlSettingsService(settings_path)
@@ -262,6 +328,14 @@ def test_load_settings_rejects_invalid_translation_section_shapes(
 
 
 def test_save_settings_normalizes_default_project_locale_spacing(tmp_path: Path) -> None:
+    """Verify save settings normalizes default project locale spacing.
+
+    Args:
+        tmp_path (Path): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     settings_path = tmp_path / SETTINGS_FILENAME
     service = TomlSettingsService(settings_path)
 
@@ -272,6 +346,14 @@ def test_save_settings_normalizes_default_project_locale_spacing(tmp_path: Path)
 
 
 def test_save_settings_persists_default_compile_mo(tmp_path: Path) -> None:
+    """Verify save settings persists default compile mo.
+
+    Args:
+        tmp_path (Path): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     settings_path = tmp_path / SETTINGS_FILENAME
     service = TomlSettingsService(settings_path)
 
@@ -282,6 +364,14 @@ def test_save_settings_persists_default_compile_mo(tmp_path: Path) -> None:
 
 
 def test_save_settings_persists_default_use_external_translator(tmp_path: Path) -> None:
+    """Verify save settings persists default use external translator.
+
+    Args:
+        tmp_path (Path): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     settings_path = tmp_path / SETTINGS_FILENAME
     service = TomlSettingsService(settings_path)
 
@@ -292,6 +382,14 @@ def test_save_settings_persists_default_use_external_translator(tmp_path: Path) 
 
 
 def test_save_settings_persists_default_translation_preview_flags(tmp_path: Path) -> None:
+    """Verify save settings persists default translation preview flags.
+
+    Args:
+        tmp_path (Path): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     settings_path = tmp_path / SETTINGS_FILENAME
     service = TomlSettingsService(settings_path)
 
@@ -313,6 +411,14 @@ def test_save_settings_persists_default_translation_preview_flags(tmp_path: Path
 
 
 def test_save_settings_rejects_invalid_database_configuration(tmp_path: Path) -> None:
+    """Verify save settings rejects invalid database configuration.
+
+    Args:
+        tmp_path (Path): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     service = TomlSettingsService(tmp_path / SETTINGS_FILENAME)
 
     with pytest.raises(
@@ -361,6 +467,16 @@ def test_load_settings_rejects_invalid_sync_scope_values(
     document: str,
     expected_message: str,
 ) -> None:
+    """Verify load settings rejects invalid sync scope values.
+
+    Args:
+        tmp_path (Path): Value supplied to this callable.
+        document (str): Value supplied to this callable.
+        expected_message (str): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     settings_path = tmp_path / SETTINGS_FILENAME
     settings_path.write_text(document, encoding="utf-8")
     service = TomlSettingsService(settings_path)
@@ -391,6 +507,16 @@ def test_load_settings_rejects_invalid_sync_scope_section_shapes(
     document: str,
     expected_message: str,
 ) -> None:
+    """Verify load settings rejects invalid sync scope section shapes.
+
+    Args:
+        tmp_path (Path): Value supplied to this callable.
+        document (str): Value supplied to this callable.
+        expected_message (str): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     settings_path = tmp_path / SETTINGS_FILENAME
     settings_path.write_text(document, encoding="utf-8")
     service = TomlSettingsService(settings_path)
@@ -400,6 +526,14 @@ def test_load_settings_rejects_invalid_sync_scope_section_shapes(
 
 
 def test_save_settings_normalizes_sync_rule_descriptions_and_paths(tmp_path: Path) -> None:
+    """Verify save settings normalizes sync rule descriptions and paths.
+
+    Args:
+        tmp_path (Path): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     settings_path = tmp_path / SETTINGS_FILENAME
     service = TomlSettingsService(settings_path)
 
@@ -443,6 +577,14 @@ def test_save_settings_normalizes_sync_rule_descriptions_and_paths(tmp_path: Pat
 
 
 def test_reset_settings_restores_defaults_and_persists_them(tmp_path: Path) -> None:
+    """Verify reset settings restores defaults and persists them.
+
+    Args:
+        tmp_path (Path): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     service = TomlSettingsService(tmp_path / SETTINGS_FILENAME)
     service.save_settings(
         AppSettingsViewModel(
@@ -465,6 +607,14 @@ def test_reset_settings_restores_defaults_and_persists_them(tmp_path: Path) -> N
 
 
 def test_build_default_settings_service_uses_explicit_config_dir(tmp_path: Path) -> None:
+    """Verify build default settings service uses explicit config dir.
+
+    Args:
+        tmp_path (Path): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     service = build_default_settings_service(config_dir=tmp_path)
 
     assert isinstance(service, TomlSettingsService)
@@ -472,6 +622,14 @@ def test_build_default_settings_service_uses_explicit_config_dir(tmp_path: Path)
 
 
 def test_load_settings_uses_defaults_for_empty_toml_document(tmp_path: Path) -> None:
+    """Verify load settings uses defaults for empty toml document.
+
+    Args:
+        tmp_path (Path): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     settings_path = tmp_path / SETTINGS_FILENAME
     settings_path.write_text("", encoding="utf-8")
     service = TomlSettingsService(settings_path)
@@ -483,6 +641,14 @@ def test_load_settings_uses_defaults_for_empty_toml_document(tmp_path: Path) -> 
 
 
 def test_load_settings_uses_defaults_when_app_table_is_missing(tmp_path: Path) -> None:
+    """Verify load settings uses defaults when app table is missing.
+
+    Args:
+        tmp_path (Path): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     settings_path = tmp_path / SETTINGS_FILENAME
     settings_path.write_text("[meta]\nschema_version = 1\n", encoding="utf-8")
     service = TomlSettingsService(settings_path)
@@ -493,6 +659,14 @@ def test_load_settings_uses_defaults_when_app_table_is_missing(tmp_path: Path) -
 
 
 def test_load_settings_accepts_partial_app_table_and_fills_defaults(tmp_path: Path) -> None:
+    """Verify load settings accepts partial app table and fills defaults.
+
+    Args:
+        tmp_path (Path): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     settings_path = tmp_path / SETTINGS_FILENAME
     settings_path.write_text('[app]\ntheme_mode = "dark"\n', encoding="utf-8")
     service = TomlSettingsService(settings_path)
@@ -505,6 +679,14 @@ def test_load_settings_accepts_partial_app_table_and_fills_defaults(tmp_path: Pa
 
 
 def test_load_settings_rejects_invalid_toml_syntax(tmp_path: Path) -> None:
+    """Verify load settings rejects invalid toml syntax.
+
+    Args:
+        tmp_path (Path): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     settings_path = tmp_path / SETTINGS_FILENAME
     settings_path.write_text("[app\n", encoding="utf-8")
     service = TomlSettingsService(settings_path)
@@ -539,6 +721,16 @@ def test_load_settings_rejects_invalid_values(
     document: str,
     expected_message: str,
 ) -> None:
+    """Verify load settings rejects invalid values.
+
+    Args:
+        tmp_path (Path): Value supplied to this callable.
+        document (str): Value supplied to this callable.
+        expected_message (str): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     settings_path = tmp_path / SETTINGS_FILENAME
     settings_path.write_text(document, encoding="utf-8")
     service = TomlSettingsService(settings_path)
@@ -551,11 +743,35 @@ def test_load_settings_wraps_os_errors_from_reading(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
+    """Verify load settings wraps os errors from reading.
+
+    Args:
+        monkeypatch (pytest.MonkeyPatch): Value supplied to this callable.
+        tmp_path (Path): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+
+    Raises:
+        OSError: Raised when this callable hits the corresponding error path.
+    """
     settings_path = tmp_path / SETTINGS_FILENAME
     settings_path.write_text('[app]\ntheme_mode = "dark"\n', encoding="utf-8")
     service = TomlSettingsService(settings_path)
 
     def fail_read_text(_self: Path, *, encoding: str) -> str:
+        """Handle fail read text.
+
+        Args:
+            _self (Path): Value supplied to this callable.
+            encoding (str): Value supplied to this callable.
+
+        Returns:
+            str: Structured value returned by this callable.
+
+        Raises:
+            OSError: Raised when this callable hits the corresponding error path.
+        """
         msg = "boom"
         raise OSError(msg)
 
@@ -569,9 +785,34 @@ def test_save_settings_wraps_os_errors_from_writing(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
+    """Verify save settings wraps os errors from writing.
+
+    Args:
+        monkeypatch (pytest.MonkeyPatch): Value supplied to this callable.
+        tmp_path (Path): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+
+    Raises:
+        OSError: Raised when this callable hits the corresponding error path.
+    """
     service = TomlSettingsService(tmp_path / SETTINGS_FILENAME)
 
     def fail_write_text(_self: Path, _content: str, *, encoding: str) -> int:
+        """Handle fail write text.
+
+        Args:
+            _self (Path): Value supplied to this callable.
+            _content (str): Value supplied to this callable.
+            encoding (str): Value supplied to this callable.
+
+        Returns:
+            int: Structured value returned by this callable.
+
+        Raises:
+            OSError: Raised when this callable hits the corresponding error path.
+        """
         msg = "boom"
         raise OSError(msg)
 
@@ -584,6 +825,14 @@ def test_save_settings_wraps_os_errors_from_writing(
 def test_resolve_user_config_dir_prefers_env_override(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    """Verify resolve user config dir prefers env override.
+
+    Args:
+        monkeypatch (pytest.MonkeyPatch): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     monkeypatch.setenv(settings_module.CONFIG_DIR_ENV_VAR, "~/custom-config")
 
     assert resolve_user_config_dir() == Path("~/custom-config").expanduser()
@@ -592,6 +841,14 @@ def test_resolve_user_config_dir_prefers_env_override(
 def test_resolve_windows_config_dir_uses_appdata(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    """Verify resolve windows config dir uses appdata.
+
+    Args:
+        monkeypatch (pytest.MonkeyPatch): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     monkeypatch.setenv("APPDATA", "/tmp/appdata")
 
     assert _resolve_windows_config_dir() == Path("/tmp/appdata/polyglot-site-translator")
@@ -600,6 +857,14 @@ def test_resolve_windows_config_dir_uses_appdata(
 def test_resolve_windows_config_dir_uses_fallback_when_appdata_is_missing(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    """Verify resolve windows config dir uses fallback when appdata is missing.
+
+    Args:
+        monkeypatch (pytest.MonkeyPatch): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     monkeypatch.delenv("APPDATA", raising=False)
     monkeypatch.setattr(SETTINGS_MODULE.Path, "home", lambda: Path("/home/tester"))
 
@@ -611,6 +876,14 @@ def test_resolve_windows_config_dir_uses_fallback_when_appdata_is_missing(
 def test_resolve_user_config_dir_uses_darwin_location(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    """Verify resolve user config dir uses darwin location.
+
+    Args:
+        monkeypatch (pytest.MonkeyPatch): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     monkeypatch.delenv(settings_module.CONFIG_DIR_ENV_VAR, raising=False)
     monkeypatch.setattr(SETTINGS_MODULE.os, "name", "posix", raising=False)
     monkeypatch.setattr(SETTINGS_MODULE.sys, "platform", "darwin", raising=False)
@@ -624,6 +897,14 @@ def test_resolve_user_config_dir_uses_darwin_location(
 def test_resolve_user_config_dir_uses_windows_and_posix_branches(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    """Verify resolve user config dir uses windows and posix branches.
+
+    Args:
+        monkeypatch (pytest.MonkeyPatch): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     monkeypatch.delenv(settings_module.CONFIG_DIR_ENV_VAR, raising=False)
     monkeypatch.setattr(SETTINGS_MODULE.os, "name", "nt", raising=False)
     monkeypatch.setattr(
@@ -648,6 +929,14 @@ def test_resolve_user_config_dir_uses_windows_and_posix_branches(
 def test_resolve_user_config_dir_uses_xdg_config_home(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    """Verify resolve user config dir uses xdg config home.
+
+    Args:
+        monkeypatch (pytest.MonkeyPatch): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     monkeypatch.setenv("XDG_CONFIG_HOME", "/tmp/xdg")
 
     assert _resolve_posix_config_dir() == Path("/tmp/xdg/polyglot-site-translator")
@@ -656,6 +945,14 @@ def test_resolve_user_config_dir_uses_xdg_config_home(
 def test_resolve_posix_config_dir_uses_fallback(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    """Verify resolve posix config dir uses fallback.
+
+    Args:
+        monkeypatch (pytest.MonkeyPatch): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     monkeypatch.delenv("XDG_CONFIG_HOME", raising=False)
     monkeypatch.setattr(SETTINGS_MODULE.Path, "home", lambda: Path("/home/tester"))
 
@@ -663,6 +960,11 @@ def test_resolve_posix_config_dir_uses_fallback(
 
 
 def test_translation_helpers_reject_non_table_sections_directly() -> None:
+    """Verify translation helpers reject non table sections directly.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     with pytest.raises(
         ControlledServiceError,
         match=r"The \[translation\] settings section must be a TOML table\.",
@@ -713,6 +1015,11 @@ def test_translation_helpers_reject_non_table_sections_directly() -> None:
 
 
 def test_normalize_translation_cache_path_resolves_relative_paths() -> None:
+    """Verify normalize translation cache path resolves relative paths.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     normalized = SETTINGS_MODULE._normalize_translation_cache_path(
         "cache/translations",
         default_directory=Path("/tmp/app-config"),
@@ -722,6 +1029,11 @@ def test_normalize_translation_cache_path_resolves_relative_paths() -> None:
 
 
 def test_validate_sync_scope_settings_rejects_blank_framework_types_directly() -> None:
+    """Verify validate sync scope settings rejects blank framework types directly.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     with pytest.raises(
         ControlledServiceError,
         match=r"Framework sync rules require a non-empty framework type\.",
@@ -747,6 +1059,11 @@ def test_validate_sync_scope_settings_rejects_blank_framework_types_directly() -
 
 
 def _custom_settings() -> AppSettingsViewModel:
+    """Handle custom settings.
+
+    Returns:
+        AppSettingsViewModel: Structured value returned by this callable.
+    """
     return AppSettingsViewModel(
         theme_mode="dark",
         window_width=1440,

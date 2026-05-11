@@ -40,6 +40,11 @@ from polyglot_site_translator.presentation.view_models import (
 
 
 def _build_dashboard_state() -> DashboardStateViewModel:
+    """Build dashboard state.
+
+    Returns:
+        DashboardStateViewModel: Structured value returned by this callable.
+    """
     return DashboardStateViewModel(
         sections=[
             DashboardSectionViewModel(
@@ -73,7 +78,31 @@ def _build_dashboard_state() -> DashboardStateViewModel:
 
 @dataclass
 class FrontendShell:
-    """Stateful UI orchestrator consumed by screens and tests."""
+    """Stateful UI orchestrator consumed by screens and tests.
+
+    Attributes:
+        router (FrontendRouter): Documented attribute exposed by this type.
+        services (FrontendServices): Documented attribute exposed by this type.
+        dashboard_state (DashboardStateViewModel): Documented attribute exposed by this type.
+        projects_state (ProjectsStateViewModel): Documented attribute exposed by this type.
+        project_detail_state (ProjectDetailStateViewModel | None): Documented attribute exposed by
+    this
+        type.
+        sync_state (SyncStatusViewModel | None): Documented attribute exposed by this type.
+        audit_state (AuditSummaryViewModel | None): Documented attribute exposed by this type.
+        po_processing_state (POProcessingSummaryViewModel | None): Documented attribute exposed by
+    this
+        type.
+        settings_state (SettingsStateViewModel | None): Documented attribute exposed by this type.
+        project_editor_state (ProjectEditorStateViewModel | None): Documented attribute exposed by
+    this
+        type.
+        sync_progress_state (SyncProgressStateViewModel | None): Documented attribute exposed by
+    this
+        type.
+        navigation_menu (NavigationMenuStateViewModel): Documented attribute exposed by this type.
+        latest_error (str | None): Documented attribute exposed by this type.
+    """
 
     router: FrontendRouter
     services: FrontendServices
@@ -90,6 +119,15 @@ class FrontendShell:
     latest_error: str | None
 
     def __init__(self, router: FrontendRouter, services: FrontendServices) -> None:
+        """Initialize shell state, service dependencies, and workflow locks.
+
+        Args:
+            router (FrontendRouter): Value supplied to this callable.
+            services (FrontendServices): Value supplied to this callable.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         self.router = router
         self.services = services
         self.dashboard_state = _build_dashboard_state()
@@ -113,12 +151,20 @@ class FrontendShell:
         self._active_po_processing_thread: Thread | None = None
 
     def open_dashboard(self) -> None:
-        """Open the dashboard route."""
+        """Open the dashboard route.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         self.latest_error = None
         self._set_route(RouteName.DASHBOARD)
 
     def open_projects(self) -> None:
-        """Load project summaries and open the projects route."""
+        """Load project summaries and open the projects route.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         try:
             projects = self.services.catalog.list_projects()
             self.latest_error = None
@@ -138,7 +184,14 @@ class FrontendShell:
         self._set_route(RouteName.PROJECTS)
 
     def select_project(self, project_id: str) -> None:
-        """Load a project detail and open its route."""
+        """Load a project detail and open its route.
+
+        Args:
+            project_id (str): Value supplied to this callable.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         try:
             detail = self.services.catalog.get_project_detail(project_id)
             self.project_detail_state = ProjectDetailStateViewModel(
@@ -161,7 +214,11 @@ class FrontendShell:
         self._set_route(RouteName.PROJECT_DETAIL, project_id=project_id)
 
     def start_sync(self) -> None:
-        """Trigger sync through the workflow contract."""
+        """Trigger sync through the workflow contract.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         project_id = self._require_project_id()
         self._run_sync(
             project_id=project_id,
@@ -171,7 +228,11 @@ class FrontendShell:
         )
 
     def start_sync_to_remote(self) -> None:
-        """Trigger local-to-remote sync through the workflow contract."""
+        """Trigger local-to-remote sync through the workflow contract.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         project_id = self._require_project_id()
         self._run_sync(
             project_id=project_id,
@@ -181,14 +242,22 @@ class FrontendShell:
         )
 
     def start_sync_async(self) -> None:
-        """Trigger sync in a background thread for popup-based progress rendering."""
+        """Trigger sync in a background thread for popup-based progress rendering.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         self._start_sync_async_with_message(
             run_workflow=self.services.workflows.start_sync,
             initial_message="Starting remote sync.",
         )
 
     def start_sync_to_remote_async(self) -> None:
-        """Trigger local-to-remote sync in a background thread for popup rendering."""
+        """Trigger local-to-remote sync in a background thread for popup rendering.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         self._start_sync_async_with_message(
             run_workflow=self.services.workflows.start_sync_to_remote,
             initial_message="Starting local to remote sync.",
@@ -203,7 +272,16 @@ class FrontendShell:
         ],
         initial_message: str,
     ) -> None:
-        """Initialize background sync state and start the worker thread."""
+        """Initialize background sync state and start the worker thread.
+
+        Args:
+            self: Shell instance that coordinates the sync popup state.
+            run_workflow: Value supplied to this callable.
+            initial_message (str): Value supplied to this callable.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         project_id = self._require_project_id()
         project_name = project_id
         if self.project_detail_state is not None:
@@ -233,7 +311,11 @@ class FrontendShell:
         worker.start()
 
     def trust_selected_project_remote_host_key(self) -> None:
-        """Trust the selected project's SSH host key and retry sync."""
+        """Trust the selected project's SSH host key and retry sync.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         project_id = self._require_project_id()
         try:
             result = self.services.workflows.trust_remote_host_key(project_id)
@@ -259,7 +341,11 @@ class FrontendShell:
         self.start_sync_async()
 
     def start_audit(self) -> None:
-        """Trigger audit through the workflow contract."""
+        """Trigger audit through the workflow contract.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         project_id = self._require_project_id()
         try:
             self.audit_state = self.services.workflows.start_audit(project_id)
@@ -274,7 +360,14 @@ class FrontendShell:
         self._set_route(RouteName.AUDIT, project_id=project_id)
 
     def start_po_processing(self, locales: str | None = None) -> None:
-        """Trigger PO processing through the workflow contract."""
+        """Trigger PO processing through the workflow contract.
+
+        Args:
+            locales (str | None): Value supplied to this callable.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         project_id = self._require_project_id()
         request = None if locales is None else self._build_translation_request(locales)
         try:
@@ -303,7 +396,15 @@ class FrontendShell:
         *,
         options: TranslationOptionsViewModel | None = None,
     ) -> None:
-        """Trigger PO processing in a background thread after translation selection."""
+        """Trigger PO processing in a background thread after translation selection.
+
+        Args:
+            locales (str): Value supplied to this callable.
+            options (TranslationOptionsViewModel | None): Value supplied to this callable.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         project_id = self._require_project_id()
         request = self._build_translation_request(locales, options=options)
         with self._po_processing_lock:
@@ -332,7 +433,11 @@ class FrontendShell:
         worker.start()
 
     def open_settings(self) -> None:
-        """Load settings and open the settings route."""
+        """Load settings and open the settings route.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         try:
             self.settings_state = self.services.settings.load_settings()
             self.latest_error = None
@@ -346,11 +451,25 @@ class FrontendShell:
         self._set_route(RouteName.SETTINGS)
 
     def open_application_menu(self) -> None:
-        """Mark the application menu as open for the current route context."""
+        """Mark the application menu as open for the current route context.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         self._refresh_navigation_menu(is_open=True)
 
     def open_route_from_menu(self, route_key: str) -> None:
-        """Open a route selected from the grouped application menu."""
+        """Open a route selected from the grouped application menu.
+
+        Args:
+            route_key (str): Value supplied to this callable.
+
+        Returns:
+            None: This callable does not return a value.
+
+        Raises:
+            ValueError: Raised when this callable hits the corresponding error path.
+        """
         action_map: dict[str, Callable[[], None]] = {
             RouteName.DASHBOARD.value: self.open_dashboard,
             RouteName.PROJECTS.value: self.open_projects,
@@ -368,7 +487,17 @@ class FrontendShell:
         raise ValueError(msg)
 
     def set_settings_theme_mode(self, theme_mode: str) -> None:
-        """Update the draft theme mode."""
+        """Update the draft theme mode.
+
+        Args:
+            theme_mode (str): Value supplied to this callable.
+
+        Returns:
+            None: This callable does not return a value.
+
+        Raises:
+            ValueError: Raised when this callable hits the corresponding error path.
+        """
         state = self._require_settings_state()
         allowed_theme_modes = {"system", "light", "dark"}
         if theme_mode not in allowed_theme_modes:
@@ -382,7 +511,11 @@ class FrontendShell:
         )
 
     def toggle_remember_last_screen(self) -> None:
-        """Toggle remember-last-screen behavior in the draft settings."""
+        """Toggle remember-last-screen behavior in the draft settings.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         state = self._require_settings_state()
         self.settings_state = replace(
             state,
@@ -395,7 +528,11 @@ class FrontendShell:
         )
 
     def toggle_developer_mode(self) -> None:
-        """Toggle developer-mode behavior in the draft settings."""
+        """Toggle developer-mode behavior in the draft settings.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         state = self._require_settings_state()
         self.settings_state = replace(
             state,
@@ -408,7 +545,18 @@ class FrontendShell:
         )
 
     def set_settings_window_size(self, *, width: int, height: int) -> None:
-        """Update the draft default window size."""
+        """Update the draft default window size.
+
+        Args:
+            width (int): Value supplied to this callable.
+            height (int): Value supplied to this callable.
+
+        Returns:
+            None: This callable does not return a value.
+
+        Raises:
+            ValueError: Raised when this callable hits the corresponding error path.
+        """
         if width <= 0 or height <= 0:
             msg = "Window dimensions must be positive integers."
             raise ValueError(msg)
@@ -425,7 +573,17 @@ class FrontendShell:
         )
 
     def set_settings_ui_language(self, ui_language: str) -> None:
-        """Update the draft UI language."""
+        """Update the draft UI language.
+
+        Args:
+            ui_language (str): Value supplied to this callable.
+
+        Returns:
+            None: This callable does not return a value.
+
+        Raises:
+            ValueError: Raised when this callable hits the corresponding error path.
+        """
         state = self._require_settings_state()
         allowed_languages = {"en", "es"}
         if ui_language not in allowed_languages:
@@ -439,7 +597,14 @@ class FrontendShell:
         )
 
     def set_settings_default_project_locale(self, default_project_locale: str) -> None:
-        """Update the default project locale used by new project drafts."""
+        """Update the default project locale used by new project drafts.
+
+        Args:
+            default_project_locale (str): Value supplied to this callable.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         state = self._require_settings_state()
         self.settings_state = replace(
             state,
@@ -452,7 +617,14 @@ class FrontendShell:
         )
 
     def set_settings_default_compile_mo(self, default_compile_mo: bool) -> None:
-        """Update the default MO-compilation preference for new project drafts."""
+        """Update the default MO-compilation preference for new project drafts.
+
+        Args:
+            default_compile_mo (bool): Value supplied to this callable.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         state = self._require_settings_state()
         self.settings_state = replace(
             state,
@@ -468,7 +640,14 @@ class FrontendShell:
         self,
         default_use_external_translator: bool,
     ) -> None:
-        """Update the default external-translation preference for new project drafts."""
+        """Update the default external-translation preference for new project drafts.
+
+        Args:
+            default_use_external_translator (bool): Value supplied to this callable.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         state = self._require_settings_state()
         self.settings_state = replace(
             state,
@@ -484,7 +663,14 @@ class FrontendShell:
         self,
         default_use_translation_cache: bool,
     ) -> None:
-        """Update the default translation-cache preference for new project drafts."""
+        """Update the default translation-cache preference for new project drafts.
+
+        Args:
+            default_use_translation_cache (bool): Value supplied to this callable.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         state = self._require_settings_state()
         self.settings_state = replace(
             state,
@@ -497,7 +683,14 @@ class FrontendShell:
         )
 
     def set_settings_default_only_fuzzy(self, default_only_fuzzy: bool) -> None:
-        """Update the default only-fuzzy preference for new project drafts."""
+        """Update the default only-fuzzy preference for new project drafts.
+
+        Args:
+            default_only_fuzzy (bool): Value supplied to this callable.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         state = self._require_settings_state()
         self.settings_state = replace(
             state,
@@ -507,7 +700,14 @@ class FrontendShell:
         )
 
     def set_settings_translation_cache_path(self, translation_cache_path: str) -> None:
-        """Update the draft translation cache path."""
+        """Update the draft translation cache path.
+
+        Args:
+            translation_cache_path (str): Value supplied to this callable.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         state = self._require_settings_state()
         self.settings_state = replace(
             state,
@@ -520,7 +720,14 @@ class FrontendShell:
         )
 
     def set_settings_default_dry_run(self, default_dry_run: bool) -> None:
-        """Update the default dry-run preference for new project drafts."""
+        """Update the default dry-run preference for new project drafts.
+
+        Args:
+            default_dry_run (bool): Value supplied to this callable.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         state = self._require_settings_state()
         self.settings_state = replace(
             state,
@@ -530,7 +737,14 @@ class FrontendShell:
         )
 
     def set_settings_default_stats_only(self, default_stats_only: bool) -> None:
-        """Update the default stats-only preference for new project drafts."""
+        """Update the default stats-only preference for new project drafts.
+
+        Args:
+            default_stats_only (bool): Value supplied to this callable.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         state = self._require_settings_state()
         self.settings_state = replace(
             state,
@@ -543,7 +757,14 @@ class FrontendShell:
         self,
         default_report_inconsistencies: bool,
     ) -> None:
-        """Update the default inconsistency-reporting preference for new project drafts."""
+        """Update the default inconsistency-reporting preference for new project drafts.
+
+        Args:
+            default_report_inconsistencies (bool): Value supplied to this callable.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         state = self._require_settings_state()
         self.settings_state = replace(
             state,
@@ -556,7 +777,14 @@ class FrontendShell:
         )
 
     def set_settings_database_directory(self, database_directory: str) -> None:
-        """Update the draft SQLite database directory."""
+        """Update the draft SQLite database directory.
+
+        Args:
+            database_directory (str): Value supplied to this callable.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         state = self._require_settings_state()
         self.settings_state = replace(
             state,
@@ -566,7 +794,14 @@ class FrontendShell:
         )
 
     def set_settings_database_filename(self, database_filename: str) -> None:
-        """Update the draft SQLite database filename."""
+        """Update the draft SQLite database filename.
+
+        Args:
+            database_filename (str): Value supplied to this callable.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         state = self._require_settings_state()
         self.settings_state = replace(
             state,
@@ -576,7 +811,14 @@ class FrontendShell:
         )
 
     def update_settings_draft(self, app_settings: AppSettingsViewModel) -> None:
-        """Replace the current settings draft with a full form snapshot."""
+        """Replace the current settings draft with a full form snapshot.
+
+        Args:
+            app_settings (AppSettingsViewModel): Value supplied to this callable.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         state = self._require_settings_state()
         self.settings_state = build_settings_state(
             app_settings=app_settings,
@@ -586,7 +828,14 @@ class FrontendShell:
         )
 
     def select_settings_section(self, section_key: str) -> None:
-        """Change the selected settings section without bypassing the shell."""
+        """Change the selected settings section without bypassing the shell.
+
+        Args:
+            section_key (str): Value supplied to this callable.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         state = self._require_settings_state()
         next_state = build_settings_state(
             app_settings=state.app_settings,
@@ -601,7 +850,11 @@ class FrontendShell:
         self.settings_state = replace(next_state, status_message=status_message)
 
     def save_settings(self) -> None:
-        """Persist the current draft settings through the settings contract."""
+        """Persist the current draft settings through the settings contract.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         state = self._require_settings_state()
         try:
             saved_state = self.services.settings.save_settings(state.app_settings)
@@ -622,7 +875,11 @@ class FrontendShell:
         self._set_route(RouteName.SETTINGS)
 
     def restore_default_settings(self) -> None:
-        """Restore settings defaults through the settings contract."""
+        """Restore settings defaults through the settings contract.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         state = self._require_settings_state()
         try:
             reset_state = self.services.settings.reset_settings()
@@ -643,7 +900,11 @@ class FrontendShell:
         self._set_route(RouteName.SETTINGS)
 
     def open_project_editor_create(self) -> None:
-        """Open the create-project editor workflow."""
+        """Open the create-project editor workflow.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         try:
             self.project_editor_state = self.services.registry.build_create_project_editor()
             self.latest_error = None
@@ -653,7 +914,14 @@ class FrontendShell:
         self._set_route(RouteName.PROJECT_EDITOR)
 
     def open_project_editor_edit(self, project_id: str) -> None:
-        """Open the edit-project editor workflow."""
+        """Open the edit-project editor workflow.
+
+        Args:
+            project_id (str): Value supplied to this callable.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         try:
             self.project_editor_state = self.services.registry.build_edit_project_editor(project_id)
             self.latest_error = None
@@ -663,12 +931,26 @@ class FrontendShell:
         self._set_route(RouteName.PROJECT_EDITOR, project_id=project_id)
 
     def select_project_editor_section(self, section_key: str) -> None:
-        """Change the selected project-editor section."""
+        """Change the selected project-editor section.
+
+        Args:
+            section_key (str): Value supplied to this callable.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         state = self._require_project_editor_state()
         self.project_editor_state = select_project_editor_section(state, section_key=section_key)
 
     def save_new_project(self, editor: SiteEditorViewModel) -> None:
-        """Create a project registry record from the editor draft."""
+        """Create a project registry record from the editor draft.
+
+        Args:
+            editor (SiteEditorViewModel): Value supplied to this callable.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         try:
             detail = self.services.registry.create_project(editor)
             self.project_detail_state = ProjectDetailStateViewModel(
@@ -699,7 +981,15 @@ class FrontendShell:
         self._set_route(RouteName.PROJECT_DETAIL, project_id=detail.project.id)
 
     def save_project_edits(self, project_id: str, editor: SiteEditorViewModel) -> None:
-        """Update a project registry record from the editor draft."""
+        """Update a project registry record from the editor draft.
+
+        Args:
+            project_id (str): Value supplied to this callable.
+            editor (SiteEditorViewModel): Value supplied to this callable.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         try:
             detail = self.services.registry.update_project(project_id, editor)
             self.project_detail_state = ProjectDetailStateViewModel(
@@ -730,7 +1020,14 @@ class FrontendShell:
         self._set_route(RouteName.PROJECT_DETAIL, project_id=detail.project.id)
 
     def test_project_connection(self, editor: SiteEditorViewModel) -> None:
-        """Run a remote connection test for the current editor draft."""
+        """Run a remote connection test for the current editor draft.
+
+        Args:
+            editor (SiteEditorViewModel): Value supplied to this callable.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         state = self._require_project_editor_state()
         try:
             connection_test_result = self.services.registry.test_remote_connection(editor)
@@ -764,12 +1061,26 @@ class FrontendShell:
         self._set_route(RouteName.PROJECT_EDITOR, project_id=editor.site_id)
 
     def trust_project_editor_remote_host_key(self, editor: SiteEditorViewModel) -> None:
-        """Re-run the connection test after confirmation (Paramiko TOFU adds the host key)."""
+        """Re-run the connection test after confirmation (Paramiko TOFU adds the host key).
+
+        Args:
+            editor (SiteEditorViewModel): Value supplied to this callable.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         trusted_editor = replace(editor, remote_verify_host=False)
         self.test_project_connection(trusted_editor)
 
     def preview_project_editor(self, editor: SiteEditorViewModel) -> None:
-        """Rebuild the current project-editor draft without persisting changes."""
+        """Rebuild the current project-editor draft without persisting changes.
+
+        Args:
+            editor (SiteEditorViewModel): Value supplied to this callable.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         state = self._require_project_editor_state()
         try:
             next_state = self.services.registry.preview_project_editor(
@@ -796,6 +1107,14 @@ class FrontendShell:
         self._set_route(RouteName.PROJECT_EDITOR, project_id=editor.site_id)
 
     def _require_project_id(self) -> str:
+        """Validate and return project id.
+
+        Returns:
+            str: Structured value returned by this callable.
+
+        Raises:
+            ValueError: Raised when this callable hits the corresponding error path.
+        """
         route = self.router.current
         project_id = route.project_id
         if project_id is None and self.project_detail_state is not None:
@@ -816,6 +1135,19 @@ class FrontendShell:
             SyncStatusViewModel,
         ],
     ) -> None:
+        """Run sync.
+
+        Args:
+            self: Shell instance that updates sync state during execution.
+            project_id (str): Value supplied to this callable.
+            route_to_sync (bool): Value supplied to this callable.
+            progress_callback (Callable[[SyncProgressEvent], None] | None): Value
+                supplied to this callable.
+            run_workflow: Value supplied to this callable.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         try:
             self.sync_state = run_workflow(project_id, progress_callback)
             self.latest_error = None
@@ -838,6 +1170,16 @@ class FrontendShell:
             SyncStatusViewModel,
         ],
     ) -> None:
+        """Run sync in background.
+
+        Args:
+            self: Shell instance that owns the background worker state.
+            project_id (str): Value supplied to this callable.
+            run_workflow: Value supplied to this callable.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         try:
             self._run_sync(
                 project_id=project_id,
@@ -867,6 +1209,15 @@ class FrontendShell:
         project_id: str,
         request: TranslationWorkflowRequestViewModel,
     ) -> None:
+        """Run po processing in background.
+
+        Args:
+            project_id (str): Value supplied to this callable.
+            request (TranslationWorkflowRequestViewModel): Value supplied to this callable.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         try:
             self.po_processing_state = self.services.workflows.start_po_processing(
                 project_id,
@@ -896,6 +1247,15 @@ class FrontendShell:
         *,
         options: TranslationOptionsViewModel | None = None,
     ) -> TranslationWorkflowRequestViewModel:
+        """Build translation request.
+
+        Args:
+            locales (str): Value supplied to this callable.
+            options (TranslationOptionsViewModel | None): Value supplied to this callable.
+
+        Returns:
+            TranslationWorkflowRequestViewModel: Structured value returned by this callable.
+        """
         normalized_locales = normalize_default_locale(locales, label="Selected locales")
         detail = self.project_detail_state
         if options is None and detail is not None:
@@ -915,6 +1275,14 @@ class FrontendShell:
         )
 
     def _record_po_processing_progress(self, event: POProcessingProgress) -> None:
+        """Handle record po processing progress.
+
+        Args:
+            event (POProcessingProgress): Value supplied to this callable.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         current_state = self.po_processing_state
         if current_state is None:
             return
@@ -943,7 +1311,17 @@ class FrontendShell:
         thread_name: str | None = None,
         traceback: TracebackType | None = None,
     ) -> None:
-        """Convert an unhandled runtime error into visible UI state."""
+        """Convert an unhandled runtime error into visible UI state.
+
+        Args:
+            error (BaseException): Value supplied to this callable.
+            context (str): Value supplied to this callable.
+            thread_name (str | None): Value supplied to this callable.
+            traceback (TracebackType | None): Value supplied to this callable.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         cause = str(error).strip() or error.__class__.__name__
         error_message = (
             f"Unhandled runtime error in {context}. Cause: {error.__class__.__name__}: {cause}"
@@ -963,6 +1341,14 @@ class FrontendShell:
             self._surface_unhandled_sync_error(error_message)
 
     def _surface_unhandled_po_processing_error(self, error_message: str) -> None:
+        """Handle surface unhandled po processing error.
+
+        Args:
+            error_message (str): Value supplied to this callable.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         current_state = self.po_processing_state
         if current_state is None:
             self.po_processing_state = POProcessingSummaryViewModel(
@@ -984,6 +1370,14 @@ class FrontendShell:
         )
 
     def _surface_unhandled_sync_error(self, error_message: str) -> None:
+        """Handle surface unhandled sync error.
+
+        Args:
+            error_message (str): Value supplied to this callable.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         self.sync_state = SyncStatusViewModel(
             status="failed",
             files_synced=0,
@@ -999,6 +1393,14 @@ class FrontendShell:
             )
 
     def _surface_unhandled_route_error(self, error_message: str) -> bool:
+        """Handle surface unhandled route error.
+
+        Args:
+            error_message (str): Value supplied to this callable.
+
+        Returns:
+            bool: Structured value returned by this callable.
+        """
         current_route = self.router.current.name
         if current_route is RouteName.AUDIT:
             self.audit_state = AuditSummaryViewModel(
@@ -1030,6 +1432,16 @@ class FrontendShell:
         self,
         error: AttributeError | LookupError | OSError | RuntimeError | ValueError,
     ) -> None:
+        """Handle surface background sync failure.
+
+        Args:
+            error (AttributeError | LookupError | OSError | RuntimeError | ValueError): Value
+        supplied to
+            this callable.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         project_id = (
             self.project_detail_state.project.id
             if self.project_detail_state is not None
@@ -1055,6 +1467,14 @@ class FrontendShell:
         )
 
     def _record_sync_progress_event(self, event: SyncProgressEvent) -> None:
+        """Handle record sync progress event.
+
+        Args:
+            event (SyncProgressEvent): Value supplied to this callable.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         with self._sync_state_lock:
             current_state = self.sync_progress_state
             if current_state is None:
@@ -1090,6 +1510,11 @@ class FrontendShell:
             )
 
     def _resolve_sync_progress_log_limit(self) -> int:
+        """Resolve sync progress log limit.
+
+        Returns:
+            int: Structured value returned by this callable.
+        """
         state = self.settings_state
         if state is not None and state.status != "failed":
             return state.app_settings.sync_progress_log_limit
@@ -1100,6 +1525,14 @@ class FrontendShell:
         return loaded_state.app_settings.sync_progress_log_limit
 
     def _require_settings_state(self) -> SettingsStateViewModel:
+        """Validate and return settings state.
+
+        Returns:
+            SettingsStateViewModel: Structured value returned by this callable.
+
+        Raises:
+            ValueError: Raised when this callable hits the corresponding error path.
+        """
         state = self.settings_state
         if state is None:
             msg = "Settings must be loaded before editing them."
@@ -1107,6 +1540,14 @@ class FrontendShell:
         return state
 
     def _require_project_editor_state(self) -> ProjectEditorStateViewModel:
+        """Validate and return project editor state.
+
+        Returns:
+            ProjectEditorStateViewModel: Structured value returned by this callable.
+
+        Raises:
+            ValueError: Raised when this callable hits the corresponding error path.
+        """
         state = self.project_editor_state
         if state is None:
             msg = "Project editor state must be loaded before editing."
@@ -1114,11 +1555,28 @@ class FrontendShell:
         return state
 
     def _set_route(self, route_name: RouteName, project_id: str | None = None) -> None:
+        """Set route.
+
+        Args:
+            route_name (RouteName): Value supplied to this callable.
+            project_id (str | None): Value supplied to this callable.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         self.router.go_to(route_name, project_id=project_id)
         self._refresh_navigation_menu(is_open=False)
         self._persist_last_opened_screen(route_name)
 
     def _refresh_navigation_menu(self, *, is_open: bool) -> None:
+        """Refresh navigation menu.
+
+        Args:
+            is_open (bool): Value supplied to this callable.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         self.navigation_menu = build_navigation_menu_state(
             active_route_key=self.router.current.name.value,
             operations_enabled=self._has_project_context(),
@@ -1126,12 +1584,24 @@ class FrontendShell:
         )
 
     def _has_project_context(self) -> bool:
+        """Handle has project context.
+
+        Returns:
+            bool: Structured value returned by this callable.
+        """
         if self.project_detail_state is not None:
             return True
         return self.router.current.project_id is not None
 
     def _persist_last_opened_screen(self, route_name: RouteName) -> None:
-        """Persist the last opened screen when the preference is enabled."""
+        """Persist the last opened screen when the preference is enabled.
+
+        Args:
+            route_name (RouteName): Value supplied to this callable.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         settings_state = self.settings_state
         if settings_state is None or settings_state.status == "failed":
             return
@@ -1151,7 +1621,14 @@ class FrontendShell:
 def _build_project_actions(
     actions: list[ProjectActionViewModel],
 ) -> list[ProjectActionViewModel]:
-    """Return stable action descriptors for the detail screen."""
+    """Return stable action descriptors for the detail screen.
+
+    Args:
+        actions (list[ProjectActionViewModel]): Value supplied to this callable.
+
+    Returns:
+        list[ProjectActionViewModel]: Structured value returned by this callable.
+    """
     return [
         ProjectActionViewModel(
             key=action.key,

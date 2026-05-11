@@ -24,6 +24,11 @@ from polyglot_site_translator.domain.sync.scope import (
 
 
 def test_sync_filter_spec_matches_directory_prefixes() -> None:
+    """Verify sync filter spec matches directory prefixes.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     filter_spec = SyncFilterSpec(
         relative_path="locale",
         filter_type=SyncFilterType.DIRECTORY,
@@ -36,6 +41,11 @@ def test_sync_filter_spec_matches_directory_prefixes() -> None:
 
 
 def test_sync_filter_spec_matches_exact_files() -> None:
+    """Verify sync filter spec matches exact files.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     filter_spec = SyncFilterSpec(
         relative_path="babel.cfg",
         filter_type=SyncFilterType.FILE,
@@ -47,6 +57,11 @@ def test_sync_filter_spec_matches_exact_files() -> None:
 
 
 def test_resolved_sync_scope_requires_no_filters_when_unresolved() -> None:
+    """Verify resolved sync scope requires no filters when unresolved.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     scope = ResolvedSyncScope(
         framework_type="unknown",
         adapter_name=None,
@@ -60,6 +75,11 @@ def test_resolved_sync_scope_requires_no_filters_when_unresolved() -> None:
 
 
 def test_resolved_sync_scope_applies_exclusions_after_inclusions() -> None:
+    """Verify resolved sync scope applies exclusions after inclusions.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     scope = ResolvedSyncScope(
         framework_type="django",
         adapter_name="django_adapter",
@@ -87,6 +107,11 @@ def test_resolved_sync_scope_applies_exclusions_after_inclusions() -> None:
 
 
 def test_resolved_sync_scope_uses_only_exclusions_when_not_filtered() -> None:
+    """Verify resolved sync scope uses only exclusions when not filtered.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     scope = ResolvedSyncScope(
         framework_type="django",
         adapter_name="django_adapter",
@@ -107,6 +132,11 @@ def test_resolved_sync_scope_uses_only_exclusions_when_not_filtered() -> None:
 
 
 def test_sync_filter_spec_matches_glob_patterns() -> None:
+    """Verify sync filter spec matches glob patterns.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     filter_spec = SyncFilterSpec(
         relative_path="*.pyc",
         filter_type=SyncFilterType.GLOB,
@@ -118,6 +148,11 @@ def test_sync_filter_spec_matches_glob_patterns() -> None:
 
 
 def test_resolved_sync_rule_as_filter_spec_and_glob_helpers_cover_basename_and_segments() -> None:
+    """Verify resolved sync rule as filter spec and glob helpers cover basename and segments.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     filter_from_rule = ConfiguredSyncRule(
         relative_path="locale",
         filter_type=SyncFilterType.DIRECTORY,
@@ -156,6 +191,11 @@ def test_resolved_sync_rule_as_filter_spec_and_glob_helpers_cover_basename_and_s
 
 
 def test_default_sync_scope_settings_include_global_git_exclusion() -> None:
+    """Verify default sync scope settings include global git exclusion.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     settings = build_default_sync_scope_settings()
 
     assert settings.use_gitignore_rules is False
@@ -171,6 +211,11 @@ def test_default_sync_scope_settings_include_global_git_exclusion() -> None:
 
 
 def test_adapter_sync_scope_settings_returns_rules_for_requested_framework() -> None:
+    """Verify adapter sync scope settings returns rules for requested framework.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     settings = AdapterSyncScopeSettings(
         global_rules=(),
         framework_rule_sets=(
@@ -195,6 +240,11 @@ def test_adapter_sync_scope_settings_returns_rules_for_requested_framework() -> 
 
 
 def test_adapter_sync_scope_and_project_override_helpers_cover_simple_properties() -> None:
+    """Verify adapter sync scope and project override helpers cover simple properties.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     empty_scope = AdapterSyncScope()
     non_empty_scope = AdapterSyncScope(
         filters=(
@@ -231,6 +281,11 @@ def test_adapter_sync_scope_and_project_override_helpers_cover_simple_properties
 
 
 def test_sync_rule_key_builders_normalize_paths_and_framework_names() -> None:
+    """Verify sync rule key builders normalize paths and framework names.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     assert (
         build_sync_rule_key(
             relative_path="/locale/",
@@ -260,6 +315,11 @@ def test_sync_rule_key_builders_normalize_paths_and_framework_names() -> None:
 
 
 def test_sync_filter_glob_matching_covers_segment_and_suffix_paths() -> None:
+    """Verify sync filter glob matching covers segment and suffix paths.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     bare_pattern = SyncFilterSpec(
         relative_path="cache",
         filter_type=SyncFilterType.GLOB,

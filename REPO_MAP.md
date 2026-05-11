@@ -19,6 +19,8 @@ Update it whenever the structure changes.
 
 - `tests/`
   Automated tests.
+  Also contains repository-level quality scripts such as `run_docstring_audit.py` used to enforce
+  structured docstrings across public and private symbols.
 
 - `requirements/`
   Canonical dependency declaration directory.

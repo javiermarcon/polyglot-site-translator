@@ -41,34 +41,94 @@ from polyglot_site_translator.services.po_processing import (
 
 
 class StubTranslationProvider:
-    """Deterministic translation provider for service tests."""
+    """Test helper for StubTranslationProvider.
+
+    Attributes:
+        None: This type does not declare additional class-level attributes.
+    """
 
     def __init__(self, translations: dict[tuple[str, str], str] | None = None) -> None:
+        """Initialize the test helper state.
+
+        Args:
+            translations (dict[tuple[str, str], str] | None): Value supplied to this callable.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         self.translations = translations or {}
         self.requests: list[tuple[str, str]] = []
 
     def translate_text(self, *, text: str, target_locale: str) -> str:
+        """Handle translate text.
+
+        Args:
+            text (str): Value supplied to this callable.
+            target_locale (str): Value supplied to this callable.
+
+        Returns:
+            str: Structured value returned by this callable.
+        """
         request = (target_locale, text)
         self.requests.append(request)
         return self.translations[request]
 
 
 class FailingTranslationProvider:
-    """Provider stub that always surfaces a translation error."""
+    """Test helper for FailingTranslationProvider.
+
+    Attributes:
+        None: This type does not declare additional class-level attributes.
+    """
 
     @staticmethod
     def translate_text(*, text: str, target_locale: str) -> str:
+        """Handle translate text.
+
+        Args:
+            text (str): Value supplied to this callable.
+            target_locale (str): Value supplied to this callable.
+
+        Returns:
+            str: Structured value returned by this callable.
+
+        Raises:
+            POProcessingTranslationError: Raised when this callable hits the corresponding error
+        path.
+        """
         msg = f"translation failed for {target_locale}:{text}"
         raise POProcessingTranslationError(msg)
 
 
 class PartiallyFailingTranslationProvider:
-    """Provider stub that fails for one text and succeeds for another."""
+    """Test helper for PartiallyFailingTranslationProvider.
+
+    Attributes:
+        None: This type does not declare additional class-level attributes.
+    """
 
     def __init__(self) -> None:
+        """Initialize the test helper state.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         self.requests: list[tuple[str, str]] = []
 
     def translate_text(self, *, text: str, target_locale: str) -> str:
+        """Handle translate text.
+
+        Args:
+            text (str): Value supplied to this callable.
+            target_locale (str): Value supplied to this callable.
+
+        Returns:
+            str: Structured value returned by this callable.
+
+        Raises:
+            POProcessingTranslationError: Raised when this callable hits the corresponding error
+        path.
+        """
         request = (target_locale, text)
         self.requests.append(request)
         if text == "Broken":
@@ -78,13 +138,37 @@ class PartiallyFailingTranslationProvider:
 
 
 class PartiallyFailingCompileRepository(PolibPOCatalogRepository):
-    """Repository stub that fails MO compilation for one locale and continues."""
+    """Test helper for PartiallyFailingCompileRepository.
+
+    Attributes:
+        None: This type does not declare additional class-level attributes.
+    """
 
     def __init__(self, failing_locale: str) -> None:
+        """Initialize the test helper state.
+
+        Args:
+            failing_locale (str): Value supplied to this callable.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         super().__init__()
         self.failing_locale = failing_locale
 
     def compile_mo_file(self, file_data: POFileData) -> None:
+        """Handle compile mo file.
+
+        Args:
+            file_data (POFileData): Value supplied to this callable.
+
+        Returns:
+            None: This callable does not return a value.
+
+        Raises:
+            POProcessingCompilationError: Raised when this callable hits the corresponding error
+        path.
+        """
         if file_data.locale == self.failing_locale:
             msg = (
                 f"MO file '{file_data.source_path}' could not be compiled for locale "
@@ -95,7 +179,11 @@ class PartiallyFailingCompileRepository(PolibPOCatalogRepository):
 
 
 class StubTranslationCache:
-    """In-memory translation cache used to exercise cache hit/miss behavior."""
+    """Test helper for StubTranslationCache.
+
+    Attributes:
+        None: This type does not declare additional class-level attributes.
+    """
 
     def __init__(
         self,
@@ -104,6 +192,16 @@ class StubTranslationCache:
         enabled: bool = True,
         fail_on_set: bool = False,
     ) -> None:
+        """Initialize the test helper state.
+
+        Args:
+            seed (dict[tuple[str, str], str] | None): Value supplied to this callable.
+            enabled (bool): Value supplied to this callable.
+            fail_on_set (bool): Value supplied to this callable.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         self.enabled = enabled
         self.fail_on_set = fail_on_set
         self.store = {} if seed is None else dict(seed)
@@ -113,18 +211,50 @@ class StubTranslationCache:
         self.set_requests: list[tuple[str, str, str]] = []
 
     def open(self) -> None:
+        """Handle open.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         self.open_calls += 1
 
     def close(self) -> None:
+        """Handle close.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         self.close_calls += 1
 
     def get(self, *, base_language: str, text: str) -> str | None:
+        """Handle get.
+
+        Args:
+            base_language (str): Value supplied to this callable.
+            text (str): Value supplied to this callable.
+
+        Returns:
+            str | None: Structured value returned by this callable.
+        """
         self.get_requests.append((base_language, text))
         if not self.enabled:
             return None
         return self.store.get((base_language, text))
 
     def set(self, *, base_language: str, text: str, translated_text: str) -> None:
+        """Handle set.
+
+        Args:
+            base_language (str): Value supplied to this callable.
+            text (str): Value supplied to this callable.
+            translated_text (str): Value supplied to this callable.
+
+        Returns:
+            None: This callable does not return a value.
+
+        Raises:
+            POProcessingCacheError: Raised when this callable hits the corresponding error path.
+        """
         self.set_requests.append((base_language, text, translated_text))
         if self.fail_on_set:
             msg = "cache write failed"
@@ -134,6 +264,14 @@ class StubTranslationCache:
 
 
 def test_process_site_syncs_missing_variant_entries(tmp_path: Path) -> None:
+    """Verify process site syncs missing variant entries.
+
+    Args:
+        tmp_path (Path): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     workspace = tmp_path / "workspace"
     locale_dir = workspace / "locale"
     locale_dir.mkdir(parents=True, exist_ok=True)
@@ -180,6 +318,14 @@ def test_process_site_syncs_missing_variant_entries(tmp_path: Path) -> None:
 
 
 def test_process_site_handles_plural_entries_with_same_key(tmp_path: Path) -> None:
+    """Verify process site handles plural entries with same key.
+
+    Args:
+        tmp_path (Path): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     workspace = tmp_path / "workspace"
     locale_dir = workspace / "locale"
     locale_dir.mkdir(parents=True, exist_ok=True)
@@ -217,6 +363,14 @@ def test_process_site_handles_plural_entries_with_same_key(tmp_path: Path) -> No
 
 
 def test_process_site_reports_progress_by_family(tmp_path: Path) -> None:
+    """Verify process site reports progress by family.
+
+    Args:
+        tmp_path (Path): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     workspace = tmp_path / "workspace"
     locale_dir = workspace / "locale"
     locale_dir.mkdir(parents=True, exist_ok=True)
@@ -244,6 +398,14 @@ def test_process_site_reports_progress_by_family(tmp_path: Path) -> None:
 
 
 def test_process_site_reports_entry_progress_for_partial_completion(tmp_path: Path) -> None:
+    """Verify process site reports entry progress for partial completion.
+
+    Args:
+        tmp_path (Path): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     workspace = tmp_path / "workspace"
     locale_dir = workspace / "locale"
     locale_dir.mkdir(parents=True, exist_ok=True)
@@ -269,6 +431,14 @@ def test_process_site_reports_entry_progress_for_partial_completion(tmp_path: Pa
 
 
 def test_process_site_skips_hashtag_like_tokens_for_external_translation(tmp_path: Path) -> None:
+    """Verify process site skips hashtag like tokens for external translation.
+
+    Args:
+        tmp_path (Path): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     workspace = tmp_path / "workspace"
     locale_dir = workspace / "locale"
     locale_dir.mkdir(parents=True, exist_ok=True)
@@ -291,6 +461,14 @@ def test_process_site_skips_hashtag_like_tokens_for_external_translation(tmp_pat
 
 
 def test_process_site_skips_external_translation_when_site_disables_it(tmp_path: Path) -> None:
+    """Verify process site skips external translation when site disables it.
+
+    Args:
+        tmp_path (Path): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     workspace = tmp_path / "workspace"
     locale_dir = workspace / "locale"
     locale_dir.mkdir(parents=True, exist_ok=True)
@@ -318,6 +496,14 @@ def test_process_site_skips_external_translation_when_site_disables_it(tmp_path:
 
 
 def test_process_site_translates_only_fuzzy_entries_when_enabled(tmp_path: Path) -> None:
+    """Verify process site translates only fuzzy entries when enabled.
+
+    Args:
+        tmp_path (Path): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     workspace = tmp_path / "workspace"
     locale_dir = workspace / "locale"
     locale_dir.mkdir(parents=True, exist_ok=True)
@@ -347,6 +533,14 @@ def test_process_site_translates_only_fuzzy_entries_when_enabled(tmp_path: Path)
 
 
 def test_process_site_reuses_cached_translations_before_calling_provider(tmp_path: Path) -> None:
+    """Verify process site reuses cached translations before calling provider.
+
+    Args:
+        tmp_path (Path): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     workspace = tmp_path / "workspace"
     locale_dir = workspace / "locale"
     locale_dir.mkdir(parents=True, exist_ok=True)
@@ -380,6 +574,14 @@ def test_process_site_reuses_cached_translations_before_calling_provider(tmp_pat
 
 
 def test_process_site_can_disable_cache_per_run_and_fall_back_to_provider(tmp_path: Path) -> None:
+    """Verify process site can disable cache per run and fall back to provider.
+
+    Args:
+        tmp_path (Path): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     workspace = tmp_path / "workspace"
     locale_dir = workspace / "locale"
     locale_dir.mkdir(parents=True, exist_ok=True)
@@ -411,6 +613,14 @@ def test_process_site_can_disable_cache_per_run_and_fall_back_to_provider(tmp_pa
 
 
 def test_process_site_collects_cache_failures_and_continues(tmp_path: Path) -> None:
+    """Verify process site collects cache failures and continues.
+
+    Args:
+        tmp_path (Path): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     workspace = tmp_path / "workspace"
     locale_dir = workspace / "locale"
     locale_dir.mkdir(parents=True, exist_ok=True)
@@ -440,6 +650,14 @@ def test_process_site_collects_cache_failures_and_continues(tmp_path: Path) -> N
 
 
 def test_process_site_dry_run_reports_changes_without_writing_files(tmp_path: Path) -> None:
+    """Verify process site dry run reports changes without writing files.
+
+    Args:
+        tmp_path (Path): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     workspace = tmp_path / "workspace"
     locale_dir = workspace / "locale"
     locale_dir.mkdir(parents=True, exist_ok=True)
@@ -463,6 +681,14 @@ def test_process_site_dry_run_reports_changes_without_writing_files(tmp_path: Pa
 
 
 def test_process_site_stats_only_reports_changes_without_writing_files(tmp_path: Path) -> None:
+    """Verify process site stats only reports changes without writing files.
+
+    Args:
+        tmp_path (Path): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     workspace = tmp_path / "workspace"
     locale_dir = workspace / "locale"
     locale_dir.mkdir(parents=True, exist_ok=True)
@@ -485,6 +711,14 @@ def test_process_site_stats_only_reports_changes_without_writing_files(tmp_path:
 
 
 def test_process_site_reports_variant_inconsistencies(tmp_path: Path) -> None:
+    """Verify process site reports variant inconsistencies.
+
+    Args:
+        tmp_path (Path): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     workspace = tmp_path / "workspace"
     locale_dir = workspace / "locale"
     locale_dir.mkdir(parents=True, exist_ok=True)
@@ -513,6 +747,14 @@ def test_process_site_reports_variant_inconsistencies(tmp_path: Path) -> None:
 def test_process_site_returns_before_compiling_mo_when_project_disables_it(
     tmp_path: Path,
 ) -> None:
+    """Verify process site returns before compiling mo when project disables it.
+
+    Args:
+        tmp_path (Path): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     workspace = tmp_path / "workspace"
     locale_dir = workspace / "locale"
     locale_dir.mkdir(parents=True, exist_ok=True)
@@ -540,6 +782,14 @@ def test_process_site_returns_before_compiling_mo_when_project_disables_it(
 
 
 def test_process_site_collects_translation_failures_and_continues(tmp_path: Path) -> None:
+    """Verify process site collects translation failures and continues.
+
+    Args:
+        tmp_path (Path): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     workspace = tmp_path / "workspace"
     locale_dir = workspace / "locale"
     locale_dir.mkdir(parents=True, exist_ok=True)
@@ -569,6 +819,14 @@ def test_process_site_collects_translation_failures_and_continues(tmp_path: Path
 
 
 def test_process_site_translates_multiple_entries_in_one_file(tmp_path: Path) -> None:
+    """Verify process site translates multiple entries in one file.
+
+    Args:
+        tmp_path (Path): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     workspace = tmp_path / "workspace"
     locale_dir = workspace / "locale"
     locale_dir.mkdir(parents=True, exist_ok=True)
@@ -604,6 +862,14 @@ def test_process_site_translates_multiple_entries_in_one_file(tmp_path: Path) ->
 
 
 def test_process_site_progress_reports_current_file_and_entry(tmp_path: Path) -> None:
+    """Verify process site progress reports current file and entry.
+
+    Args:
+        tmp_path (Path): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     workspace = tmp_path / "workspace"
     locale_dir = workspace / "locale"
     locale_dir.mkdir(parents=True, exist_ok=True)
@@ -637,6 +903,14 @@ def test_process_site_progress_reports_current_file_and_entry(tmp_path: Path) ->
 
 
 def test_process_site_accepts_multiple_configured_default_locales(tmp_path: Path) -> None:
+    """Verify process site accepts multiple configured default locales.
+
+    Args:
+        tmp_path (Path): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     workspace = tmp_path / "workspace"
     locale_dir = workspace / "locale"
     locale_dir.mkdir(parents=True, exist_ok=True)
@@ -672,6 +946,14 @@ def test_process_site_accepts_multiple_configured_default_locales(tmp_path: Path
 
 
 def test_process_site_returns_zero_result_when_no_matching_locale_files(tmp_path: Path) -> None:
+    """Verify process site returns zero result when no matching locale files.
+
+    Args:
+        tmp_path (Path): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     workspace = tmp_path / "workspace"
     workspace.mkdir(parents=True, exist_ok=True)
     _write_po(workspace / "messages-en_US.po", [("Hello", "Hello")])
@@ -687,6 +969,14 @@ def test_process_site_returns_zero_result_when_no_matching_locale_files(tmp_path
 
 
 def test_process_site_raises_when_po_file_is_invalid(tmp_path: Path) -> None:
+    """Verify process site raises when po file is invalid.
+
+    Args:
+        tmp_path (Path): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     workspace = tmp_path / "workspace"
     workspace.mkdir(parents=True, exist_ok=True)
     invalid_file = workspace / "messages-es_ES.po"
@@ -698,6 +988,14 @@ def test_process_site_raises_when_po_file_is_invalid(tmp_path: Path) -> None:
 
 
 def test_process_site_reuses_translation_memory_across_families(tmp_path: Path) -> None:
+    """Verify process site reuses translation memory across families.
+
+    Args:
+        tmp_path (Path): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     workspace = tmp_path / "workspace"
     first_dir = workspace / "plugin_a"
     second_dir = workspace / "plugin_b"
@@ -725,6 +1023,14 @@ def test_process_site_reuses_translation_memory_across_families(tmp_path: Path) 
 
 
 def test_process_site_translates_missing_entries_with_external_provider(tmp_path: Path) -> None:
+    """Verify process site translates missing entries with external provider.
+
+    Args:
+        tmp_path (Path): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     workspace = tmp_path / "workspace"
     locale_dir = workspace / "locale"
     locale_dir.mkdir(parents=True, exist_ok=True)
@@ -750,6 +1056,14 @@ def test_process_site_translates_missing_entries_with_external_provider(tmp_path
 
 
 def test_process_site_translates_plural_entries_with_external_provider(tmp_path: Path) -> None:
+    """Verify process site translates plural entries with external provider.
+
+    Args:
+        tmp_path (Path): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     workspace = tmp_path / "workspace"
     locale_dir = workspace / "locale"
     locale_dir.mkdir(parents=True, exist_ok=True)
@@ -788,6 +1102,14 @@ def test_process_site_translates_plural_entries_with_external_provider(tmp_path:
 
 
 def test_process_site_filters_by_exact_selected_locales(tmp_path: Path) -> None:
+    """Verify process site filters by exact selected locales.
+
+    Args:
+        tmp_path (Path): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     workspace = tmp_path / "workspace"
     locale_dir = workspace / "locale"
     locale_dir.mkdir(parents=True, exist_ok=True)
@@ -810,6 +1132,14 @@ def test_process_site_filters_by_exact_selected_locales(tmp_path: Path) -> None:
 def test_process_site_raises_when_every_external_translation_fails_and_no_file_can_continue(
     tmp_path: Path,
 ) -> None:
+    """Verify process site raises when every external translation fails and no file can….
+
+    Args:
+        tmp_path (Path): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     workspace = tmp_path / "workspace"
     locale_dir = workspace / "locale"
     locale_dir.mkdir(parents=True, exist_ok=True)
@@ -827,6 +1157,14 @@ def test_process_site_raises_when_every_external_translation_fails_and_no_file_c
 
 
 def test_process_site_collects_mo_compilation_failures_and_continues(tmp_path: Path) -> None:
+    """Verify process site collects mo compilation failures and continues.
+
+    Args:
+        tmp_path (Path): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     workspace = tmp_path / "workspace"
     locale_dir = workspace / "locale"
     locale_dir.mkdir(parents=True, exist_ok=True)
@@ -854,6 +1192,11 @@ def test_process_site_collects_mo_compilation_failures_and_continues(tmp_path: P
 
 
 def test_find_entry_returns_matching_entry_and_none_for_missing() -> None:
+    """Verify find entry returns matching entry and none for missing.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     entry = POEntryData(
         entry_id=POEntryId(context=None, msgid="Save", msgid_plural=None),
         msgstr="Guardar",
@@ -865,6 +1208,11 @@ def test_find_entry_returns_matching_entry_and_none_for_missing() -> None:
 
 
 def test_resolve_processing_locales_keeps_first_configured_locale_and_appends_new_ones() -> None:
+    """Verify resolve processing locales keeps first configured locale and appends new ones.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     resolved = _resolve_processing_locales(
         target_files=(
             POFileData(
@@ -891,6 +1239,11 @@ def test_resolve_processing_locales_keeps_first_configured_locale_and_appends_ne
 
 
 def test_detect_variant_inconsistencies_ignores_single_translated_variant() -> None:
+    """Verify detect variant inconsistencies ignores single translated variant.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     grouped_files = (
         POFileData(
             source_path="/tmp/messages-es_ES.po",
@@ -926,17 +1279,32 @@ def test_detect_variant_inconsistencies_ignores_single_translated_variant() -> N
 
 
 def test_canonical_translation_value_normalizes_plural_maps() -> None:
+    """Verify canonical translation value normalizes plural maps.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     canonical = _canonical_translation_value({"1": "dias", "0": "dia"})
 
     assert canonical == "0=dia\x1f1=dias"
 
 
 def test_is_effectively_empty_translation_treats_blank_plural_maps_as_empty() -> None:
+    """Verify is effectively empty translation treats blank plural maps as empty.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     assert _is_effectively_empty_translation({"0": " ", "1": ""}) is True
     assert _is_effectively_empty_translation({"0": "uno"}) is False
 
 
 def test_is_translated_requires_plural_map_entries_for_plural_po_entries() -> None:
+    """Verify is translated requires plural map entries for plural po entries.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     untranslated = POEntryData(
         entry_id=POEntryId(context=None, msgid="day", msgid_plural="days"),
         msgstr="",
@@ -953,6 +1321,11 @@ def test_is_translated_requires_plural_map_entries_for_plural_po_entries() -> No
 
 
 def test_synchronize_family_does_not_overwrite_existing_target_translation() -> None:
+    """Verify synchronize family does not overwrite existing target translation.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     entry_id = POEntryId(context=None, msgid="Hello", msgid_plural=None)
     source_entry = POEntryData(entry_id=entry_id, msgstr="Hola", msgstr_plural={})
     translated_target = POEntryData(entry_id=entry_id, msgstr="Che hola", msgstr_plural={})
@@ -973,6 +1346,11 @@ def test_synchronize_family_does_not_overwrite_existing_target_translation() -> 
 
 
 def test_translate_missing_entries_skips_selected_locales_without_a_file() -> None:
+    """Verify translate missing entries skips selected locales without a file.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     entry = POEntryData(
         entry_id=POEntryId(context=None, msgid="Save", msgid_plural=None),
         msgstr="",
@@ -1013,6 +1391,16 @@ def _build_site(
     *,
     modes: dict[str, bool] | None = None,
 ) -> RegisteredSite:
+    """Handle build site.
+
+    Args:
+        local_path (str): Value supplied to this callable.
+        default_locale (str): Value supplied to this callable.
+        modes (dict[str, bool] | None): Value supplied to this callable.
+
+    Returns:
+        RegisteredSite: Structured value returned by this callable.
+    """
     resolved_modes = {
         "compile_mo": True,
         "use_external_translator": True,
@@ -1045,6 +1433,15 @@ def _build_site(
 
 
 def _write_po(path: Path, entries: list[tuple[str, str]]) -> None:
+    """Handle write po.
+
+    Args:
+        path (Path): Value supplied to this callable.
+        entries (list[tuple[str, str]]): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     po_file = polib.POFile()
     po_file.metadata = {"Language": path.stem.split("-")[-1]}
     for msgid, msgstr in entries:

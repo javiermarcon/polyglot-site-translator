@@ -19,9 +19,22 @@ from polyglot_site_translator.presentation.view_models import (
 
 
 class ProjectDetailScreen(BaseShellScreen):
-    """Screen showing project details and workflow actions."""
+    """Screen showing project details and workflow actions.
+
+    Attributes:
+        None: This type does not declare additional class-level attributes.
+    """
 
     def __init__(self, *, shell: FrontendShell, manager_ref: ScreenManager) -> None:
+        """Build project actions, summary labels, and workflow popups.
+
+        Args:
+            shell (FrontendShell): Value supplied to this callable.
+            manager_ref (ScreenManager): Value supplied to this callable.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         super().__init__(
             screen_name="project_detail",
             title="Project Detail",
@@ -42,26 +55,66 @@ class ProjectDetailScreen(BaseShellScreen):
         self.refresh()
 
     def _back_to_projects(self, *_args: object) -> None:
+        """Handle back to projects.
+
+        Args:
+            _args (object): Value supplied to this callable.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         self._shell.open_projects()
         self.show_route("projects")
 
     def _start_sync(self, *_args: object) -> None:
+        """Handle start sync.
+
+        Args:
+            _args (object): Value supplied to this callable.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         self._shell.start_sync_async()
         if self._sync_progress_popup is None:
             self._sync_progress_popup = SyncProgressPopup(shell=self._shell)
         self._sync_progress_popup.open_for_sync()
 
     def _start_sync_to_remote(self, *_args: object) -> None:
+        """Handle start sync to remote.
+
+        Args:
+            _args (object): Value supplied to this callable.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         self._shell.start_sync_to_remote_async()
         if self._sync_progress_popup is None:
             self._sync_progress_popup = SyncProgressPopup(shell=self._shell)
         self._sync_progress_popup.open_for_sync()
 
     def _start_audit(self, *_args: object) -> None:
+        """Handle start audit.
+
+        Args:
+            _args (object): Value supplied to this callable.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         self._shell.start_audit()
         self.show_route("audit")
 
     def _start_po_processing(self, *_args: object) -> None:
+        """Handle start po processing.
+
+        Args:
+            _args (object): Value supplied to this callable.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         detail = self._shell.project_detail_state
         if detail is None:
             return
@@ -76,6 +129,14 @@ class ProjectDetailScreen(BaseShellScreen):
         self,
         request: TranslationWorkflowRequestViewModel,
     ) -> None:
+        """Handle confirm po processing.
+
+        Args:
+            request (TranslationWorkflowRequestViewModel): Value supplied to this callable.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         self._shell.start_po_processing_async(
             request.locales,
             options=request.options,
@@ -83,6 +144,14 @@ class ProjectDetailScreen(BaseShellScreen):
         self.show_route("po_processing")
 
     def _edit_project(self, *_args: object) -> None:
+        """Handle edit project.
+
+        Args:
+            _args (object): Value supplied to this callable.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         detail = self._shell.project_detail_state
         if detail is None:
             return
@@ -90,6 +159,11 @@ class ProjectDetailScreen(BaseShellScreen):
         self.show_route("project_editor")
 
     def refresh(self) -> None:
+        """Refresh the detail summary from the selected project state.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         detail = self._shell.project_detail_state
         if detail is None:
             self._detail_label.text = "No project selected."

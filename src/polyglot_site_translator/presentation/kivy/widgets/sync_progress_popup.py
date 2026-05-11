@@ -16,9 +16,21 @@ from polyglot_site_translator.presentation.kivy.widgets.ssh_host_key_trust_dialo
 
 
 class SyncProgressPopup(Popup):  # type: ignore[misc]
-    """Dedicated window that shows sync progress and transport command logs."""
+    """Dedicated window that shows sync progress and transport command logs.
+
+    Attributes:
+        None: This type does not declare additional class-level attributes.
+    """
 
     def __init__(self, *, shell: FrontendShell) -> None:
+        """Build the popup widgets that mirror shell-managed sync progress state.
+
+        Args:
+            shell (FrontendShell): Value supplied to this callable.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         super().__init__(
             title="Sync Progress",
             size_hint=(0.92, 0.85),
@@ -56,7 +68,11 @@ class SyncProgressPopup(Popup):  # type: ignore[misc]
         self.content = container
 
     def open_for_sync(self) -> None:
-        """Open the popup and keep it refreshed while sync state changes."""
+        """Open the popup and keep it refreshed while sync state changes.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         self.refresh()
         if self._refresh_event is None:
             self._refresh_event = Clock.schedule_interval(self._refresh_from_clock, 0.1)
@@ -64,7 +80,11 @@ class SyncProgressPopup(Popup):  # type: ignore[misc]
             self.open()
 
     def refresh(self) -> None:
-        """Refresh the popup contents from the shell progress state."""
+        """Refresh the popup contents from the shell progress state.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         state = self._shell.sync_progress_state
         if state is None:
             self._status_label.text = "No sync started yet."
@@ -99,21 +119,46 @@ class SyncProgressPopup(Popup):  # type: ignore[misc]
         self._trust_host_key_button.opacity = 1 if can_trust_host_key else 0
 
     def on_dismiss(self) -> None:
-        """Stop the automatic refresh loop when the popup is closed."""
+        """Stop the automatic refresh loop when the popup is closed.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         if self._refresh_event is not None:
             self._refresh_event.cancel()
             self._refresh_event = None
         super().on_dismiss()
 
     def _refresh_from_clock(self, _delta: float) -> None:
+        """Refresh from clock.
+
+        Args:
+            _delta (float): Value supplied to this callable.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         self.refresh()
 
     def _open_host_key_confirmation(self, *_args: object) -> None:
+        """Open host key confirmation.
+
+        Args:
+            _args (object): Value supplied to this callable.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         open_ssh_host_key_trust_confirmation(
             on_trust=self._run_trust_host_key_after_confirmation,
             purpose="sync",
         )
 
     def _run_trust_host_key_after_confirmation(self) -> None:
+        """Run trust host key after confirmation.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         self._shell.trust_selected_project_remote_host_key()
         self.refresh()

@@ -20,19 +20,40 @@ FLASK_MATCH_THRESHOLD = 55
 
 
 def _contains_flask_markers(content: str) -> bool:
+    """Handle contains flask markers.
+
+    Args:
+        content (str): Value supplied to this callable.
+
+    Returns:
+        bool: Structured value returned by this callable.
+    """
     return "Flask(" in content or "from flask import Flask" in content or "create_app(" in content
 
 
 @dataclass(frozen=True)
 class FlaskFrameworkAdapter(BaseFrameworkAdapter):
-    """Detect Flask project layouts."""
+    """Detect Flask project layouts.
+
+    Attributes:
+        framework_type (str): Documented attribute exposed by this type.
+        adapter_name (str): Documented attribute exposed by this type.
+        display_name (str): Documented attribute exposed by this type.
+    """
 
     framework_type: str = "flask"
     adapter_name: str = "flask_adapter"
     display_name: str = "Flask"
 
     def get_sync_scope(self, project_path: Path) -> AdapterSyncScope:
-        """Return the default Flask sync scope."""
+        """Return the default Flask sync scope.
+
+        Args:
+            project_path (Path): Value supplied to this callable.
+
+        Returns:
+            AdapterSyncScope: Structured value returned by this callable.
+        """
         return AdapterSyncScope(
             filters=(
                 SyncFilterSpec(
@@ -76,7 +97,14 @@ class FlaskFrameworkAdapter(BaseFrameworkAdapter):
         )
 
     def detect(self, project_path: Path) -> FrameworkDetectionResult:
-        """Inspect a local path for Flask markers."""
+        """Inspect a local path for Flask markers.
+
+        Args:
+            project_path (Path): Value supplied to this callable.
+
+        Returns:
+            FrameworkDetectionResult: Structured value returned by this callable.
+        """
         app_py = project_path / "app.py"
         wsgi_py = project_path / "wsgi.py"
         babel_cfg = project_path / "babel.cfg"

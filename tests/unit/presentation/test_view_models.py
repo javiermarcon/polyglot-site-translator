@@ -19,6 +19,11 @@ from polyglot_site_translator.presentation.view_models import (
 
 
 def test_build_settings_state_rejects_unknown_section_keys() -> None:
+    """Verify build settings state rejects unknown section keys.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     with pytest.raises(LookupError, match="Unknown settings section: unsupported"):
         build_settings_state(
             app_settings=build_default_app_settings(),
@@ -29,12 +34,22 @@ def test_build_settings_state_rejects_unknown_section_keys() -> None:
 
 
 def test_build_settings_sections_exposes_translation_settings_as_available() -> None:
+    """Verify build settings sections exposes translation settings as available.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     sections = {section.key: section for section in build_settings_sections()}
 
     assert sections["translation"].is_available is True
 
 
 def test_build_project_editor_state_defaults_to_general_section() -> None:
+    """Verify build project editor state defaults to general section.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     state = build_project_editor_state(
         mode="create",
         editor=build_default_site_editor(),
@@ -62,6 +77,11 @@ def test_build_project_editor_state_defaults_to_general_section() -> None:
 
 
 def test_select_project_editor_section_updates_only_the_selected_tab() -> None:
+    """Verify select project editor section updates only the selected tab.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     state = build_project_editor_state(
         mode="create",
         editor=build_default_site_editor(default_locale="es_ES"),
@@ -94,6 +114,11 @@ def test_select_project_editor_section_updates_only_the_selected_tab() -> None:
 
 
 def test_select_project_editor_section_rejects_unknown_section_keys() -> None:
+    """Verify select project editor section rejects unknown section keys.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     state = build_project_editor_state(
         mode="create",
         editor=build_default_site_editor(),

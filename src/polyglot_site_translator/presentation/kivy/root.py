@@ -23,7 +23,17 @@ def build_root_widget(
     shell: FrontendShell,
     apply_runtime_settings: Callable[[AppSettingsViewModel], None] | None = None,
 ) -> ScreenManager:
-    """Create the ScreenManager used by the Kivy app."""
+    """Create the ScreenManager used by the Kivy app.
+
+    Args:
+        shell (FrontendShell): Value supplied to this callable.
+        apply_runtime_settings (Callable[[AppSettingsViewModel], None] | None): Value supplied to
+    this
+        callable.
+
+    Returns:
+        ScreenManager: Structured value returned by this callable.
+    """
     manager = ScreenManager(transition=NoTransition())
     screens = [
         DashboardScreen(shell=shell, manager_ref=manager),
@@ -46,7 +56,14 @@ def build_root_widget(
 
 
 def _resolve_initial_screen_name(shell: FrontendShell) -> str:
-    """Map the shell route to the corresponding screen name."""
+    """Map the shell route to the corresponding screen name.
+
+    Args:
+        shell (FrontendShell): Value supplied to this callable.
+
+    Returns:
+        str: Structured value returned by this callable.
+    """
     route_name = shell.router.current.name
     if route_name is RouteName.PROJECT_DETAIL:
         return "project_detail"

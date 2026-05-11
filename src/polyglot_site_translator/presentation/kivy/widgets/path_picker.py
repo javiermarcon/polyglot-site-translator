@@ -23,8 +23,12 @@ from polyglot_site_translator.presentation.kivy.widgets.common import (
 def directory_only_listing_filter(_current_dir: str, entry_path: str) -> bool:
     """Return True for directory entries only (Kivy ``FileChooser`` filter callback).
 
-    Used with ``filter_dirs=True`` so the listing excludes regular files while
-    still allowing directory navigation and selection.
+    Args:
+        _current_dir (str): Value supplied to this callable.
+        entry_path (str): Value supplied to this callable.
+
+    Returns:
+        bool: Structured value returned by this callable.
     """
     try:
         return Path(entry_path).is_dir()
@@ -35,8 +39,11 @@ def directory_only_listing_filter(_current_dir: str, entry_path: str) -> bool:
 def initial_browse_directory(path_hint: str) -> str:
     """Return an existing directory path to seed ``FileChooser.path``.
 
-    Walks upward from the hint when the path does not exist yet so parents such as
-    the configured database directory can still open the chooser in a sensible place.
+    Args:
+        path_hint (str): Value supplied to this callable.
+
+    Returns:
+        str: Structured value returned by this callable.
     """
     stripped = path_hint.strip()
     if stripped == "":
@@ -63,7 +70,14 @@ def initial_browse_directory(path_hint: str) -> str:
 
 @dataclass(frozen=True, slots=True)
 class PathFieldPicker:
-    """Configuration for binding a ``TextInput`` to the local filesystem picker."""
+    """Configuration for binding a ``TextInput`` to the local filesystem picker.
+
+    Attributes:
+        pick_mode (Literal["directory", "file"]): Documented attribute exposed by this type.
+        title (str): Documented attribute exposed by this type.
+        path_hint (Callable[[], str]): Documented attribute exposed by this type.
+        use_basename_only (bool): Documented attribute exposed by this type.
+    """
 
     pick_mode: Literal["directory", "file"]
     title: str
@@ -79,7 +93,18 @@ def show_path_picker_popup(
     path_hint: Callable[[], str],
     use_basename_only: bool = False,
 ) -> None:
-    """Open :class:`~kivy_garden.filebrowser.FileBrowser` and write the result into ``target``."""
+    """Open :class:`~kivy_garden.filebrowser.FileBrowser` and write the result into ``target``.
+
+    Args:
+        target (TextInput): Value supplied to this callable.
+        mode (Literal["directory", "file"]): Value supplied to this callable.
+        title (str): Value supplied to this callable.
+        path_hint (Callable[[], str]): Value supplied to this callable.
+        use_basename_only (bool): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     initial = initial_browse_directory(path_hint())
     dirselect = mode == "directory"
 
@@ -109,6 +134,14 @@ def show_path_picker_popup(
     )
 
     def on_success(instance: FileBrowser) -> None:
+        """Handle on success.
+
+        Args:
+            instance (FileBrowser): Value supplied to this callable.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         chosen = _resolve_file_browser_selection(instance, mode=mode)
         if chosen is not None:
             if use_basename_only and mode == "file":
@@ -118,6 +151,14 @@ def show_path_picker_popup(
         popup.dismiss()
 
     def on_canceled(_instance: FileBrowser) -> None:
+        """Handle on canceled.
+
+        Args:
+            _instance (FileBrowser): Value supplied to this callable.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         popup.dismiss()
 
     browser.bind(on_success=on_success, on_canceled=on_canceled)
@@ -125,7 +166,14 @@ def show_path_picker_popup(
 
 
 def _disable_directory_mode_aux_fields(browser: FileBrowser) -> None:
-    """Hide manual filename/filter edits that would break directory-only listings."""
+    """Hide manual filename/filter edits that would break directory-only listings.
+
+    Args:
+        browser (FileBrowser): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     file_text = getattr(browser.ids, "file_text", None)
     if file_text is not None:
         file_text.disabled = True
@@ -139,6 +187,15 @@ def _resolve_file_browser_selection(
     *,
     mode: Literal["directory", "file"],
 ) -> str | None:
+    """Resolve file browser selection.
+
+    Args:
+        browser (FileBrowser): Value supplied to this callable.
+        mode (Literal["directory", "file"]): Value supplied to this callable.
+
+    Returns:
+        str | None: Structured value returned by this callable.
+    """
     if browser.selection:
         chosen = str(browser.selection[0])
         if mode == "directory":
@@ -154,7 +211,15 @@ def _resolve_file_browser_selection(
 
 
 def build_path_input_row(text_input: TextInput, picker: PathFieldPicker) -> BoxLayout:
-    """Horizontal row with a text input and a browse button that opens the picker."""
+    """Horizontal row with a text input and a browse button that opens the picker.
+
+    Args:
+        text_input (TextInput): Value supplied to this callable.
+        picker (PathFieldPicker): Value supplied to this callable.
+
+    Returns:
+        BoxLayout: Structured value returned by this callable.
+    """
     row = BoxLayout(orientation="horizontal", spacing=8, size_hint_y=None, height=44)
     text_input.size_hint_x = 0.72
     browse = AppButton(text="Browse…", primary=False, size_hint_x=0.28)
@@ -177,7 +242,16 @@ def build_labeled_path_field(
     text_input: TextInput,
     picker: PathFieldPicker,
 ) -> SurfaceBoxLayout:
-    """Stack a field label, a text input, and a browse button that opens the picker."""
+    """Stack a field label, a text input, and a browse button that opens the picker.
+
+    Args:
+        label (str): Value supplied to this callable.
+        text_input (TextInput): Value supplied to this callable.
+        picker (PathFieldPicker): Value supplied to this callable.
+
+    Returns:
+        SurfaceBoxLayout: Structured value returned by this callable.
+    """
     card = SurfaceBoxLayout(
         orientation="vertical",
         spacing=8,

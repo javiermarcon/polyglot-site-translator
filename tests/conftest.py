@@ -26,7 +26,15 @@ def isolate_user_config_dir(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
-    """Force tests to use an isolated user config directory."""
+    """Handle isolate user config dir.
+
+    Args:
+        monkeypatch (pytest.MonkeyPatch): Value supplied to this callable.
+        tmp_path (Path): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     monkeypatch.setenv("POLYGLOT_SITE_TRANSLATOR_CONFIG_DIR", str(tmp_path))
     settings_service = build_default_settings_service(config_dir=tmp_path)
     settings_service.reset_settings()

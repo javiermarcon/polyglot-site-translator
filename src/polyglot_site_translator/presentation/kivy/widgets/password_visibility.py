@@ -15,7 +15,14 @@ _MATERIAL_VISIBILITY_OFF: str = "\ue8f5"
 
 
 def _material_icons_font_path() -> Path:
-    """Path to the packaged Material Icons font (Apache-2.0, see assets/fonts/NOTICE.txt)."""
+    """Path to the packaged Material Icons font (Apache-2.0, see assets/fonts/NOTICE.txt).
+
+    Returns:
+        Path: Structured value returned by this callable.
+
+    Raises:
+        FileNotFoundError: Raised when this callable hits the corresponding error path.
+    """
     path = Path(__file__).resolve().parent.parent / "assets" / "fonts" / "MaterialIcons-Regular.ttf"
     if not path.is_file():
         msg = f"Bundled Material Icons font not found: {path}"
@@ -26,9 +33,11 @@ def _material_icons_font_path() -> Path:
 def password_visibility_toggle_label(*, password_masked: bool) -> str:
     """Glyph text for the side button using the bundled Material Icons font.
 
-    When the field is masked, the button shows the "visibility" (eye) glyph; when
-    the secret is visible, it shows "visibility_off". Renders reliably because the
-    font ships inside the package.
+    Args:
+        password_masked (bool): Value supplied to this callable.
+
+    Returns:
+        str: Structured value returned by this callable.
     """
     return _MATERIAL_VISIBILITY if password_masked else _MATERIAL_VISIBILITY_OFF
 
@@ -36,7 +45,11 @@ def password_visibility_toggle_label(*, password_masked: bool) -> str:
 def build_password_row_with_visibility_toggle(text_input: TextInput) -> BoxLayout:
     """Arrange a password ``TextInput`` beside a toggle that masks or reveals the value.
 
-    The toggle uses Material Icons from ``presentation/kivy/assets/fonts/``.
+    Args:
+        text_input (TextInput): Value supplied to this callable.
+
+    Returns:
+        BoxLayout: Structured value returned by this callable.
     """
     row = BoxLayout(orientation="horizontal", spacing=8, size_hint_y=None, height=44)
     text_input.size_hint_x = 0.78
@@ -51,6 +64,14 @@ def build_password_row_with_visibility_toggle(text_input: TextInput) -> BoxLayou
     )
 
     def on_toggle(_instance: object) -> None:
+        """Handle on toggle.
+
+        Args:
+            _instance (object): Value supplied to this callable.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         text_input.password = not text_input.password
         toggle.text = password_visibility_toggle_label(password_masked=bool(text_input.password))
 

@@ -10,9 +10,22 @@ from polyglot_site_translator.presentation.kivy.widgets.common import WrappedLab
 
 
 class DashboardScreen(BaseShellScreen):
-    """Entry screen for the application shell."""
+    """Entry screen for the application shell.
+
+    Attributes:
+        None: This type does not declare additional class-level attributes.
+    """
 
     def __init__(self, *, shell: FrontendShell, manager_ref: ScreenManager) -> None:
+        """Build the dashboard actions and descriptive overview labels.
+
+        Args:
+            shell (FrontendShell): Value supplied to this callable.
+            manager_ref (ScreenManager): Value supplied to this callable.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         super().__init__(
             screen_name="dashboard",
             title="Dashboard",
@@ -27,14 +40,35 @@ class DashboardScreen(BaseShellScreen):
         self.refresh()
 
     def _open_projects(self, *_args: object) -> None:
+        """Open projects.
+
+        Args:
+            _args (object): Value supplied to this callable.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         self._shell.open_projects()
         self.show_route("projects")
 
     def _open_settings(self, *_args: object) -> None:
+        """Open settings.
+
+        Args:
+            _args (object): Value supplied to this callable.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         self._shell.open_settings()
         self.show_route("settings")
 
     def refresh(self) -> None:
+        """Refresh dashboard copy from the current shell state.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         self._sections_label.text = "\n".join(
             f"{section.title}: {section.description}"
             for section in self._shell.dashboard_state.sections

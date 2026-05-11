@@ -12,9 +12,22 @@ from polyglot_site_translator.presentation.kivy.widgets.common import WrappedLab
 
 
 class POProcessingScreen(BaseShellScreen):
-    """Screen showing PO processing workflow state."""
+    """Screen showing PO processing workflow state.
+
+    Attributes:
+        None: This type does not declare additional class-level attributes.
+    """
 
     def __init__(self, *, shell: FrontendShell, manager_ref: ScreenManager) -> None:
+        """Build the translation workflow screen and its progress widgets.
+
+        Args:
+            shell (FrontendShell): Value supplied to this callable.
+            manager_ref (ScreenManager): Value supplied to this callable.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         super().__init__(
             screen_name="po_processing",
             title="Translation",
@@ -31,11 +44,24 @@ class POProcessingScreen(BaseShellScreen):
         self.refresh()
 
     def _back_to_project(self, *_args: object) -> None:
+        """Handle back to project.
+
+        Args:
+            _args (object): Value supplied to this callable.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         if self._shell.project_detail_state is not None:
             self._shell.select_project(self._shell.project_detail_state.project.id)
         self.show_route("project_detail")
 
     def refresh(self) -> None:
+        """Refresh the progress bar and summary from translation workflow state.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         state = self._shell.po_processing_state
         if state is None:
             self._progress_bar.max = 1
@@ -71,9 +97,25 @@ class POProcessingScreen(BaseShellScreen):
             self._refresh_event = None
 
     def _refresh_from_clock(self, _dt: float) -> None:
+        """Refresh from clock.
+
+        Args:
+            _dt (float): Value supplied to this callable.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         self.refresh()
 
     def on_leave(self, *args: object) -> None:
+        """Cancel the periodic refresh loop when the screen is left.
+
+        Args:
+            args (object): Value supplied to this callable.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         super().on_leave(*args)
         if self._refresh_event is not None:
             self._refresh_event.cancel()

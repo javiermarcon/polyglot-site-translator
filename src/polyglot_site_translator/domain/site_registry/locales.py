@@ -12,7 +12,18 @@ _LOCALE_PATTERN = re.compile(r"^[a-z]{2,3}(?:_[A-Z]{2})?$")
 
 
 def normalize_default_locale(value: str, *, label: str = "Default locale") -> str:
-    """Return a canonical comma-separated locale list for persistence."""
+    """Return a canonical comma-separated locale list for persistence.
+
+    Args:
+        value (str): Value supplied to this callable.
+        label (str): Value supplied to this callable.
+
+    Returns:
+        str: Structured value returned by this callable.
+
+    Raises:
+        SiteRegistryValidationError: Raised when this callable hits the corresponding error path.
+    """
     normalized_value = value.strip()
     if normalized_value == "":
         msg = f"{label} must not be empty."
@@ -35,5 +46,13 @@ def normalize_default_locale(value: str, *, label: str = "Default locale") -> st
 
 
 def parse_default_locale_list(value: str, *, label: str = "Default locale") -> tuple[str, ...]:
-    """Return the normalized configured locales as a tuple."""
+    """Return the normalized configured locales as a tuple.
+
+    Args:
+        value (str): Value supplied to this callable.
+        label (str): Value supplied to this callable.
+
+    Returns:
+        tuple[str, ...]: Structured value returned by this callable.
+    """
     return tuple(normalize_default_locale(value, label=label).split(","))

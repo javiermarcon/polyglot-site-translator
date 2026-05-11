@@ -13,15 +13,39 @@ from pytest import MonkeyPatch
 
 
 def test_main_function_runs_the_created_app(monkeypatch: MonkeyPatch) -> None:
+    """Verify main function runs the created app.
+
+    Args:
+        monkeypatch (MonkeyPatch): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     main_module = importlib.import_module("polyglot_site_translator.__main__")
 
     calls: list[str] = []
 
     class FakeApp:
+        """Test helper for FakeApp.
+
+        Attributes:
+            None: This type does not declare additional class-level attributes.
+        """
+
         def run(self) -> None:
+            """Handle run.
+
+            Returns:
+                None: This callable does not return a value.
+            """
             calls.append("run")
 
     def _create_fake_app() -> FakeApp:
+        """Handle create fake app.
+
+        Returns:
+            FakeApp: Structured value returned by this callable.
+        """
         return FakeApp()
 
     monkeypatch.setattr(main_module, "create_kivy_app", _create_fake_app)
@@ -34,14 +58,38 @@ def test_main_function_runs_the_created_app(monkeypatch: MonkeyPatch) -> None:
 def test_running_module_as_main_sets_kivy_filelog_default_and_executes_main(
     monkeypatch: MonkeyPatch,
 ) -> None:
+    """Verify running module as main sets kivy filelog default and executes main.
+
+    Args:
+        monkeypatch (MonkeyPatch): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     fake_app_module = ModuleType("polyglot_site_translator.app")
     calls: list[str] = []
 
     class FakeApp:
+        """Test helper for FakeApp.
+
+        Attributes:
+            None: This type does not declare additional class-level attributes.
+        """
+
         def run(self) -> None:
+            """Handle run.
+
+            Returns:
+                None: This callable does not return a value.
+            """
             calls.append("run")
 
     def _create_fake_app() -> FakeApp:
+        """Handle create fake app.
+
+        Returns:
+            FakeApp: Structured value returned by this callable.
+        """
         return FakeApp()
 
     fake_app_module.create_kivy_app = _create_fake_app  # type: ignore[attr-defined]

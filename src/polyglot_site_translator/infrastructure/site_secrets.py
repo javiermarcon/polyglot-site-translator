@@ -20,13 +20,32 @@ _BLOCK_SIZE = 32
 
 
 class LocalKeySiteSecretCipher:
-    """Encrypt and decrypt site registry secrets using a local key file."""
+    """Encrypt and decrypt site registry secrets using a local key file.
+
+    Attributes:
+        None: This type does not declare additional class-level attributes.
+    """
 
     def __init__(self, key_path: Path) -> None:
+        """Bind the cipher to the filesystem location that stores the local secret key.
+
+        Args:
+            key_path (Path): Value supplied to this callable.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         self._key_path = key_path
 
     def encrypt(self, plaintext: str) -> str:
-        """Encrypt plaintext for local storage."""
+        """Encrypt plaintext for local storage.
+
+        Args:
+            plaintext (str): Value supplied to this callable.
+
+        Returns:
+            str: Structured value returned by this callable.
+        """
         key = self._load_or_create_key()
         nonce = secrets.token_bytes(_NONCE_SIZE)
         plaintext_bytes = plaintext.encode("utf-8")
@@ -35,7 +54,18 @@ class LocalKeySiteSecretCipher:
         return urlsafe_b64encode(nonce + mac + ciphertext).decode("ascii")
 
     def decrypt(self, ciphertext: str) -> str:
-        """Decrypt a stored secret."""
+        """Decrypt a stored secret.
+
+        Args:
+            ciphertext (str): Value supplied to this callable.
+
+        Returns:
+            str: Structured value returned by this callable.
+
+        Raises:
+            SiteRegistryPersistenceError: Raised when this callable hits the corresponding error
+        path.
+        """
         key = self._load_or_create_key()
         try:
             payload = urlsafe_b64decode(ciphertext.encode("ascii"))
@@ -60,6 +90,15 @@ class LocalKeySiteSecretCipher:
             raise SiteRegistryPersistenceError(msg) from error
 
     def _load_or_create_key(self) -> bytes:
+        """Load or create key.
+
+        Returns:
+            bytes: Structured value returned by this callable.
+
+        Raises:
+            SiteRegistryPersistenceError: Raised when this callable hits the corresponding error
+        path.
+        """
         try:
             if self._key_path.exists():
                 return self._key_path.read_bytes()
@@ -73,6 +112,16 @@ class LocalKeySiteSecretCipher:
 
 
 def _build_keystream(key: bytes, nonce: bytes, size: int) -> bytes:
+    """Build keystream.
+
+    Args:
+        key (bytes): Value supplied to this callable.
+        nonce (bytes): Value supplied to this callable.
+        size (int): Value supplied to this callable.
+
+    Returns:
+        bytes: Structured value returned by this callable.
+    """
     chunks: list[bytes] = []
     counter = 0
     while sum(len(chunk) for chunk in chunks) < size:
@@ -82,4 +131,13 @@ def _build_keystream(key: bytes, nonce: bytes, size: int) -> bytes:
 
 
 def _xor_bytes(left: bytes, right: bytes) -> bytes:
+    """Handle xor bytes.
+
+    Args:
+        left (bytes): Value supplied to this callable.
+        right (bytes): Value supplied to this callable.
+
+    Returns:
+        bytes: Structured value returned by this callable.
+    """
     return bytes(left[index] ^ right[index] for index in range(len(left)))

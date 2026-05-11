@@ -238,6 +238,20 @@ legacy/
 - entorno virtual recomendado (`venv`)
 - dependencias de Kivy compatibles con tu sistema operativo
 
+## Validación recomendada
+
+El workflow de calidad del repositorio debe validar explícitamente:
+
+- `python -m ruff check .`
+- `python -m ruff format --check .`
+- `python -m mypy .`
+- `python tests/run_docstring_audit.py`
+- `python -m pytest`
+
+El auditor de docstrings falla si cualquier clase, función o método, público o privado, queda sin
+docstring estructurado de varias líneas o sin secciones relevantes (`Args:`, `Returns:`,
+`Raises:`, `Attributes:`) cuando corresponden.
+
 ## Instalación
 
 Crear entorno virtual e instalar dependencias:

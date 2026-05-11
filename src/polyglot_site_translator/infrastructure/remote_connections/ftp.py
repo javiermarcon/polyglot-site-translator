@@ -42,7 +42,11 @@ _FTP_CLOSE_ERRORS = (*all_errors, AttributeError, OSError)
 
 
 class FTPRemoteConnectionProvider(BaseRemoteConnectionProvider):
-    """Provider for plain FTP connectivity tests and downloads."""
+    """Provider for plain FTP connectivity tests and downloads.
+
+    Attributes:
+        descriptor: Documented attribute exposed by this type.
+    """
 
     descriptor = RemoteConnectionTypeDescriptor(
         connection_type=BuiltinRemoteConnectionType.FTP.value,
@@ -54,6 +58,14 @@ class FTPRemoteConnectionProvider(BaseRemoteConnectionProvider):
         self,
         config: RemoteConnectionConfigInput,
     ) -> RemoteConnectionTestResult:
+        """Run a short-lived FTP connectivity check against the provided remote root.
+
+        Args:
+            config (RemoteConnectionConfigInput): Value supplied to this callable.
+
+        Returns:
+            RemoteConnectionTestResult: Structured value returned by this callable.
+        """
         client = self._build_client()
         try:
             _connect_ftp_client(client, config)
@@ -77,6 +89,14 @@ class FTPRemoteConnectionProvider(BaseRemoteConnectionProvider):
         return _success_result(config, "Connected successfully using FTP.")
 
     def open_session(self, config: RemoteConnectionConfig) -> _FtpRemoteConnectionSession:
+        """Build a reusable FTP session for multi-file sync work.
+
+        Args:
+            config (RemoteConnectionConfig): Value supplied to this callable.
+
+        Returns:
+            _FtpRemoteConnectionSession: Structured value returned by this callable.
+        """
         return _FtpRemoteConnectionSession(
             config=config,
             client_factory=self._build_client,
@@ -86,11 +106,20 @@ class FTPRemoteConnectionProvider(BaseRemoteConnectionProvider):
         )
 
     def _build_client(self) -> FTP:
+        """Build client.
+
+        Returns:
+            FTP: Structured value returned by this callable.
+        """
         return FTP()
 
 
 class ExplicitFTPSRemoteConnectionProvider(BaseRemoteConnectionProvider):
-    """Provider for explicit FTPS connectivity tests and downloads."""
+    """Provider for explicit FTPS connectivity tests and downloads.
+
+    Attributes:
+        descriptor: Documented attribute exposed by this type.
+    """
 
     descriptor = RemoteConnectionTypeDescriptor(
         connection_type=BuiltinRemoteConnectionType.FTPS_EXPLICIT.value,
@@ -102,6 +131,14 @@ class ExplicitFTPSRemoteConnectionProvider(BaseRemoteConnectionProvider):
         self,
         config: RemoteConnectionConfigInput,
     ) -> RemoteConnectionTestResult:
+        """Run a short-lived explicit FTPS connectivity check.
+
+        Args:
+            config (RemoteConnectionConfigInput): Value supplied to this callable.
+
+        Returns:
+            RemoteConnectionTestResult: Structured value returned by this callable.
+        """
         client = self._build_client()
         try:
             _connect_explicit_ftps_client(client, config)
@@ -125,6 +162,14 @@ class ExplicitFTPSRemoteConnectionProvider(BaseRemoteConnectionProvider):
         return _success_result(config, "Connected successfully using explicit FTPS.")
 
     def open_session(self, config: RemoteConnectionConfig) -> _FtpRemoteConnectionSession:
+        """Build a reusable explicit-FTPS session for multi-file sync work.
+
+        Args:
+            config (RemoteConnectionConfig): Value supplied to this callable.
+
+        Returns:
+            _FtpRemoteConnectionSession: Structured value returned by this callable.
+        """
         return _FtpRemoteConnectionSession(
             config=config,
             client_factory=self._build_client,
@@ -134,11 +179,20 @@ class ExplicitFTPSRemoteConnectionProvider(BaseRemoteConnectionProvider):
         )
 
     def _build_client(self) -> FTP_TLS:
+        """Build client.
+
+        Returns:
+            FTP_TLS: Structured value returned by this callable.
+        """
         return FTP_TLS()
 
 
 class ImplicitFtpTls(FTP_TLS):
-    """Minimal implicit FTPS client for connectivity checks."""
+    """Minimal implicit FTPS client for connectivity checks.
+
+    Attributes:
+        None: This type does not declare additional class-level attributes.
+    """
 
     def connect(
         self,
@@ -147,6 +201,17 @@ class ImplicitFtpTls(FTP_TLS):
         timeout: float | None = None,
         source_address: tuple[str, int] | None = None,
     ) -> str:
+        """Open an implicit TLS socket before completing the FTP handshake.
+
+        Args:
+            host (str): Value supplied to this callable.
+            port (int): Value supplied to this callable.
+            timeout (float | None): Value supplied to this callable.
+            source_address (tuple[str, int] | None): Value supplied to this callable.
+
+        Returns:
+            str: Structured value returned by this callable.
+        """
         self.host = host
         self.port = port
         if timeout is not None:
@@ -160,7 +225,11 @@ class ImplicitFtpTls(FTP_TLS):
 
 
 class ImplicitFTPSRemoteConnectionProvider(BaseRemoteConnectionProvider):
-    """Provider for implicit FTPS connectivity tests and downloads."""
+    """Provider for implicit FTPS connectivity tests and downloads.
+
+    Attributes:
+        descriptor: Documented attribute exposed by this type.
+    """
 
     descriptor = RemoteConnectionTypeDescriptor(
         connection_type=BuiltinRemoteConnectionType.FTPS_IMPLICIT.value,
@@ -172,6 +241,14 @@ class ImplicitFTPSRemoteConnectionProvider(BaseRemoteConnectionProvider):
         self,
         config: RemoteConnectionConfigInput,
     ) -> RemoteConnectionTestResult:
+        """Run a short-lived implicit FTPS connectivity check.
+
+        Args:
+            config (RemoteConnectionConfigInput): Value supplied to this callable.
+
+        Returns:
+            RemoteConnectionTestResult: Structured value returned by this callable.
+        """
         client = self._build_client()
         try:
             _connect_implicit_ftps_client(client, config)
@@ -195,6 +272,14 @@ class ImplicitFTPSRemoteConnectionProvider(BaseRemoteConnectionProvider):
         return _success_result(config, "Connected successfully using implicit FTPS.")
 
     def open_session(self, config: RemoteConnectionConfig) -> _FtpRemoteConnectionSession:
+        """Build a reusable implicit-FTPS session for multi-file sync work.
+
+        Args:
+            config (RemoteConnectionConfig): Value supplied to this callable.
+
+        Returns:
+            _FtpRemoteConnectionSession: Structured value returned by this callable.
+        """
         return _FtpRemoteConnectionSession(
             config=config,
             client_factory=self._build_client,
@@ -205,11 +290,20 @@ class ImplicitFTPSRemoteConnectionProvider(BaseRemoteConnectionProvider):
 
     @staticmethod
     def _build_client() -> ImplicitFtpTls:
+        """Build client.
+
+        Returns:
+            ImplicitFtpTls: Structured value returned by this callable.
+        """
         return ImplicitFtpTls(context=ssl.create_default_context())
 
 
 class _FtpRemoteConnectionSession(BaseRemoteConnectionSession):
-    """Reusable FTP/FTPS session for listing and downloading multiple files."""
+    """Reusable FTP/FTPS session for listing and downloading multiple files.
+
+    Attributes:
+        None: This type does not declare additional class-level attributes.
+    """
 
     def __init__(
         self,
@@ -220,6 +314,18 @@ class _FtpRemoteConnectionSession(BaseRemoteConnectionSession):
         connect_error_code: str,
         transport_label: str,
     ) -> None:
+        """Initialize this object and store its runtime dependencies.
+
+        Args:
+            config (RemoteConnectionConfig): Value supplied to this callable.
+            client_factory (Callable[[], FTP]): Value supplied to this callable.
+            connect_fn (_ConnectFunction): Value supplied to this callable.
+            connect_error_code (str): Value supplied to this callable.
+            transport_label (str): Value supplied to this callable.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         super().__init__(config)
         self._client_factory = client_factory
         self._connect_fn = connect_fn
@@ -228,6 +334,17 @@ class _FtpRemoteConnectionSession(BaseRemoteConnectionSession):
         self._client = self._client_factory()
 
     def _connect(self, progress_callback: SyncProgressCallback | None) -> None:
+        """Handle connect.
+
+        Args:
+            progress_callback (SyncProgressCallback | None): Value supplied to this callable.
+
+        Returns:
+            None: This callable does not return a value.
+
+        Raises:
+            _normalize_ftp_error: Raised when this callable hits the corresponding error path.
+        """
         try:
             _emit_progress(
                 progress_callback,
@@ -252,6 +369,17 @@ class _FtpRemoteConnectionSession(BaseRemoteConnectionSession):
         self,
         progress_callback: SyncProgressCallback | None,
     ) -> Iterator[RemoteSyncFile]:
+        """Iterate through remote files.
+
+        Args:
+            progress_callback (SyncProgressCallback | None): Value supplied to this callable.
+
+        Returns:
+            Iterator[RemoteSyncFile]: Structured value returned by this callable.
+
+        Raises:
+            _normalize_ftp_error: Raised when this callable hits the corresponding error path.
+        """
         normalized_root = _normalize_remote_path(self._config.remote_path)
         try:
             yield from _walk_ftp_directory(
@@ -273,6 +401,18 @@ class _FtpRemoteConnectionSession(BaseRemoteConnectionSession):
         remote_path: str,
         progress_callback: SyncProgressCallback | None,
     ) -> bytes:
+        """Handle download file.
+
+        Args:
+            remote_path (str): Value supplied to this callable.
+            progress_callback (SyncProgressCallback | None): Value supplied to this callable.
+
+        Returns:
+            bytes: Structured value returned by this callable.
+
+        Raises:
+            _normalize_ftp_error: Raised when this callable hits the corresponding error path.
+        """
         chunks: list[bytes] = []
         try:
             _emit_progress(
@@ -293,6 +433,18 @@ class _FtpRemoteConnectionSession(BaseRemoteConnectionSession):
         remote_path: str,
         progress_callback: SyncProgressCallback | None,
     ) -> int:
+        """Handle ensure remote directory.
+
+        Args:
+            remote_path (str): Value supplied to this callable.
+            progress_callback (SyncProgressCallback | None): Value supplied to this callable.
+
+        Returns:
+            int: Structured value returned by this callable.
+
+        Raises:
+            _normalize_ftp_error: Raised when this callable hits the corresponding error path.
+        """
         normalized_path = _normalize_remote_path(remote_path)
         if normalized_path == "/":
             return 0
@@ -328,6 +480,19 @@ class _FtpRemoteConnectionSession(BaseRemoteConnectionSession):
         contents: bytes,
         progress_callback: SyncProgressCallback | None,
     ) -> None:
+        """Handle upload file.
+
+        Args:
+            remote_path (str): Value supplied to this callable.
+            contents (bytes): Value supplied to this callable.
+            progress_callback (SyncProgressCallback | None): Value supplied to this callable.
+
+        Returns:
+            None: This callable does not return a value.
+
+        Raises:
+            _normalize_ftp_error: Raised when this callable hits the corresponding error path.
+        """
         try:
             _emit_progress(
                 progress_callback,
@@ -342,6 +507,14 @@ class _FtpRemoteConnectionSession(BaseRemoteConnectionSession):
             raise _normalize_ftp_error(error, default_code="upload_failed") from error
 
     def _close(self, progress_callback: SyncProgressCallback | None) -> None:
+        """Handle close.
+
+        Args:
+            progress_callback (SyncProgressCallback | None): Value supplied to this callable.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         _emit_progress(
             progress_callback,
             SyncProgressEvent(
@@ -355,6 +528,11 @@ class _FtpRemoteConnectionSession(BaseRemoteConnectionSession):
         _close_ftp_client(self._client)
 
     def _reset_after_failed_connect(self) -> None:
+        """Reset after failed connect.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         _close_ftp_client(self._client)
         self._client = self._client_factory()
 
@@ -363,6 +541,16 @@ def _connect_ftp_client(
     client: FTP,
     config: RemoteConnectionConfig | RemoteConnectionConfigInput,
 ) -> None:
+    """Handle connect ftp client.
+
+    Args:
+        client (FTP): Value supplied to this callable.
+        config (RemoteConnectionConfig | RemoteConnectionConfigInput): Value supplied to this
+    callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     client.connect(host=config.host, port=config.port, timeout=10)
     client.login(user=config.username, passwd=config.password)
 
@@ -371,6 +559,16 @@ def _connect_explicit_ftps_client(
     client: FTP,
     config: RemoteConnectionConfig | RemoteConnectionConfigInput,
 ) -> None:
+    """Handle connect explicit ftps client.
+
+    Args:
+        client (FTP): Value supplied to this callable.
+        config (RemoteConnectionConfig | RemoteConnectionConfigInput): Value supplied to this
+    callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     typed_client = cast(FTP_TLS, client)
     typed_client.connect(host=config.host, port=config.port, timeout=10)
     typed_client.auth()
@@ -382,6 +580,16 @@ def _connect_implicit_ftps_client(
     client: FTP,
     config: RemoteConnectionConfig | RemoteConnectionConfigInput,
 ) -> None:
+    """Handle connect implicit ftps client.
+
+    Args:
+        client (FTP): Value supplied to this callable.
+        config (RemoteConnectionConfig | RemoteConnectionConfigInput): Value supplied to this
+    callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     typed_client = cast(ImplicitFtpTls, client)
     typed_client.connect(host=config.host, port=config.port, timeout=10)
     typed_client.login(user=config.username, passwd=config.password)
@@ -395,6 +603,20 @@ def _walk_ftp_directory(
     current_remote_path: str,
     progress_callback: SyncProgressCallback | None = None,
 ) -> Iterator[RemoteSyncFile]:
+    """Walk ftp directory.
+
+    Args:
+        client (FTP): Value supplied to this callable.
+        base_remote_path (str): Value supplied to this callable.
+        current_remote_path (str): Value supplied to this callable.
+        progress_callback (SyncProgressCallback | None): Value supplied to this callable.
+
+    Returns:
+        Iterator[RemoteSyncFile]: Structured value returned by this callable.
+
+    Raises:
+        RemoteConnectionListingError: Raised when this callable hits the corresponding error path.
+    """
     _emit_progress(
         progress_callback,
         SyncProgressEvent(
@@ -436,6 +658,14 @@ def _walk_ftp_directory(
 
 
 def _normalize_remote_path(remote_path: str) -> str:
+    """Normalize remote path.
+
+    Args:
+        remote_path (str): Value supplied to this callable.
+
+    Returns:
+        str: Structured value returned by this callable.
+    """
     normalized_path = posixpath.normpath(remote_path)
     if normalized_path == ".":
         return "/"
@@ -443,12 +673,29 @@ def _normalize_remote_path(remote_path: str) -> str:
 
 
 def _join_remote_path(base_path: str, name: str) -> str:
+    """Handle join remote path.
+
+    Args:
+        base_path (str): Value supplied to this callable.
+        name (str): Value supplied to this callable.
+
+    Returns:
+        str: Structured value returned by this callable.
+    """
     if base_path == "/":
         return f"/{name}"
     return posixpath.join(base_path, name)
 
 
 def _close_ftp_client(client: FTP) -> None:
+    """Close ftp client.
+
+    Args:
+        client (FTP): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     try:
         client.quit()
     except all_errors:
@@ -460,6 +707,14 @@ def _close_ftp_client(client: FTP) -> None:
 
 
 def _close_ftp_socket(client: FTP) -> None:
+    """Close ftp socket.
+
+    Args:
+        client (FTP): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     try:
         client.close()
     except all_errors:
@@ -475,6 +730,15 @@ def _normalize_ftp_error(
     *,
     default_code: str,
 ) -> RemoteConnectionOperationError:
+    """Normalize ftp error.
+
+    Args:
+        error (BaseException): Value supplied to this callable.
+        default_code (str): Value supplied to this callable.
+
+    Returns:
+        RemoteConnectionOperationError: Structured value returned by this callable.
+    """
     error_message = str(error).strip() or default_code.replace("_", " ")
     normalized_message = error_message.lower()
     error_code = default_code
@@ -528,6 +792,15 @@ def _ftp_error_type_for(
     error_code: str,
     default_code: str,
 ) -> type[RemoteConnectionOperationError]:
+    """Handle ftp error type for.
+
+    Args:
+        error_code (str): Value supplied to this callable.
+        default_code (str): Value supplied to this callable.
+
+    Returns:
+        type[RemoteConnectionOperationError]: Structured value returned by this callable.
+    """
     if error_code in {
         "dns_resolution_failed",
         "connection_timeout",
@@ -548,6 +821,15 @@ def _ftp_error_type_for(
 
 
 def _matches_any(message: str, patterns: list[str]) -> bool:
+    """Handle matches any.
+
+    Args:
+        message (str): Value supplied to this callable.
+        patterns (list[str]): Value supplied to this callable.
+
+    Returns:
+        bool: Structured value returned by this callable.
+    """
     return any(pattern in message for pattern in patterns)
 
 
@@ -555,6 +837,15 @@ def _success_result(
     config: RemoteConnectionConfigInput,
     message: str,
 ) -> RemoteConnectionTestResult:
+    """Handle success result.
+
+    Args:
+        config (RemoteConnectionConfigInput): Value supplied to this callable.
+        message (str): Value supplied to this callable.
+
+    Returns:
+        RemoteConnectionTestResult: Structured value returned by this callable.
+    """
     return RemoteConnectionTestResult(
         success=True,
         connection_type=config.connection_type,
@@ -570,6 +861,16 @@ def _failure_result(
     message: str,
     error_code: str,
 ) -> RemoteConnectionTestResult:
+    """Handle failure result.
+
+    Args:
+        config (RemoteConnectionConfigInput): Value supplied to this callable.
+        message (str): Value supplied to this callable.
+        error_code (str): Value supplied to this callable.
+
+    Returns:
+        RemoteConnectionTestResult: Structured value returned by this callable.
+    """
     return RemoteConnectionTestResult(
         success=False,
         connection_type=config.connection_type,
@@ -586,6 +887,16 @@ def _format_connection_test_error(
     transport_label: str,
     error: RemoteConnectionOperationError,
 ) -> str:
+    """Format connection test error.
+
+    Args:
+        config (RemoteConnectionConfigInput): Value supplied to this callable.
+        transport_label (str): Value supplied to this callable.
+        error (RemoteConnectionOperationError): Value supplied to this callable.
+
+    Returns:
+        str: Structured value returned by this callable.
+    """
     return (
         f"{transport_label} connection test failed for {config.connection_type} "
         f"{config.host}:{config.port} at remote path '{config.remote_path}'. "
@@ -597,6 +908,15 @@ def _emit_progress(
     progress_callback: SyncProgressCallback | None,
     event: SyncProgressEvent,
 ) -> None:
+    """Emit progress.
+
+    Args:
+        progress_callback (SyncProgressCallback | None): Value supplied to this callable.
+        event (SyncProgressEvent): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     if progress_callback is None:
         return
     progress_callback(event)

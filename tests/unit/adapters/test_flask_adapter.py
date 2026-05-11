@@ -9,6 +9,14 @@ from polyglot_site_translator.domain.sync.scope import SyncFilterType
 
 
 def test_flask_adapter_detects_a_typical_flask_layout(tmp_path: Path) -> None:
+    """Verify flask adapter detects a typical flask layout.
+
+    Args:
+        tmp_path (Path): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     (tmp_path / "app.py").write_text(
         "from flask import Flask\napp = Flask(__name__)\n",
         encoding="utf-8",
@@ -25,6 +33,14 @@ def test_flask_adapter_detects_a_typical_flask_layout(tmp_path: Path) -> None:
 
 
 def test_flask_adapter_detects_factory_style_wsgi_projects(tmp_path: Path) -> None:
+    """Verify flask adapter detects factory style wsgi projects.
+
+    Args:
+        tmp_path (Path): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     (tmp_path / "wsgi.py").write_text(
         "from app import create_app\napplication = create_app()\n",
         encoding="utf-8",
@@ -44,6 +60,14 @@ def test_flask_adapter_detects_factory_style_wsgi_projects(tmp_path: Path) -> No
 
 
 def test_flask_adapter_returns_unmatched_when_signals_are_insufficient(tmp_path: Path) -> None:
+    """Verify flask adapter returns unmatched when signals are insufficient.
+
+    Args:
+        tmp_path (Path): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     (tmp_path / "app.py").write_text("print('hello')\n", encoding="utf-8")
 
     result = FlaskFrameworkAdapter().detect(tmp_path)
@@ -52,6 +76,11 @@ def test_flask_adapter_returns_unmatched_when_signals_are_insufficient(tmp_path:
 
 
 def test_flask_adapter_exposes_sync_filters() -> None:
+    """Verify flask adapter exposes sync filters.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     scope = FlaskFrameworkAdapter().get_sync_scope(Path("/workspace/site"))
 
     assert [sync_filter.relative_path for sync_filter in scope.filters] == [

@@ -28,7 +28,14 @@ then = cast(Callable[[str], Callable[[StepFunction], StepFunction]], behave_modu
 
 
 class BehaveSiteRegistryContext(Protocol):
-    """Typed subset of behave context used by the site registry feature."""
+    """BDD helper for BehaveSiteRegistryContext.
+
+    Attributes:
+        shell (FrontendShell): Documented attribute exposed by this type.
+        settings_temp_dir (tempfile.TemporaryDirectory[str]): Documented attribute exposed by this
+    type.
+        created_site_id (str): Documented attribute exposed by this type.
+    """
 
     shell: FrontendShell
     settings_temp_dir: tempfile.TemporaryDirectory[str]
@@ -36,11 +43,27 @@ class BehaveSiteRegistryContext(Protocol):
 
 
 def _context_with_shell(context: object) -> BehaveSiteRegistryContext:
+    """Handle context with shell.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        BehaveSiteRegistryContext: Structured value returned by this callable.
+    """
     return cast(BehaveSiteRegistryContext, context)
 
 
 @given("the frontend shell is wired with SQLite-backed site registry services")
 def step_sqlite_site_registry_shell(context: object) -> None:
+    """Run the BDD step for sqlite site registry shell.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     typed_context = _context_with_shell(context)
     typed_context.settings_temp_dir = tempfile.TemporaryDirectory()
     settings_service = build_default_settings_service(
@@ -53,6 +76,14 @@ def step_sqlite_site_registry_shell(context: object) -> None:
 
 @given("a site has been registered in the SQLite registry")
 def step_registered_site(context: object) -> None:
+    """Run the BDD step for registered site.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     typed_context = _context_with_shell(context)
     typed_context.shell.open_project_editor_create()
     typed_context.shell.save_new_project(
@@ -78,6 +109,14 @@ def step_registered_site(context: object) -> None:
 
 @given("the frontend shell is wired with SQLite-backed services and invalid database settings")
 def step_invalid_database_settings(context: object) -> None:
+    """Run the BDD step for invalid database settings.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     typed_context = _context_with_shell(context)
     typed_context.settings_temp_dir = tempfile.TemporaryDirectory()
     settings_service = build_default_settings_service(
@@ -106,6 +145,14 @@ def step_invalid_database_settings(context: object) -> None:
 
 @given("the frontend shell is wired with a failing SQLite-backed site registry service")
 def step_failing_sqlite_service(context: object) -> None:
+    """Run the BDD step for failing sqlite service.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     typed_context = _context_with_shell(context)
     typed_context.settings_temp_dir = tempfile.TemporaryDirectory()
     settings_service = build_default_settings_service(
@@ -121,12 +168,28 @@ def step_failing_sqlite_service(context: object) -> None:
 
 @when("the operator opens the create project workflow")
 def step_open_create_project(context: object) -> None:
+    """Run the BDD step for open create project.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     typed_context = _context_with_shell(context)
     typed_context.shell.open_project_editor_create()
 
 
 @when("the operator submits a new site registry entry")
 def step_submit_new_site(context: object) -> None:
+    """Run the BDD step for submit new site.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     typed_context = _context_with_shell(context)
     typed_context.shell.save_new_project(
         SiteEditorViewModel(
@@ -151,6 +214,14 @@ def step_submit_new_site(context: object) -> None:
 
 @when("the operator submits a new site registry entry with adapter sync filters enabled")
 def step_submit_new_site_with_adapter_sync_filters(context: object) -> None:
+    """Run the BDD step for submit new site with adapter sync filters.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     typed_context = _context_with_shell(context)
     typed_context.shell.save_new_project(
         SiteEditorViewModel(
@@ -176,6 +247,14 @@ def step_submit_new_site_with_adapter_sync_filters(context: object) -> None:
 
 @when("the operator submits a new site registry entry with a spaced default locale list")
 def step_submit_new_site_with_spaced_default_locale_list(context: object) -> None:
+    """Run the BDD step for submit new site with spaced default locale list.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     typed_context = _context_with_shell(context)
     typed_context.shell.save_new_project(
         SiteEditorViewModel(
@@ -200,6 +279,14 @@ def step_submit_new_site_with_spaced_default_locale_list(context: object) -> Non
 
 @when("the operator submits a new site registry entry with an invalid default locale")
 def step_submit_new_site_with_invalid_default_locale(context: object) -> None:
+    """Run the BDD step for submit new site with invalid default locale.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     typed_context = _context_with_shell(context)
     typed_context.shell.save_new_project(
         SiteEditorViewModel(
@@ -222,6 +309,14 @@ def step_submit_new_site_with_invalid_default_locale(context: object) -> None:
 
 @when("the operator submits a new Django site registry entry with custom sync rule overrides")
 def step_submit_django_site_with_custom_sync_rule_overrides(context: object) -> None:
+    """Run the BDD step for submit django site with custom sync rule overrides.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     typed_context = _context_with_shell(context)
     draft = SiteEditorViewModel(
         site_id=None,
@@ -284,6 +379,14 @@ def step_submit_django_site_with_custom_sync_rule_overrides(context: object) -> 
 
 @when("the operator restarts the SQLite-backed frontend shell")
 def step_restart_sqlite_shell(context: object) -> None:
+    """Run the BDD step for restart sqlite shell.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     typed_context = _context_with_shell(context)
     settings_service = build_default_settings_service(
         config_dir=Path(typed_context.settings_temp_dir.name)
@@ -295,24 +398,58 @@ def step_restart_sqlite_shell(context: object) -> None:
 
 @when('the operator sets the database directory to "{directory}"')
 def step_set_database_directory(context: object, directory: str) -> None:
+    """Run the BDD step for set database directory.
+
+    Args:
+        context (object): Value supplied to this callable.
+        directory (str): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     typed_context = _context_with_shell(context)
     typed_context.shell.set_settings_database_directory(directory)
 
 
 @when('the operator sets the database filename to "{filename}"')
 def step_set_database_filename(context: object, filename: str) -> None:
+    """Run the BDD step for set database filename.
+
+    Args:
+        context (object): Value supplied to this callable.
+        filename (str): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     typed_context = _context_with_shell(context)
     typed_context.shell.set_settings_database_filename(filename)
 
 
 @when("the operator opens the edit project workflow for the persisted site")
 def step_open_edit_project(context: object) -> None:
+    """Run the BDD step for open edit project.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     typed_context = _context_with_shell(context)
     typed_context.shell.open_project_editor_edit(typed_context.created_site_id)
 
 
 @when("the operator updates the local path and remote connection data")
 def step_update_site(context: object) -> None:
+    """Run the BDD step for update site.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     typed_context = _context_with_shell(context)
     typed_context.shell.save_project_edits(
         typed_context.created_site_id,
@@ -336,6 +473,14 @@ def step_update_site(context: object) -> None:
 
 @when("the operator updates the persisted site to remove the remote connection")
 def step_remove_remote_connection(context: object) -> None:
+    """Run the BDD step for remove remote connection.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     typed_context = _context_with_shell(context)
     typed_context.shell.save_project_edits(
         typed_context.created_site_id,
@@ -359,6 +504,14 @@ def step_remove_remote_connection(context: object) -> None:
 
 @when("the operator attempts to register another site with the same name")
 def step_attempt_duplicate_site_name(context: object) -> None:
+    """Run the BDD step for attempt duplicate site name.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     typed_context = _context_with_shell(context)
     typed_context.shell.open_project_editor_create()
     typed_context.shell.save_new_project(
@@ -382,12 +535,28 @@ def step_attempt_duplicate_site_name(context: object) -> None:
 
 @then("the project detail route is active for the created site")
 def step_assert_created_project_route(context: object) -> None:
+    """Run the BDD step for assert created project route.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     typed_context = _context_with_shell(context)
     assert typed_context.shell.router.current.project_id == typed_context.created_site_id
 
 
 @then("the project detail shows the persisted site registry values")
 def step_assert_site_detail(context: object) -> None:
+    """Run the BDD step for assert site detail.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     typed_context = _context_with_shell(context)
     assert typed_context.shell.project_detail_state is not None
     assert typed_context.shell.project_detail_state.project.name == "Marketing Site"
@@ -395,6 +564,18 @@ def step_assert_site_detail(context: object) -> None:
 
 @then('the project detail shows the persisted default locale "{default_locale}"')
 def step_assert_persisted_default_locale(context: object, default_locale: str) -> None:
+    """Run the BDD step for assert persisted default locale.
+
+    Args:
+        context (object): Value supplied to this callable.
+        default_locale (str): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+
+    Raises:
+        AssertionError: Raised when this callable hits the corresponding error path.
+    """
     typed_context = _context_with_shell(context)
     assert typed_context.shell.project_detail_state is not None
     if (
@@ -406,6 +587,14 @@ def step_assert_persisted_default_locale(context: object, default_locale: str) -
 
 @then("the projects list shows the persisted SQLite site")
 def step_assert_persisted_site_list(context: object) -> None:
+    """Run the BDD step for assert persisted site list.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     typed_context = _context_with_shell(context)
     assert [project.name for project in typed_context.shell.projects_state.projects] == [
         "Marketing Site"
@@ -414,6 +603,14 @@ def step_assert_persisted_site_list(context: object) -> None:
 
 @then("the project detail shows the updated persisted site registry values")
 def step_assert_updated_site_detail(context: object) -> None:
+    """Run the BDD step for assert updated site detail.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     typed_context = _context_with_shell(context)
     assert typed_context.shell.project_detail_state is not None
     assert typed_context.shell.project_detail_state.project.local_path == (
@@ -423,6 +620,14 @@ def step_assert_updated_site_detail(context: object) -> None:
 
 @then("reopening the persisted site editor shows the updated remote connection values")
 def step_assert_updated_remote_connection(context: object) -> None:
+    """Run the BDD step for assert updated remote connection.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     typed_context = _context_with_shell(context)
     typed_context.shell.open_project_editor_edit(typed_context.created_site_id)
     assert typed_context.shell.project_editor_state is not None
@@ -436,6 +641,18 @@ def step_assert_updated_remote_connection(context: object) -> None:
 
 @then('reopening the persisted site editor shows the persisted default locale "{default_locale}"')
 def step_assert_reopened_default_locale(context: object, default_locale: str) -> None:
+    """Run the BDD step for assert reopened default locale.
+
+    Args:
+        context (object): Value supplied to this callable.
+        default_locale (str): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+
+    Raises:
+        AssertionError: Raised when this callable hits the corresponding error path.
+    """
     typed_context = _context_with_shell(context)
     typed_context.shell.open_project_editor_edit(typed_context.created_site_id)
     assert typed_context.shell.project_editor_state is not None
@@ -445,6 +662,18 @@ def step_assert_reopened_default_locale(context: object, default_locale: str) ->
 
 @then('the project editor uses the default locale "{default_locale}"')
 def step_assert_create_editor_default_locale(context: object, default_locale: str) -> None:
+    """Run the BDD step for assert create editor default locale.
+
+    Args:
+        context (object): Value supplied to this callable.
+        default_locale (str): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+
+    Raises:
+        AssertionError: Raised when this callable hits the corresponding error path.
+    """
     typed_context = _context_with_shell(context)
     assert typed_context.shell.project_editor_state is not None
     if typed_context.shell.project_editor_state.editor.default_locale != default_locale:
@@ -453,6 +682,17 @@ def step_assert_create_editor_default_locale(context: object, default_locale: st
 
 @then("the project editor uses MO compilation disabled")
 def step_assert_create_editor_compile_mo_disabled(context: object) -> None:
+    """Run the BDD step for assert create editor compile mo disabled.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+
+    Raises:
+        AssertionError: Raised when this callable hits the corresponding error path.
+    """
     typed_context = _context_with_shell(context)
     assert typed_context.shell.project_editor_state is not None
     if typed_context.shell.project_editor_state.editor.compile_mo is not False:
@@ -461,6 +701,17 @@ def step_assert_create_editor_compile_mo_disabled(context: object) -> None:
 
 @then("the project editor uses the external translator disabled")
 def step_assert_create_editor_external_translator_disabled(context: object) -> None:
+    """Run the BDD step for assert create editor external translator disabled.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+
+    Raises:
+        AssertionError: Raised when this callable hits the corresponding error path.
+    """
     typed_context = _context_with_shell(context)
     assert typed_context.shell.project_editor_state is not None
     if typed_context.shell.project_editor_state.editor.use_external_translator is not False:
@@ -469,6 +720,17 @@ def step_assert_create_editor_external_translator_disabled(context: object) -> N
 
 @then("the project editor uses the translation cache disabled")
 def step_assert_create_editor_translation_cache_disabled(context: object) -> None:
+    """Run the BDD step for assert create editor translation cache disabled.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+
+    Raises:
+        AssertionError: Raised when this callable hits the corresponding error path.
+    """
     typed_context = _context_with_shell(context)
     assert typed_context.shell.project_editor_state is not None
     if typed_context.shell.project_editor_state.editor.use_translation_cache is not False:
@@ -477,6 +739,17 @@ def step_assert_create_editor_translation_cache_disabled(context: object) -> Non
 
 @then("the project editor uses only-fuzzy mode enabled")
 def step_assert_create_editor_only_fuzzy_enabled(context: object) -> None:
+    """Run the BDD step for assert create editor only fuzzy enabled.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+
+    Raises:
+        AssertionError: Raised when this callable hits the corresponding error path.
+    """
     typed_context = _context_with_shell(context)
     assert typed_context.shell.project_editor_state is not None
     if typed_context.shell.project_editor_state.editor.only_fuzzy is not True:
@@ -485,6 +758,17 @@ def step_assert_create_editor_only_fuzzy_enabled(context: object) -> None:
 
 @then("the project editor uses dry-run mode enabled")
 def step_assert_create_editor_dry_run_enabled(context: object) -> None:
+    """Run the BDD step for assert create editor dry run enabled.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+
+    Raises:
+        AssertionError: Raised when this callable hits the corresponding error path.
+    """
     typed_context = _context_with_shell(context)
     assert typed_context.shell.project_editor_state is not None
     if typed_context.shell.project_editor_state.editor.dry_run is not True:
@@ -493,6 +777,17 @@ def step_assert_create_editor_dry_run_enabled(context: object) -> None:
 
 @then("the project editor uses stats-only mode enabled")
 def step_assert_create_editor_stats_only_enabled(context: object) -> None:
+    """Run the BDD step for assert create editor stats only enabled.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+
+    Raises:
+        AssertionError: Raised when this callable hits the corresponding error path.
+    """
     typed_context = _context_with_shell(context)
     assert typed_context.shell.project_editor_state is not None
     if typed_context.shell.project_editor_state.editor.stats_only is not True:
@@ -501,6 +796,17 @@ def step_assert_create_editor_stats_only_enabled(context: object) -> None:
 
 @then("the project editor uses inconsistency reporting enabled")
 def step_assert_create_editor_inconsistency_reporting_enabled(context: object) -> None:
+    """Run the BDD step for assert create editor inconsistency reporting enabled.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+
+    Raises:
+        AssertionError: Raised when this callable hits the corresponding error path.
+    """
     typed_context = _context_with_shell(context)
     assert typed_context.shell.project_editor_state is not None
     if typed_context.shell.project_editor_state.editor.report_inconsistencies is not True:
@@ -509,6 +815,18 @@ def step_assert_create_editor_inconsistency_reporting_enabled(context: object) -
 
 @then('the project detail shows the persisted sync mode "{mode}"')
 def step_assert_persisted_sync_mode(context: object, mode: str) -> None:
+    """Run the BDD step for assert persisted sync mode.
+
+    Args:
+        context (object): Value supplied to this callable.
+        mode (str): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+
+    Raises:
+        AssertionError: Raised when this callable hits the corresponding error path.
+    """
     typed_context = _context_with_shell(context)
     assert typed_context.shell.project_detail_state is not None
     if f"Sync mode: {mode}" not in typed_context.shell.project_detail_state.configuration_summary:
@@ -517,6 +835,17 @@ def step_assert_persisted_sync_mode(context: object, mode: str) -> None:
 
 @then("reopening the persisted site editor shows adapter sync filters enabled")
 def step_assert_persisted_adapter_sync_filters(context: object) -> None:
+    """Run the BDD step for assert persisted adapter sync filters.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+
+    Raises:
+        AssertionError: Raised when this callable hits the corresponding error path.
+    """
     typed_context = _context_with_shell(context)
     typed_context.shell.open_project_editor_edit(typed_context.created_site_id)
     assert typed_context.shell.project_editor_state is not None
@@ -526,6 +855,14 @@ def step_assert_persisted_adapter_sync_filters(context: object) -> None:
 
 @when("the operator submits a new site registry entry with MO compilation disabled")
 def step_submit_new_site_with_compile_mo_disabled(context: object) -> None:
+    """Run the BDD step for submit new site with compile mo disabled.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     typed_context = _context_with_shell(context)
     typed_context.shell.save_new_project(
         SiteEditorViewModel(
@@ -551,6 +888,14 @@ def step_submit_new_site_with_compile_mo_disabled(context: object) -> None:
 
 @when("the operator submits a new site registry entry with external translator disabled")
 def step_submit_new_site_with_external_translator_disabled(context: object) -> None:
+    """Run the BDD step for submit new site with external translator disabled.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     typed_context = _context_with_shell(context)
     typed_context.shell.save_new_project(
         SiteEditorViewModel(
@@ -576,6 +921,14 @@ def step_submit_new_site_with_external_translator_disabled(context: object) -> N
 
 @when("the operator submits a new site registry entry with translation cache disabled")
 def step_submit_new_site_with_translation_cache_disabled(context: object) -> None:
+    """Run the BDD step for submit new site with translation cache disabled.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     typed_context = _context_with_shell(context)
     typed_context.shell.save_new_project(
         SiteEditorViewModel(
@@ -602,6 +955,14 @@ def step_submit_new_site_with_translation_cache_disabled(context: object) -> Non
 
 @when("the operator submits a new site registry entry with translation preview settings enabled")
 def step_submit_new_site_with_translation_preview_settings(context: object) -> None:
+    """Run the BDD step for submit new site with translation preview settings.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     typed_context = _context_with_shell(context)
     typed_context.shell.save_new_project(
         SiteEditorViewModel(
@@ -631,6 +992,14 @@ def step_submit_new_site_with_translation_preview_settings(context: object) -> N
 
 @when("the operator submits a new site registry entry with only-fuzzy mode enabled")
 def step_submit_new_site_with_only_fuzzy(context: object) -> None:
+    """Run the BDD step for submit new site with only fuzzy.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     typed_context = _context_with_shell(context)
     typed_context.shell.save_new_project(
         SiteEditorViewModel(
@@ -657,6 +1026,17 @@ def step_submit_new_site_with_only_fuzzy(context: object) -> None:
 
 @then("the project detail shows MO compilation disabled")
 def step_assert_project_detail_compile_mo_disabled(context: object) -> None:
+    """Run the BDD step for assert project detail compile mo disabled.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+
+    Raises:
+        AssertionError: Raised when this callable hits the corresponding error path.
+    """
     typed_context = _context_with_shell(context)
     assert typed_context.shell.project_detail_state is not None
     if "Compile MO: disabled" not in typed_context.shell.project_detail_state.configuration_summary:
@@ -665,6 +1045,17 @@ def step_assert_project_detail_compile_mo_disabled(context: object) -> None:
 
 @then("reopening the persisted site editor shows MO compilation disabled")
 def step_assert_persisted_compile_mo_disabled(context: object) -> None:
+    """Run the BDD step for assert persisted compile mo disabled.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+
+    Raises:
+        AssertionError: Raised when this callable hits the corresponding error path.
+    """
     typed_context = _context_with_shell(context)
     typed_context.shell.open_project_editor_edit(typed_context.created_site_id)
     assert typed_context.shell.project_editor_state is not None
@@ -674,6 +1065,17 @@ def step_assert_persisted_compile_mo_disabled(context: object) -> None:
 
 @then("the project detail shows the external translator disabled")
 def step_assert_project_detail_external_translator_disabled(context: object) -> None:
+    """Run the BDD step for assert project detail external translator disabled.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+
+    Raises:
+        AssertionError: Raised when this callable hits the corresponding error path.
+    """
     typed_context = _context_with_shell(context)
     assert typed_context.shell.project_detail_state is not None
     if (
@@ -685,6 +1087,17 @@ def step_assert_project_detail_external_translator_disabled(context: object) -> 
 
 @then("the project detail shows the translation cache disabled")
 def step_assert_project_detail_translation_cache_disabled(context: object) -> None:
+    """Run the BDD step for assert project detail translation cache disabled.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+
+    Raises:
+        AssertionError: Raised when this callable hits the corresponding error path.
+    """
     typed_context = _context_with_shell(context)
     assert typed_context.shell.project_detail_state is not None
     if (
@@ -696,6 +1109,17 @@ def step_assert_project_detail_translation_cache_disabled(context: object) -> No
 
 @then("the project detail shows only-fuzzy mode enabled")
 def step_assert_project_detail_only_fuzzy_enabled(context: object) -> None:
+    """Run the BDD step for assert project detail only fuzzy enabled.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+
+    Raises:
+        AssertionError: Raised when this callable hits the corresponding error path.
+    """
     typed_context = _context_with_shell(context)
     assert typed_context.shell.project_detail_state is not None
     if "Only fuzzy: enabled" not in typed_context.shell.project_detail_state.configuration_summary:
@@ -704,6 +1128,17 @@ def step_assert_project_detail_only_fuzzy_enabled(context: object) -> None:
 
 @then("the project detail shows dry-run mode enabled")
 def step_assert_project_detail_dry_run_enabled(context: object) -> None:
+    """Run the BDD step for assert project detail dry run enabled.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+
+    Raises:
+        AssertionError: Raised when this callable hits the corresponding error path.
+    """
     typed_context = _context_with_shell(context)
     assert typed_context.shell.project_detail_state is not None
     if "Dry-run: enabled" not in typed_context.shell.project_detail_state.configuration_summary:
@@ -712,6 +1147,17 @@ def step_assert_project_detail_dry_run_enabled(context: object) -> None:
 
 @then("the project detail shows stats-only mode enabled")
 def step_assert_project_detail_stats_only_enabled(context: object) -> None:
+    """Run the BDD step for assert project detail stats only enabled.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+
+    Raises:
+        AssertionError: Raised when this callable hits the corresponding error path.
+    """
     typed_context = _context_with_shell(context)
     assert typed_context.shell.project_detail_state is not None
     if "Stats only: enabled" not in typed_context.shell.project_detail_state.configuration_summary:
@@ -720,6 +1166,17 @@ def step_assert_project_detail_stats_only_enabled(context: object) -> None:
 
 @then("the project detail shows inconsistency reporting enabled")
 def step_assert_project_detail_inconsistency_reporting_enabled(context: object) -> None:
+    """Run the BDD step for assert project detail inconsistency reporting enabled.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+
+    Raises:
+        AssertionError: Raised when this callable hits the corresponding error path.
+    """
     typed_context = _context_with_shell(context)
     assert typed_context.shell.project_detail_state is not None
     if "Report inconsistencies: enabled" not in (
@@ -730,6 +1187,17 @@ def step_assert_project_detail_inconsistency_reporting_enabled(context: object) 
 
 @then("reopening the persisted site editor shows the external translator disabled")
 def step_assert_persisted_external_translator_disabled(context: object) -> None:
+    """Run the BDD step for assert persisted external translator disabled.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+
+    Raises:
+        AssertionError: Raised when this callable hits the corresponding error path.
+    """
     typed_context = _context_with_shell(context)
     typed_context.shell.open_project_editor_edit(typed_context.created_site_id)
     assert typed_context.shell.project_editor_state is not None
@@ -739,6 +1207,17 @@ def step_assert_persisted_external_translator_disabled(context: object) -> None:
 
 @then("reopening the persisted site editor shows the translation cache disabled")
 def step_assert_persisted_translation_cache_disabled(context: object) -> None:
+    """Run the BDD step for assert persisted translation cache disabled.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+
+    Raises:
+        AssertionError: Raised when this callable hits the corresponding error path.
+    """
     typed_context = _context_with_shell(context)
     typed_context.shell.open_project_editor_edit(typed_context.created_site_id)
     assert typed_context.shell.project_editor_state is not None
@@ -748,6 +1227,17 @@ def step_assert_persisted_translation_cache_disabled(context: object) -> None:
 
 @then("reopening the persisted site editor shows only-fuzzy mode enabled")
 def step_assert_persisted_only_fuzzy_enabled(context: object) -> None:
+    """Run the BDD step for assert persisted only fuzzy enabled.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+
+    Raises:
+        AssertionError: Raised when this callable hits the corresponding error path.
+    """
     typed_context = _context_with_shell(context)
     typed_context.shell.open_project_editor_edit(typed_context.created_site_id)
     assert typed_context.shell.project_editor_state is not None
@@ -757,6 +1247,17 @@ def step_assert_persisted_only_fuzzy_enabled(context: object) -> None:
 
 @then("reopening the persisted site editor shows dry-run mode enabled")
 def step_assert_persisted_dry_run_enabled(context: object) -> None:
+    """Run the BDD step for assert persisted dry run enabled.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+
+    Raises:
+        AssertionError: Raised when this callable hits the corresponding error path.
+    """
     typed_context = _context_with_shell(context)
     typed_context.shell.open_project_editor_edit(typed_context.created_site_id)
     assert typed_context.shell.project_editor_state is not None
@@ -766,6 +1267,17 @@ def step_assert_persisted_dry_run_enabled(context: object) -> None:
 
 @then("reopening the persisted site editor shows stats-only mode enabled")
 def step_assert_persisted_stats_only_enabled(context: object) -> None:
+    """Run the BDD step for assert persisted stats only enabled.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+
+    Raises:
+        AssertionError: Raised when this callable hits the corresponding error path.
+    """
     typed_context = _context_with_shell(context)
     typed_context.shell.open_project_editor_edit(typed_context.created_site_id)
     assert typed_context.shell.project_editor_state is not None
@@ -775,6 +1287,17 @@ def step_assert_persisted_stats_only_enabled(context: object) -> None:
 
 @then("reopening the persisted site editor shows inconsistency reporting enabled")
 def step_assert_persisted_inconsistency_reporting_enabled(context: object) -> None:
+    """Run the BDD step for assert persisted inconsistency reporting enabled.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+
+    Raises:
+        AssertionError: Raised when this callable hits the corresponding error path.
+    """
     typed_context = _context_with_shell(context)
     typed_context.shell.open_project_editor_edit(typed_context.created_site_id)
     assert typed_context.shell.project_editor_state is not None
@@ -784,6 +1307,18 @@ def step_assert_persisted_inconsistency_reporting_enabled(context: object) -> No
 
 @then('reopening the persisted site editor shows the custom sync rule "{relative_path}"')
 def step_assert_persisted_custom_sync_rule(context: object, relative_path: str) -> None:
+    """Run the BDD step for assert persisted custom sync rule.
+
+    Args:
+        context (object): Value supplied to this callable.
+        relative_path (str): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+
+    Raises:
+        AssertionError: Raised when this callable hits the corresponding error path.
+    """
     typed_context = _context_with_shell(context)
     typed_context.shell.open_project_editor_edit(typed_context.created_site_id)
     assert typed_context.shell.project_editor_state is not None
@@ -796,6 +1331,18 @@ def step_assert_persisted_custom_sync_rule(context: object, relative_path: str) 
 
 @then('reopening the persisted site editor shows the adapter rule "{relative_path}" disabled')
 def step_assert_persisted_disabled_adapter_rule(context: object, relative_path: str) -> None:
+    """Run the BDD step for assert persisted disabled adapter rule.
+
+    Args:
+        context (object): Value supplied to this callable.
+        relative_path (str): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+
+    Raises:
+        AssertionError: Raised when this callable hits the corresponding error path.
+    """
     typed_context = _context_with_shell(context)
     typed_context.shell.open_project_editor_edit(typed_context.created_site_id)
     assert typed_context.shell.project_editor_state is not None
@@ -810,6 +1357,14 @@ def step_assert_persisted_disabled_adapter_rule(context: object, relative_path: 
 
 @then("the settings draft shows the configured database directory")
 def step_assert_database_directory(context: object) -> None:
+    """Run the BDD step for assert database directory.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     typed_context = _context_with_shell(context)
     assert typed_context.shell.settings_state is not None
     assert typed_context.shell.settings_state.app_settings.database_directory == (
@@ -819,6 +1374,14 @@ def step_assert_database_directory(context: object) -> None:
 
 @then("the settings draft shows the configured database filename")
 def step_assert_database_filename(context: object) -> None:
+    """Run the BDD step for assert database filename.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     typed_context = _context_with_shell(context)
     assert typed_context.shell.settings_state is not None
     assert typed_context.shell.settings_state.app_settings.database_filename == "registry.sqlite3"
@@ -826,12 +1389,31 @@ def step_assert_database_filename(context: object) -> None:
 
 @then("the frontend shell shows the controlled site registry error message")
 def step_assert_registry_error(context: object) -> None:
+    """Run the BDD step for assert registry error.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     typed_context = _context_with_shell(context)
     assert typed_context.shell.latest_error is not None
 
 
 @then("reopening the persisted site editor shows that no remote connection is configured")
 def step_assert_reopened_editor_without_remote_connection(context: object) -> None:
+    """Run the BDD step for assert reopened editor without remote connection.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+
+    Raises:
+        AssertionError: Raised when this callable hits the corresponding error path.
+    """
     typed_context = _context_with_shell(context)
     typed_context.shell.open_project_editor_edit(typed_context.created_site_id)
     assert typed_context.shell.project_editor_state is not None
@@ -852,6 +1434,17 @@ def step_assert_reopened_editor_without_remote_connection(context: object) -> No
 
 @then("the project editor shows the duplicate site-name validation error")
 def step_assert_duplicate_site_name_validation_error(context: object) -> None:
+    """Run the BDD step for assert duplicate site name validation error.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+
+    Raises:
+        AssertionError: Raised when this callable hits the corresponding error path.
+    """
     typed_context = _context_with_shell(context)
     assert typed_context.shell.project_editor_state is not None
     if typed_context.shell.project_editor_state.status != "failed":
@@ -864,6 +1457,17 @@ def step_assert_duplicate_site_name_validation_error(context: object) -> None:
 
 @then("the project editor shows the default locale validation error")
 def step_assert_default_locale_validation_error(context: object) -> None:
+    """Run the BDD step for assert default locale validation error.
+
+    Args:
+        context (object): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+
+    Raises:
+        AssertionError: Raised when this callable hits the corresponding error path.
+    """
     typed_context = _context_with_shell(context)
     assert typed_context.shell.project_editor_state is not None
     if typed_context.shell.project_editor_state.status != "failed":

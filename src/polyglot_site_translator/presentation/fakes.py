@@ -41,7 +41,16 @@ def build_default_frontend_services(
     remote_connection_service: RemoteConnectionService | None = None,
     project_sync_service: ProjectSyncService | None = None,
 ) -> FrontendServices:
-    """Return the default runtime services with real SQLite site registry persistence."""
+    """Return the default runtime services with real SQLite site registry persistence.
+
+    Args:
+        settings_service (TomlSettingsService): Value supplied to this callable.
+        remote_connection_service (RemoteConnectionService | None): Value supplied to this callable.
+        project_sync_service (ProjectSyncService | None): Value supplied to this callable.
+
+    Returns:
+        FrontendServices: Structured value returned by this callable.
+    """
     repository = ConfiguredSqliteSiteRegistryRepository(settings_service)
     framework_registry = FrameworkAdapterRegistry.discover_installed()
     framework_detection_service = FrameworkDetectionService(registry=framework_registry)

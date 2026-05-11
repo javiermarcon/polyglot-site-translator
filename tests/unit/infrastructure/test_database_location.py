@@ -14,6 +14,11 @@ from polyglot_site_translator.presentation.view_models import AppSettingsViewMod
 
 
 def test_resolve_sqlite_database_location_joins_directory_and_filename() -> None:
+    """Verify resolve sqlite database location joins directory and filename.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     settings = AppSettingsViewModel(
         database_directory="/var/tmp/polyglot",
         database_filename="registry.sqlite3",
@@ -29,6 +34,11 @@ def test_resolve_sqlite_database_location_joins_directory_and_filename() -> None
 
 
 def test_resolve_sqlite_database_location_adds_sqlite_extension_when_missing() -> None:
+    """Verify resolve sqlite database location adds sqlite extension when missing.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     settings = AppSettingsViewModel(
         database_directory="/var/tmp/polyglot",
         database_filename="registry",
@@ -57,6 +67,16 @@ def test_resolve_sqlite_database_location_rejects_invalid_values(
     filename: str,
     expected_message: str,
 ) -> None:
+    """Verify resolve sqlite database location rejects invalid values.
+
+    Args:
+        directory (str): Value supplied to this callable.
+        filename (str): Value supplied to this callable.
+        expected_message (str): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     settings = AppSettingsViewModel(
         database_directory=directory,
         database_filename=filename,

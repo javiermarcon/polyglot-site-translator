@@ -25,22 +25,55 @@ def test_initial_browse_directory_empty_uses_home(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
+    """Verify initial browse directory empty uses home.
+
+    Args:
+        monkeypatch (pytest.MonkeyPatch): Value supplied to this callable.
+        tmp_path (Path): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     home = str(tmp_path)
     monkeypatch.setenv("HOME", home)
     assert initial_browse_directory("") == home
 
 
 def test_initial_browse_directory_existing_dir(tmp_path: Path) -> None:
+    """Verify initial browse directory existing dir.
+
+    Args:
+        tmp_path (Path): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     assert initial_browse_directory(str(tmp_path)) == str(tmp_path.resolve())
 
 
 def test_initial_browse_directory_file_returns_parent(tmp_path: Path) -> None:
+    """Verify initial browse directory file returns parent.
+
+    Args:
+        tmp_path (Path): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     file_path = tmp_path / "data.sqlite"
     file_path.write_text("x", encoding="utf-8")
     assert initial_browse_directory(str(file_path)) == str(tmp_path.resolve())
 
 
 def test_initial_browse_directory_walks_up_to_existing_parent(tmp_path: Path) -> None:
+    """Verify initial browse directory walks up to existing parent.
+
+    Args:
+        tmp_path (Path): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     nested = tmp_path / "a" / "b" / "c"
     assert initial_browse_directory(str(nested)) == str(tmp_path.resolve())
 
@@ -49,6 +82,15 @@ def test_initial_browse_whitespace_only_uses_home(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
+    """Verify initial browse whitespace only uses home.
+
+    Args:
+        monkeypatch (pytest.MonkeyPatch): Value supplied to this callable.
+        tmp_path (Path): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     home = str(tmp_path)
     monkeypatch.setenv("HOME", home)
     assert initial_browse_directory("   ") == home
@@ -58,12 +100,29 @@ def test_initial_browse_directory_expands_user(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
+    """Verify initial browse directory expands user.
+
+    Args:
+        monkeypatch (pytest.MonkeyPatch): Value supplied to this callable.
+        tmp_path (Path): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     home = str(tmp_path)
     monkeypatch.setenv("HOME", home)
     assert initial_browse_directory("~") == home
 
 
 def test_initial_browse_directory_joined_missing_path(tmp_path: Path) -> None:
+    """Verify initial browse directory joined missing path.
+
+    Args:
+        tmp_path (Path): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     base = tmp_path / "proj"
     base.mkdir()
     missing = base / "missing" / "nested"
@@ -74,6 +133,15 @@ def test_initial_browse_directory_handles_file_without_directory_parent(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
+    """Verify initial browse directory handles file without directory parent.
+
+    Args:
+        monkeypatch (pytest.MonkeyPatch): Value supplied to this callable.
+        tmp_path (Path): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     home = str(tmp_path)
     monkeypatch.setenv("HOME", home)
 
@@ -81,9 +149,19 @@ def test_initial_browse_directory_handles_file_without_directory_parent(
     original_is_dir = Path.is_dir
 
     def _fake_is_file(self: Path) -> bool:
+        """Handle fake is file.
+
+        Returns:
+            bool: Structured value returned by this callable.
+        """
         return str(self) == "/virtual/file.txt" or original_is_file(self)
 
     def _fake_is_dir(self: Path) -> bool:
+        """Handle fake is dir.
+
+        Returns:
+            bool: Structured value returned by this callable.
+        """
         if str(self) in {"/virtual", "/virtual/file.txt"}:
             return False
         return original_is_dir(self)
@@ -98,32 +176,78 @@ def test_initial_browse_directory_falls_back_to_home_when_parent_chain_stops(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
+    """Verify initial browse directory falls back to home when parent chain stops.
+
+    Args:
+        monkeypatch (pytest.MonkeyPatch): Value supplied to this callable.
+        tmp_path (Path): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     home = str(tmp_path)
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
     class _FakeResolvedPath:
+        """Test helper for FakeResolvedPath.
+
+        Attributes:
+            parent (_FakeResolvedPath): Documented attribute exposed by this type.
+        """
+
         parent: _FakeResolvedPath
 
         def __init__(self) -> None:
+            """Initialize the test helper state.
+
+            Returns:
+                None: This callable does not return a value.
+            """
             self.parent = self
 
         @staticmethod
         def is_dir() -> bool:
+            """Handle is dir.
+
+            Returns:
+                bool: Structured value returned by this callable.
+            """
             return False
 
     fake_resolved = _FakeResolvedPath()
 
     class _FakeExpandedPath:
+        """Test helper for FakeExpandedPath.
+
+        Attributes:
+            None: This type does not declare additional class-level attributes.
+        """
+
         @staticmethod
         def is_dir() -> bool:
+            """Handle is dir.
+
+            Returns:
+                bool: Structured value returned by this callable.
+            """
             return False
 
         @staticmethod
         def is_file() -> bool:
+            """Handle is file.
+
+            Returns:
+                bool: Structured value returned by this callable.
+            """
             return False
 
         @staticmethod
         def resolve() -> _FakeResolvedPath:
+            """Handle resolve.
+
+            Returns:
+                _FakeResolvedPath: Structured value returned by this callable.
+            """
             return fake_resolved
 
     monkeypatch.setattr(Path, "expanduser", lambda self: _FakeExpandedPath())
@@ -132,19 +256,55 @@ def test_initial_browse_directory_falls_back_to_home_when_parent_chain_stops(
 
 
 def test_directory_only_listing_filter_accepts_directory(tmp_path: Path) -> None:
+    """Verify directory only listing filter accepts directory.
+
+    Args:
+        tmp_path (Path): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     sub = tmp_path / "d"
     sub.mkdir()
     assert directory_only_listing_filter(str(tmp_path), str(sub)) is True
 
 
 def test_directory_only_listing_filter_rejects_file(tmp_path: Path) -> None:
+    """Verify directory only listing filter rejects file.
+
+    Args:
+        tmp_path (Path): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     file_path = tmp_path / "f.txt"
     file_path.write_text("x", encoding="utf-8")
     assert directory_only_listing_filter(str(tmp_path), str(file_path)) is False
 
 
 def test_directory_only_listing_filter_handles_os_errors(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Verify directory only listing filter handles os errors.
+
+    Args:
+        monkeypatch (pytest.MonkeyPatch): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+
+    Raises:
+        OSError: Raised when this callable hits the corresponding error path.
+    """
+
     def _raise_os_error(self: Path) -> bool:
+        """Handle raise os error.
+
+        Returns:
+            bool: Structured value returned by this callable.
+
+        Raises:
+            OSError: Raised when this callable hits the corresponding error path.
+        """
         msg = "broken filesystem"
         raise OSError(msg)
 
@@ -154,6 +314,11 @@ def test_directory_only_listing_filter_handles_os_errors(monkeypatch: pytest.Mon
 
 
 def test_disable_directory_mode_aux_fields_handles_missing_and_present_widgets() -> None:
+    """Verify disable directory mode aux fields handles missing and present widgets.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     file_text = SimpleNamespace(disabled=False)
     filt_text = SimpleNamespace(disabled=False)
     browser = SimpleNamespace(ids=SimpleNamespace(file_text=file_text, filt_text=filt_text))
@@ -170,6 +335,14 @@ def test_disable_directory_mode_aux_fields_handles_missing_and_present_widgets()
 def test_resolve_file_browser_selection_covers_directory_and_file_modes(
     tmp_path: Path,
 ) -> None:
+    """Verify resolve file browser selection covers directory and file modes.
+
+    Args:
+        tmp_path (Path): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     directory = tmp_path / "dir"
     directory.mkdir()
     file_path = tmp_path / "data.txt"
@@ -197,6 +370,12 @@ def test_resolve_file_browser_selection_covers_directory_and_file_modes(
 
 
 class _FakeBrowser:
+    """Test helper for FakeBrowser.
+
+    Attributes:
+        None: This type does not declare additional class-level attributes.
+    """
+
     def __init__(
         self,
         *,
@@ -205,6 +384,17 @@ class _FakeBrowser:
         select_string: str,
         cancel_string: str,
     ) -> None:
+        """Initialize the test helper state.
+
+        Args:
+            path (str): Value supplied to this callable.
+            dirselect (bool): Value supplied to this callable.
+            select_string (str): Value supplied to this callable.
+            cancel_string (str): Value supplied to this callable.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         self.path = path
         self.dirselect = dirselect
         self.select_string = select_string
@@ -219,10 +409,24 @@ class _FakeBrowser:
         self._bound: dict[str, Any] = {}
 
     def bind(self, **kwargs: Any) -> None:
+        """Handle bind.
+
+        Args:
+            kwargs (Any): Value supplied to this callable.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         self._bound.update(kwargs)
 
 
 class _FakePopup:
+    """Test helper for FakePopup.
+
+    Attributes:
+        instances (ClassVar[list[_FakePopup]]): Documented attribute exposed by this type.
+    """
+
     instances: ClassVar[list[_FakePopup]] = []
 
     def __init__(
@@ -233,6 +437,17 @@ class _FakePopup:
         size_hint: tuple[float, float],
         auto_dismiss: bool,
     ) -> None:
+        """Initialize the test helper state.
+
+        Args:
+            title (str): Value supplied to this callable.
+            content (object): Value supplied to this callable.
+            size_hint (tuple[float, float]): Value supplied to this callable.
+            auto_dismiss (bool): Value supplied to this callable.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         self.title = title
         self.content = content
         self.size_hint = size_hint
@@ -242,9 +457,19 @@ class _FakePopup:
         self.__class__.instances.append(self)
 
     def open(self) -> None:
+        """Handle open.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         self.opened = True
 
     def dismiss(self) -> None:
+        """Handle dismiss.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         self.dismissed = True
 
 
@@ -252,10 +477,28 @@ def test_show_path_picker_popup_directory_mode_updates_target_and_disables_aux_f
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
+    """Verify show path picker popup directory mode updates target and disables aux fields.
+
+    Args:
+        monkeypatch (pytest.MonkeyPatch): Value supplied to this callable.
+        tmp_path (Path): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     _FakePopup.instances.clear()
     scheduled_callbacks: list[Any] = []
 
     def _schedule_once(callback: Any, _timeout: float = 0.0) -> None:
+        """Handle schedule once.
+
+        Args:
+            callback (Any): Value supplied to this callable.
+            _timeout (float): Value supplied to this callable.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         scheduled_callbacks.append(callback)
 
     monkeypatch.setattr(
@@ -300,6 +543,15 @@ def test_show_path_picker_popup_file_mode_updates_target_and_handles_empty_selec
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
+    """Verify show path picker popup file mode updates target and handles empty selection.
+
+    Args:
+        monkeypatch (pytest.MonkeyPatch): Value supplied to this callable.
+        tmp_path (Path): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     _FakePopup.instances.clear()
     monkeypatch.setattr(
         "polyglot_site_translator.presentation.kivy.widgets.path_picker.FileBrowser",
@@ -350,6 +602,15 @@ def test_show_path_picker_popup_cancel_keeps_existing_value(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
+    """Verify show path picker popup cancel keeps existing value.
+
+    Args:
+        monkeypatch (pytest.MonkeyPatch): Value supplied to this callable.
+        tmp_path (Path): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     _FakePopup.instances.clear()
     monkeypatch.setattr(
         "polyglot_site_translator.presentation.kivy.widgets.path_picker.FileBrowser",
@@ -377,9 +638,25 @@ def test_show_path_picker_popup_cancel_keeps_existing_value(
 def test_build_path_input_row_and_labeled_field_bind_browse_action(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    """Verify build path input row and labeled field bind browse action.
+
+    Args:
+        monkeypatch (pytest.MonkeyPatch): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     captured_calls: list[dict[str, object]] = []
 
     def _fake_show_path_picker_popup(**kwargs: object) -> None:
+        """Handle fake show path picker popup.
+
+        Args:
+            kwargs (object): Value supplied to this callable.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         captured_calls.append(kwargs)
 
     monkeypatch.setattr(

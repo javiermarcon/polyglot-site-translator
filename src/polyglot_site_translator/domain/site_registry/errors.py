@@ -4,20 +4,40 @@ from __future__ import annotations
 
 
 class SiteRegistryValidationError(ValueError):
-    """Raised when a site registry command contains invalid values."""
+    """Raised when a site registry command contains invalid values.
+
+    Attributes:
+        None: This type does not declare additional class-level attributes.
+    """
 
 
 class SiteRegistryConflictError(ValueError):
-    """Raised when a site registry record conflicts with an existing one."""
+    """Raised when a site registry record conflicts with an existing one.
+
+    Attributes:
+        None: This type does not declare additional class-level attributes.
+    """
 
 
 class SiteRegistryNotFoundError(LookupError):
-    """Raised when a requested site registry record does not exist."""
+    """Raised when a requested site registry record does not exist.
+
+    Attributes:
+        None: This type does not declare additional class-level attributes.
+    """
 
 
 class SiteRegistryConfigurationError(ValueError):
-    """Raised when the configured SQLite database location is invalid."""
+    """Raised when the configured SQLite database location is invalid.
+
+    Attributes:
+        None: This type does not declare additional class-level attributes.
+    """
 
 
 class SiteRegistryPersistenceError(RuntimeError):
-    """Raised when SQLite persistence fails in a controlled way."""
+    """Raised when SQLite persistence fails in a controlled way.
+
+    Attributes:
+        None: This type does not declare additional class-level attributes.
+    """

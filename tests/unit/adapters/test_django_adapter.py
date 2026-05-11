@@ -9,6 +9,14 @@ from polyglot_site_translator.domain.sync.scope import SyncFilterType
 
 
 def test_django_adapter_detects_a_typical_project_layout(tmp_path: Path) -> None:
+    """Verify django adapter detects a typical project layout.
+
+    Args:
+        tmp_path (Path): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     (tmp_path / "manage.py").write_text(
         "import os\nos.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')\n",
         encoding="utf-8",
@@ -28,6 +36,14 @@ def test_django_adapter_detects_a_typical_project_layout(tmp_path: Path) -> None
 
 
 def test_django_adapter_supports_settings_module_inside_a_package(tmp_path: Path) -> None:
+    """Verify django adapter supports settings module inside a package.
+
+    Args:
+        tmp_path (Path): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     (tmp_path / "manage.py").write_text("print('manage')\n", encoding="utf-8")
     project_dir = tmp_path / "project"
     project_dir.mkdir()
@@ -40,6 +56,14 @@ def test_django_adapter_supports_settings_module_inside_a_package(tmp_path: Path
 
 
 def test_django_adapter_supports_asgi_without_wsgi(tmp_path: Path) -> None:
+    """Verify django adapter supports asgi without wsgi.
+
+    Args:
+        tmp_path (Path): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     (tmp_path / "manage.py").write_text("print('manage')\n", encoding="utf-8")
     project_dir = tmp_path / "config"
     project_dir.mkdir()
@@ -52,6 +76,14 @@ def test_django_adapter_supports_asgi_without_wsgi(tmp_path: Path) -> None:
 
 
 def test_django_adapter_reports_partial_evidence_without_matching(tmp_path: Path) -> None:
+    """Verify django adapter reports partial evidence without matching.
+
+    Args:
+        tmp_path (Path): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     (tmp_path / "manage.py").write_text("print('manage')\n", encoding="utf-8")
 
     result = DjangoFrameworkAdapter().detect(tmp_path)
@@ -61,6 +93,14 @@ def test_django_adapter_reports_partial_evidence_without_matching(tmp_path: Path
 
 
 def test_django_adapter_returns_unmatched_for_non_django_projects(tmp_path: Path) -> None:
+    """Verify django adapter returns unmatched for non django projects.
+
+    Args:
+        tmp_path (Path): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     (tmp_path / "app.py").write_text("print('hello')\n", encoding="utf-8")
 
     result = DjangoFrameworkAdapter().detect(tmp_path)
@@ -70,6 +110,11 @@ def test_django_adapter_returns_unmatched_for_non_django_projects(tmp_path: Path
 
 
 def test_django_adapter_exposes_sync_filters() -> None:
+    """Verify django adapter exposes sync filters.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     scope = DjangoFrameworkAdapter().get_sync_scope(Path("/workspace/site"))
 
     assert [sync_filter.relative_path for sync_filter in scope.filters] == ["locale"]

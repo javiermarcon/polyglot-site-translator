@@ -64,6 +64,12 @@ A task is not done unless all of the following are true:
   - PEP484
   - Ruff
   - mypy
+- All modules, classes, functions, and methods introduced or modified by the change, public or
+  private, have clear, multi-line docstrings that explain intent, important behavior, inputs,
+  outputs, and relevant side effects or failure conditions.
+- One-line docstrings are not acceptable for behavioral symbols. Docstrings must be structured and
+  must include sections such as `Args:`, `Returns:`, `Raises:`, and `Attributes:` whenever those
+  sections are relevant to the symbol being documented.
 - The change includes tests for the main behavior introduced or modified.
 - Implemented workflows are wired to real services in production entrypoints; test doubles for those workflows live in test support, not in runtime bundles under `src/`.
 - The implementation respects DRY, SOLID, SRP, and OCP.
@@ -84,6 +90,10 @@ Before finishing any non-trivial change, verify explicitly:
 
 - Ruff passes.
 - mypy passes.
+- The changed code still satisfies PEP8, PEP257, and PEP484 explicitly, not only “whatever the
+  current tool defaults happen to enforce”.
+- The repository docstring audit passes, including private symbols and structured multi-line
+  docstring requirements.
 - pytest passes for the affected scope.
 - Documentation is aligned with the final code.
 - New dependencies, if any, are declared in the correct `requirements/` file and nowhere inconsistent.
@@ -100,6 +110,10 @@ Before finishing any non-trivial change, verify explicitly:
 
 - Small, cohesive modules.
 - Typed dataclasses or explicit models for structured data.
+- Clear docstrings for all modules, classes, functions, and methods, public or private; do not
+  leave new or modified behavior undocumented.
+- Use structured multi-line docstrings, not one-line placeholders. Include `Args:`, `Returns:`,
+  `Raises:`, and `Attributes:` sections whenever they apply to the documented symbol.
 - Clear separation between:
   - Kivy UI
   - application services
@@ -255,6 +269,7 @@ Examples:
 python -m ruff check .
 python -m ruff format --check .
 python -m mypy src
+python tests/run_docstring_audit.py
 python -m pytest
 ```
 
@@ -342,3 +357,19 @@ For any non-trivial new or modified user-visible workflow, `.feature` scenarios 
 - expected exceptions or surfaced error states
 
 A task is not done if a touched workflow is only covered at unit level but not through the relevant end-to-end feature scenarios.
+
+---
+
+## Explicit style and typing compliance
+
+Every change must explicitly respect:
+
+- PEP8
+- PEP257
+- PEP484
+- Ruff
+- mypy
+
+Do not assume those standards are optional just because a specific file already existed in a
+weaker state. New and modified code must move the repository toward explicit compliance, not away
+from it.

@@ -31,6 +31,11 @@ from polyglot_site_translator.presentation.kivy.screens.settings import (
 
 
 def test_build_configured_rule_normalizes_values_and_rejects_empty_paths() -> None:
+    """Verify build configured rule normalizes values and rejects empty paths.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     configured_rule = _build_configured_rule(
         relative_path=" /.cache/ ",
         description="",
@@ -53,6 +58,11 @@ def test_build_configured_rule_normalizes_values_and_rejects_empty_paths() -> No
 
 
 def test_settings_screen_rule_label_helpers_validate_unknown_values() -> None:
+    """Verify settings screen rule label helpers validate unknown values.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     assert _map_filter_type_label("Directory") is SyncFilterType.DIRECTORY
     assert _map_behavior_label("Exclude") is SyncRuleBehavior.EXCLUDE
 
@@ -64,6 +74,11 @@ def test_settings_screen_rule_label_helpers_validate_unknown_values() -> None:
 
 
 def test_append_toggle_and_remove_framework_sync_rules() -> None:
+    """Verify append toggle and remove framework sync rules.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     sync_scope_settings = AdapterSyncScopeSettings()
     framework_rule = ConfiguredSyncRule(
         relative_path=".venv",
@@ -107,6 +122,11 @@ def test_append_toggle_and_remove_framework_sync_rules() -> None:
 
 
 def test_toggle_and_remove_global_sync_rules() -> None:
+    """Verify toggle and remove global sync rules.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     sync_scope_settings = AdapterSyncScopeSettings(
         global_rules=(
             ConfiguredSyncRule(
@@ -142,6 +162,11 @@ def test_toggle_and_remove_global_sync_rules() -> None:
 
 
 def test_append_framework_rule_reuses_existing_framework_set_and_helper_cards_render() -> None:
+    """Verify append framework rule reuses existing framework set and helper cards render.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     rule = ConfiguredSyncRule(
         relative_path="locale",
         filter_type=SyncFilterType.DIRECTORY,
@@ -184,6 +209,11 @@ def test_append_framework_rule_reuses_existing_framework_set_and_helper_cards_re
 
 
 def test_framework_rule_helpers_preserve_unrelated_sets_and_remove_matching_rules() -> None:
+    """Verify framework rule helpers preserve unrelated sets and remove matching rules.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     locale_rule = ConfiguredSyncRule(
         relative_path="locale",
         filter_type=SyncFilterType.DIRECTORY,
@@ -222,6 +252,11 @@ def test_framework_rule_helpers_preserve_unrelated_sets_and_remove_matching_rule
 
 
 def test_toggle_and_remove_framework_rules_require_framework_type() -> None:
+    """Verify toggle and remove framework rules require framework type.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     with pytest.raises(ValueError, match="Framework sync rules require a framework type"):
         _toggle_configured_rule(
             AdapterSyncScopeSettings(
@@ -259,6 +294,11 @@ def test_toggle_and_remove_framework_rules_require_framework_type() -> None:
 
 
 def test_settings_screen_requires_existing_inputs_for_helper_access() -> None:
+    """Verify settings screen requires existing inputs for helper access.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     app = cast(Any, create_kivy_app())
     root = app.build()
     settings_screen = root.get_screen("settings")
@@ -274,6 +314,11 @@ def test_settings_screen_requires_existing_inputs_for_helper_access() -> None:
 
 
 def test_settings_screen_toggle_and_remove_helpers_update_the_local_draft() -> None:
+    """Verify settings screen toggle and remove helpers update the local draft.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     app = cast(Any, create_kivy_app())
     root = app.build()
     settings_screen = root.get_screen("settings")
@@ -330,6 +375,14 @@ def test_settings_screen_toggle_and_remove_helpers_update_the_local_draft() -> N
 def test_settings_screen_wrapper_helpers_refresh_after_toggle_and_remove(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    """Verify settings screen wrapper helpers refresh after toggle and remove.
+
+    Args:
+        monkeypatch (pytest.MonkeyPatch): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     app = cast(Any, create_kivy_app())
     root = app.build()
     settings_screen = root.get_screen("settings")
@@ -374,6 +427,11 @@ def test_settings_screen_wrapper_helpers_refresh_after_toggle_and_remove(
 
 
 def test_settings_screen_builds_configured_rules_cards_for_empty_and_described_rules() -> None:
+    """Verify settings screen builds configured rules cards for empty and described rules.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     app = cast(Any, create_kivy_app())
     root = app.build()
     settings_screen = root.get_screen("settings")

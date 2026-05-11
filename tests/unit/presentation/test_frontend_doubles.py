@@ -26,6 +26,11 @@ from tests.support.frontend_doubles import (
 
 
 def test_catalog_double_returns_detail_and_raises_for_unknown_project() -> None:
+    """Verify catalog double returns detail and raises for unknown project.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     services = build_seeded_services()
     catalog = services.catalog
 
@@ -39,6 +44,11 @@ def test_catalog_double_returns_detail_and_raises_for_unknown_project() -> None:
 
 
 def test_failing_catalog_double_surfaces_controlled_errors() -> None:
+    """Verify failing catalog double surfaces controlled errors.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     catalog = FailingSiteRegistryCatalogService()
 
     with pytest.raises(
@@ -54,6 +64,11 @@ def test_failing_catalog_double_surfaces_controlled_errors() -> None:
 
 
 def test_stub_workflow_double_covers_success_and_fail_sync_branches() -> None:
+    """Verify stub workflow double covers success and fail sync branches.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     workflow = StubProjectWorkflowService()
 
     assert workflow.start_sync("dj-admin").status == "completed"
@@ -82,6 +97,11 @@ def test_stub_workflow_double_covers_success_and_fail_sync_branches() -> None:
 
 
 def test_in_memory_settings_service_covers_save_load_fail_and_reset() -> None:
+    """Verify in memory settings service covers save load fail and reset.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     seeded_settings = build_seeded_services().settings.load_settings().app_settings
     service = InMemorySettingsService(_saved_settings=seeded_settings)
 
@@ -110,6 +130,11 @@ def test_in_memory_settings_service_covers_save_load_fail_and_reset() -> None:
 
 
 def test_registry_management_double_covers_create_edit_update_and_preview() -> None:
+    """Verify registry management double covers create edit update and preview.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     services = build_seeded_services()
     registry = services.registry
 
@@ -155,6 +180,11 @@ def test_registry_management_double_covers_create_edit_update_and_preview() -> N
 
 
 def test_seeded_service_builders_cover_empty_and_failing_variants() -> None:
+    """Verify seeded service builders cover empty and failing variants.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     assert build_empty_services().catalog.list_projects() == []
     assert (
         cast(StubProjectWorkflowService, build_failing_sync_services().workflows).fail_sync is True

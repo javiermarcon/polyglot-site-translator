@@ -53,24 +53,66 @@ from polyglot_site_translator.services.project_sync import (
 
 @dataclass
 class StubFrameworkSyncScopeService:
+    """Test helper for StubFrameworkSyncScopeService.
+
+    Attributes:
+        resolved_scope (ResolvedSyncScope): Documented attribute exposed by this type.
+        calls (list[str]): Documented attribute exposed by this type.
+    """
+
     resolved_scope: ResolvedSyncScope
     calls: list[str] = field(default_factory=list)
 
     def resolve_for_site(self, site: RegisteredSite) -> ResolvedSyncScope:
+        """Handle resolve for site.
+
+        Args:
+            site (RegisteredSite): Value supplied to this callable.
+
+        Returns:
+            ResolvedSyncScope: Structured value returned by this callable.
+        """
         self.calls.append(site.id)
         return self.resolved_scope
 
 
 @dataclass
 class FailingFrameworkSyncScopeService:
+    """Test helper for FailingFrameworkSyncScopeService.
+
+    Attributes:
+        error (OSError | SyncConfigurationError): Documented attribute exposed by this type.
+    """
+
     error: OSError | SyncConfigurationError
 
     def resolve_for_site(self, site: RegisteredSite) -> ResolvedSyncScope:
+        """Handle resolve for site.
+
+        Args:
+            site (RegisteredSite): Value supplied to this callable.
+
+        Returns:
+            ResolvedSyncScope: Structured value returned by this callable.
+
+        Raises:
+            error: Raised when this callable hits the corresponding error path.
+        """
         raise self.error
 
 
 @dataclass
 class StubSyncSession:
+    """Test helper for StubSyncSession.
+
+    Attributes:
+        config (RemoteConnectionConfig): Documented attribute exposed by this type.
+        provider (StubSyncProvider): Documented attribute exposed by this type.
+        state (RemoteConnectionSessionState): Documented attribute exposed by this type.
+        close_calls (int): Documented attribute exposed by this type.
+        _connect_emitted (bool): Documented attribute exposed by this type.
+    """
+
     config: RemoteConnectionConfig
     provider: StubSyncProvider
     state: RemoteConnectionSessionState = RemoteConnectionSessionState.OPEN
@@ -81,6 +123,15 @@ class StubSyncSession:
         self,
         progress_callback: Callable[[SyncProgressEvent], None] | None,
     ) -> None:
+        """Handle emit connect if needed.
+
+        Args:
+            progress_callback (Callable[[SyncProgressEvent], None] | None): Value supplied to this
+        callable.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         if self._connect_emitted or progress_callback is None:
             return
         progress_callback(
@@ -96,6 +147,19 @@ class StubSyncSession:
         self,
         progress_callback: Callable[[SyncProgressEvent], None] | None = None,
     ) -> Iterable[RemoteSyncFile]:
+        """Handle iter remote files.
+
+        Args:
+            progress_callback (Callable[[SyncProgressEvent], None] | None): Value supplied to this
+        callable.
+
+        Returns:
+            Iterable[RemoteSyncFile]: Structured value returned by this callable.
+
+        Raises:
+            ModuleNotFoundError: Raised when this callable hits the corresponding error path.
+            OSError: Raised when this callable hits the corresponding error path.
+        """
         self.provider.session_events.append("iter")
         if progress_callback is not None:
             self._emit_connect_if_needed(progress_callback)
@@ -121,6 +185,20 @@ class StubSyncSession:
         remote_path: str,
         progress_callback: Callable[[SyncProgressEvent], None] | None = None,
     ) -> bytes:
+        """Handle download file.
+
+        Args:
+            remote_path (str): Value supplied to this callable.
+            progress_callback (Callable[[SyncProgressEvent], None] | None): Value supplied to this
+        callable.
+
+        Returns:
+            bytes: Structured value returned by this callable.
+
+        Raises:
+            ModuleNotFoundError: Raised when this callable hits the corresponding error path.
+            OSError: Raised when this callable hits the corresponding error path.
+        """
         self.provider.session_events.append(f"download:{remote_path}")
         if progress_callback is not None:
             self._emit_connect_if_needed(progress_callback)
@@ -150,6 +228,19 @@ class StubSyncSession:
         remote_path: str,
         progress_callback: Callable[[SyncProgressEvent], None] | None = None,
     ) -> int:
+        """Handle ensure remote directory.
+
+        Args:
+            remote_path (str): Value supplied to this callable.
+            progress_callback (Callable[[SyncProgressEvent], None] | None): Value supplied to this
+        callable.
+
+        Returns:
+            int: Structured value returned by this callable.
+
+        Raises:
+            OSError: Raised when this callable hits the corresponding error path.
+        """
         self.provider.session_events.append(f"mkdir:{remote_path}")
         if progress_callback is not None:
             self._emit_connect_if_needed(progress_callback)
@@ -177,6 +268,20 @@ class StubSyncSession:
         contents: bytes,
         progress_callback: Callable[[SyncProgressEvent], None] | None = None,
     ) -> None:
+        """Handle upload file.
+
+        Args:
+            remote_path (str): Value supplied to this callable.
+            contents (bytes): Value supplied to this callable.
+            progress_callback (Callable[[SyncProgressEvent], None] | None): Value supplied to this
+        callable.
+
+        Returns:
+            None: This callable does not return a value.
+
+        Raises:
+            OSError: Raised when this callable hits the corresponding error path.
+        """
         self.provider.session_events.append(f"upload:{remote_path}")
         if progress_callback is not None:
             self._emit_connect_if_needed(progress_callback)
@@ -204,6 +309,18 @@ class StubSyncSession:
         self,
         progress_callback: Callable[[SyncProgressEvent], None] | None = None,
     ) -> None:
+        """Handle close.
+
+        Args:
+            progress_callback (Callable[[SyncProgressEvent], None] | None): Value supplied to this
+        callable.
+
+        Returns:
+            None: This callable does not return a value.
+
+        Raises:
+            close_error: Raised when this callable hits the corresponding error path.
+        """
         self.provider.session_events.append("close")
         self.close_calls += 1
         self.state = RemoteConnectionSessionState.CLOSED
@@ -221,6 +338,41 @@ class StubSyncSession:
 
 @dataclass
 class StubSyncProvider:
+    """Test helper for StubSyncProvider.
+
+    Attributes:
+        descriptor (RemoteConnectionTypeDescriptor): Documented attribute exposed by this type.
+        remote_files (list[RemoteSyncFile]): Documented attribute exposed by this type.
+        downloaded_bytes (dict[str, bytes]): Documented attribute exposed by this type.
+        fail_on_list (bool): Documented attribute exposed by this type.
+        fail_on_download (str | None): Documented attribute exposed by this type.
+        missing_dependency_on_list (bool): Documented attribute exposed by this type.
+        missing_dependency_on_download (str | None): Documented attribute exposed by this type.
+        fail_on_mkdir (str | None): Documented attribute exposed by this type.
+        fail_on_upload (str | None): Documented attribute exposed by this type.
+        iter_remote_files_impl (Callable[ [RemoteConnectionConfig, Callable[[SyncProgressEvent],
+    None] |
+        None], Iterable[RemoteSyncFile], ] | None): Documented attribute exposed by this type.
+        download_file_impl (Callable[ [RemoteConnectionConfig, str, Callable[[SyncProgressEvent],
+    None]
+        | None], bytes, ] | None): Documented attribute exposed by this type.
+        ensure_remote_directory_impl (Callable[ [RemoteConnectionConfig, str,
+        Callable[[SyncProgressEvent], None] | None], int, ] | None): Documented attribute exposed by
+        this type.
+        upload_file_impl (Callable[ [RemoteConnectionConfig, str, bytes,
+    Callable[[SyncProgressEvent],
+        None] | None], None, ] | None): Documented attribute exposed by this type.
+        open_session_error (RemoteConnectionOperationError | None): Documented attribute exposed by
+    this
+        type.
+        close_error (OSError | None): Documented attribute exposed by this type.
+        open_session_calls (int): Documented attribute exposed by this type.
+        session_events (list[str]): Documented attribute exposed by this type.
+        opened_sessions (list[StubSyncSession]): Documented attribute exposed by this type.
+        uploaded_bytes (dict[str, bytes]): Documented attribute exposed by this type.
+        remote_directories_created (set[str]): Documented attribute exposed by this type.
+    """
+
     descriptor: RemoteConnectionTypeDescriptor = field(
         default_factory=lambda: RemoteConnectionTypeDescriptor(
             connection_type="sftp",
@@ -276,10 +428,32 @@ class StubSyncProvider:
         self,
         config: RemoteConnectionConfigInput,
     ) -> RemoteConnectionTestResult:
+        """Verify connection.
+
+        Args:
+            config (RemoteConnectionConfigInput): Value supplied to this callable.
+
+        Returns:
+            RemoteConnectionTestResult: Structured value returned by this callable.
+
+        Raises:
+            AssertionError: Raised when this callable hits the corresponding error path.
+        """
         msg = f"test_connection not used in this sync test for {config.connection_type}"
         raise AssertionError(msg)
 
     def open_session(self, config: RemoteConnectionConfig) -> StubSyncSession:
+        """Handle open session.
+
+        Args:
+            config (RemoteConnectionConfig): Value supplied to this callable.
+
+        Returns:
+            StubSyncSession: Structured value returned by this callable.
+
+        Raises:
+            open_session_error: Raised when this callable hits the corresponding error path.
+        """
         self.open_session_calls += 1
         if self.open_session_error is not None:
             raise self.open_session_error
@@ -294,6 +468,21 @@ class StubSyncProvider:
         *,
         max_files: int = 1000,
     ) -> list[RemoteSyncFile]:
+        """Handle list remote files.
+
+        Args:
+            config (RemoteConnectionConfig): Value supplied to this callable.
+            progress_callback (Callable[[SyncProgressEvent], None] | None): Value supplied to this
+        callable.
+            max_files (int): Value supplied to this callable.
+
+        Returns:
+            list[RemoteSyncFile]: Structured value returned by this callable.
+
+        Raises:
+            ModuleNotFoundError: Raised when this callable hits the corresponding error path.
+            OSError: Raised when this callable hits the corresponding error path.
+        """
         if progress_callback is not None:
             progress_callback(
                 SyncProgressEvent(
@@ -315,6 +504,16 @@ class StubSyncProvider:
         config: RemoteConnectionConfig,
         progress_callback: Callable[[SyncProgressEvent], None] | None = None,
     ) -> Iterable[RemoteSyncFile]:
+        """Handle iter remote files.
+
+        Args:
+            config (RemoteConnectionConfig): Value supplied to this callable.
+            progress_callback (Callable[[SyncProgressEvent], None] | None): Value supplied to this
+        callable.
+
+        Returns:
+            Iterable[RemoteSyncFile]: Structured value returned by this callable.
+        """
         if self.iter_remote_files_impl is not None:
             return self.iter_remote_files_impl(config, progress_callback)
         return iter(self.list_remote_files(config, progress_callback))
@@ -325,6 +524,21 @@ class StubSyncProvider:
         remote_path: str,
         progress_callback: Callable[[SyncProgressEvent], None] | None = None,
     ) -> bytes:
+        """Handle download file.
+
+        Args:
+            config (RemoteConnectionConfig): Value supplied to this callable.
+            remote_path (str): Value supplied to this callable.
+            progress_callback (Callable[[SyncProgressEvent], None] | None): Value supplied to this
+        callable.
+
+        Returns:
+            bytes: Structured value returned by this callable.
+
+        Raises:
+            ModuleNotFoundError: Raised when this callable hits the corresponding error path.
+            OSError: Raised when this callable hits the corresponding error path.
+        """
         if progress_callback is not None:
             progress_callback(
                 SyncProgressEvent(
@@ -347,6 +561,17 @@ class StubSyncProvider:
         remote_path: str,
         progress_callback: Callable[[SyncProgressEvent], None] | None = None,
     ) -> int:
+        """Handle ensure remote directory.
+
+        Args:
+            config (RemoteConnectionConfig): Value supplied to this callable.
+            remote_path (str): Value supplied to this callable.
+            progress_callback (Callable[[SyncProgressEvent], None] | None): Value supplied to this
+        callable.
+
+        Returns:
+            int: Structured value returned by this callable.
+        """
         session = self.open_session(config)
         try:
             return session.ensure_remote_directory(remote_path, progress_callback)
@@ -360,6 +585,18 @@ class StubSyncProvider:
         contents: bytes,
         progress_callback: Callable[[SyncProgressEvent], None] | None = None,
     ) -> None:
+        """Handle upload file.
+
+        Args:
+            config (RemoteConnectionConfig): Value supplied to this callable.
+            remote_path (str): Value supplied to this callable.
+            contents (bytes): Value supplied to this callable.
+            progress_callback (Callable[[SyncProgressEvent], None] | None): Value supplied to this
+        callable.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         session = self.open_session(config)
         try:
             session.upload_file(remote_path, contents, progress_callback)
@@ -373,6 +610,14 @@ _DEFAULT_REMOTE = object()
 def test_project_sync_service_downloads_remote_files_into_the_local_workspace(
     tmp_path: Path,
 ) -> None:
+    """Verify project sync service downloads remote files into the local workspace.
+
+    Args:
+        tmp_path (Path): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     local_root = tmp_path / "workspace" / "site"
     provider = StubSyncProvider(
         remote_files=[
@@ -408,6 +653,14 @@ def test_project_sync_service_downloads_remote_files_into_the_local_workspace(
 def test_project_sync_service_reports_progress_commands_for_remote_execution(
     tmp_path: Path,
 ) -> None:
+    """Verify project sync service reports progress commands for remote execution.
+
+    Args:
+        tmp_path (Path): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     local_root = tmp_path / "workspace" / "site"
     provider = StubSyncProvider(
         remote_files=[
@@ -444,6 +697,14 @@ def test_project_sync_service_reports_progress_commands_for_remote_execution(
 def test_project_sync_service_reuses_a_single_remote_session_for_a_multi_file_sync(
     tmp_path: Path,
 ) -> None:
+    """Verify project sync service reuses a single remote session for a multi file sync.
+
+    Args:
+        tmp_path (Path): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     local_root = tmp_path / "workspace" / "site"
     provider = StubSyncProvider(
         remote_files=[
@@ -485,6 +746,14 @@ def test_project_sync_service_reuses_a_single_remote_session_for_a_multi_file_sy
 def test_project_sync_service_downloads_files_while_remote_listing_is_still_in_progress(
     tmp_path: Path,
 ) -> None:
+    """Verify project sync service downloads files while remote listing is still in progress.
+
+    Args:
+        tmp_path (Path): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     local_root = tmp_path / "workspace" / "site"
     provider = StubSyncProvider(
         downloaded_bytes={
@@ -498,6 +767,16 @@ def test_project_sync_service_downloads_files_while_remote_listing_is_still_in_p
         config: RemoteConnectionConfig,
         progress_callback: Callable[[SyncProgressEvent], None] | None = None,
     ) -> Iterable[RemoteSyncFile]:
+        """Handle iter remote files.
+
+        Args:
+            config (RemoteConnectionConfig): Value supplied to this callable.
+            progress_callback (Callable[[SyncProgressEvent], None] | None): Value supplied to this
+        callable.
+
+        Returns:
+            Iterable[RemoteSyncFile]: Structured value returned by this callable.
+        """
         if progress_callback is not None:
             progress_callback(
                 SyncProgressEvent(
@@ -532,6 +811,14 @@ def test_project_sync_service_downloads_files_while_remote_listing_is_still_in_p
 
 
 def test_project_sync_service_rejects_sites_without_remote_connections(tmp_path: Path) -> None:
+    """Verify project sync service rejects sites without remote connections.
+
+    Args:
+        tmp_path (Path): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     service = ProjectSyncService(
         registry=RemoteConnectionRegistry.default_registry(providers=[StubSyncProvider()])
     )
@@ -544,6 +831,14 @@ def test_project_sync_service_rejects_sites_without_remote_connections(tmp_path:
 
 
 def test_project_sync_service_returns_success_for_empty_remote_sources(tmp_path: Path) -> None:
+    """Verify project sync service returns success for empty remote sources.
+
+    Args:
+        tmp_path (Path): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     service = ProjectSyncService(
         registry=RemoteConnectionRegistry.default_registry(
             providers=[StubSyncProvider(remote_files=[], downloaded_bytes={})]
@@ -560,6 +855,14 @@ def test_project_sync_service_returns_success_for_empty_remote_sources(tmp_path:
 def test_project_sync_service_filters_remote_to_local_sync_with_a_resolved_scope(
     tmp_path: Path,
 ) -> None:
+    """Verify project sync service filters remote to local sync with a resolved scope.
+
+    Args:
+        tmp_path (Path): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     local_root = tmp_path / "workspace" / "site"
     provider = StubSyncProvider(
         remote_files=[
@@ -610,6 +913,14 @@ def test_project_sync_service_filters_remote_to_local_sync_with_a_resolved_scope
 def test_project_sync_service_filters_local_to_remote_sync_with_a_resolved_scope(
     tmp_path: Path,
 ) -> None:
+    """Verify project sync service filters local to remote sync with a resolved scope.
+
+    Args:
+        tmp_path (Path): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     local_root = tmp_path / "workspace" / "site"
     (local_root / "locale").mkdir(parents=True)
     (local_root / "templates").mkdir(parents=True)
@@ -647,6 +958,14 @@ def test_project_sync_service_filters_local_to_remote_sync_with_a_resolved_scope
 def test_project_sync_service_uses_the_persisted_filtered_sync_preference(
     tmp_path: Path,
 ) -> None:
+    """Verify project sync service uses the persisted filtered sync preference.
+
+    Args:
+        tmp_path (Path): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     local_root = tmp_path / "workspace" / "site"
     provider = StubSyncProvider(
         remote_files=[
@@ -711,6 +1030,14 @@ def test_project_sync_service_uses_the_persisted_filtered_sync_preference(
 def test_project_sync_service_applies_django_exclusions_during_download(
     tmp_path: Path,
 ) -> None:
+    """Verify project sync service applies django exclusions during download.
+
+    Args:
+        tmp_path (Path): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     local_root = tmp_path / "workspace" / "site"
     provider = StubSyncProvider(
         remote_files=[
@@ -784,6 +1111,14 @@ def test_project_sync_service_applies_django_exclusions_during_download(
 def test_project_sync_service_uses_full_sync_when_the_project_preference_disables_filters(
     tmp_path: Path,
 ) -> None:
+    """Verify project sync service uses full sync when the project preference disables filters.
+
+    Args:
+        tmp_path (Path): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     local_root = tmp_path / "workspace" / "site"
     provider = StubSyncProvider(
         remote_files=[
@@ -833,6 +1168,14 @@ def test_project_sync_service_uses_full_sync_when_the_project_preference_disable
 def test_project_sync_service_uses_the_persisted_filtered_sync_preference_for_uploads(
     tmp_path: Path,
 ) -> None:
+    """Verify project sync service uses the persisted filtered sync preference for uploads.
+
+    Args:
+        tmp_path (Path): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     local_root = tmp_path / "workspace" / "site"
     (local_root / "wp-content" / "themes" / "theme").mkdir(parents=True)
     (local_root / "wp-content" / "themes" / "theme" / "style.css").write_text(
@@ -888,6 +1231,14 @@ def test_project_sync_service_uses_the_persisted_filtered_sync_preference_for_up
 def test_project_sync_service_applies_django_exclusions_during_upload(
     tmp_path: Path,
 ) -> None:
+    """Verify project sync service applies django exclusions during upload.
+
+    Args:
+        tmp_path (Path): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     local_root = tmp_path / "workspace" / "site"
     (local_root / "locale").mkdir(parents=True)
     (local_root / "__pycache__").mkdir(parents=True)
@@ -948,6 +1299,14 @@ def test_project_sync_service_applies_django_exclusions_during_upload(
 def test_project_sync_service_returns_a_controlled_error_when_filtered_sync_scope_is_unavailable(
     tmp_path: Path,
 ) -> None:
+    """Verify project sync service returns a controlled error when filtered sync scope is….
+
+    Args:
+        tmp_path (Path): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     scope_service = StubFrameworkSyncScopeService(
         resolved_scope=ResolvedSyncScope(
             framework_type="unknown",
@@ -987,6 +1346,14 @@ def test_project_sync_service_returns_a_controlled_error_when_filtered_sync_scop
 def test_project_sync_service_returns_a_controlled_error_when_filtered_sync_scope_resolution_fails(
     tmp_path: Path,
 ) -> None:
+    """Verify project sync service returns a controlled error when filtered sync scope….
+
+    Args:
+        tmp_path (Path): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     service = ProjectSyncService(
         registry=RemoteConnectionRegistry.default_registry(providers=[StubSyncProvider()]),
         framework_sync_scope_service=FailingFrameworkSyncScopeService(
@@ -1020,6 +1387,17 @@ def test_project_sync_service_returns_a_controlled_error_when_filtered_sync_scop
 def test_project_sync_service_returns_a_controlled_result_when_incremental_listing_fails(
     tmp_path: Path,
 ) -> None:
+    """Verify project sync service returns a controlled result when incremental listing fails.
+
+    Args:
+        tmp_path (Path): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+
+    Raises:
+        OSError: Raised when this callable hits the corresponding error path.
+    """
     provider = StubSyncProvider(
         downloaded_bytes={"/srv/app/locale/es.po": b'msgid "hello"\n'},
     )
@@ -1028,6 +1406,19 @@ def test_project_sync_service_returns_a_controlled_result_when_incremental_listi
         config: RemoteConnectionConfig,
         progress_callback: Callable[[SyncProgressEvent], None] | None = None,
     ) -> Iterable[RemoteSyncFile]:
+        """Handle iter remote files.
+
+        Args:
+            config (RemoteConnectionConfig): Value supplied to this callable.
+            progress_callback (Callable[[SyncProgressEvent], None] | None): Value supplied to this
+        callable.
+
+        Returns:
+            Iterable[RemoteSyncFile]: Structured value returned by this callable.
+
+        Raises:
+            OSError: Raised when this callable hits the corresponding error path.
+        """
         yield RemoteSyncFile(
             remote_path="/srv/app/locale/es.po",
             relative_path="locale/es.po",
@@ -1053,6 +1444,17 @@ def test_project_sync_service_returns_a_controlled_result_when_incremental_listi
 def test_project_sync_service_returns_a_controlled_result_when_incremental_listing_hits_a_missing_dependency(  # noqa: E501
     tmp_path: Path,
 ) -> None:
+    """Verify project sync service returns a controlled result when incremental listing hits….
+
+    Args:
+        tmp_path (Path): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+
+    Raises:
+        ModuleNotFoundError: Raised when this callable hits the corresponding error path.
+    """
     provider = StubSyncProvider(
         downloaded_bytes={"/srv/app/locale/es.po": b'msgid "hello"\n'},
     )
@@ -1061,6 +1463,19 @@ def test_project_sync_service_returns_a_controlled_result_when_incremental_listi
         config: RemoteConnectionConfig,
         progress_callback: Callable[[SyncProgressEvent], None] | None = None,
     ) -> Iterable[RemoteSyncFile]:
+        """Handle iter remote files.
+
+        Args:
+            config (RemoteConnectionConfig): Value supplied to this callable.
+            progress_callback (Callable[[SyncProgressEvent], None] | None): Value supplied to this
+        callable.
+
+        Returns:
+            Iterable[RemoteSyncFile]: Structured value returned by this callable.
+
+        Raises:
+            ModuleNotFoundError: Raised when this callable hits the corresponding error path.
+        """
         yield RemoteSyncFile(
             remote_path="/srv/app/locale/es.po",
             relative_path="locale/es.po",
@@ -1086,6 +1501,14 @@ def test_project_sync_service_returns_a_controlled_result_when_incremental_listi
 def test_project_sync_service_returns_a_controlled_result_when_listing_fails(
     tmp_path: Path,
 ) -> None:
+    """Verify project sync service returns a controlled result when listing fails.
+
+    Args:
+        tmp_path (Path): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     service = ProjectSyncService(
         registry=RemoteConnectionRegistry.default_registry(
             providers=[StubSyncProvider(fail_on_list=True)]
@@ -1106,12 +1529,37 @@ def test_project_sync_service_returns_a_controlled_result_when_listing_fails(
 def test_project_sync_service_preserves_specific_remote_listing_error_codes(
     tmp_path: Path,
 ) -> None:
+    """Verify project sync service preserves specific remote listing error codes.
+
+    Args:
+        tmp_path (Path): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+
+    Raises:
+        RemoteConnectionOperationError: Raised when this callable hits the corresponding error path.
+    """
     provider = StubSyncProvider()
 
     def _iter_remote_files(
         config: RemoteConnectionConfig,
         progress_callback: Callable[[SyncProgressEvent], None] | None = None,
     ) -> Iterable[RemoteSyncFile]:
+        """Handle iter remote files.
+
+        Args:
+            config (RemoteConnectionConfig): Value supplied to this callable.
+            progress_callback (Callable[[SyncProgressEvent], None] | None): Value supplied to this
+        callable.
+
+        Returns:
+            Iterable[RemoteSyncFile]: Structured value returned by this callable.
+
+        Raises:
+            RemoteConnectionOperationError: Raised when this callable hits the corresponding error
+        path.
+        """
         raise RemoteConnectionOperationError(
             error_code="dns_resolution_failed",
             message="Temporary failure in name resolution",
@@ -1133,6 +1581,14 @@ def test_project_sync_service_preserves_specific_remote_listing_error_codes(
 def test_project_sync_service_returns_a_controlled_result_when_a_download_fails(
     tmp_path: Path,
 ) -> None:
+    """Verify project sync service returns a controlled result when a download fails.
+
+    Args:
+        tmp_path (Path): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     service = ProjectSyncService(
         registry=RemoteConnectionRegistry.default_registry(
             providers=[
@@ -1166,6 +1622,17 @@ def test_project_sync_service_returns_a_controlled_result_when_a_download_fails(
 def test_project_sync_service_preserves_specific_download_error_codes(
     tmp_path: Path,
 ) -> None:
+    """Verify project sync service preserves specific download error codes.
+
+    Args:
+        tmp_path (Path): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+
+    Raises:
+        RemoteConnectionOperationError: Raised when this callable hits the corresponding error path.
+    """
     remote_path = "/srv/app/locale/es.po"
     provider = StubSyncProvider(
         remote_files=[
@@ -1183,6 +1650,21 @@ def test_project_sync_service_preserves_specific_download_error_codes(
         remote_path: str,
         progress_callback: Callable[[SyncProgressEvent], None] | None = None,
     ) -> bytes:
+        """Handle download file.
+
+        Args:
+            config (RemoteConnectionConfig): Value supplied to this callable.
+            remote_path (str): Value supplied to this callable.
+            progress_callback (Callable[[SyncProgressEvent], None] | None): Value supplied to this
+        callable.
+
+        Returns:
+            bytes: Structured value returned by this callable.
+
+        Raises:
+            RemoteConnectionOperationError: Raised when this callable hits the corresponding error
+        path.
+        """
         raise RemoteConnectionOperationError(
             error_code="authentication_failed",
             message="Authentication failed",
@@ -1203,6 +1685,11 @@ def test_project_sync_service_preserves_specific_download_error_codes(
 
 
 def test_project_sync_service_emit_failure_ignores_success_results() -> None:
+    """Verify project sync service emit failure ignores success results.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     service = ProjectSyncService(
         registry=RemoteConnectionRegistry.default_registry(providers=[StubSyncProvider()])
     )
@@ -1232,6 +1719,14 @@ def test_project_sync_service_emit_failure_ignores_success_results() -> None:
 def test_project_sync_service_returns_a_controlled_result_when_local_workspace_fails(
     tmp_path: Path,
 ) -> None:
+    """Verify project sync service returns a controlled result when local workspace fails.
+
+    Args:
+        tmp_path (Path): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     service = ProjectSyncService(
         registry=RemoteConnectionRegistry.default_registry(providers=[StubSyncProvider()]),
         local_workspace=cast(LocalSyncWorkspace, _FailingWorkspace()),
@@ -1251,6 +1746,14 @@ def test_project_sync_service_returns_a_controlled_result_when_local_workspace_f
 def test_project_sync_service_returns_a_controlled_result_for_unsupported_connections(
     tmp_path: Path,
 ) -> None:
+    """Verify project sync service returns a controlled result for unsupported connections.
+
+    Args:
+        tmp_path (Path): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     service = ProjectSyncService(
         registry=RemoteConnectionRegistry.default_registry(providers=[StubSyncProvider()])
     )
@@ -1279,6 +1782,14 @@ def test_project_sync_service_returns_a_controlled_result_for_unsupported_connec
 def test_project_sync_service_returns_missing_dependency_when_listing_requires_it(
     tmp_path: Path,
 ) -> None:
+    """Verify project sync service returns missing dependency when listing requires it.
+
+    Args:
+        tmp_path (Path): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     service = ProjectSyncService(
         registry=RemoteConnectionRegistry.default_registry(
             providers=[StubSyncProvider(missing_dependency_on_list=True)]
@@ -1295,6 +1806,14 @@ def test_project_sync_service_returns_missing_dependency_when_listing_requires_i
 def test_project_sync_service_returns_missing_dependency_when_download_requires_it(
     tmp_path: Path,
 ) -> None:
+    """Verify project sync service returns missing dependency when download requires it.
+
+    Args:
+        tmp_path (Path): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     remote_path = "/srv/app/locale/es.po"
     service = ProjectSyncService(
         registry=RemoteConnectionRegistry.default_registry(
@@ -1325,6 +1844,14 @@ def test_project_sync_service_returns_missing_dependency_when_download_requires_
 def test_project_sync_service_returns_controlled_error_when_session_open_fails(
     tmp_path: Path,
 ) -> None:
+    """Verify project sync service returns controlled error when session open fails.
+
+    Args:
+        tmp_path (Path): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     provider = StubSyncProvider(
         open_session_error=RemoteConnectionOperationError(
             error_code="connection_timeout",
@@ -1345,6 +1872,14 @@ def test_project_sync_service_returns_controlled_error_when_session_open_fails(
 def test_project_sync_service_emits_failure_when_local_to_remote_scope_resolution_fails(
     tmp_path: Path,
 ) -> None:
+    """Verify project sync service emits failure when local to remote scope resolution fails.
+
+    Args:
+        tmp_path (Path): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     local_root = tmp_path / "workspace" / "site"
     local_root.mkdir(parents=True)
     service = ProjectSyncService(
@@ -1384,6 +1919,14 @@ def test_project_sync_service_emits_failure_when_local_to_remote_scope_resolutio
 def test_project_sync_service_emits_provider_failure_for_local_to_remote_sync(
     tmp_path: Path,
 ) -> None:
+    """Verify project sync service emits provider failure for local to remote sync.
+
+    Args:
+        tmp_path (Path): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     local_root = tmp_path / "workspace" / "site"
     local_root.mkdir(parents=True)
     service = ProjectSyncService(registry=RemoteConnectionRegistry.default_registry(providers=[]))
@@ -1403,6 +1946,17 @@ def test_project_sync_service_emits_provider_failure_for_local_to_remote_sync(
 def test_project_sync_service_handles_incremental_remote_listing_operation_errors(
     tmp_path: Path,
 ) -> None:
+    """Verify project sync service handles incremental remote listing operation errors.
+
+    Args:
+        tmp_path (Path): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+
+    Raises:
+        RemoteConnectionOperationError: Raised when this callable hits the corresponding error path.
+    """
     first_remote_file = RemoteSyncFile(
         remote_path="/srv/app/locale/es.po",
         relative_path="locale/es.po",
@@ -1413,6 +1967,20 @@ def test_project_sync_service_handles_incremental_remote_listing_operation_error
         config: RemoteConnectionConfig,
         progress_callback: Callable[[SyncProgressEvent], None] | None = None,
     ) -> Iterable[RemoteSyncFile]:
+        """Handle iter remote files.
+
+        Args:
+            config (RemoteConnectionConfig): Value supplied to this callable.
+            progress_callback (Callable[[SyncProgressEvent], None] | None): Value supplied to this
+        callable.
+
+        Returns:
+            Iterable[RemoteSyncFile]: Structured value returned by this callable.
+
+        Raises:
+            RemoteConnectionOperationError: Raised when this callable hits the corresponding error
+        path.
+        """
         yield first_remote_file
         raise RemoteConnectionOperationError(
             error_code="transport_io_failed",
@@ -1439,6 +2007,14 @@ def test_project_sync_service_handles_incremental_remote_listing_operation_error
 def test_project_sync_service_reports_remote_session_close_operation_errors(
     tmp_path: Path,
 ) -> None:
+    """Verify project sync service reports remote session close operation errors.
+
+    Args:
+        tmp_path (Path): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     provider = StubSyncProvider(
         remote_files=[],
         close_error=RemoteConnectionOperationError(
@@ -1463,6 +2039,14 @@ def test_project_sync_service_reports_remote_session_close_operation_errors(
 def test_project_sync_service_reports_remote_session_close_os_errors(
     tmp_path: Path,
 ) -> None:
+    """Verify project sync service reports remote session close os errors.
+
+    Args:
+        tmp_path (Path): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     provider = StubSyncProvider(remote_files=[], close_error=OSError("Socket closed."))
     service = ProjectSyncService(
         registry=RemoteConnectionRegistry.default_registry(providers=[provider])
@@ -1481,6 +2065,14 @@ def test_project_sync_service_reports_remote_session_close_os_errors(
 def test_project_sync_service_raises_if_provider_resolution_returns_none(
     tmp_path: Path,
 ) -> None:
+    """Verify project sync service raises if provider resolution returns none.
+
+    Args:
+        tmp_path (Path): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     service = ProjectSyncService(
         registry=RemoteConnectionRegistry.default_registry(providers=[StubSyncProvider()])
     )
@@ -1498,6 +2090,14 @@ def test_project_sync_service_raises_if_provider_resolution_returns_none(
 def test_project_sync_service_raises_if_local_upload_provider_resolution_returns_none(
     tmp_path: Path,
 ) -> None:
+    """Verify project sync service raises if local upload provider resolution returns none.
+
+    Args:
+        tmp_path (Path): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     local_root = tmp_path / "workspace" / "site"
     (local_root / "locale").mkdir(parents=True)
     (local_root / "locale" / "es.po").write_bytes(b"a")
@@ -1518,6 +2118,14 @@ def test_project_sync_service_raises_if_local_upload_provider_resolution_returns
 def test_project_sync_service_uploads_local_files_into_the_remote_workspace(
     tmp_path: Path,
 ) -> None:
+    """Verify project sync service uploads local files into the remote workspace.
+
+    Args:
+        tmp_path (Path): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     local_root = tmp_path / "workspace" / "site"
     (local_root / "locale").mkdir(parents=True)
     (local_root / "templates").mkdir(parents=True)
@@ -1543,6 +2151,14 @@ def test_project_sync_service_uploads_local_files_into_the_remote_workspace(
 def test_project_sync_service_reports_progress_commands_for_local_to_remote_execution(
     tmp_path: Path,
 ) -> None:
+    """Verify project sync service reports progress commands for local to remote execution.
+
+    Args:
+        tmp_path (Path): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     local_root = tmp_path / "workspace" / "site"
     (local_root / "locale").mkdir(parents=True)
     (local_root / "locale" / "es.po").write_bytes(b'msgid "hola"\n')
@@ -1570,6 +2186,14 @@ def test_project_sync_service_reports_progress_commands_for_local_to_remote_exec
 def test_project_sync_service_reuses_a_single_remote_session_for_a_multi_file_local_upload(
     tmp_path: Path,
 ) -> None:
+    """Verify project sync service reuses a single remote session for a multi file local upload.
+
+    Args:
+        tmp_path (Path): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     local_root = tmp_path / "workspace" / "site"
     (local_root / "locale").mkdir(parents=True)
     (local_root / "templates").mkdir(parents=True)
@@ -1596,6 +2220,14 @@ def test_project_sync_service_reuses_a_single_remote_session_for_a_multi_file_lo
 def test_project_sync_service_rejects_local_to_remote_sync_without_remote_connections(
     tmp_path: Path,
 ) -> None:
+    """Verify project sync service rejects local to remote sync without remote connections.
+
+    Args:
+        tmp_path (Path): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     service = ProjectSyncService(
         registry=RemoteConnectionRegistry.default_registry(providers=[StubSyncProvider()])
     )
@@ -1608,6 +2240,14 @@ def test_project_sync_service_rejects_local_to_remote_sync_without_remote_connec
 
 
 def test_project_sync_service_returns_success_for_empty_local_sources(tmp_path: Path) -> None:
+    """Verify project sync service returns success for empty local sources.
+
+    Args:
+        tmp_path (Path): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     local_root = tmp_path / "workspace" / "site"
     local_root.mkdir(parents=True)
     service = ProjectSyncService(
@@ -1624,6 +2264,14 @@ def test_project_sync_service_returns_success_for_empty_local_sources(tmp_path: 
 def test_project_sync_service_returns_a_controlled_result_when_local_listing_fails(
     tmp_path: Path,
 ) -> None:
+    """Verify project sync service returns a controlled result when local listing fails.
+
+    Args:
+        tmp_path (Path): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     occupied_path = tmp_path / "not-a-directory"
     occupied_path.write_text("occupied", encoding="utf-8")
     service = ProjectSyncService(
@@ -1640,6 +2288,14 @@ def test_project_sync_service_returns_a_controlled_result_when_local_listing_fai
 def test_project_sync_service_returns_a_controlled_result_when_local_upload_session_open_fails(
     tmp_path: Path,
 ) -> None:
+    """Verify project sync service returns a controlled result when local upload session open….
+
+    Args:
+        tmp_path (Path): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     local_root = tmp_path / "workspace" / "site"
     (local_root / "locale").mkdir(parents=True)
     (local_root / "locale" / "es.po").write_bytes(b'msgid "hola"\n')
@@ -1666,6 +2322,14 @@ def test_project_sync_service_returns_a_controlled_result_when_local_upload_sess
 def test_project_sync_service_returns_a_controlled_result_when_a_remote_upload_fails(
     tmp_path: Path,
 ) -> None:
+    """Verify project sync service returns a controlled result when a remote upload fails.
+
+    Args:
+        tmp_path (Path): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     local_root = tmp_path / "workspace" / "site"
     (local_root / "locale").mkdir(parents=True)
     (local_root / "locale" / "es.po").write_bytes(b'msgid "hola"\n')
@@ -1685,6 +2349,17 @@ def test_project_sync_service_returns_a_controlled_result_when_a_remote_upload_f
 def test_project_sync_service_returns_a_controlled_result_when_structured_remote_upload_fails(
     tmp_path: Path,
 ) -> None:
+    """Verify project sync service returns a controlled result when structured remote upload….
+
+    Args:
+        tmp_path (Path): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+
+    Raises:
+        RemoteConnectionOperationError: Raised when this callable hits the corresponding error path.
+    """
     local_root = tmp_path / "workspace" / "site"
     (local_root / "locale").mkdir(parents=True)
     (local_root / "locale" / "es.po").write_bytes(b'msgid "hola"\n')
@@ -1696,6 +2371,22 @@ def test_project_sync_service_returns_a_controlled_result_when_structured_remote
         _contents: bytes,
         _progress_callback: Callable[[SyncProgressEvent], None] | None,
     ) -> None:
+        """Handle fail upload.
+
+        Args:
+            _config (RemoteConnectionConfig): Value supplied to this callable.
+            remote_path (str): Value supplied to this callable.
+            _contents (bytes): Value supplied to this callable.
+            _progress_callback (Callable[[SyncProgressEvent], None] | None): Value supplied to this
+            callable.
+
+        Returns:
+            None: This callable does not return a value.
+
+        Raises:
+            RemoteConnectionOperationError: Raised when this callable hits the corresponding error
+        path.
+        """
         raise RemoteConnectionOperationError(
             error_code="upload_failed",
             message=f"Structured upload failure for {remote_path}.",
@@ -1716,6 +2407,14 @@ def test_project_sync_service_returns_a_controlled_result_when_structured_remote
 def test_project_sync_service_returns_a_controlled_result_when_remote_directory_creation_fails(
     tmp_path: Path,
 ) -> None:
+    """Verify project sync service returns a controlled result when remote directory creation….
+
+    Args:
+        tmp_path (Path): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     local_root = tmp_path / "workspace" / "site"
     (local_root / "locale").mkdir(parents=True)
     (local_root / "locale" / "es.po").write_bytes(b'msgid "hola"\n')
@@ -1735,6 +2434,17 @@ def test_project_sync_service_returns_a_controlled_result_when_remote_directory_
 def test_project_sync_service_returns_a_controlled_result_when_remote_directory_(
     tmp_path: Path,
 ) -> None:
+    """Verify project sync service returns a controlled result when remote directory.
+
+    Args:
+        tmp_path (Path): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+
+    Raises:
+        RemoteConnectionOperationError: Raised when this callable hits the corresponding error path.
+    """
     local_root = tmp_path / "workspace" / "site"
     (local_root / "locale").mkdir(parents=True)
     (local_root / "locale" / "es.po").write_bytes(b'msgid "hola"\n')
@@ -1745,6 +2455,21 @@ def test_project_sync_service_returns_a_controlled_result_when_remote_directory_
         remote_path: str,
         _progress_callback: Callable[[SyncProgressEvent], None] | None,
     ) -> int:
+        """Handle fail mkdir.
+
+        Args:
+            _config (RemoteConnectionConfig): Value supplied to this callable.
+            remote_path (str): Value supplied to this callable.
+            _progress_callback (Callable[[SyncProgressEvent], None] | None): Value supplied to this
+            callable.
+
+        Returns:
+            int: Structured value returned by this callable.
+
+        Raises:
+            RemoteConnectionOperationError: Raised when this callable hits the corresponding error
+        path.
+        """
         raise RemoteConnectionOperationError(
             error_code="remote_directory_failed",
             message=f"Structured mkdir failure for {remote_path}.",
@@ -1765,6 +2490,14 @@ def test_project_sync_service_returns_a_controlled_result_when_remote_directory_
 def test_project_sync_service_skips_local_uploads_excluded_by_scope(
     tmp_path: Path,
 ) -> None:
+    """Verify project sync service skips local uploads excluded by scope.
+
+    Args:
+        tmp_path (Path): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     local_root = tmp_path / "workspace" / "site"
     (local_root / "locale").mkdir(parents=True)
     (local_root / "templates").mkdir(parents=True)
@@ -1816,6 +2549,15 @@ def test_project_sync_service_continues_when_scope_excludes_a_local_file(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
+    """Verify project sync service continues when scope excludes a local file.
+
+    Args:
+        monkeypatch (pytest.MonkeyPatch): Value supplied to this callable.
+        tmp_path (Path): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     local_root = tmp_path / "workspace" / "site"
     local_root.mkdir(parents=True)
     (local_root / "skip.txt").write_bytes(b"a")
@@ -1844,6 +2586,15 @@ def test_project_sync_service_continues_when_scope_excludes_a_local_file(
     )
 
     def _scope_includes(scope: ResolvedSyncScope | None, relative_path: str) -> bool:
+        """Handle scope includes.
+
+        Args:
+            scope (ResolvedSyncScope | None): Value supplied to this callable.
+            relative_path (str): Value supplied to this callable.
+
+        Returns:
+            bool: Structured value returned by this callable.
+        """
         scope_calls.append(relative_path)
         return relative_path == "keep.txt"
 
@@ -1866,6 +2617,11 @@ def test_project_sync_service_continues_when_scope_excludes_a_local_file(
 
 
 def test_project_sync_service_joins_remote_sync_path_at_root() -> None:
+    """Verify project sync service joins remote sync path at root.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     assert _join_remote_sync_path("/", "locale/es.po") == "/locale/es.po"
 
 
@@ -1875,6 +2631,16 @@ def _build_site(
     framework_type: str = "wordpress",
     remote_connection: RemoteConnectionConfig | None | object = _DEFAULT_REMOTE,
 ) -> RegisteredSite:
+    """Handle build site.
+
+    Args:
+        local_root (Path): Value supplied to this callable.
+        framework_type (str): Value supplied to this callable.
+        remote_connection (RemoteConnectionConfig | None | object): Value supplied to this callable.
+
+    Returns:
+        RegisteredSite: Structured value returned by this callable.
+    """
     resolved_remote_connection: RemoteConnectionConfig | None
     if remote_connection is _DEFAULT_REMOTE:
         resolved_remote_connection = RemoteConnectionConfig(
@@ -1903,10 +2669,39 @@ def _build_site(
 
 
 class _FailingWorkspace:
+    """Test helper for FailingWorkspace.
+
+    Attributes:
+        None: This type does not declare additional class-level attributes.
+    """
+
     def ensure_directory(self, path: Path) -> int:
+        """Handle ensure directory.
+
+        Args:
+            path (Path): Value supplied to this callable.
+
+        Returns:
+            int: Structured value returned by this callable.
+
+        Raises:
+            OSError: Raised when this callable hits the corresponding error path.
+        """
         msg = "workspace unavailable"
         raise OSError(msg)
 
     def write_file(self, target_path: Path, contents: bytes) -> None:
+        """Handle write file.
+
+        Args:
+            target_path (Path): Value supplied to this callable.
+            contents (bytes): Value supplied to this callable.
+
+        Returns:
+            None: This callable does not return a value.
+
+        Raises:
+            AssertionError: Raised when this callable hits the corresponding error path.
+        """
         msg = f"write_file should not be called for {target_path}"
         raise AssertionError(msg)

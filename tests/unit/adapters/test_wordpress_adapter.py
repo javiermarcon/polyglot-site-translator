@@ -9,6 +9,14 @@ from polyglot_site_translator.domain.sync.scope import SyncFilterType
 
 
 def test_wordpress_adapter_detects_a_typical_wordpress_layout(tmp_path: Path) -> None:
+    """Verify wordpress adapter detects a typical wordpress layout.
+
+    Args:
+        tmp_path (Path): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     (tmp_path / "wp-config.php").write_text("<?php\n", encoding="utf-8")
     (tmp_path / "wp-content").mkdir()
     (tmp_path / "wp-includes").mkdir()
@@ -22,6 +30,14 @@ def test_wordpress_adapter_detects_a_typical_wordpress_layout(tmp_path: Path) ->
 
 
 def test_wordpress_adapter_returns_unmatched_for_generic_projects(tmp_path: Path) -> None:
+    """Verify wordpress adapter returns unmatched for generic projects.
+
+    Args:
+        tmp_path (Path): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     (tmp_path / "src").mkdir()
 
     result = WordPressFrameworkAdapter().detect(tmp_path)
@@ -31,6 +47,14 @@ def test_wordpress_adapter_returns_unmatched_for_generic_projects(tmp_path: Path
 
 
 def test_wordpress_adapter_reports_partial_evidence_without_matching(tmp_path: Path) -> None:
+    """Verify wordpress adapter reports partial evidence without matching.
+
+    Args:
+        tmp_path (Path): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     (tmp_path / "wp-content").mkdir()
 
     result = WordPressFrameworkAdapter().detect(tmp_path)
@@ -41,6 +65,14 @@ def test_wordpress_adapter_reports_partial_evidence_without_matching(tmp_path: P
 
 
 def test_wordpress_adapter_includes_wp_admin_when_present(tmp_path: Path) -> None:
+    """Verify wordpress adapter includes wp admin when present.
+
+    Args:
+        tmp_path (Path): Value supplied to this callable.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     (tmp_path / "wp-content").mkdir()
     (tmp_path / "wp-includes").mkdir()
     (tmp_path / "wp-admin").mkdir()
@@ -52,6 +84,11 @@ def test_wordpress_adapter_includes_wp_admin_when_present(tmp_path: Path) -> Non
 
 
 def test_wordpress_adapter_exposes_sync_filters() -> None:
+    """Verify wordpress adapter exposes sync filters.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     scope = WordPressFrameworkAdapter().get_sync_scope(Path("/workspace/site"))
 
     assert [sync_filter.relative_path for sync_filter in scope.filters] == [

@@ -32,7 +32,11 @@ from polyglot_site_translator.services.remote_connections import RemoteConnectio
 
 
 class SiteRegistryService:
-    """Orchestrate site registry validation and CRUD workflows."""
+    """Orchestrate site registry validation and CRUD workflows.
+
+    Attributes:
+        None: This type does not declare additional class-level attributes.
+    """
 
     def __init__(
         self,
@@ -40,12 +44,31 @@ class SiteRegistryService:
         framework_detection_service: FrameworkDetectionService | None = None,
         remote_connection_service: RemoteConnectionService | None = None,
     ) -> None:
+        """Store persistence and optional helper services used by registry workflows.
+
+        Args:
+            repository (SiteRegistryRepository): Value supplied to this callable.
+            framework_detection_service (FrameworkDetectionService | None): Value supplied to this
+        callable.
+            remote_connection_service (RemoteConnectionService | None): Value supplied to this
+        callable.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         self._repository = repository
         self._framework_detection_service = framework_detection_service
         self._remote_connection_service = remote_connection_service
 
     def create_site(self, registration: SiteRegistrationInput) -> RegisteredSite:
-        """Validate and create a new site registry record."""
+        """Validate and create a new site registry record.
+
+        Args:
+            registration (SiteRegistrationInput): Value supplied to this callable.
+
+        Returns:
+            RegisteredSite: Structured value returned by this callable.
+        """
         site_id = f"site-{uuid4().hex}"
         return self._repository.create_site(
             RegisteredSite(
@@ -76,11 +99,22 @@ class SiteRegistryService:
         )
 
     def list_sites(self) -> list[RegisteredSite]:
-        """Return persisted site registry records."""
+        """Return persisted site registry records.
+
+        Returns:
+            list[RegisteredSite]: Structured value returned by this callable.
+        """
         return self._repository.list_sites()
 
     def get_site(self, site_id: str) -> RegisteredSite:
-        """Return a persisted site registry record."""
+        """Return a persisted site registry record.
+
+        Args:
+            site_id (str): Value supplied to this callable.
+
+        Returns:
+            RegisteredSite: Structured value returned by this callable.
+        """
         return self._repository.get_site(site_id)
 
     def update_site(
@@ -89,7 +123,15 @@ class SiteRegistryService:
         site_id: str,
         registration: SiteRegistrationInput,
     ) -> RegisteredSite:
-        """Validate and update an existing site registry record."""
+        """Validate and update an existing site registry record.
+
+        Args:
+            site_id (str): Value supplied to this callable.
+            registration (SiteRegistrationInput): Value supplied to this callable.
+
+        Returns:
+            RegisteredSite: Structured value returned by this callable.
+        """
         existing_site = self._repository.get_site(site_id)
         return self._repository.update_site(
             RegisteredSite(
@@ -120,11 +162,25 @@ class SiteRegistryService:
         )
 
     def delete_site(self, site_id: str) -> None:
-        """Delete a persisted site registry record."""
+        """Delete a persisted site registry record.
+
+        Args:
+            site_id (str): Value supplied to this callable.
+
+        Returns:
+            None: This callable does not return a value.
+        """
         self._repository.delete_site(site_id)
 
     def detect_framework(self, project_path: str) -> FrameworkDetectionResult:
-        """Return the current framework detection result for a local path."""
+        """Return the current framework detection result for a local path.
+
+        Args:
+            project_path (str): Value supplied to this callable.
+
+        Returns:
+            FrameworkDetectionResult: Structured value returned by this callable.
+        """
         if self._framework_detection_service is None:
             return FrameworkDetectionResult.unmatched(
                 project_path=project_path,
@@ -133,19 +189,34 @@ class SiteRegistryService:
         return self._framework_detection_service.detect_project(Path(project_path))
 
     def list_supported_frameworks(self) -> list[FrameworkDescriptor]:
-        """Return framework metadata from the configured detection service."""
+        """Return framework metadata from the configured detection service.
+
+        Returns:
+            list[FrameworkDescriptor]: Structured value returned by this callable.
+        """
         if self._framework_detection_service is None:
             return [unknown_framework_descriptor()]
         return self._framework_detection_service.list_supported_frameworks()
 
     def list_supported_connection_types(self) -> list[RemoteConnectionTypeDescriptor]:
-        """Return the discoverable remote connection catalog."""
+        """Return the discoverable remote connection catalog.
+
+        Returns:
+            list[RemoteConnectionTypeDescriptor]: Structured value returned by this callable.
+        """
         if self._remote_connection_service is None:
             return []
         return self._remote_connection_service.list_supported_connection_types()
 
     def can_test_remote_connection(self, registration: SiteRegistrationInput) -> bool:
-        """Return whether the given registration has a complete remote config."""
+        """Return whether the given registration has a complete remote config.
+
+        Args:
+            registration (SiteRegistrationInput): Value supplied to this callable.
+
+        Returns:
+            bool: Structured value returned by this callable.
+        """
         if self._remote_connection_service is None:
             return False
         return self._remote_connection_service.can_test_connection(registration.remote_connection)
@@ -154,7 +225,18 @@ class SiteRegistryService:
         self,
         registration: SiteRegistrationInput,
     ) -> RemoteConnectionTestResult:
-        """Validate and test a remote connection draft without persisting it."""
+        """Validate and test a remote connection draft without persisting it.
+
+        Args:
+            registration (SiteRegistrationInput): Value supplied to this callable.
+
+        Returns:
+            RemoteConnectionTestResult: Structured value returned by this callable.
+
+        Raises:
+            SiteRegistryValidationError: Raised when this callable hits the corresponding error
+        path.
+        """
         if self._remote_connection_service is None:
             msg = "Remote connection testing is not configured."
             raise SiteRegistryValidationError(msg)
@@ -168,6 +250,18 @@ class SiteRegistryService:
 
 
 def _require_text(value: str, label: str) -> str:
+    """Validate and return text.
+
+    Args:
+        value (str): Value supplied to this callable.
+        label (str): Value supplied to this callable.
+
+    Returns:
+        str: Structured value returned by this callable.
+
+    Raises:
+        SiteRegistryValidationError: Raised when this callable hits the corresponding error path.
+    """
     normalized_value = value.strip()
     if normalized_value:
         return normalized_value
@@ -180,6 +274,16 @@ def _resolve_framework_type(
     registration: SiteRegistrationInput,
     framework_detection_service: FrameworkDetectionService | None,
 ) -> str:
+    """Resolve framework type.
+
+    Args:
+        registration (SiteRegistrationInput): Value supplied to this callable.
+        framework_detection_service (FrameworkDetectionService | None): Value supplied to this
+    callable.
+
+    Returns:
+        str: Structured value returned by this callable.
+    """
     provided_framework_type = _require_text(registration.framework_type, "Framework type")
     if framework_detection_service is None:
         return provided_framework_type
@@ -195,6 +299,16 @@ def _resolve_remote_connection(
     registration: SiteRegistrationInput,
     remote_connection_service: RemoteConnectionService | None,
 ) -> RemoteConnectionConfig | None:
+    """Resolve remote connection.
+
+    Args:
+        site_project_id (str): Value supplied to this callable.
+        registration (SiteRegistrationInput): Value supplied to this callable.
+        remote_connection_service (RemoteConnectionService | None): Value supplied to this callable.
+
+    Returns:
+        RemoteConnectionConfig | None: Structured value returned by this callable.
+    """
     if remote_connection_service is None:
         return None
     validated_config = remote_connection_service.validate_optional_config(

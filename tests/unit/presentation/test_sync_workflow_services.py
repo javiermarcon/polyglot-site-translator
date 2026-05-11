@@ -35,16 +35,42 @@ from polyglot_site_translator.presentation.site_registry_services import (
 
 @dataclass
 class _ServiceStub:
+    """Test helper for ServiceStub.
+
+    Attributes:
+        site (RegisteredSite): Documented attribute exposed by this type.
+        missing (bool): Documented attribute exposed by this type.
+    """
+
     site: RegisteredSite
     missing: bool = False
 
     def get_site(self, site_id: str) -> RegisteredSite:
+        """Handle get site.
+
+        Args:
+            site_id (str): Value supplied to this callable.
+
+        Returns:
+            RegisteredSite: Structured value returned by this callable.
+
+        Raises:
+            SiteRegistryNotFoundError: Raised when this callable hits the corresponding error path.
+        """
         if self.missing:
             msg = f"Unknown site id: {site_id}"
             raise SiteRegistryNotFoundError(msg)
         return self.site
 
     def detect_framework(self, project_path: str) -> FrameworkDetectionResult:
+        """Handle detect framework.
+
+        Args:
+            project_path (str): Value supplied to this callable.
+
+        Returns:
+            FrameworkDetectionResult: Structured value returned by this callable.
+        """
         return FrameworkDetectionResult.unmatched(
             project_path=project_path,
             warnings=["Framework detection is not used in this sync workflow test."],
@@ -54,6 +80,14 @@ class _ServiceStub:
     def test_remote_connection(
         registration: SiteRegistrationInput,
     ) -> RemoteConnectionTestResult:
+        """Verify remote connection.
+
+        Args:
+            registration (SiteRegistrationInput): Value supplied to this callable.
+
+        Returns:
+            RemoteConnectionTestResult: Structured value returned by this callable.
+        """
         return RemoteConnectionTestResult(
             success=True,
             connection_type=registration.remote_connection.connection_type
@@ -72,6 +106,12 @@ class _ServiceStub:
 
 @dataclass
 class _ProjectSyncStub:
+    """Test helper for ProjectSyncStub.
+
+    Attributes:
+        result (SyncResult): Documented attribute exposed by this type.
+    """
+
     result: SyncResult
 
     def sync_remote_to_local(
@@ -79,6 +119,16 @@ class _ProjectSyncStub:
         site: RegisteredSite,
         progress_callback: Callable[[SyncProgressEvent], None] | None = None,
     ) -> SyncResult:
+        """Handle sync remote to local.
+
+        Args:
+            site (RegisteredSite): Value supplied to this callable.
+            progress_callback (Callable[[SyncProgressEvent], None] | None): Value supplied to this
+        callable.
+
+        Returns:
+            SyncResult: Structured value returned by this callable.
+        """
         return self.result
 
     def sync_local_to_remote(
@@ -86,10 +136,25 @@ class _ProjectSyncStub:
         site: RegisteredSite,
         progress_callback: Callable[[SyncProgressEvent], None] | None = None,
     ) -> SyncResult:
+        """Handle sync local to remote.
+
+        Args:
+            site (RegisteredSite): Value supplied to this callable.
+            progress_callback (Callable[[SyncProgressEvent], None] | None): Value supplied to this
+        callable.
+
+        Returns:
+            SyncResult: Structured value returned by this callable.
+        """
         return self.result
 
 
 def test_sync_workflow_service_maps_successful_sync_results() -> None:
+    """Verify sync workflow service maps successful sync results.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     workflow = SiteRegistryPresentationWorkflowService(
         service=_ServiceStub(site=_build_site()),
         project_sync_service=_ProjectSyncStub(
@@ -119,6 +184,11 @@ def test_sync_workflow_service_maps_successful_sync_results() -> None:
 
 
 def test_sync_workflow_service_maps_empty_remote_results() -> None:
+    """Verify sync workflow service maps empty remote results.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     workflow = SiteRegistryPresentationWorkflowService(
         service=_ServiceStub(site=_build_site()),
         project_sync_service=_ProjectSyncStub(
@@ -147,6 +217,11 @@ def test_sync_workflow_service_maps_empty_remote_results() -> None:
 
 
 def test_sync_workflow_service_maps_controlled_failures() -> None:
+    """Verify sync workflow service maps controlled failures.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     workflow = SiteRegistryPresentationWorkflowService(
         service=_ServiceStub(site=_build_site()),
         project_sync_service=_ProjectSyncStub(
@@ -181,6 +256,11 @@ def test_sync_workflow_service_maps_controlled_failures() -> None:
 
 
 def test_sync_workflow_service_uses_context_when_failure_has_no_error() -> None:
+    """Verify sync workflow service uses context when failure has no error.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     workflow = SiteRegistryPresentationWorkflowService(
         service=_ServiceStub(site=_build_site()),
         project_sync_service=_ProjectSyncStub(
@@ -212,6 +292,11 @@ def test_sync_workflow_service_uses_context_when_failure_has_no_error() -> None:
 
 
 def test_sync_workflow_service_wraps_missing_site_errors() -> None:
+    """Verify sync workflow service wraps missing site errors.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     workflow = SiteRegistryPresentationWorkflowService(
         service=_ServiceStub(site=_build_site(), missing=True),
         project_sync_service=_ProjectSyncStub(
@@ -237,6 +322,11 @@ def test_sync_workflow_service_wraps_missing_site_errors() -> None:
 
 
 def test_sync_workflow_service_maps_successful_local_to_remote_sync_results() -> None:
+    """Verify sync workflow service maps successful local to remote sync results.
+
+    Returns:
+        None: This callable does not return a value.
+    """
     workflow = SiteRegistryPresentationWorkflowService(
         service=_ServiceStub(site=_build_site()),
         project_sync_service=_ProjectSyncStub(
@@ -268,6 +358,11 @@ def test_sync_workflow_service_maps_successful_local_to_remote_sync_results() ->
 
 
 def _build_site() -> RegisteredSite:
+    """Handle build site.
+
+    Returns:
+        RegisteredSite: Structured value returned by this callable.
+    """
     return RegisteredSite(
         project=SiteProject(
             id="site-123",
