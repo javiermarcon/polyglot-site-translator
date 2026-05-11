@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Callable, Iterator
 from dataclasses import dataclass
+from importlib import import_module
 from pathlib import Path
 from types import SimpleNamespace
 from typing import Any, cast
@@ -19,10 +20,6 @@ from polyglot_site_translator.domain.remote_connections.models import (
     RemoteConnectionTypeDescriptor,
 )
 from polyglot_site_translator.domain.sync.models import RemoteSyncFile
-from polyglot_site_translator.infrastructure.remote_connections import (
-    ftp,
-    ssh,
-)
 from polyglot_site_translator.infrastructure.remote_connections.base import (
     BaseRemoteConnectionProvider,
     BaseRemoteConnectionSession,
@@ -34,6 +31,9 @@ from polyglot_site_translator.infrastructure.remote_connections.base import (
     RemoteConnectionTransportError,
     RemoteConnectionUploadError,
 )
+
+ftp = import_module("polyglot_site_translator.infrastructure.remote_connections.ftp")
+ssh = import_module("polyglot_site_translator.infrastructure.remote_connections.ssh")
 
 
 @dataclass
@@ -1404,7 +1404,8 @@ def test_build_ssh_client_uses_paramiko_factory(monkeypatch: pytest.MonkeyPatch)
 def test_base_remote_provider_short_lived_operations_delegate_and_close_sessions() -> None:
     @dataclass
     class _DownloadSession(_ListBackedSession):
-        def download_file(self, remote_path: str, progress_callback: Any = None) -> bytes:
+        @staticmethod
+        def download_file(remote_path: str, progress_callback: Any = None) -> bytes:
             return b"payload"
 
     class _OperationBackedProvider(BaseRemoteConnectionProvider):

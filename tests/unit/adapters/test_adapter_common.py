@@ -26,7 +26,8 @@ class _AdapterWithDefaultSyncScope(BaseFrameworkAdapter):
     def detect(self, project_path: Path) -> FrameworkDetectionResult:
         return FrameworkDetectionResult.unmatched(project_path=str(project_path))
 
-    def get_sync_filters(self, project_path: Path) -> tuple[SyncFilterSpec, ...]:
+    @staticmethod
+    def get_sync_filters(project_path: Path) -> tuple[SyncFilterSpec, ...]:
         return (
             SyncFilterSpec(
                 relative_path="locale",
