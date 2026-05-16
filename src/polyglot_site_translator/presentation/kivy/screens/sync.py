@@ -6,7 +6,17 @@ from kivy.uix.screenmanager import ScreenManager
 
 from polyglot_site_translator.presentation.frontend_shell import FrontendShell
 from polyglot_site_translator.presentation.kivy.screens.base import BaseShellScreen
+from polyglot_site_translator.presentation.kivy.widgets.actions import (
+    ActionIntent,
+    ActionRow,
+    build_action_button,
+)
 from polyglot_site_translator.presentation.kivy.widgets.common import WrappedLabel
+from polyglot_site_translator.presentation.kivy.widgets.surfaces import (
+    StatusBanner,
+    StatusTone,
+    status_tone_from_workflow_status,
+)
 
 
 class SyncScreen(BaseShellScreen):
@@ -38,9 +48,7 @@ class SyncScreen(BaseShellScreen):
             shell=shell,
             manager_ref=manager_ref,
         )
-        self.add_nav_button("Back to Project", self._back_to_project)
-        self._summary_label = WrappedLabel(font_size=15)
-        self._content.add_widget(self._summary_label)
+        self._summary_label = WrappedLabel()
         self.refresh()
 
     def _back_to_project(self, *_args: object) -> None:
@@ -71,16 +79,41 @@ class SyncScreen(BaseShellScreen):
             value:
                 Structured value returned by this callable.
         """
+        self.clear_content()
+        actions = ActionRow()
+        back_button = build_action_button(
+            text="Back to Project",
+            intent=ActionIntent.SECONDARY,
+        )
+        back_button.bind(on_release=self._back_to_project)
+        actions.add_widget(back_button)
+        self._content.add_widget(actions)
+
         state = self._shell.sync_state
         if state is None:
-            self._summary_label.text = "No sync action started."
+            self._summary_label = WrappedLabel(text="No sync action started.")
+            self._content.add_widget(
+                StatusBanner(
+                    title="Sync not started",
+                    body="Start a sync workflow from the project detail screen.",
+                    tone=StatusTone.EMPTY,
+                )
+            )
         else:
             summary_lines = [
-                f"Status: {state.status}",
                 f"Files: {state.files_synced}",
             ]
             if state.error_code is not None:
                 summary_lines.append(f"Error Code: {state.error_code}")
             summary_lines.append(state.summary)
-            self._summary_label.text = "\n".join(summary_lines)
+            self._summary_label = WrappedLabel(
+                text=f"Status: {state.status}\n" + "\n".join(summary_lines)
+            )
+            self._content.add_widget(
+                StatusBanner(
+                    title=f"Sync {state.status}",
+                    body="\n".join(summary_lines),
+                    tone=status_tone_from_workflow_status(state.status),
+                )
+            )
         self.update_error_label()

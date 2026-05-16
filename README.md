@@ -20,6 +20,8 @@ El repositorio está en una etapa temprana y hoy incluye principalmente:
 - una base de frontend Kivy bajo `src/polyglot_site_translator/`
 - navegación inicial con `ScreenManager`
 - pantallas base para dashboard, proyectos, detalle, editor de proyectos, sync, audit y PO processing
+- mini design system Kivy con tokens centralizados de spacing, typography,
+  radius, tamaños de componentes y superficies/acciones reutilizables
 - contratos de servicios para la UI
 - persistencia real en TOML para settings generales de la app
 - persistencia real en TOML para `Translation Settings`, incluyendo `default_project_locale`, `default_compile_mo`, `default_use_external_translator`, `default_use_translation_cache`, `translation_cache_path`, `default_only_fuzzy`, `default_dry_run`, `default_stats_only` y `default_report_inconsistencies` usados por nuevos proyectos
@@ -135,6 +137,13 @@ La base actual implementa una base funcional de presentación, settings y `site_
 - `presentation/site_registry_services.py`: adapters entre el servicio real de site registry, el subsistema remoto, la detección de framework y la UI
 - `presentation/fakes.py`: wiring real del runtime para settings TOML + `site_registry` SQLite; los dobles seeded de tests viven fuera de `src/`
 - `presentation/kivy/`: app Kivy, `ScreenManager`, screens y widgets
+- `presentation/kivy/design_tokens.py`: escala centralizada para spacing,
+  typography, radius, elevación ligera y tamaños de componentes
+- `presentation/kivy/widgets/surfaces.py`: cards, headers de sección, banners
+  de estado y paneles de empty state reutilizables
+- `presentation/kivy/widgets/actions.py`: intents visuales para acciones
+  primarias, secundarias y destructivas
+- `presentation/kivy/widgets/forms.py`: field cards reutilizables para formularios
 
 La UI no debe hablar directamente con:
 

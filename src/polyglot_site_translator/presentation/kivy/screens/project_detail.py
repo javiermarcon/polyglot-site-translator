@@ -6,7 +6,17 @@ from kivy.uix.screenmanager import ScreenManager
 
 from polyglot_site_translator.presentation.frontend_shell import FrontendShell
 from polyglot_site_translator.presentation.kivy.screens.base import BaseShellScreen
+from polyglot_site_translator.presentation.kivy.widgets.actions import (
+    ActionIntent,
+    ActionRow,
+    build_action_button,
+)
 from polyglot_site_translator.presentation.kivy.widgets.common import WrappedLabel
+from polyglot_site_translator.presentation.kivy.widgets.surfaces import (
+    AppCard,
+    EmptyStatePanel,
+    SectionHeader,
+)
 from polyglot_site_translator.presentation.view_models import (
     TranslationWorkflowRequestViewModel,
 )
@@ -44,16 +54,9 @@ class ProjectDetailScreen(BaseShellScreen):
             shell=shell,
             manager_ref=manager_ref,
         )
-        self.add_nav_button("Back to Projects", self._back_to_projects)
-        self.add_nav_button("Edit Project", self._edit_project, primary=False)
-        self.add_nav_button("Sync Remote", self._start_sync)
-        self.add_nav_button("Sync Local to Remote", self._start_sync_to_remote)
-        self.add_nav_button("Run Audit", self._start_audit)
-        self.add_nav_button("Translate", self._start_po_processing)
-        self._detail_label = WrappedLabel(font_size=15)
         self._sync_progress_popup: SyncProgressPopup | None = None
         self._po_locale_popup: POLocaleSelectionPopup | None = None
-        self._content.add_widget(self._detail_label)
+        self._detail_label = WrappedLabel()
         self.refresh()
 
     def _back_to_projects(self, *_args: object) -> None:
@@ -199,15 +202,83 @@ class ProjectDetailScreen(BaseShellScreen):
             value:
                 Structured value returned by this callable.
         """
+        self.clear_content()
         detail = self._shell.project_detail_state
         if detail is None:
-            self._detail_label.text = "No project selected."
-        else:
-            actions = ", ".join(action.label for action in detail.actions)
-            self._detail_label.text = (
-                f"{detail.project.name} [{detail.project.framework}]\n"
-                f"{detail.metadata_summary}\n"
-                f"{detail.configuration_summary}\n"
-                f"Actions: {actions}"
+            empty_panel = EmptyStatePanel(
+                title="No project selected",
+                body="Choose a project from the registry before running workflows.",
             )
+            self._detail_label = WrappedLabel(text="No project selected.")
+            self._content.add_widget(empty_panel)
+        else:
+            nav_actions = ActionRow()
+            back_button = build_action_button(
+                text="Back to Projects",
+                intent=ActionIntent.SECONDARY,
+            )
+            edit_button = build_action_button(
+                text="Edit Project",
+                intent=ActionIntent.SECONDARY,
+            )
+            back_button.bind(on_release=self._back_to_projects)
+            edit_button.bind(on_release=self._edit_project)
+            nav_actions.add_widget(back_button)
+            nav_actions.add_widget(edit_button)
+            self._content.add_widget(nav_actions)
+
+            workflow_actions = ActionRow()
+            sync_button = build_action_button(text="Sync Remote to Local")
+            upload_button = build_action_button(
+                text="Sync Local to Remote",
+                intent=ActionIntent.SECONDARY,
+            )
+            audit_button = build_action_button(
+                text="Run Audit",
+                intent=ActionIntent.SECONDARY,
+            )
+            translate_button = build_action_button(text="Translate")
+            sync_button.bind(on_release=self._start_sync)
+            upload_button.bind(on_release=self._start_sync_to_remote)
+            audit_button.bind(on_release=self._start_audit)
+            translate_button.bind(on_release=self._start_po_processing)
+            workflow_actions.add_widget(sync_button)
+            workflow_actions.add_widget(upload_button)
+            workflow_actions.add_widget(audit_button)
+            workflow_actions.add_widget(translate_button)
+            self._content.add_widget(workflow_actions)
+
+            action_labels = ", ".join(action.label for action in detail.actions)
+            action_line = f"\nActions: {action_labels}" if action_labels else ""
+            detail_card = AppCard()
+            detail_card.add_widget(
+                SectionHeader(
+                    title=f"{detail.project.name} [{detail.project.framework}]",
+                    description=detail.metadata_summary,
+                )
+            )
+            self._detail_label = WrappedLabel(
+                text=(
+                    f"{detail.project.name} [{detail.project.framework}]\n"
+                    f"{detail.metadata_summary}\n"
+                    f"{detail.configuration_summary}"
+                    f"{action_line}"
+                ),
+                font_size=15,
+            )
+            detail_card.add_widget(
+                WrappedLabel(
+                    text=detail.configuration_summary,
+                    font_size=15,
+                    color_role="text_muted",
+                )
+            )
+            if action_labels:
+                detail_card.add_widget(
+                    WrappedLabel(
+                        text=f"Available actions: {action_labels}",
+                        font_size=15,
+                    )
+                )
+            self._content.add_widget(detail_card)
         self.update_error_label()

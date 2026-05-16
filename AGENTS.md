@@ -154,6 +154,13 @@ If a fake remains temporarily because a workflow is not implemented yet:
 - UI should orchestrate services, not implement them.
 - Long-running operations must be designed so they can later be moved to background execution safely.
 - Cross-platform assumptions must be documented.
+- UI work must improve or preserve the visual design system, not only functional behavior.
+- Before editing a Kivy screen, inspect existing theme, reusable widgets, layout helpers, and screen patterns.
+- Do not create one-off styling when a reusable themed widget or token should exist.
+- Prefer extracting repeated visual patterns into small reusable widgets under
+  `presentation/kivy/widgets/`.
+- Every new or modified screen must define clear hierarchy, spacing, action placement,
+  empty/loading/error states, and responsive behavior.
 
 ---
 
