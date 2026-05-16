@@ -3,11 +3,13 @@
 ## Coding standards
 
 This project must follow:
+
 - PEP8
 - PEP257
 - PEP484
 
 The repository should also remain compatible with:
+
 - Ruff for linting and formatting
 - mypy for static type checking
 - pytest for tests
@@ -23,12 +25,14 @@ compatibility or on whichever subset a tool happens to be checking by default.
 ## Core design principles
 
 All code must follow these principles:
+
 - DRY
 - SOLID
 - SRP
 - OCP
 
 Interpretation for this repository:
+
 - **DRY**: scanning rules, classification rules, persistence helpers, locale-validation rules, translation-memory logic, adapter registration, and reporting logic must not be duplicated.
 - **SRP**: each module should have one reason to change.
 - **OCP**: new scanners, reports, or framework adapters should be added through extension, not through widespread rewrites.
@@ -113,6 +117,7 @@ Interpretation for this repository:
 Kivy views must not absorb domain responsibilities.
 
 Avoid placing these directly inside widget/screen classes:
+
 - FTP session logic
 - SQLite queries
 - PO parsing
@@ -122,10 +127,49 @@ Avoid placing these directly inside widget/screen classes:
 - framework-specific extraction rules
 
 Views may:
+
 - receive input
 - trigger services
 - display results
 - render progress and errors
+
+---
+
+## Kivy visual design rules
+
+Kivy UI changes must follow a consistent visual system.
+
+Screens must use:
+
+- clear visual hierarchy: title, subtitle/help text, primary content, actions
+- consistent spacing based on small/medium/large spacing tokens
+- reusable card/panel containers for grouped content
+- one obvious primary action per screen or workflow area
+- secondary/destructive actions visually separated from primary actions
+- readable typography sizes for headings, section labels, body text, hints, and errors
+- consistent button heights, input heights, margins, and padding
+- explicit empty, loading, success, warning, and error states
+- responsive layouts that remain usable at narrow desktop widths
+- theme tokens from `presentation/kivy/theme.py`, not ad hoc colors
+
+Avoid:
+
+- raw unstyled `BoxLayout` screens with dense controls
+- magic numbers repeated across screens
+- hardcoded colors inside individual widgets
+- mixing status messages, forms, and actions without grouping
+- screens that only “work” but do not communicate state clearly
+
+When adding or changing a screen, prefer reusable presentation widgets such as:
+
+- card containers
+- section headers
+- toolbar/action rows
+- status banners
+- form rows
+- primary/secondary/destructive buttons
+- empty-state panels
+- progress panels
 
 ---
 
@@ -201,6 +245,7 @@ unless the role is genuinely generic and justified.
 ## Forbidden shortcuts
 
 The following are forbidden unless explicitly justified and documented:
+
 - `except Exception`
 - giant god classes
 - hidden mutation through shared global state

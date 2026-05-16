@@ -12,6 +12,8 @@ from polyglot_site_translator.presentation.kivy.screens.base import (
 )
 from polyglot_site_translator.presentation.view_models import (
     POProcessingSummaryViewModel,
+    ProjectDetailStateViewModel,
+    ProjectSummaryViewModel,
     SyncStatusViewModel,
     TranslationOptionsViewModel,
     TranslationWorkflowRequestViewModel,
@@ -37,6 +39,10 @@ def test_dashboard_screen_buttons_navigate_to_projects_and_settings() -> None:
     root.current = "dashboard"
     dashboard_screen._open_settings()
     assert root.current == "settings"
+
+    root.current = "dashboard"
+    dashboard_screen.refresh()
+    assert len(dashboard_screen._content.children) == 1
 
 
 def test_projects_screen_refresh_and_navigation_cover_empty_and_populated_states() -> (
@@ -100,6 +106,13 @@ def test_project_detail_screen_refresh_edit_sync_and_audit_actions_navigate() ->
     root.current = "project_detail"
     detail_screen.refresh()
     assert "Marketing Site [WordPress]" in detail_screen._detail_label.text
+    button_texts = [
+        child.text
+        for layout in detail_screen._content.children
+        for child in getattr(layout, "children", [])
+        if hasattr(child, "text")
+    ]
+    assert "Sync Remote to Local" in button_texts
     detail_screen._edit_project()
     assert root.current == "project_editor"
 
@@ -133,6 +146,37 @@ def test_project_detail_screen_refresh_edit_sync_and_audit_actions_navigate() ->
     root.current = "project_detail"
     detail_screen._start_audit()
     assert root.current == "audit"
+
+
+def test_project_detail_hides_empty_available_actions_copy() -> None:
+    """Verify project detail hides empty available action copy.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
+    app = cast(Any, create_kivy_app(services=build_seeded_services()))
+    root = app.build()
+    detail_screen = root.get_screen("project_detail")
+    shell = detail_screen._shell
+    shell.project_detail_state = ProjectDetailStateViewModel(
+        project=ProjectSummaryViewModel(
+            id="site-1",
+            name="Site",
+            framework="Django",
+            local_path="/tmp/site",
+            status="active",
+        ),
+        default_locale="en_US",
+        configuration_summary="Locale: en_US",
+        metadata_summary="Framework: Django",
+        actions=[],
+    )
+
+    detail_screen.refresh()
+
+    assert "Available actions:" not in detail_screen._detail_label.text
+    assert "Actions:" not in detail_screen._detail_label.text
 
 
 def test_project_detail_screen_po_processing_and_back_navigation() -> None:

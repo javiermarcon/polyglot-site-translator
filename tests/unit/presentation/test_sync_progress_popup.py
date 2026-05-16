@@ -8,6 +8,7 @@ from typing import Any, cast
 from pytest import MonkeyPatch
 
 from polyglot_site_translator.bootstrap import create_frontend_shell
+from polyglot_site_translator.presentation.kivy.widgets.common import SurfaceBoxLayout
 from polyglot_site_translator.presentation.kivy.widgets.sync_progress_popup import (
     SyncProgressPopup,
 )
@@ -106,6 +107,8 @@ def test_sync_progress_popup_renders_empty_and_populated_states() -> None:
     """
     shell = create_frontend_shell(build_seeded_services())
     popup = SyncProgressPopup(shell=shell)
+
+    assert isinstance(popup.content, SurfaceBoxLayout)
 
     shell.sync_progress_state = None
     popup.refresh()

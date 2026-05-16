@@ -6,7 +6,11 @@ from kivy.uix.screenmanager import ScreenManager
 
 from polyglot_site_translator.presentation.frontend_shell import FrontendShell
 from polyglot_site_translator.presentation.kivy.screens.base import BaseShellScreen
-from polyglot_site_translator.presentation.kivy.widgets.common import WrappedLabel
+from polyglot_site_translator.presentation.kivy.widgets.actions import (
+    ActionIntent,
+    ActionRow,
+    build_action_button,
+)
 
 
 class DashboardScreen(BaseShellScreen):
@@ -40,10 +44,6 @@ class DashboardScreen(BaseShellScreen):
             shell=shell,
             manager_ref=manager_ref,
         )
-        self.add_nav_button("Open Projects", self._open_projects)
-        self.add_nav_button("Open Settings", self._open_settings, primary=False)
-        self._sections_label = WrappedLabel(font_size=15)
-        self._content.add_widget(self._sections_label)
         self.refresh()
 
     def _open_projects(self, *_args: object) -> None:
@@ -89,8 +89,19 @@ class DashboardScreen(BaseShellScreen):
             value:
                 Structured value returned by this callable.
         """
-        self._sections_label.text = "\n".join(
-            f"{section.title}: {section.description}"
-            for section in self._shell.dashboard_state.sections
+        self.clear_content()
+        actions = ActionRow()
+        projects_button = build_action_button(
+            text="Open Projects",
+            intent=ActionIntent.PRIMARY,
         )
+        settings_button = build_action_button(
+            text="Open Settings",
+            intent=ActionIntent.SECONDARY,
+        )
+        projects_button.bind(on_release=self._open_projects)
+        settings_button.bind(on_release=self._open_settings)
+        actions.add_widget(projects_button)
+        actions.add_widget(settings_button)
+        self._content.add_widget(actions)
         self.update_error_label()

@@ -38,6 +38,8 @@ The codebase should be organized around these layers:
    - progress and feedback display
    - dedicated sync progress popups for long-running remote transfers
    - runtime exception routing for main thread, worker threads, and Kivy callbacks when the app can continue safely
+   - reusable visual design primitives for cards, banners, form rows, action bars, and empty states
+   - centralized spacing, typography, radius, and color tokens for Kivy screens
 
 2. **Application services**
    - orchestrate workflows

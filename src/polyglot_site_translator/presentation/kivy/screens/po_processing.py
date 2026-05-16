@@ -7,8 +7,20 @@ from kivy.uix.progressbar import ProgressBar
 from kivy.uix.screenmanager import ScreenManager
 
 from polyglot_site_translator.presentation.frontend_shell import FrontendShell
+from polyglot_site_translator.presentation.kivy.design_tokens import COMPONENT_SIZES
 from polyglot_site_translator.presentation.kivy.screens.base import BaseShellScreen
+from polyglot_site_translator.presentation.kivy.widgets.actions import (
+    ActionIntent,
+    ActionRow,
+    build_action_button,
+)
 from polyglot_site_translator.presentation.kivy.widgets.common import WrappedLabel
+from polyglot_site_translator.presentation.kivy.widgets.surfaces import (
+    AppCard,
+    StatusBanner,
+    StatusTone,
+    status_tone_from_workflow_status,
+)
 
 
 class POProcessingScreen(BaseShellScreen):
@@ -43,12 +55,14 @@ class POProcessingScreen(BaseShellScreen):
             shell=shell,
             manager_ref=manager_ref,
         )
-        self.add_nav_button("Back to Project", self._back_to_project)
-        self._summary_label = WrappedLabel(font_size=15)
-        self._progress_bar = ProgressBar(max=1, value=0, size_hint_y=None, height=20)
+        self._summary_label = WrappedLabel()
+        self._progress_bar = ProgressBar(
+            max=1,
+            value=0,
+            size_hint_y=None,
+            height=COMPONENT_SIZES.progress_height,
+        )
         self._refresh_event: ClockEvent | None = None
-        self._content.add_widget(self._progress_bar)
-        self._content.add_widget(self._summary_label)
         self.refresh()
 
     def _back_to_project(self, *_args: object) -> None:
@@ -79,11 +93,32 @@ class POProcessingScreen(BaseShellScreen):
             value:
                 Structured value returned by this callable.
         """
+        self.clear_content()
+        actions = ActionRow()
+        back_button = build_action_button(
+            text="Back to Project",
+            intent=ActionIntent.SECONDARY,
+        )
+        back_button.bind(on_release=self._back_to_project)
+        actions.add_widget(back_button)
+        self._content.add_widget(actions)
+
         state = self._shell.po_processing_state
         if state is None:
-            self._progress_bar.max = 1
-            self._progress_bar.value = 0
-            self._summary_label.text = "No translation action started."
+            self._progress_bar = ProgressBar(
+                max=1,
+                value=0,
+                size_hint_y=None,
+                height=COMPONENT_SIZES.progress_height,
+            )
+            self._summary_label = WrappedLabel(text="No translation action started.")
+            self._content.add_widget(
+                StatusBanner(
+                    title="Translation not started",
+                    body="Run translation from the project detail screen.",
+                    tone=StatusTone.EMPTY,
+                )
+            )
         else:
             progress_max = state.progress_total if state.progress_total > 0 else 1
             progress_value = state.progress_current
@@ -95,17 +130,42 @@ class POProcessingScreen(BaseShellScreen):
             current_entry_line = ""
             if state.current_entry is not None:
                 current_entry_line = f"Current entry: {state.current_entry}\n"
-            self._progress_bar.max = progress_max
-            self._progress_bar.value = min(progress_value, progress_max)
-            self._summary_label.text = (
-                f"Status: {state.status}\n"
-                f"Families: {state.processed_families}\n"
-                f"Progress: {state.progress_current}/{state.progress_total}\n"
-                f"Completed entries: {state.progress_current}/{state.progress_total}\n"
-                f"{current_file_line}"
-                f"{current_entry_line}"
-                f"{state.summary}"
+            progress_bar = ProgressBar(
+                max=progress_max,
+                value=min(progress_value, progress_max),
+                size_hint_y=None,
+                height=COMPONENT_SIZES.progress_height,
             )
+            self._progress_bar = progress_bar
+            self._summary_label = WrappedLabel(
+                text=(
+                    f"Status: {state.status}\n"
+                    f"Families: {state.processed_families}\n"
+                    f"Progress: {state.progress_current}/{state.progress_total}\n"
+                    "Completed entries: "
+                    f"{state.progress_current}/{state.progress_total}\n"
+                    f"{current_file_line}"
+                    f"{current_entry_line}"
+                    f"{state.summary}"
+                ),
+                font_size=15,
+                color_role="text_muted",
+            )
+            self._content.add_widget(
+                StatusBanner(
+                    title=f"Translation {state.status}",
+                    body=(
+                        f"Families: {state.processed_families}\n"
+                        "Completed entries: "
+                        f"{state.progress_current}/{state.progress_total}"
+                    ),
+                    tone=status_tone_from_workflow_status(state.status),
+                )
+            )
+            progress_card = AppCard()
+            progress_card.add_widget(progress_bar)
+            progress_card.add_widget(self._summary_label)
+            self._content.add_widget(progress_card)
         self.update_error_label()
         if (
             state is not None

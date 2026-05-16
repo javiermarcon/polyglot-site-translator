@@ -60,7 +60,7 @@ def _default_actions() -> list[ProjectActionViewModel]:
     return [
         ProjectActionViewModel(
             key="sync",
-            label="Sync Remote",
+            label="Sync Remote to Local",
             description="Preview a synchronization workflow through a test double.",
         ),
         ProjectActionViewModel(

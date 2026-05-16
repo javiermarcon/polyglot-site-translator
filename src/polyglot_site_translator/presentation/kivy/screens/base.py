@@ -9,6 +9,11 @@ from kivy.uix.screenmanager import Screen, ScreenManager
 from kivy.uix.scrollview import ScrollView
 
 from polyglot_site_translator.presentation.frontend_shell import FrontendShell
+from polyglot_site_translator.presentation.kivy.design_tokens import (
+    COMPONENT_SIZES,
+    SPACING,
+    TYPOGRAPHY,
+)
 from polyglot_site_translator.presentation.kivy.widgets.common import (
     AppButton,
     SurfaceBoxLayout,
@@ -66,22 +71,26 @@ class BaseShellScreen(Screen):  # type: ignore[misc]
         )
         self._header = SurfaceBoxLayout(
             orientation="horizontal",
-            spacing=16,
-            padding=16,
+            spacing=SPACING.lg,
+            padding=SPACING.lg,
             size_hint_y=None,
-            height=88,
+            height=COMPONENT_SIZES.header_height,
             background_role="header_background",
         )
-        self._title_block = BoxLayout(orientation="vertical", spacing=2)
+        self._title_block = BoxLayout(orientation="vertical", spacing=SPACING.xs)
         self._app_title = WrappedLabel(
             text="Polyglot Site Translator",
-            font_size=14,
+            font_size=TYPOGRAPHY.caption,
             color_role="text_muted",
         )
-        self._screen_title = WrappedLabel(text=title, font_size=24, bold=True)
+        self._screen_title = WrappedLabel(
+            text=title,
+            font_size=TYPOGRAPHY.screen_title,
+            bold=True,
+        )
         self._screen_subtitle = WrappedLabel(
             text=subtitle,
-            font_size=14,
+            font_size=TYPOGRAPHY.caption,
             color_role="text_muted",
         )
         self._title_block.add_widget(self._app_title)
@@ -98,19 +107,28 @@ class BaseShellScreen(Screen):  # type: ignore[misc]
         self._header.add_widget(self._menu_button)
 
         self._scroll = ScrollView(scroll_type=["bars", "content"], bar_width=8)
-        self._content = GridLayout(cols=1, spacing=16, padding=20, size_hint_y=None)
+        self._content = GridLayout(
+            cols=1,
+            spacing=SPACING.lg,
+            padding=SPACING.xl,
+            size_hint_y=None,
+        )
         self._content.bind(minimum_height=self._content.setter("height"))
         self._scroll.add_widget(self._content)
 
         self._error_card = SurfaceBoxLayout(
             orientation="vertical",
-            padding=14,
+            padding=SPACING.lg,
             size_hint_y=None,
             height=0,
             background_role="error_background",
             border_role="error_background",
         )
-        self._error_label = WrappedLabel(text="", color_role="error_text", font_size=14)
+        self._error_label = WrappedLabel(
+            text="",
+            color_role="error_text",
+            font_size=TYPOGRAPHY.caption,
+        )
         self._error_card.add_widget(self._error_label)
 
         self._container.add_widget(self._header)
@@ -262,13 +280,13 @@ class BaseShellScreen(Screen):  # type: ignore[misc]
                 Structured value returned by this callable.
         """
         self._shell.open_application_menu()
-        dropdown = DropDown(auto_width=False, width=340)
+        dropdown = DropDown(auto_width=False, width=COMPONENT_SIZES.menu_width)
         for section in self._shell.navigation_menu.sections:
             header = AppButton(
                 text=section.title,
                 primary=False,
                 size_hint_y=None,
-                height=40,
+                height=COMPONENT_SIZES.compact_button_height,
                 disabled=True,
             )
             dropdown.add_widget(header)
@@ -277,7 +295,7 @@ class BaseShellScreen(Screen):  # type: ignore[misc]
                     text=f"{item.title}\n{item.description}",
                     primary=False,
                     size_hint_y=None,
-                    height=64,
+                    height=COMPONENT_SIZES.button_height + 20,
                     disabled=not item.is_enabled,
                 )
                 entry.bind(

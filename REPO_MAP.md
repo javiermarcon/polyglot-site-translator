@@ -177,6 +177,18 @@ Current frontend base:
 - `polyglot_site_translator/presentation/kivy/theme.py`
   Runtime theme palette tokens and active theme selection for the Kivy frontend.
 
+- `polyglot_site_translator/presentation/kivy/design_tokens.py`
+  Centralized spacing, typography, radius, elevation, and component-size constants.
+
+- `polyglot_site_translator/presentation/kivy/widgets/surfaces.py`
+  Reusable card, panel, section, and status-surface widgets.
+
+- `polyglot_site_translator/presentation/kivy/widgets/actions.py`
+  Reusable primary, secondary, destructive, and icon-button styling helpers.
+
+- `polyglot_site_translator/presentation/kivy/widgets/forms.py`
+  Reusable labeled field rows, help text, validation messages, and grouped form sections.
+
 - `polyglot_site_translator/presentation/kivy/settings_layout.py`
   Responsive layout rules for the settings screen so compact windows switch to a usable stacked layout.
 
