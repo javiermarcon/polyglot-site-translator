@@ -3,14 +3,19 @@
 from __future__ import annotations
 
 from kivy.clock import Clock, ClockEvent
-from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.popup import Popup
 from kivy.uix.progressbar import ProgressBar
 from kivy.uix.scrollview import ScrollView
 
 from polyglot_site_translator.presentation.frontend_shell import FrontendShell
+from polyglot_site_translator.presentation.kivy.design_tokens import (
+    COMPONENT_SIZES,
+    SPACING,
+    TYPOGRAPHY,
+)
 from polyglot_site_translator.presentation.kivy.widgets.common import (
     AppButton,
+    SurfaceBoxLayout,
     WrappedLabel,
 )
 
@@ -45,27 +50,43 @@ class SyncProgressPopup(Popup):  # type: ignore[misc]
         self._shell = shell
         self._refresh_event: ClockEvent | None = None
 
-        container = BoxLayout(orientation="vertical", spacing=12, padding=12)
-        self._status_label = WrappedLabel(
-            text="No sync started yet.", font_size=16, bold=True
+        container = SurfaceBoxLayout(
+            orientation="vertical",
+            spacing=SPACING.md,
+            padding=SPACING.md,
+            background_role="card_background",
+            border_role="border_color",
         )
-        self._progress_bar = ProgressBar(max=1, value=0, size_hint_y=None, height=20)
-        self._message_label = WrappedLabel(text="", font_size=14)
+        self._status_label = WrappedLabel(
+            text="No sync started yet.",
+            font_size=TYPOGRAPHY.label,
+            bold=True,
+        )
+        self._progress_bar = ProgressBar(
+            max=1,
+            value=0,
+            size_hint_y=None,
+            height=COMPONENT_SIZES.progress_height,
+        )
+        self._message_label = WrappedLabel(text="", font_size=TYPOGRAPHY.caption)
         self._trust_host_key_button = AppButton(
             text="Trust SSH Host Key and Retry",
             primary=True,
             size_hint_y=None,
-            height=48,
+            height=COMPONENT_SIZES.button_height,
         )
         self._trust_host_key_button.bind(on_release=self._open_host_key_confirmation)
         command_scroll = ScrollView(scroll_type=["bars", "content"], bar_width=8)
         self._command_log_label = WrappedLabel(
             text="Waiting for sync commands.",
-            font_size=13,
+            font_size=TYPOGRAPHY.caption,
         )
         command_scroll.add_widget(self._command_log_label)
         close_button = AppButton(
-            text="Close", primary=False, size_hint_y=None, height=48
+            text="Close",
+            primary=False,
+            size_hint_y=None,
+            height=COMPONENT_SIZES.button_height,
         )
         close_button.bind(on_release=lambda *_args: self.dismiss())
 

@@ -138,6 +138,15 @@ Prefer testing view-model/service orchestration over brittle widget-level behavi
 If UI behavior is tested, scope it narrowly and document assumptions.
 Filesystem path hint helpers and directory-only listing filters used by Kivy path pickers (for example `initial_browse_directory`, `directory_only_listing_filter`) should stay unit-testable without a display server.
 Pure helpers for password visibility toggle labels (`password_visibility_toggle_label`) are unit-tested without a display server.
+When changing Kivy UI structure, test pure layout/style helpers without a display server where possible.
+
+Cover:
+
+- design-token resolution
+- responsive layout decisions
+- button/action classification helpers
+- empty/loading/error state view-model rendering decisions
+- reusable widget factory behavior when it is pure enough to test
 
 ---
 

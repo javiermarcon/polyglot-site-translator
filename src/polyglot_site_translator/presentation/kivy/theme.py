@@ -1,4 +1,8 @@
-"""Runtime theme support for the Kivy frontend."""
+"""Runtime theme support for the Kivy frontend.
+
+Palettes expose role-based color tokens so screens can request semantic
+surfaces and action styles without hardcoding RGBA values locally.
+"""
 
 from __future__ import annotations
 
@@ -30,9 +34,29 @@ class ThemePalette:
             Documented attribute exposed by this type.
         secondary_button_text:
             Documented attribute exposed by this type.
+        destructive_button_background:
+            Documented attribute exposed by this type.
+        destructive_button_text:
+            Documented attribute exposed by this type.
         text_primary:
             Documented attribute exposed by this type.
         text_muted:
+            Documented attribute exposed by this type.
+        text_inverted:
+            Documented attribute exposed by this type.
+        input_background:
+            Documented attribute exposed by this type.
+        success_background:
+            Documented attribute exposed by this type.
+        success_text:
+            Documented attribute exposed by this type.
+        warning_background:
+            Documented attribute exposed by this type.
+        warning_text:
+            Documented attribute exposed by this type.
+        info_background:
+            Documented attribute exposed by this type.
+        info_text:
             Documented attribute exposed by this type.
         error_background:
             Documented attribute exposed by this type.
@@ -49,8 +73,18 @@ class ThemePalette:
     primary_button_text: ColorTuple
     secondary_button_background: ColorTuple
     secondary_button_text: ColorTuple
+    destructive_button_background: ColorTuple
+    destructive_button_text: ColorTuple
     text_primary: ColorTuple
     text_muted: ColorTuple
+    text_inverted: ColorTuple
+    input_background: ColorTuple
+    success_background: ColorTuple
+    success_text: ColorTuple
+    warning_background: ColorTuple
+    warning_text: ColorTuple
+    info_background: ColorTuple
+    info_text: ColorTuple
     error_background: ColorTuple
     error_text: ColorTuple
 
@@ -65,8 +99,18 @@ LIGHT_THEME = ThemePalette(
     primary_button_text=(1.0, 1.0, 1.0, 1.0),
     secondary_button_background=(0.91, 0.94, 0.98, 1.0),
     secondary_button_text=(0.06, 0.18, 0.31, 1.0),
+    destructive_button_background=(0.78, 0.19, 0.22, 1.0),
+    destructive_button_text=(1.0, 1.0, 1.0, 1.0),
     text_primary=(0.12, 0.16, 0.22, 1.0),
     text_muted=(0.42, 0.47, 0.54, 1.0),
+    text_inverted=(1.0, 1.0, 1.0, 1.0),
+    input_background=(0.94, 0.96, 0.99, 1.0),
+    success_background=(0.89, 0.97, 0.93, 1.0),
+    success_text=(0.05, 0.39, 0.19, 1.0),
+    warning_background=(1.0, 0.96, 0.84, 1.0),
+    warning_text=(0.55, 0.36, 0.03, 1.0),
+    info_background=(0.89, 0.95, 1.0, 1.0),
+    info_text=(0.03, 0.32, 0.62, 1.0),
     error_background=(0.99, 0.92, 0.92, 1.0),
     error_text=(0.57, 0.13, 0.14, 1.0),
 )
@@ -81,8 +125,18 @@ DARK_THEME = ThemePalette(
     primary_button_text=(1.0, 1.0, 1.0, 1.0),
     secondary_button_background=(0.18, 0.24, 0.31, 1.0),
     secondary_button_text=(0.88, 0.92, 0.97, 1.0),
+    destructive_button_background=(0.78, 0.25, 0.28, 1.0),
+    destructive_button_text=(1.0, 1.0, 1.0, 1.0),
     text_primary=(0.94, 0.96, 0.99, 1.0),
     text_muted=(0.68, 0.74, 0.81, 1.0),
+    text_inverted=(0.08, 0.11, 0.15, 1.0),
+    input_background=(0.17, 0.22, 0.29, 1.0),
+    success_background=(0.1, 0.28, 0.18, 1.0),
+    success_text=(0.74, 0.95, 0.82, 1.0),
+    warning_background=(0.35, 0.27, 0.11, 1.0),
+    warning_text=(1.0, 0.88, 0.54, 1.0),
+    info_background=(0.11, 0.24, 0.36, 1.0),
+    info_text=(0.72, 0.88, 1.0, 1.0),
     error_background=(0.38, 0.15, 0.17, 1.0),
     error_text=(1.0, 0.84, 0.85, 1.0),
 )

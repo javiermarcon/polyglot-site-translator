@@ -1,15 +1,26 @@
-"""Reusable styled Kivy widgets for the frontend shell."""
+"""Reusable styled Kivy widgets for the frontend shell.
+
+This module contains the low-level theme-aware primitives used by the
+higher-level design-system widgets under this package.
+"""
 
 from __future__ import annotations
 
 from typing import cast
 
-from kivy.graphics import Color, Line, Rectangle
+from kivy.graphics import Color, Line, RoundedRectangle
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.button import Button
 from kivy.uix.label import Label
 from kivy.uix.widget import Widget
 
+from polyglot_site_translator.presentation.kivy.design_tokens import (
+    COMPONENT_SIZES,
+    ELEVATION,
+    RADIUS,
+    SPACING,
+    TYPOGRAPHY,
+)
 from polyglot_site_translator.presentation.kivy.theme import (
     ColorTuple,
     get_active_theme,
@@ -73,6 +84,7 @@ class SurfaceBoxLayout(BoxLayout):  # type: ignore[misc]
         background_role: str | None = None,
         border_color: ColorTuple | None = None,
         border_role: str | None = None,
+        radius: int | None = None,
         **kwargs: object,
     ) -> None:
         """Create a theme-aware surface with optional explicit colors and roles.
@@ -88,6 +100,8 @@ class SurfaceBoxLayout(BoxLayout):  # type: ignore[misc]
                 Value supplied to this callable.
             border_role:
                 Value supplied to this callable.
+            radius:
+                Corner radius for the rendered surface.
             **kwargs:
                 Value supplied to this callable.
 
@@ -100,6 +114,7 @@ class SurfaceBoxLayout(BoxLayout):  # type: ignore[misc]
         self._border_role = border_role
         self._background_color = background_color
         self._border_color = border_color
+        self._radius = RADIUS.card if radius is None else radius
         resolved_background_color = _resolve_color(
             background_color,
             background_role,
@@ -112,10 +127,21 @@ class SurfaceBoxLayout(BoxLayout):  # type: ignore[misc]
         )
         with self.canvas.before:
             self._background_instruction = Color(*resolved_background_color)
-            self._background_rect = Rectangle(pos=self.pos, size=self.size)
+            self._background_rect = RoundedRectangle(
+                pos=self.pos,
+                radius=[self._radius],
+                size=self.size,
+            )
             self._border_instruction = Color(*resolved_border_color)
             self._border_line = Line(
-                rectangle=(self.x, self.y, self.width, self.height), width=1
+                rounded_rectangle=(
+                    self.x,
+                    self.y,
+                    self.width,
+                    self.height,
+                    self._radius,
+                ),
+                width=ELEVATION.card_border_width,
             )
         self.bind(pos=self._update_canvas, size=self._update_canvas)
 
@@ -134,7 +160,13 @@ class SurfaceBoxLayout(BoxLayout):  # type: ignore[misc]
         """
         self._background_rect.pos = self.pos
         self._background_rect.size = self.size
-        self._border_line.rectangle = (self.x, self.y, self.width, self.height)
+        self._border_line.rounded_rectangle = (
+            self.x,
+            self.y,
+            self.width,
+            self.height,
+            self._radius,
+        )
 
     def apply_theme(self) -> None:
         """Re-apply the current palette to this surface.
@@ -169,7 +201,7 @@ class WrappedLabel(Label):  # type: ignore[misc]
     def __init__(
         self,
         *,
-        font_size: int = 16,
+        font_size: int = TYPOGRAPHY.label,
         bold: bool = False,
         color: ColorTuple | None = None,
         color_role: str | None = None,
@@ -237,7 +269,10 @@ class WrappedLabel(Label):  # type: ignore[misc]
             value:
                 Structured value returned by this callable.
         """
-        self.height = max(self.texture_size[1] + 8, self.font_size + 12)
+        self.height = max(
+            self.texture_size[1] + SPACING.sm,
+            self.font_size + SPACING.md,
+        )
 
     def apply_theme(self) -> None:
         """Re-apply the current palette to the label text color.
@@ -298,7 +333,7 @@ class AppButton(Button):  # type: ignore[misc]
             palette.primary_button_text if primary else palette.secondary_button_text,
         )
         resolved_kwargs.setdefault("size_hint_y", None)
-        resolved_kwargs.setdefault("height", 44)
+        resolved_kwargs.setdefault("height", COMPONENT_SIZES.button_height)
         resolved_kwargs.setdefault("background_normal", "")
         resolved_kwargs.setdefault("background_down", "")
         resolved_kwargs.setdefault("halign", "center")
@@ -347,4 +382,4 @@ class AppButton(Button):  # type: ignore[misc]
             value:
                 Structured value returned by this callable.
         """
-        self.text_size = (max(self.width - 16, 0), None)
+        self.text_size = (max(self.width - SPACING.lg, 0), None)
