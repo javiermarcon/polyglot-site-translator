@@ -6,7 +6,7 @@ from collections.abc import Callable
 from dataclasses import replace
 from pathlib import Path
 import tempfile
-from typing import Protocol, TypeVar, cast
+from typing import NoReturn, Protocol, TypeVar, cast
 
 import behave as behave_module  # type: ignore[import-untyped]
 
@@ -49,6 +49,26 @@ given = cast(
 )
 when = cast(Callable[[str], Callable[[StepFunction], StepFunction]], behave_module.when)
 then = cast(Callable[[str], Callable[[StepFunction], StepFunction]], behave_module.then)
+
+
+def _raise_bdd_expectation_failure(location: str) -> NoReturn:
+    """Raise an explicit Behave expectation failure.
+
+    Args:
+        location:
+            Source location of the failed BDD expectation.
+
+    Returns:
+        value:
+            This helper never returns; it always raises AssertionError.
+
+    Raises:
+        AssertionError:
+            Raised every time this helper is called so Behave reports the
+            step as failed without relying on optimized-away assertions.
+    """
+    message = f"BDD expectation failed at {location}."
+    raise AssertionError(message)
 
 
 class BehaveShellContext(Protocol):
@@ -952,7 +972,8 @@ def step_assert_dashboard_route(context: object) -> None:
             Structured value returned by this callable.
     """
     typed_context = _context_with_shell(context)
-    assert typed_context.shell.router.current.name is RouteName.DASHBOARD
+    if typed_context.shell.router.current.name is not RouteName.DASHBOARD:
+        _raise_bdd_expectation_failure("features/steps/frontend_shell_steps.py:955")
 
 
 @then("the saved settings enable gitignore-based sync exclusions")
@@ -972,7 +993,8 @@ def step_assert_saved_gitignore_sync_exclusions(context: object) -> None:
             Raised when this callable hits the corresponding error path.
     """
     typed_context = _context_with_shell(context)
-    assert typed_context.shell.settings_state is not None
+    if typed_context.shell.settings_state is None:
+        _raise_bdd_expectation_failure("features/steps/frontend_shell_steps.py:975")
     settings_state = typed_context.shell.settings_state
     if not settings_state.app_settings.sync_scope_settings.use_gitignore_rules:
         raise AssertionError
@@ -997,7 +1019,8 @@ def step_assert_saved_global_sync_rule(context: object, relative_path: str) -> N
             Raised when this callable hits the corresponding error path.
     """
     typed_context = _context_with_shell(context)
-    assert typed_context.shell.settings_state is not None
+    if typed_context.shell.settings_state is None:
+        _raise_bdd_expectation_failure("features/steps/frontend_shell_steps.py:1000")
     if relative_path not in [
         rule.relative_path
         for rule in (
@@ -1035,7 +1058,8 @@ def step_assert_saved_framework_sync_rule(
             Raised when this callable hits the corresponding error path.
     """
     typed_context = _context_with_shell(context)
-    assert typed_context.shell.settings_state is not None
+    if typed_context.shell.settings_state is None:
+        _raise_bdd_expectation_failure("features/steps/frontend_shell_steps.py:1038")
     settings_state = typed_context.shell.settings_state
     framework_rule_sets = (
         settings_state.app_settings.sync_scope_settings.framework_rule_sets
@@ -1067,7 +1091,8 @@ def step_assert_dashboard_sections(context: object) -> None:
     section_keys = [
         section.key for section in typed_context.shell.dashboard_state.sections
     ]
-    assert section_keys == ["projects", "sync", "audit", "po-processing", "settings"]
+    if section_keys != ["projects", "sync", "audit", "po-processing", "settings"]:
+        _raise_bdd_expectation_failure("features/steps/frontend_shell_steps.py:1070")
 
 
 @then('the project detail route is active for "{project_id}"')
@@ -1085,8 +1110,10 @@ def step_assert_project_detail_route(context: object, project_id: str) -> None:
             Structured value returned by this callable.
     """
     typed_context = _context_with_shell(context)
-    assert typed_context.shell.router.current.name is RouteName.PROJECT_DETAIL
-    assert typed_context.shell.router.current.project_id == project_id
+    if typed_context.shell.router.current.name is not RouteName.PROJECT_DETAIL:
+        _raise_bdd_expectation_failure("features/steps/frontend_shell_steps.py:1088")
+    if typed_context.shell.router.current.project_id != project_id:
+        _raise_bdd_expectation_failure("features/steps/frontend_shell_steps.py:1089")
 
 
 @then("the project detail shows available workflow actions")
@@ -1102,11 +1129,13 @@ def step_assert_project_actions(context: object) -> None:
             Structured value returned by this callable.
     """
     typed_context = _context_with_shell(context)
-    assert typed_context.shell.project_detail_state is not None
+    if typed_context.shell.project_detail_state is None:
+        _raise_bdd_expectation_failure("features/steps/frontend_shell_steps.py:1105")
     action_keys = [
         action.key for action in typed_context.shell.project_detail_state.actions
     ]
-    assert action_keys == ["sync", "audit", "po-processing"]
+    if action_keys != ["sync", "audit", "po-processing"]:
+        _raise_bdd_expectation_failure("features/steps/frontend_shell_steps.py:1109")
 
 
 @then("the sync panel shows a completed status")
@@ -1122,8 +1151,10 @@ def step_assert_sync_completed(context: object) -> None:
             Structured value returned by this callable.
     """
     typed_context = _context_with_shell(context)
-    assert typed_context.shell.sync_state is not None
-    assert typed_context.shell.sync_state.status == "completed"
+    if typed_context.shell.sync_state is None:
+        _raise_bdd_expectation_failure("features/steps/frontend_shell_steps.py:1125")
+    if typed_context.shell.sync_state.status != "completed":
+        _raise_bdd_expectation_failure("features/steps/frontend_shell_steps.py:1126")
 
 
 @then("the sync panel reports the synchronized file count")
@@ -1139,8 +1170,10 @@ def step_assert_sync_file_count(context: object) -> None:
             Structured value returned by this callable.
     """
     typed_context = _context_with_shell(context)
-    assert typed_context.shell.sync_state is not None
-    assert typed_context.shell.sync_state.files_synced == SYNCED_FILES
+    if typed_context.shell.sync_state is None:
+        _raise_bdd_expectation_failure("features/steps/frontend_shell_steps.py:1142")
+    if typed_context.shell.sync_state.files_synced != SYNCED_FILES:
+        _raise_bdd_expectation_failure("features/steps/frontend_shell_steps.py:1143")
 
 
 @then("the audit panel shows a completed status")
@@ -1156,8 +1189,10 @@ def step_assert_audit_completed(context: object) -> None:
             Structured value returned by this callable.
     """
     typed_context = _context_with_shell(context)
-    assert typed_context.shell.audit_state is not None
-    assert typed_context.shell.audit_state.status == "completed"
+    if typed_context.shell.audit_state is None:
+        _raise_bdd_expectation_failure("features/steps/frontend_shell_steps.py:1159")
+    if typed_context.shell.audit_state.status != "completed":
+        _raise_bdd_expectation_failure("features/steps/frontend_shell_steps.py:1160")
 
 
 @then("the audit panel reports the finding summary")
@@ -1173,11 +1208,13 @@ def step_assert_audit_summary(context: object) -> None:
             Structured value returned by this callable.
     """
     typed_context = _context_with_shell(context)
-    assert typed_context.shell.audit_state is not None
-    assert (
+    if typed_context.shell.audit_state is None:
+        _raise_bdd_expectation_failure("features/steps/frontend_shell_steps.py:1176")
+    if (
         typed_context.shell.audit_state.findings_summary
-        == "No supported framework was detected for this project."
-    )
+        != "No supported framework was detected for this project."
+    ):
+        _raise_bdd_expectation_failure("features/steps/frontend_shell_steps.py:1177")
 
 
 @then("the audit panel shows a failed status")
@@ -1197,7 +1234,8 @@ def step_assert_audit_failed(context: object) -> None:
             Raised when this callable hits the corresponding error path.
     """
     typed_context = _context_with_shell(context)
-    assert typed_context.shell.audit_state is not None
+    if typed_context.shell.audit_state is None:
+        _raise_bdd_expectation_failure("features/steps/frontend_shell_steps.py:1200")
     if typed_context.shell.audit_state.status != "failed":
         raise AssertionError
 
@@ -1215,8 +1253,10 @@ def step_assert_po_completed(context: object) -> None:
             Structured value returned by this callable.
     """
     typed_context = _context_with_shell(context)
-    assert typed_context.shell.po_processing_state is not None
-    assert typed_context.shell.po_processing_state.status == "completed"
+    if typed_context.shell.po_processing_state is None:
+        _raise_bdd_expectation_failure("features/steps/frontend_shell_steps.py:1218")
+    if typed_context.shell.po_processing_state.status != "completed":
+        _raise_bdd_expectation_failure("features/steps/frontend_shell_steps.py:1219")
 
 
 @then("the po processing panel reports the processed family count")
@@ -1232,10 +1272,10 @@ def step_assert_po_family_count(context: object) -> None:
             Structured value returned by this callable.
     """
     typed_context = _context_with_shell(context)
-    assert typed_context.shell.po_processing_state is not None
-    assert (
-        typed_context.shell.po_processing_state.processed_families == PROCESSED_FAMILIES
-    )
+    if typed_context.shell.po_processing_state is None:
+        _raise_bdd_expectation_failure("features/steps/frontend_shell_steps.py:1235")
+    if typed_context.shell.po_processing_state.processed_families != PROCESSED_FAMILIES:
+        _raise_bdd_expectation_failure("features/steps/frontend_shell_steps.py:1236")
 
 
 @then("the po processing panel shows a failed status")
@@ -1255,7 +1295,8 @@ def step_assert_po_failed(context: object) -> None:
             Raised when this callable hits the corresponding error path.
     """
     typed_context = _context_with_shell(context)
-    assert typed_context.shell.po_processing_state is not None
+    if typed_context.shell.po_processing_state is None:
+        _raise_bdd_expectation_failure("features/steps/frontend_shell_steps.py:1258")
     if typed_context.shell.po_processing_state.status != "failed":
         raise AssertionError
 
@@ -1273,7 +1314,8 @@ def step_assert_empty_projects(context: object) -> None:
             Structured value returned by this callable.
     """
     typed_context = _context_with_shell(context)
-    assert typed_context.shell.projects_state.projects == []
+    if typed_context.shell.projects_state.projects != []:
+        _raise_bdd_expectation_failure("features/steps/frontend_shell_steps.py:1276")
 
 
 @then("the projects screen shows an empty state message")
@@ -1289,10 +1331,11 @@ def step_assert_empty_state_message(context: object) -> None:
             Structured value returned by this callable.
     """
     typed_context = _context_with_shell(context)
-    assert (
+    if (
         typed_context.shell.projects_state.empty_message
-        == "No projects registered yet."
-    )
+        != "No projects registered yet."
+    ):
+        _raise_bdd_expectation_failure("features/steps/frontend_shell_steps.py:1292")
 
 
 @then("the sync panel shows a failed status")
@@ -1308,8 +1351,10 @@ def step_assert_sync_failed(context: object) -> None:
             Structured value returned by this callable.
     """
     typed_context = _context_with_shell(context)
-    assert typed_context.shell.sync_state is not None
-    assert typed_context.shell.sync_state.status == "failed"
+    if typed_context.shell.sync_state is None:
+        _raise_bdd_expectation_failure("features/steps/frontend_shell_steps.py:1311")
+    if typed_context.shell.sync_state.status != "failed":
+        _raise_bdd_expectation_failure("features/steps/frontend_shell_steps.py:1312")
 
 
 @then("the frontend shell shows the controlled error message")
@@ -1325,10 +1370,11 @@ def step_assert_error_message(context: object) -> None:
             Structured value returned by this callable.
     """
     typed_context = _context_with_shell(context)
-    assert (
+    if (
         typed_context.shell.latest_error
-        == "Sync preview is unavailable for this project."
-    )
+        != "Sync preview is unavailable for this project."
+    ):
+        _raise_bdd_expectation_failure("features/steps/frontend_shell_steps.py:1328")
 
 
 @then("the frontend shell shows the controlled audit error message")
@@ -1392,7 +1438,8 @@ def step_assert_settings_route(context: object) -> None:
             Structured value returned by this callable.
     """
     typed_context = _context_with_shell(context)
-    assert typed_context.shell.router.current.name is RouteName.SETTINGS
+    if typed_context.shell.router.current.name is not RouteName.SETTINGS:
+        _raise_bdd_expectation_failure("features/steps/frontend_shell_steps.py:1395")
 
 
 @then("the settings screen shows the App / UI / Kivy section")
@@ -1408,11 +1455,13 @@ def step_assert_settings_section(context: object) -> None:
             Structured value returned by this callable.
     """
     typed_context = _context_with_shell(context)
-    assert typed_context.shell.settings_state is not None
+    if typed_context.shell.settings_state is None:
+        _raise_bdd_expectation_failure("features/steps/frontend_shell_steps.py:1411")
     section_keys = [
         section.key for section in typed_context.shell.settings_state.sections
     ]
-    assert "app-ui-kivy" in section_keys
+    if "app-ui-kivy" not in section_keys:
+        _raise_bdd_expectation_failure("features/steps/frontend_shell_steps.py:1415")
 
 
 @then("the application menu shows the main navigation groups")
@@ -1431,7 +1480,8 @@ def step_assert_application_menu_groups(context: object) -> None:
     section_keys = [
         section.key for section in typed_context.shell.navigation_menu.sections
     ]
-    assert section_keys == ["workspace", "operations", "system"]
+    if section_keys != ["workspace", "operations", "system"]:
+        _raise_bdd_expectation_failure("features/steps/frontend_shell_steps.py:1434")
 
 
 @then("the settings draft uses the default window size")
@@ -1447,15 +1497,18 @@ def step_assert_default_window_size(context: object) -> None:
             Structured value returned by this callable.
     """
     typed_context = _context_with_shell(context)
-    assert typed_context.shell.settings_state is not None
-    assert (
+    if typed_context.shell.settings_state is None:
+        _raise_bdd_expectation_failure("features/steps/frontend_shell_steps.py:1450")
+    if (
         typed_context.shell.settings_state.app_settings.window_width
-        == DEFAULT_WINDOW_WIDTH
-    )
-    assert (
+        != DEFAULT_WINDOW_WIDTH
+    ):
+        _raise_bdd_expectation_failure("features/steps/frontend_shell_steps.py:1451")
+    if (
         typed_context.shell.settings_state.app_settings.window_height
-        == DEFAULT_WINDOW_HEIGHT
-    )
+        != DEFAULT_WINDOW_HEIGHT
+    ):
+        _raise_bdd_expectation_failure("features/steps/frontend_shell_steps.py:1455")
 
 
 @then("the settings draft keeps remember last screen disabled")
@@ -1471,8 +1524,13 @@ def step_assert_default_remember_last_screen(context: object) -> None:
             Structured value returned by this callable.
     """
     typed_context = _context_with_shell(context)
-    assert typed_context.shell.settings_state is not None
-    assert typed_context.shell.settings_state.app_settings.remember_last_screen is False
+    if typed_context.shell.settings_state is None:
+        _raise_bdd_expectation_failure("features/steps/frontend_shell_steps.py:1474")
+    if (
+        typed_context.shell.settings_state.app_settings.remember_last_screen
+        is not False
+    ):
+        _raise_bdd_expectation_failure("features/steps/frontend_shell_steps.py:1475")
 
 
 @then("the settings screen shows a single theme selector with explanations")
@@ -1488,13 +1546,17 @@ def step_assert_theme_selector(context: object) -> None:
             Structured value returned by this callable.
     """
     typed_context = _context_with_shell(context)
-    assert typed_context.shell.settings_state is not None
-    assert typed_context.shell.settings_state.theme_mode_field.control_type == "choice"
-    assert (
+    if typed_context.shell.settings_state is None:
+        _raise_bdd_expectation_failure("features/steps/frontend_shell_steps.py:1491")
+    if typed_context.shell.settings_state.theme_mode_field.control_type != "choice":
+        _raise_bdd_expectation_failure("features/steps/frontend_shell_steps.py:1492")
+    if (
         len(typed_context.shell.settings_state.theme_mode_field.options)
-        == THEME_OPTION_COUNT
-    )
-    assert typed_context.shell.settings_state.theme_mode_field.help_text != ""
+        != THEME_OPTION_COUNT
+    ):
+        _raise_bdd_expectation_failure("features/steps/frontend_shell_steps.py:1493")
+    if typed_context.shell.settings_state.theme_mode_field.help_text == "":
+        _raise_bdd_expectation_failure("features/steps/frontend_shell_steps.py:1497")
 
 
 @then("the settings screen lists UI languages from packaged gettext catalogs")
@@ -1510,10 +1572,13 @@ def step_assert_ui_language_catalog_options(context: object) -> None:
             Structured value returned by this callable.
     """
     typed_context = _context_with_shell(context)
-    assert typed_context.shell.settings_state is not None
+    if typed_context.shell.settings_state is None:
+        _raise_bdd_expectation_failure("features/steps/frontend_shell_steps.py:1513")
     options = typed_context.shell.settings_state.ui_language_field.options
-    assert [option.value for option in options] == ["en", "es"]
-    assert [option.label for option in options] == ["English", "Castellano"]
+    if [option.value for option in options] != ["en", "es"]:
+        _raise_bdd_expectation_failure("features/steps/frontend_shell_steps.py:1515")
+    if [option.label for option in options] != ["English", "Castellano"]:
+        _raise_bdd_expectation_failure("features/steps/frontend_shell_steps.py:1516")
 
 
 @then("the settings screen shows the changes as saved")
@@ -1529,8 +1594,10 @@ def step_assert_settings_saved(context: object) -> None:
             Structured value returned by this callable.
     """
     typed_context = _context_with_shell(context)
-    assert typed_context.shell.settings_state is not None
-    assert typed_context.shell.settings_state.status == "saved"
+    if typed_context.shell.settings_state is None:
+        _raise_bdd_expectation_failure("features/steps/frontend_shell_steps.py:1532")
+    if typed_context.shell.settings_state.status != "saved":
+        _raise_bdd_expectation_failure("features/steps/frontend_shell_steps.py:1533")
 
 
 @then("the settings save exposes a saved confirmation message")
@@ -1546,8 +1613,10 @@ def step_assert_settings_saved_message(context: object) -> None:
             Structured value returned by this callable.
     """
     typed_context = _context_with_shell(context)
-    assert typed_context.shell.settings_state is not None
-    assert typed_context.shell.settings_state.status_message == "Settings saved."
+    if typed_context.shell.settings_state is None:
+        _raise_bdd_expectation_failure("features/steps/frontend_shell_steps.py:1549")
+    if typed_context.shell.settings_state.status_message != "Settings saved.":
+        _raise_bdd_expectation_failure("features/steps/frontend_shell_steps.py:1550")
 
 
 @then("the saved settings keep remember last screen enabled")
@@ -1563,8 +1632,10 @@ def step_assert_saved_remember_last_screen(context: object) -> None:
             Structured value returned by this callable.
     """
     typed_context = _context_with_shell(context)
-    assert typed_context.shell.settings_state is not None
-    assert typed_context.shell.settings_state.app_settings.remember_last_screen is True
+    if typed_context.shell.settings_state is None:
+        _raise_bdd_expectation_failure("features/steps/frontend_shell_steps.py:1566")
+    if typed_context.shell.settings_state.app_settings.remember_last_screen is not True:
+        _raise_bdd_expectation_failure("features/steps/frontend_shell_steps.py:1567")
 
 
 @then("the saved settings keep the selected window size")
@@ -1580,15 +1651,18 @@ def step_assert_saved_window_size(context: object) -> None:
             Structured value returned by this callable.
     """
     typed_context = _context_with_shell(context)
-    assert typed_context.shell.settings_state is not None
-    assert (
+    if typed_context.shell.settings_state is None:
+        _raise_bdd_expectation_failure("features/steps/frontend_shell_steps.py:1583")
+    if (
         typed_context.shell.settings_state.app_settings.window_width
-        == CUSTOM_WINDOW_WIDTH
-    )
-    assert (
+        != CUSTOM_WINDOW_WIDTH
+    ):
+        _raise_bdd_expectation_failure("features/steps/frontend_shell_steps.py:1584")
+    if (
         typed_context.shell.settings_state.app_settings.window_height
-        == CUSTOM_WINDOW_HEIGHT
-    )
+        != CUSTOM_WINDOW_HEIGHT
+    ):
+        _raise_bdd_expectation_failure("features/steps/frontend_shell_steps.py:1588")
 
 
 @then('the saved settings keep UI language "{ui_language}"')
@@ -1606,8 +1680,10 @@ def step_assert_saved_ui_language(context: object, ui_language: str) -> None:
             Structured value returned by this callable.
     """
     typed_context = _context_with_shell(context)
-    assert typed_context.shell.settings_state is not None
-    assert typed_context.shell.settings_state.app_settings.ui_language == ui_language
+    if typed_context.shell.settings_state is None:
+        _raise_bdd_expectation_failure("features/steps/frontend_shell_steps.py:1609")
+    if typed_context.shell.settings_state.app_settings.ui_language != ui_language:
+        _raise_bdd_expectation_failure("features/steps/frontend_shell_steps.py:1610")
 
 
 @then("the saved settings keep the compact window size")
@@ -1623,15 +1699,18 @@ def step_assert_saved_compact_window_size(context: object) -> None:
             Structured value returned by this callable.
     """
     typed_context = _context_with_shell(context)
-    assert typed_context.shell.settings_state is not None
-    assert (
+    if typed_context.shell.settings_state is None:
+        _raise_bdd_expectation_failure("features/steps/frontend_shell_steps.py:1626")
+    if (
         typed_context.shell.settings_state.app_settings.window_width
-        == COMPACT_WINDOW_WIDTH
-    )
-    assert (
+        != COMPACT_WINDOW_WIDTH
+    ):
+        _raise_bdd_expectation_failure("features/steps/frontend_shell_steps.py:1627")
+    if (
         typed_context.shell.settings_state.app_settings.window_height
-        == COMPACT_WINDOW_HEIGHT
-    )
+        != COMPACT_WINDOW_HEIGHT
+    ):
+        _raise_bdd_expectation_failure("features/steps/frontend_shell_steps.py:1631")
 
 
 @then("the settings draft shows the persisted custom values")
@@ -1647,18 +1726,24 @@ def step_assert_persisted_settings(context: object) -> None:
             Structured value returned by this callable.
     """
     typed_context = _context_with_shell(context)
-    assert typed_context.shell.settings_state is not None
-    assert typed_context.shell.settings_state.app_settings.theme_mode == "dark"
-    assert typed_context.shell.settings_state.app_settings.developer_mode is True
-    assert typed_context.shell.settings_state.app_settings.remember_last_screen is True
-    assert (
+    if typed_context.shell.settings_state is None:
+        _raise_bdd_expectation_failure("features/steps/frontend_shell_steps.py:1650")
+    if typed_context.shell.settings_state.app_settings.theme_mode != "dark":
+        _raise_bdd_expectation_failure("features/steps/frontend_shell_steps.py:1651")
+    if typed_context.shell.settings_state.app_settings.developer_mode is not True:
+        _raise_bdd_expectation_failure("features/steps/frontend_shell_steps.py:1652")
+    if typed_context.shell.settings_state.app_settings.remember_last_screen is not True:
+        _raise_bdd_expectation_failure("features/steps/frontend_shell_steps.py:1653")
+    if (
         typed_context.shell.settings_state.app_settings.window_width
-        == CUSTOM_WINDOW_WIDTH
-    )
-    assert (
+        != CUSTOM_WINDOW_WIDTH
+    ):
+        _raise_bdd_expectation_failure("features/steps/frontend_shell_steps.py:1654")
+    if (
         typed_context.shell.settings_state.app_settings.window_height
-        == CUSTOM_WINDOW_HEIGHT
-    )
+        != CUSTOM_WINDOW_HEIGHT
+    ):
+        _raise_bdd_expectation_failure("features/steps/frontend_shell_steps.py:1658")
 
 
 @then("the settings screen shows a failed status")
@@ -1674,8 +1759,10 @@ def step_assert_settings_failed(context: object) -> None:
             Structured value returned by this callable.
     """
     typed_context = _context_with_shell(context)
-    assert typed_context.shell.settings_state is not None
-    assert typed_context.shell.settings_state.status == "failed"
+    if typed_context.shell.settings_state is None:
+        _raise_bdd_expectation_failure("features/steps/frontend_shell_steps.py:1677")
+    if typed_context.shell.settings_state.status != "failed":
+        _raise_bdd_expectation_failure("features/steps/frontend_shell_steps.py:1678")
 
 
 @then("the frontend shell shows the controlled settings error message")
@@ -1691,10 +1778,11 @@ def step_assert_settings_error_message(context: object) -> None:
             Structured value returned by this callable.
     """
     typed_context = _context_with_shell(context)
-    assert typed_context.shell.latest_error in {
+    if typed_context.shell.latest_error not in {
         "App settings are temporarily unavailable.",
         "App settings could not be saved.",
-    }
+    }:
+        _raise_bdd_expectation_failure("features/steps/frontend_shell_steps.py:1694")
 
 
 @then("the settings screen shows the translation settings section")
@@ -1710,9 +1798,12 @@ def step_assert_translation_settings_section(context: object) -> None:
             Structured value returned by this callable.
     """
     typed_context = _context_with_shell(context)
-    assert typed_context.shell.settings_state is not None
-    assert typed_context.shell.settings_state.selected_section_key == "translation"
-    assert typed_context.shell.settings_state.selected_section_is_available is True
+    if typed_context.shell.settings_state is None:
+        _raise_bdd_expectation_failure("features/steps/frontend_shell_steps.py:1713")
+    if typed_context.shell.settings_state.selected_section_key != "translation":
+        _raise_bdd_expectation_failure("features/steps/frontend_shell_steps.py:1714")
+    if typed_context.shell.settings_state.selected_section_is_available is not True:
+        _raise_bdd_expectation_failure("features/steps/frontend_shell_steps.py:1715")
 
 
 @then('the saved settings keep the default project locale "{default_locale}"')
@@ -1736,7 +1827,8 @@ def step_assert_saved_default_project_locale(
             Raised when this callable hits the corresponding error path.
     """
     typed_context = _context_with_shell(context)
-    assert typed_context.shell.settings_state is not None
+    if typed_context.shell.settings_state is None:
+        _raise_bdd_expectation_failure("features/steps/frontend_shell_steps.py:1739")
     if (
         typed_context.shell.settings_state.app_settings.default_project_locale
         != default_locale
@@ -1761,7 +1853,8 @@ def step_assert_saved_default_mo_compilation_enabled(context: object) -> None:
             Raised when this callable hits the corresponding error path.
     """
     typed_context = _context_with_shell(context)
-    assert typed_context.shell.settings_state is not None
+    if typed_context.shell.settings_state is None:
+        _raise_bdd_expectation_failure("features/steps/frontend_shell_steps.py:1764")
     if typed_context.shell.settings_state.app_settings.default_compile_mo is not True:
         raise AssertionError
 
@@ -1783,7 +1876,8 @@ def step_assert_saved_default_external_translator_disabled(context: object) -> N
             Raised when this callable hits the corresponding error path.
     """
     typed_context = _context_with_shell(context)
-    assert typed_context.shell.settings_state is not None
+    if typed_context.shell.settings_state is None:
+        _raise_bdd_expectation_failure("features/steps/frontend_shell_steps.py:1786")
     if (
         typed_context.shell.settings_state.app_settings.default_use_external_translator
         is not False
@@ -1808,7 +1902,8 @@ def step_assert_saved_default_translation_cache_disabled(context: object) -> Non
             Raised when this callable hits the corresponding error path.
     """
     typed_context = _context_with_shell(context)
-    assert typed_context.shell.settings_state is not None
+    if typed_context.shell.settings_state is None:
+        _raise_bdd_expectation_failure("features/steps/frontend_shell_steps.py:1811")
     if (
         typed_context.shell.settings_state.app_settings.default_use_translation_cache
         is not False
@@ -1835,7 +1930,8 @@ def step_assert_saved_translation_cache_path(context: object, cache_path: str) -
             Raised when this callable hits the corresponding error path.
     """
     typed_context = _context_with_shell(context)
-    assert typed_context.shell.settings_state is not None
+    if typed_context.shell.settings_state is None:
+        _raise_bdd_expectation_failure("features/steps/frontend_shell_steps.py:1838")
     if (
         typed_context.shell.settings_state.app_settings.translation_cache_path
         != cache_path
@@ -1860,7 +1956,8 @@ def step_assert_saved_default_only_fuzzy_enabled(context: object) -> None:
             Raised when this callable hits the corresponding error path.
     """
     typed_context = _context_with_shell(context)
-    assert typed_context.shell.settings_state is not None
+    if typed_context.shell.settings_state is None:
+        _raise_bdd_expectation_failure("features/steps/frontend_shell_steps.py:1863")
     if typed_context.shell.settings_state.app_settings.default_only_fuzzy is not True:
         raise AssertionError
 
@@ -1882,7 +1979,8 @@ def step_assert_saved_default_dry_run_enabled(context: object) -> None:
             Raised when this callable hits the corresponding error path.
     """
     typed_context = _context_with_shell(context)
-    assert typed_context.shell.settings_state is not None
+    if typed_context.shell.settings_state is None:
+        _raise_bdd_expectation_failure("features/steps/frontend_shell_steps.py:1885")
     if typed_context.shell.settings_state.app_settings.default_dry_run is not True:
         raise AssertionError
 
@@ -1904,7 +2002,8 @@ def step_assert_saved_default_stats_only_disabled(context: object) -> None:
             Raised when this callable hits the corresponding error path.
     """
     typed_context = _context_with_shell(context)
-    assert typed_context.shell.settings_state is not None
+    if typed_context.shell.settings_state is None:
+        _raise_bdd_expectation_failure("features/steps/frontend_shell_steps.py:1907")
     if typed_context.shell.settings_state.app_settings.default_stats_only is not False:
         raise AssertionError
 
@@ -1926,7 +2025,8 @@ def step_assert_saved_default_inconsistency_reporting_enabled(context: object) -
             Raised when this callable hits the corresponding error path.
     """
     typed_context = _context_with_shell(context)
-    assert typed_context.shell.settings_state is not None
+    if typed_context.shell.settings_state is None:
+        _raise_bdd_expectation_failure("features/steps/frontend_shell_steps.py:1929")
     if (
         typed_context.shell.settings_state.app_settings.default_report_inconsistencies
         is not True

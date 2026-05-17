@@ -31,7 +31,9 @@ class PolyglotSiteTranslatorApp(App):  # type: ignore[misc]
     """Thin Kivy application wrapper around the presentation shell.
 
     Attributes:
-        None: This type does not declare class-level attributes.
+        title:
+            Window title exposed by the Kivy base class and initialized by
+            this wrapper before later runtime language refreshes.
     """
 
     def __init__(self, shell: FrontendShell, **kwargs: object) -> None:
@@ -50,6 +52,7 @@ class PolyglotSiteTranslatorApp(App):  # type: ignore[misc]
                 Structured value returned by this callable.
         """
         super().__init__(**kwargs)
+        self.title = tr("Polyglot Site Translator")
         self._shell = shell
         self._built_root: Any | None = None
         self._previous_excepthook = sys.excepthook
@@ -67,7 +70,6 @@ class PolyglotSiteTranslatorApp(App):  # type: ignore[misc]
             value:
                 Structured value returned by this callable.
         """
-        self.title = tr("Polyglot Site Translator")
         self._install_runtime_error_handlers()
         self._open_initial_route()
         self._built_root = build_root_widget(self._shell, self.apply_runtime_settings)

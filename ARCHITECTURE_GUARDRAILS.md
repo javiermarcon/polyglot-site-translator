@@ -145,6 +145,8 @@ Update both:
 - No giant multipurpose classes
 - No hidden destructive sync behavior
 - No silent fallback that masks operational failures
+- No Python `assert` statements outside pytest tests
+- No instance attributes introduced outside class constructors
 - No untyped public APIs without justification
 - No undocumented APIs or behaviorally significant helpers, public or private, without
   justification

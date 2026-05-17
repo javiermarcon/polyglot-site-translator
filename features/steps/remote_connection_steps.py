@@ -6,7 +6,7 @@ from collections.abc import Callable, Iterable
 from dataclasses import dataclass
 from pathlib import Path
 import tempfile
-from typing import Any, Protocol, TypeVar, cast
+from typing import Any, NoReturn, Protocol, TypeVar, cast
 
 import behave as behave_module  # type: ignore[import-untyped]
 
@@ -39,6 +39,26 @@ given = cast(
 )
 when = cast(Callable[[str], Callable[[StepFunction], StepFunction]], behave_module.when)
 then = cast(Callable[[str], Callable[[StepFunction], StepFunction]], behave_module.then)
+
+
+def _raise_bdd_expectation_failure(location: str) -> NoReturn:
+    """Raise an explicit Behave expectation failure.
+
+    Args:
+        location:
+            Source location of the failed BDD expectation.
+
+    Returns:
+        value:
+            This helper never returns; it always raises AssertionError.
+
+    Raises:
+        AssertionError:
+            Raised every time this helper is called so Behave reports the
+            step as failed without relying on optimized-away assertions.
+    """
+    message = f"BDD expectation failed at {location}."
+    raise AssertionError(message)
 
 
 @dataclass(frozen=True)
@@ -404,10 +424,13 @@ def step_assert_no_remote_option(context: object) -> None:
     """
     typed_context = _context(context)
     typed_context.shell.open_project_editor_create()
-    assert typed_context.shell.project_editor_state is not None
-    assert typed_context.shell.project_editor_state.connection_type_options[
-        0
-    ].label == ("No Remote Connection")
+    if typed_context.shell.project_editor_state is None:
+        _raise_bdd_expectation_failure("features/steps/remote_connection_steps.py:407")
+    if (
+        typed_context.shell.project_editor_state.connection_type_options[0].label
+        != "No Remote Connection"
+    ):
+        _raise_bdd_expectation_failure("features/steps/remote_connection_steps.py:408")
 
 
 @when("the operator submits a new project without remote connection")
@@ -454,11 +477,13 @@ def step_assert_no_remote_summary(context: object) -> None:
             Structured value returned by this callable.
     """
     typed_context = _context(context)
-    assert typed_context.shell.project_detail_state is not None
-    assert (
+    if typed_context.shell.project_detail_state is None:
+        _raise_bdd_expectation_failure("features/steps/remote_connection_steps.py:457")
+    if (
         "Remote connection: None"
-        in typed_context.shell.project_detail_state.configuration_summary
-    )
+        not in typed_context.shell.project_detail_state.configuration_summary
+    ):
+        _raise_bdd_expectation_failure("features/steps/remote_connection_steps.py:458")
 
 
 @when('the operator fills a valid "{connection_type}" remote connection draft')
@@ -584,11 +609,15 @@ def step_assert_successful_remote_test(context: object) -> None:
             Structured value returned by this callable.
     """
     typed_context = _context(context)
-    assert typed_context.shell.project_editor_state is not None
-    assert typed_context.shell.project_editor_state.connection_test_result is not None
-    assert (
-        typed_context.shell.project_editor_state.connection_test_result.success is True
-    )
+    if typed_context.shell.project_editor_state is None:
+        _raise_bdd_expectation_failure("features/steps/remote_connection_steps.py:587")
+    if typed_context.shell.project_editor_state.connection_test_result is None:
+        _raise_bdd_expectation_failure("features/steps/remote_connection_steps.py:588")
+    if (
+        typed_context.shell.project_editor_state.connection_test_result.success
+        is not True
+    ):
+        _raise_bdd_expectation_failure("features/steps/remote_connection_steps.py:589")
 
 
 @then("the project editor shows a failed remote connection test result")
@@ -604,11 +633,15 @@ def step_assert_failed_remote_test(context: object) -> None:
             Structured value returned by this callable.
     """
     typed_context = _context(context)
-    assert typed_context.shell.project_editor_state is not None
-    assert typed_context.shell.project_editor_state.connection_test_result is not None
-    assert (
-        typed_context.shell.project_editor_state.connection_test_result.success is False
-    )
+    if typed_context.shell.project_editor_state is None:
+        _raise_bdd_expectation_failure("features/steps/remote_connection_steps.py:607")
+    if typed_context.shell.project_editor_state.connection_test_result is None:
+        _raise_bdd_expectation_failure("features/steps/remote_connection_steps.py:608")
+    if (
+        typed_context.shell.project_editor_state.connection_test_result.success
+        is not False
+    ):
+        _raise_bdd_expectation_failure("features/steps/remote_connection_steps.py:609")
 
 
 @then("the project editor shows the missing remote connection validation error")
@@ -628,7 +661,8 @@ def step_assert_missing_remote_validation_error(context: object) -> None:
             Raised when this callable hits the corresponding error path.
     """
     typed_context = _context(context)
-    assert typed_context.shell.project_editor_state is not None
+    if typed_context.shell.project_editor_state is None:
+        _raise_bdd_expectation_failure("features/steps/remote_connection_steps.py:631")
     if typed_context.shell.project_editor_state.status != "failed":
         raise AssertionError
     if (
@@ -655,10 +689,12 @@ def step_assert_invalid_remote_port_validation_error(context: object) -> None:
             Raised when this callable hits the corresponding error path.
     """
     typed_context = _context(context)
-    assert typed_context.shell.project_editor_state is not None
+    if typed_context.shell.project_editor_state is None:
+        _raise_bdd_expectation_failure("features/steps/remote_connection_steps.py:658")
     if typed_context.shell.project_editor_state.status != "failed":
         raise AssertionError
-    assert typed_context.shell.project_editor_state.status_message is not None
+    if typed_context.shell.project_editor_state.status_message is None:
+        _raise_bdd_expectation_failure("features/steps/remote_connection_steps.py:661")
     if (
         "invalid literal for int()"
         not in typed_context.shell.project_editor_state.status_message

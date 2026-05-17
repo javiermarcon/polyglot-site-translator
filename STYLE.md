@@ -78,6 +78,9 @@ Interpretation for this repository:
 - Never use `except Exception`.
 - Catch concrete exceptions only.
 - Do not ignore failures silently.
+- Use Python `assert` statements only in pytest tests under `tests/`.
+- Outside pytest tests, including Behave steps, use explicit exceptions because
+  optimized bytecode removes `assert` statements.
 - Error messages must be actionable.
 - Prefer explicit validation over late failure.
 - If logging an unexpected failure, prefer `logger.exception(...)`.
@@ -101,6 +104,8 @@ Interpretation for this repository:
 - Avoid giant service classes with unrelated responsibilities.
 - Prefer composable helpers/services instead of monoliths.
 - Keep Kivy screens/widgets focused on presentation and orchestration.
+- Introduce instance attributes only in `__init__`; later methods may mutate
+  existing state but must not create new attributes on demand.
 
 ---
 

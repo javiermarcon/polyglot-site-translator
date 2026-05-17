@@ -66,6 +66,10 @@ Canonical validation commands now include:
 - `python tests/run_docstring_audit.py`
 - `python -m pytest`
 
+Static regression coverage must keep Python `assert` statements limited to
+pytest tests under `tests/`. Runtime code, scripts, and Behave steps must use
+explicit exceptions so behavior does not change under optimized bytecode.
+
 Documentation validation for user-visible or developer-visible changes must
 include a manual check that:
 

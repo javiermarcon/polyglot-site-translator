@@ -411,6 +411,8 @@ Reglas clave:
 - no usar `except Exception`
 - no empujar lógica de negocio a widgets/screens
 - no acoplar la UI directamente a infraestructura real
+- introducir atributos de instancia solo en `__init__`
+- usar sentencias Python `assert` solo en tests de pytest bajo `tests/`
 - no introducir cambios arquitectónicos sin actualizar documentación
 
 ## Limitaciones actuales

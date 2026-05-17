@@ -313,6 +313,8 @@ When changing user-visible behavior, update both `README.md` and
 - keep framework-specific rules in adapters
 - do not hardcode remote connection catalogs or UI language catalogs in screens
 - do not add dependencies outside `requirements/`
+- introduce instance attributes only in `__init__`
+- keep Python `assert` statements limited to pytest tests under `tests/`
 - keep PEP8, PEP257, PEP484, Ruff, mypy, tests, and docstring audit green
 
 ## License

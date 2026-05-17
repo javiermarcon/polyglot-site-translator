@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections.abc import Callable
 from pathlib import Path
 import tempfile
-from typing import Protocol, TypeVar, cast
+from typing import NoReturn, Protocol, TypeVar, cast
 
 import behave as behave_module  # type: ignore[import-untyped]
 
@@ -24,6 +24,27 @@ given = cast(
 )
 when = cast(Callable[[str], Callable[[StepFunction], StepFunction]], behave_module.when)
 then = cast(Callable[[str], Callable[[StepFunction], StepFunction]], behave_module.then)
+
+
+def _raise_bdd_expectation_failure(location: str) -> NoReturn:
+    """Raise an explicit Behave expectation failure.
+
+    Args:
+        location:
+            Source location of the failed BDD expectation.
+
+    Returns:
+        value:
+            This helper never returns; it always raises AssertionError.
+
+    Raises:
+        AssertionError:
+            Raised every time this helper is called so Behave reports the
+            step as failed without relying on optimized-away assertions.
+    """
+    message = f"BDD expectation failed at {location}."
+    raise AssertionError(message)
+
 
 MIN_MATCHED_FRAMEWORK_FINDINGS = 2
 
@@ -273,8 +294,14 @@ def step_assert_detected_framework(context: object, framework_name: str) -> None
             Structured value returned by this callable.
     """
     typed_context = _context_with_shell(context)
-    assert typed_context.shell.project_detail_state is not None
-    assert typed_context.shell.project_detail_state.project.framework == framework_name
+    if typed_context.shell.project_detail_state is None:
+        _raise_bdd_expectation_failure(
+            "features/steps/framework_detection_steps.py:276"
+        )
+    if typed_context.shell.project_detail_state.project.framework != framework_name:
+        _raise_bdd_expectation_failure(
+            "features/steps/framework_detection_steps.py:277"
+        )
 
 
 @then("the project detail shows framework detection evidence")
@@ -290,11 +317,17 @@ def step_assert_detection_evidence(context: object) -> None:
             Structured value returned by this callable.
     """
     typed_context = _context_with_shell(context)
-    assert typed_context.shell.project_detail_state is not None
-    assert (
+    if typed_context.shell.project_detail_state is None:
+        _raise_bdd_expectation_failure(
+            "features/steps/framework_detection_steps.py:293"
+        )
+    if (
         "Framework detection:"
-        in typed_context.shell.project_detail_state.metadata_summary
-    )
+        not in typed_context.shell.project_detail_state.metadata_summary
+    ):
+        _raise_bdd_expectation_failure(
+            "features/steps/framework_detection_steps.py:294"
+        )
 
 
 @then("the project detail shows that no framework was detected")
@@ -310,11 +343,17 @@ def step_assert_no_framework_detected(context: object) -> None:
             Structured value returned by this callable.
     """
     typed_context = _context_with_shell(context)
-    assert typed_context.shell.project_detail_state is not None
-    assert (
+    if typed_context.shell.project_detail_state is None:
+        _raise_bdd_expectation_failure(
+            "features/steps/framework_detection_steps.py:313"
+        )
+    if (
         "No framework detected"
-        in typed_context.shell.project_detail_state.metadata_summary
-    )
+        not in typed_context.shell.project_detail_state.metadata_summary
+    ):
+        _raise_bdd_expectation_failure(
+            "features/steps/framework_detection_steps.py:314"
+        )
 
 
 @then("the stored project framework keeps the operator-provided value")
@@ -330,8 +369,14 @@ def step_assert_provided_framework_kept(context: object) -> None:
             Structured value returned by this callable.
     """
     typed_context = _context_with_shell(context)
-    assert typed_context.shell.project_detail_state is not None
-    assert typed_context.shell.project_detail_state.project.framework == "Customapp"
+    if typed_context.shell.project_detail_state is None:
+        _raise_bdd_expectation_failure(
+            "features/steps/framework_detection_steps.py:333"
+        )
+    if typed_context.shell.project_detail_state.project.framework != "Customapp":
+        _raise_bdd_expectation_failure(
+            "features/steps/framework_detection_steps.py:334"
+        )
 
 
 @then("the project detail shows framework detection warnings")
@@ -347,9 +392,15 @@ def step_assert_detection_warnings(context: object) -> None:
             Structured value returned by this callable.
     """
     typed_context = _context_with_shell(context)
-    assert typed_context.shell.project_detail_state is not None
+    if typed_context.shell.project_detail_state is None:
+        _raise_bdd_expectation_failure(
+            "features/steps/framework_detection_steps.py:350"
+        )
     metadata_summary = typed_context.shell.project_detail_state.metadata_summary.lower()
-    assert "partial wordpress evidence" in metadata_summary
+    if "partial wordpress evidence" not in metadata_summary:
+        _raise_bdd_expectation_failure(
+            "features/steps/framework_detection_steps.py:352"
+        )
 
 
 @then("the audit preview shows zero framework findings")
@@ -365,8 +416,14 @@ def step_assert_zero_framework_findings(context: object) -> None:
             Structured value returned by this callable.
     """
     typed_context = _context_with_shell(context)
-    assert typed_context.shell.audit_state is not None
-    assert typed_context.shell.audit_state.findings_count == 0
+    if typed_context.shell.audit_state is None:
+        _raise_bdd_expectation_failure(
+            "features/steps/framework_detection_steps.py:368"
+        )
+    if typed_context.shell.audit_state.findings_count != 0:
+        _raise_bdd_expectation_failure(
+            "features/steps/framework_detection_steps.py:369"
+        )
 
 
 @then("the audit preview explains that no supported framework was detected")
@@ -382,11 +439,17 @@ def step_assert_no_framework_detected_in_audit(context: object) -> None:
             Structured value returned by this callable.
     """
     typed_context = _context_with_shell(context)
-    assert typed_context.shell.audit_state is not None
-    assert (
+    if typed_context.shell.audit_state is None:
+        _raise_bdd_expectation_failure(
+            "features/steps/framework_detection_steps.py:385"
+        )
+    if (
         "No supported framework was detected"
-        in typed_context.shell.audit_state.findings_summary
-    )
+        not in typed_context.shell.audit_state.findings_summary
+    ):
+        _raise_bdd_expectation_failure(
+            "features/steps/framework_detection_steps.py:386"
+        )
 
 
 @then("the audit preview shows matched framework findings")
@@ -406,7 +469,10 @@ def step_assert_matched_framework_findings(context: object) -> None:
             Raised when this callable hits the corresponding error path.
     """
     typed_context = _context_with_shell(context)
-    assert typed_context.shell.audit_state is not None
+    if typed_context.shell.audit_state is None:
+        _raise_bdd_expectation_failure(
+            "features/steps/framework_detection_steps.py:409"
+        )
     if typed_context.shell.audit_state.findings_count < MIN_MATCHED_FRAMEWORK_FINDINGS:
         raise AssertionError
 
@@ -428,7 +494,10 @@ def step_assert_framework_evidence_in_audit(context: object) -> None:
             Raised when this callable hits the corresponding error path.
     """
     typed_context = _context_with_shell(context)
-    assert typed_context.shell.audit_state is not None
+    if typed_context.shell.audit_state is None:
+        _raise_bdd_expectation_failure(
+            "features/steps/framework_detection_steps.py:431"
+        )
     summary = typed_context.shell.audit_state.findings_summary
     if "wp-config.php" not in summary:
         raise AssertionError
@@ -449,8 +518,14 @@ def step_assert_framework_combo_options(context: object) -> None:
             Structured value returned by this callable.
     """
     typed_context = _context_with_shell(context)
-    assert typed_context.shell.project_editor_state is not None
-    assert [
+    if typed_context.shell.project_editor_state is None:
+        _raise_bdd_expectation_failure(
+            "features/steps/framework_detection_steps.py:452"
+        )
+    if [
         option.label
         for option in typed_context.shell.project_editor_state.framework_options
-    ] == ["Unknown", "Django", "Flask", "WordPress"]
+    ] != ["Unknown", "Django", "Flask", "WordPress"]:
+        _raise_bdd_expectation_failure(
+            "features/steps/framework_detection_steps.py:453"
+        )

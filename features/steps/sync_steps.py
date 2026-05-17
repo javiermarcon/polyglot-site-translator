@@ -7,7 +7,7 @@ from dataclasses import dataclass, field, replace
 from pathlib import Path
 import tempfile
 import time
-from typing import Any, Protocol, TypeVar, cast
+from typing import Any, NoReturn, Protocol, TypeVar, cast
 
 import behave as behave_module  # type: ignore[import-untyped]
 
@@ -56,6 +56,26 @@ given = cast(
 )
 when = cast(Callable[[str], Callable[[StepFunction], StepFunction]], behave_module.when)
 then = cast(Callable[[str], Callable[[StepFunction], StepFunction]], behave_module.then)
+
+
+def _raise_bdd_expectation_failure(location: str) -> NoReturn:
+    """Raise an explicit Behave expectation failure.
+
+    Args:
+        location:
+            Source location of the failed BDD expectation.
+
+    Returns:
+        value:
+            This helper never returns; it always raises AssertionError.
+
+    Raises:
+        AssertionError:
+            Raised every time this helper is called so Behave reports the
+            step as failed without relying on optimized-away assertions.
+    """
+    message = f"BDD expectation failed at {location}."
+    raise AssertionError(message)
 
 
 @dataclass
@@ -730,7 +750,8 @@ def step_set_sync_command_log_limit(context: object, limit: int) -> None:
     """
     typed_context = _context(context)
     typed_context.shell.open_settings()
-    assert typed_context.shell.settings_state is not None
+    if typed_context.shell.settings_state is None:
+        _raise_bdd_expectation_failure("features/steps/sync_steps.py:733")
     typed_context.shell.update_settings_draft(
         replace(
             typed_context.shell.settings_state.app_settings,
@@ -1189,8 +1210,10 @@ def step_assert_downloaded_files(context: object, downloaded_files: int) -> None
             Structured value returned by this callable.
     """
     typed_context = _context(context)
-    assert typed_context.shell.sync_state is not None
-    assert typed_context.shell.sync_state.files_synced == downloaded_files
+    if typed_context.shell.sync_state is None:
+        _raise_bdd_expectation_failure("features/steps/sync_steps.py:1192")
+    if typed_context.shell.sync_state.files_synced != downloaded_files:
+        _raise_bdd_expectation_failure("features/steps/sync_steps.py:1193")
 
 
 @then('the sync panel reports the sync error code "{error_code}"')
@@ -1208,8 +1231,10 @@ def step_assert_sync_error_code(context: object, error_code: str) -> None:
             Structured value returned by this callable.
     """
     typed_context = _context(context)
-    assert typed_context.shell.sync_state is not None
-    assert typed_context.shell.sync_state.error_code == error_code
+    if typed_context.shell.sync_state is None:
+        _raise_bdd_expectation_failure("features/steps/sync_steps.py:1211")
+    if typed_context.shell.sync_state.error_code != error_code:
+        _raise_bdd_expectation_failure("features/steps/sync_steps.py:1212")
 
 
 @then("the sync screen shows the downloaded file count")
@@ -1226,7 +1251,8 @@ def step_assert_sync_screen(context: object) -> None:
     """
     typed_context = _context(context)
     typed_context.sync_screen.refresh()
-    assert "Files: 2" in typed_context.sync_screen._summary_label.text
+    if "Files: 2" not in typed_context.sync_screen._summary_label.text:
+        _raise_bdd_expectation_failure("features/steps/sync_steps.py:1229")
 
 
 @then("the sync panel reports {uploaded_files:d} uploaded files")
@@ -1248,7 +1274,8 @@ def step_assert_uploaded_files(context: object, uploaded_files: int) -> None:
             Raised when this callable hits the corresponding error path.
     """
     typed_context = _context(context)
-    assert typed_context.shell.sync_state is not None
+    if typed_context.shell.sync_state is None:
+        _raise_bdd_expectation_failure("features/steps/sync_steps.py:1251")
     if typed_context.shell.sync_state.files_synced != uploaded_files:
         raise AssertionError
 
@@ -1321,7 +1348,8 @@ def step_assert_sync_progress_window_open(context: object) -> None:
             Structured value returned by this callable.
     """
     typed_context = _context(context)
-    assert typed_context.detail_screen._sync_progress_popup is not None
+    if typed_context.detail_screen._sync_progress_popup is None:
+        _raise_bdd_expectation_failure("features/steps/sync_steps.py:1324")
 
 
 @then("the sync progress window lists the remote sync commands")
@@ -1338,14 +1366,16 @@ def step_assert_sync_progress_window_commands(context: object) -> None:
     """
     typed_context = _context(context)
     popup = typed_context.detail_screen._sync_progress_popup
-    assert popup is not None
+    if popup is None:
+        _raise_bdd_expectation_failure("features/steps/sync_steps.py:1341")
     deadline = time.monotonic() + 1
     while time.monotonic() < deadline:
         popup.refresh()
         if "SFTP LIST /srv/app" in popup._command_log_label.text:
             break
         time.sleep(0.01)
-    assert "SFTP LIST /srv/app" in popup._command_log_label.text
+    if "SFTP LIST /srv/app" not in popup._command_log_label.text:
+        _raise_bdd_expectation_failure("features/steps/sync_steps.py:1348")
 
 
 @then("the sync progress window shows file download commands while sync is running")
@@ -1366,7 +1396,8 @@ def step_assert_sync_progress_window_download_commands(context: object) -> None:
     """
     typed_context = _context(context)
     popup = typed_context.detail_screen._sync_progress_popup
-    assert popup is not None
+    if popup is None:
+        _raise_bdd_expectation_failure("features/steps/sync_steps.py:1369")
     deadline = time.monotonic() + 1
     while time.monotonic() < deadline:
         popup.refresh()
@@ -1395,7 +1426,8 @@ def step_assert_sync_progress_window_failed_status(context: object) -> None:
     """
     typed_context = _context(context)
     popup = typed_context.detail_screen._sync_progress_popup
-    assert popup is not None
+    if popup is None:
+        _raise_bdd_expectation_failure("features/steps/sync_steps.py:1398")
     deadline = time.monotonic() + 1
     while time.monotonic() < deadline:
         popup.refresh()
@@ -1424,7 +1456,8 @@ def step_assert_sync_progress_window_error_message(context: object) -> None:
     """
     typed_context = _context(context)
     popup = typed_context.detail_screen._sync_progress_popup
-    assert popup is not None
+    if popup is None:
+        _raise_bdd_expectation_failure("features/steps/sync_steps.py:1427")
     expected_message = (
         "Failed to list remote files for project 'Broken Remote Site' from "
         "sftp broken.example.test:22 at remote path '/srv/app'. "
@@ -1458,7 +1491,8 @@ def step_assert_sync_progress_window_host_key_trust_action(context: object) -> N
     """
     typed_context = _context(context)
     popup = typed_context.detail_screen._sync_progress_popup
-    assert popup is not None
+    if popup is None:
+        _raise_bdd_expectation_failure("features/steps/sync_steps.py:1461")
     deadline = time.monotonic() + 1
     while time.monotonic() < deadline:
         popup.refresh()
@@ -1491,8 +1525,10 @@ def step_assert_sync_progress_window_limit(context: object, limit: int) -> None:
     """
     typed_context = _context(context)
     popup = typed_context.detail_screen._sync_progress_popup
-    assert popup is not None
-    assert typed_context.shell.project_detail_state is not None
+    if popup is None:
+        _raise_bdd_expectation_failure("features/steps/sync_steps.py:1494")
+    if typed_context.shell.project_detail_state is None:
+        _raise_bdd_expectation_failure("features/steps/sync_steps.py:1495")
     deadline = time.monotonic() + 1
     local_root = Path(typed_context.shell.project_detail_state.project.local_path)
     while time.monotonic() < deadline:
@@ -1509,7 +1545,8 @@ def step_assert_sync_progress_window_limit(context: object, limit: int) -> None:
     command_lines = [
         line for line in popup._command_log_label.text.splitlines() if line.strip()
     ]
-    assert len(command_lines) == limit
+    if len(command_lines) != limit:
+        _raise_bdd_expectation_failure("features/steps/sync_steps.py:1512")
     if "SFTP LIST /srv/app" in command_lines:
         raise AssertionError
     if f"LOCAL WRITE {local_root / 'templates' / 'home.html'}" not in command_lines:
@@ -1536,7 +1573,8 @@ def step_assert_single_remote_connect(context: object) -> None:
     """
     typed_context = _context(context)
     popup = typed_context.detail_screen._sync_progress_popup
-    assert popup is not None
+    if popup is None:
+        _raise_bdd_expectation_failure("features/steps/sync_steps.py:1539")
     deadline = time.monotonic() + 1
     while time.monotonic() < deadline:
         popup.refresh()
@@ -1573,7 +1611,8 @@ def step_assert_single_remote_close(context: object) -> None:
     """
     typed_context = _context(context)
     popup = typed_context.detail_screen._sync_progress_popup
-    assert popup is not None
+    if popup is None:
+        _raise_bdd_expectation_failure("features/steps/sync_steps.py:1576")
     deadline = time.monotonic() + 1
     while time.monotonic() < deadline:
         popup.refresh()

@@ -39,6 +39,8 @@ If a section does not apply, explicitly say so.
 - Do not duplicate heuristics, scanning logic, or validation rules.
 - Do not hardcode framework-specific rules into shared services when they belong in an adapter or plugin.
 - Do not break CLI or service entrypoints if they already exist.
+- Do not introduce instance attributes outside `__init__`; initialize class instance state in the constructor before later methods mutate it.
+- Do not use Python `assert` statements outside pytest tests under `tests/`; runtime code, scripts, and BDD steps must raise explicit exceptions instead because optimized bytecode removes assertions.
 - Do not introduce a new module or subsystem without updating repository documentation.
 - Do not introduce a new external dependency without declaring it in the `requirements/` directory using the repository split defined below.
 - Do not leave `README.md` or `README_es.md` outdated when a task changes behavior, installation, usage, testing commands, architecture visible to contributors, or user/developer-facing capabilities.
