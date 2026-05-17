@@ -147,6 +147,10 @@ Update both:
 - No silent fallback that masks operational failures
 - No Python `assert` statements outside pytest tests
 - No instance attributes introduced outside class constructors
+- No hardcoded temporary filesystem paths in tests or BDD steps
+- No protected-member access across class boundaries
+- No mutable global runtime state for presentation or service behavior
+- No unguarded `next()` calls without a fallback or explicit failure path
 - No untyped public APIs without justification
 - No undocumented APIs or behaviorally significant helpers, public or private, without
   justification

@@ -859,11 +859,11 @@ def test_project_detail_sync_action_opens_a_progress_window_with_command_log(
     detail_screen._start_sync()
 
     assert root.current == "project_detail"
-    assert detail_screen._sync_progress_popup is not None
+    assert detail_screen.sync_progress_popup is not None
     deadline = time.monotonic() + 1
     while time.monotonic() < deadline:
-        detail_screen._sync_progress_popup.refresh()
-        command_log_text = detail_screen._sync_progress_popup._command_log_label.text
+        detail_screen.sync_progress_popup.refresh()
+        command_log_text = detail_screen.sync_progress_popup.command_log_text
         if (
             "SFTP LIST /srv/app" in command_log_text
             and "SFTP GET /srv/app/locale/es.po" in command_log_text
@@ -871,7 +871,7 @@ def test_project_detail_sync_action_opens_a_progress_window_with_command_log(
             break
         time.sleep(0.01)
 
-    command_log_text = detail_screen._sync_progress_popup._command_log_label.text
+    command_log_text = detail_screen.sync_progress_popup.command_log_text
     assert "SFTP LIST /srv/app" in command_log_text
     assert "SFTP GET /srv/app/locale/es.po" in command_log_text
 
@@ -929,16 +929,16 @@ def test_project_detail_sync_action_reuses_a_single_remote_session(
 
     detail_screen._start_sync()
 
-    assert detail_screen._sync_progress_popup is not None
+    assert detail_screen.sync_progress_popup is not None
     deadline = time.monotonic() + 1
     while time.monotonic() < deadline:
-        detail_screen._sync_progress_popup.refresh()
-        command_log_text = detail_screen._sync_progress_popup._command_log_label.text
+        detail_screen.sync_progress_popup.refresh()
+        command_log_text = detail_screen.sync_progress_popup.command_log_text
         if "SFTP CLOSE example.test:22" in command_log_text:
             break
         time.sleep(0.01)
 
-    command_log_text = detail_screen._sync_progress_popup._command_log_label.text
+    command_log_text = detail_screen.sync_progress_popup.command_log_text
     assert command_log_text.count("SFTP CONNECT example.test:22") == 1
     assert command_log_text.count("SFTP CLOSE example.test:22") == 1
 
@@ -1000,14 +1000,14 @@ def test_project_detail_progress_window_keeps_only_the_latest_configured_command
 
     detail_screen._start_sync()
 
-    assert detail_screen._sync_progress_popup is not None
+    assert detail_screen.sync_progress_popup is not None
     deadline = time.monotonic() + 1
     while time.monotonic() < deadline:
-        detail_screen._sync_progress_popup.refresh()
+        detail_screen.sync_progress_popup.refresh()
         command_lines = [
             line
             for line in (
-                detail_screen._sync_progress_popup._command_log_label.text.splitlines()
+                detail_screen.sync_progress_popup.command_log_text.splitlines()
             )
             if line.strip()
         ]
@@ -1017,9 +1017,7 @@ def test_project_detail_progress_window_keeps_only_the_latest_configured_command
 
     command_lines = [
         line
-        for line in (
-            detail_screen._sync_progress_popup._command_log_label.text.splitlines()
-        )
+        for line in (detail_screen.sync_progress_popup.command_log_text.splitlines())
         if line.strip()
     ]
     assert command_lines == [

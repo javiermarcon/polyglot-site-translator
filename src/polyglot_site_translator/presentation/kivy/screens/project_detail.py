@@ -60,6 +60,34 @@ class ProjectDetailScreen(BaseShellScreen):
         self._detail_label = WrappedLabel()
         self.refresh()
 
+    @property
+    def sync_progress_popup(self) -> SyncProgressPopup | None:
+        """Return the sync progress popup managed by this screen.
+
+        Args:
+            self:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                The popup instance when a sync workflow opened it, otherwise
+                ``None``.
+        """
+        return self._sync_progress_popup
+
+    def clear_sync_progress_popup(self) -> None:
+        """Clear the managed sync progress popup reference.
+
+        Args:
+            self:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+        """
+        self._sync_progress_popup = None
+
     def _back_to_projects(self, *_args: object) -> None:
         """Handle back to projects.
 

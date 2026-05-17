@@ -2,12 +2,14 @@
 
 The presentation layer owns operator-facing copy.  This module discovers
 packaged gettext catalogs, exposes language options for settings, and keeps a
-small active translation object for Kivy widgets that render static labels.
+context-local active language for Kivy widgets that render static labels.
 """
 
 from __future__ import annotations
 
+from contextvars import ContextVar
 from dataclasses import dataclass
+from functools import cache
 import gettext
 from importlib import resources
 from importlib.resources.abc import Traversable
@@ -33,7 +35,10 @@ class UILanguageOption:
     label: str
 
 
-_ACTIVE_TRANSLATION: gettext.NullTranslations = gettext.NullTranslations()
+_ACTIVE_UI_LANGUAGE: ContextVar[str] = ContextVar(
+    "_ACTIVE_UI_LANGUAGE",
+    default=DEFAULT_UI_LANGUAGE,
+)
 _PREFIX_MSGIDS = (
     "Open ",
     "Status: ",
@@ -177,6 +182,7 @@ def is_supported_ui_language(language_code: str) -> bool:
     return language_code in set(_discover_language_codes())
 
 
+@cache
 def build_translation(language_code: str) -> gettext.NullTranslations:
     """Load the gettext translation for a supported UI language.
 
@@ -214,8 +220,8 @@ def set_active_ui_language(language_code: str) -> None:
         ValueError:
             Raised when no packaged catalog exists for ``language_code``.
     """
-    global _ACTIVE_TRANSLATION  # noqa: PLW0603
-    _ACTIVE_TRANSLATION = build_translation(language_code)
+    build_translation(language_code)
+    _ACTIVE_UI_LANGUAGE.set(language_code)
 
 
 def tr(message: str) -> str:
@@ -229,7 +235,7 @@ def tr(message: str) -> str:
         value:
             Translated string for the active UI language.
     """
-    return _ACTIVE_TRANSLATION.gettext(message)
+    return build_translation(_ACTIVE_UI_LANGUAGE.get()).gettext(message)
 
 
 def tr_ui_text(message: str) -> str:

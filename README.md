@@ -315,6 +315,10 @@ When changing user-visible behavior, update both `README.md` and
 - do not add dependencies outside `requirements/`
 - introduce instance attributes only in `__init__`
 - keep Python `assert` statements limited to pytest tests under `tests/`
+- use temporary-directory fixtures instead of hardcoded `/tmp` paths in tests
+- expose public observation APIs instead of accessing protected members across
+  class boundaries
+- avoid mutable global runtime state
 - keep PEP8, PEP257, PEP484, Ruff, mypy, tests, and docstring audit green
 
 ## License

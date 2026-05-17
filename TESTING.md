@@ -69,6 +69,10 @@ Canonical validation commands now include:
 Static regression coverage must keep Python `assert` statements limited to
 pytest tests under `tests/`. Runtime code, scripts, and Behave steps must use
 explicit exceptions so behavior does not change under optimized bytecode.
+Tests and BDD steps must use `tempfile`, `tmp_path`, or repository-provided
+fixtures for temporary filesystem locations instead of hardcoded `/tmp` paths.
+Integration tests and BDD steps must exercise public APIs rather than protected
+members of client classes.
 
 Documentation validation for user-visible or developer-visible changes must
 include a manual check that:

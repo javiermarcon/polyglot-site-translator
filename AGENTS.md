@@ -41,6 +41,11 @@ If a section does not apply, explicitly say so.
 - Do not break CLI or service entrypoints if they already exist.
 - Do not introduce instance attributes outside `__init__`; initialize class instance state in the constructor before later methods mutate it.
 - Do not use Python `assert` statements outside pytest tests under `tests/`; runtime code, scripts, and BDD steps must raise explicit exceptions instead because optimized bytecode removes assertions.
+- Do not hardcode `/tmp` or other temporary filesystem paths in tests or BDD steps; use `tempfile`, `tmp_path`, or repository-provided temporary fixtures.
+- Do not access protected members of another class from production code, BDD steps, or integration tests; expose a small public API when external observation is needed.
+- Do not use mutable global runtime state; use dependency injection, explicit state holders, or context-local state instead.
+- Do not call `next()` without an explicit fallback or a concrete exception path; handle missing values deliberately.
+- Do not leave instance-independent methods as instance methods; use `@staticmethod` when a method does not use `self` or class state.
 - Do not introduce a new module or subsystem without updating repository documentation.
 - Do not introduce a new external dependency without declaring it in the `requirements/` directory using the repository split defined below.
 - Do not leave `README.md` or `README_es.md` outdated when a task changes behavior, installation, usage, testing commands, architecture visible to contributors, or user/developer-facing capabilities.

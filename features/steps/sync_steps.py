@@ -1348,7 +1348,7 @@ def step_assert_sync_progress_window_open(context: object) -> None:
             Structured value returned by this callable.
     """
     typed_context = _context(context)
-    if typed_context.detail_screen._sync_progress_popup is None:
+    if typed_context.detail_screen.sync_progress_popup is None:
         _raise_bdd_expectation_failure("features/steps/sync_steps.py:1324")
 
 
@@ -1365,16 +1365,16 @@ def step_assert_sync_progress_window_commands(context: object) -> None:
             Structured value returned by this callable.
     """
     typed_context = _context(context)
-    popup = typed_context.detail_screen._sync_progress_popup
+    popup = typed_context.detail_screen.sync_progress_popup
     if popup is None:
         _raise_bdd_expectation_failure("features/steps/sync_steps.py:1341")
     deadline = time.monotonic() + 1
     while time.monotonic() < deadline:
         popup.refresh()
-        if "SFTP LIST /srv/app" in popup._command_log_label.text:
+        if "SFTP LIST /srv/app" in popup.command_log_text:
             break
         time.sleep(0.01)
-    if "SFTP LIST /srv/app" not in popup._command_log_label.text:
+    if "SFTP LIST /srv/app" not in popup.command_log_text:
         _raise_bdd_expectation_failure("features/steps/sync_steps.py:1348")
 
 
@@ -1395,16 +1395,16 @@ def step_assert_sync_progress_window_download_commands(context: object) -> None:
             Raised when this callable hits the corresponding error path.
     """
     typed_context = _context(context)
-    popup = typed_context.detail_screen._sync_progress_popup
+    popup = typed_context.detail_screen.sync_progress_popup
     if popup is None:
         _raise_bdd_expectation_failure("features/steps/sync_steps.py:1369")
     deadline = time.monotonic() + 1
     while time.monotonic() < deadline:
         popup.refresh()
-        if "SFTP GET /srv/app/locale/es.po" in popup._command_log_label.text:
+        if "SFTP GET /srv/app/locale/es.po" in popup.command_log_text:
             break
         time.sleep(0.01)
-    if "SFTP GET /srv/app/locale/es.po" not in popup._command_log_label.text:
+    if "SFTP GET /srv/app/locale/es.po" not in popup.command_log_text:
         raise AssertionError
 
 
@@ -1425,16 +1425,16 @@ def step_assert_sync_progress_window_failed_status(context: object) -> None:
             Raised when this callable hits the corresponding error path.
     """
     typed_context = _context(context)
-    popup = typed_context.detail_screen._sync_progress_popup
+    popup = typed_context.detail_screen.sync_progress_popup
     if popup is None:
         _raise_bdd_expectation_failure("features/steps/sync_steps.py:1398")
     deadline = time.monotonic() + 1
     while time.monotonic() < deadline:
         popup.refresh()
-        if popup._status_label.text == "Status: failed":
+        if popup.status_text == "Status: failed":
             break
         time.sleep(0.01)
-    if popup._status_label.text != "Status: failed":
+    if popup.status_text != "Status: failed":
         raise AssertionError
 
 
@@ -1455,7 +1455,7 @@ def step_assert_sync_progress_window_error_message(context: object) -> None:
             Raised when this callable hits the corresponding error path.
     """
     typed_context = _context(context)
-    popup = typed_context.detail_screen._sync_progress_popup
+    popup = typed_context.detail_screen.sync_progress_popup
     if popup is None:
         _raise_bdd_expectation_failure("features/steps/sync_steps.py:1427")
     expected_message = (
@@ -1466,10 +1466,10 @@ def step_assert_sync_progress_window_error_message(context: object) -> None:
     deadline = time.monotonic() + 1
     while time.monotonic() < deadline:
         popup.refresh()
-        if expected_message in popup._message_label.text:
+        if expected_message in popup.message_text:
             break
         time.sleep(0.01)
-    if expected_message not in popup._message_label.text:
+    if expected_message not in popup.message_text:
         raise AssertionError
 
 
@@ -1490,19 +1490,17 @@ def step_assert_sync_progress_window_host_key_trust_action(context: object) -> N
             Raised when this callable hits the corresponding error path.
     """
     typed_context = _context(context)
-    popup = typed_context.detail_screen._sync_progress_popup
+    popup = typed_context.detail_screen.sync_progress_popup
     if popup is None:
         _raise_bdd_expectation_failure("features/steps/sync_steps.py:1461")
     deadline = time.monotonic() + 1
     while time.monotonic() < deadline:
         popup.refresh()
-        if not popup._trust_host_key_button.disabled:
+        if popup.can_trust_host_key:
             break
         time.sleep(0.01)
-    if popup._trust_host_key_button.opacity != 1:
-        raise AssertionError
-    if popup._trust_host_key_button.disabled is not False:
-        raise AssertionError
+    if not popup.can_trust_host_key:
+        _raise_bdd_expectation_failure("features/steps/sync_steps.py:1461")
 
 
 @then("the sync progress window keeps only the last {limit:d} operations")
@@ -1524,7 +1522,7 @@ def step_assert_sync_progress_window_limit(context: object, limit: int) -> None:
             Raised when this callable hits the corresponding error path.
     """
     typed_context = _context(context)
-    popup = typed_context.detail_screen._sync_progress_popup
+    popup = typed_context.detail_screen.sync_progress_popup
     if popup is None:
         _raise_bdd_expectation_failure("features/steps/sync_steps.py:1494")
     if typed_context.shell.project_detail_state is None:
@@ -1534,7 +1532,7 @@ def step_assert_sync_progress_window_limit(context: object, limit: int) -> None:
     while time.monotonic() < deadline:
         popup.refresh()
         command_lines = [
-            line for line in popup._command_log_label.text.splitlines() if line.strip()
+            line for line in popup.command_log_text.splitlines() if line.strip()
         ]
         if (
             len(command_lines) == limit
@@ -1543,7 +1541,7 @@ def step_assert_sync_progress_window_limit(context: object, limit: int) -> None:
             break
         time.sleep(0.01)
     command_lines = [
-        line for line in popup._command_log_label.text.splitlines() if line.strip()
+        line for line in popup.command_log_text.splitlines() if line.strip()
     ]
     if len(command_lines) != limit:
         _raise_bdd_expectation_failure("features/steps/sync_steps.py:1512")
@@ -1572,24 +1570,16 @@ def step_assert_single_remote_connect(context: object) -> None:
             Raised when this callable hits the corresponding error path.
     """
     typed_context = _context(context)
-    popup = typed_context.detail_screen._sync_progress_popup
+    popup = typed_context.detail_screen.sync_progress_popup
     if popup is None:
         _raise_bdd_expectation_failure("features/steps/sync_steps.py:1539")
     deadline = time.monotonic() + 1
     while time.monotonic() < deadline:
         popup.refresh()
-        if (
-            popup._command_log_label.text.count(
-                "SFTP CONNECT marketing.example.test:22"
-            )
-            == 1
-        ):
+        if popup.command_log_text.count("SFTP CONNECT marketing.example.test:22") == 1:
             break
         time.sleep(0.01)
-    if (
-        popup._command_log_label.text.count("SFTP CONNECT marketing.example.test:22")
-        != 1
-    ):
+    if popup.command_log_text.count("SFTP CONNECT marketing.example.test:22") != 1:
         raise AssertionError
 
 
@@ -1610,19 +1600,16 @@ def step_assert_single_remote_close(context: object) -> None:
             Raised when this callable hits the corresponding error path.
     """
     typed_context = _context(context)
-    popup = typed_context.detail_screen._sync_progress_popup
+    popup = typed_context.detail_screen.sync_progress_popup
     if popup is None:
         _raise_bdd_expectation_failure("features/steps/sync_steps.py:1576")
     deadline = time.monotonic() + 1
     while time.monotonic() < deadline:
         popup.refresh()
-        if (
-            popup._command_log_label.text.count("SFTP CLOSE marketing.example.test:22")
-            == 1
-        ):
+        if popup.command_log_text.count("SFTP CLOSE marketing.example.test:22") == 1:
             break
         time.sleep(0.01)
-    if popup._command_log_label.text.count("SFTP CLOSE marketing.example.test:22") != 1:
+    if popup.command_log_text.count("SFTP CLOSE marketing.example.test:22") != 1:
         raise AssertionError
 
 

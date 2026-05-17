@@ -99,6 +99,65 @@ class SyncProgressPopup(Popup):  # type: ignore[misc]
         container.add_widget(close_button)
         self.content = container
 
+    @property
+    def command_log_text(self) -> str:
+        """Return the currently rendered command log text.
+
+        Args:
+            self:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Text rendered in the command log label.
+        """
+        return str(self._command_log_label.text)
+
+    @property
+    def status_text(self) -> str:
+        """Return the currently rendered status text.
+
+        Args:
+            self:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Text rendered in the status label.
+        """
+        return str(self._status_label.text)
+
+    @property
+    def message_text(self) -> str:
+        """Return the currently rendered sync message text.
+
+        Args:
+            self:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Text rendered in the message label.
+        """
+        return str(self._message_label.text)
+
+    @property
+    def can_trust_host_key(self) -> bool:
+        """Return whether the host-key trust action is available.
+
+        Args:
+            self:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                ``True`` when the trust button is visible and enabled.
+        """
+        return (
+            self._trust_host_key_button.opacity == 1
+            and not self._trust_host_key_button.disabled
+        )
+
     def open_for_sync(self) -> None:
         """Open the popup and keep it refreshed while sync state changes.
 

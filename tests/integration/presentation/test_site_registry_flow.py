@@ -243,13 +243,16 @@ def test_settings_flow_persists_database_directory_and_filename(tmp_path: Path) 
     settings_service = build_default_settings_service(config_dir=isolated_config_dir)
     services = build_default_frontend_services(settings_service=settings_service)
     shell = create_kivy_app(services=services)._shell
+    database_directory = tmp_path / "polyglot-db"
 
     shell.open_settings()
-    shell.set_settings_database_directory("/tmp/polyglot-db")
+    shell.set_settings_database_directory(str(database_directory))
     shell.set_settings_database_filename("registry.sqlite3")
     shell.save_settings()
     shell.open_settings()
 
     assert shell.settings_state is not None
-    assert shell.settings_state.app_settings.database_directory == "/tmp/polyglot-db"
+    assert shell.settings_state.app_settings.database_directory == str(
+        database_directory
+    )
     assert shell.settings_state.app_settings.database_filename == "registry.sqlite3"

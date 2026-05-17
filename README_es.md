@@ -413,6 +413,11 @@ Reglas clave:
 - no acoplar la UI directamente a infraestructura real
 - introducir atributos de instancia solo en `__init__`
 - usar sentencias Python `assert` solo en tests de pytest bajo `tests/`
+- usar fixtures de directorios temporales en lugar de rutas `/tmp` hardcodeadas
+  en tests
+- exponer APIs públicas de observación en lugar de acceder a miembros
+  protegidos entre clases
+- evitar estado global mutable en runtime
 - no introducir cambios arquitectónicos sin actualizar documentación
 
 ## Limitaciones actuales

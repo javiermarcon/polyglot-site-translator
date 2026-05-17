@@ -81,6 +81,9 @@ Interpretation for this repository:
 - Use Python `assert` statements only in pytest tests under `tests/`.
 - Outside pytest tests, including Behave steps, use explicit exceptions because
   optimized bytecode removes `assert` statements.
+- Do not use `next()` without an explicit fallback or deliberate exception
+  path. Missing items must fail with clear context instead of implicit
+  `StopIteration`.
 - Error messages must be actionable.
 - Prefer explicit validation over late failure.
 - If logging an unexpected failure, prefer `logger.exception(...)`.
@@ -106,6 +109,22 @@ Interpretation for this repository:
 - Keep Kivy screens/widgets focused on presentation and orchestration.
 - Introduce instance attributes only in `__init__`; later methods may mutate
   existing state but must not create new attributes on demand.
+- Mark methods as `@staticmethod` when they do not use instance or class state.
+- Avoid mutable global runtime state. Prefer dependency injection, explicit
+  state objects, or context-local state for process-wide presentation settings.
+- Do not access protected members of another class. If a workflow or test needs
+  to observe state, add a narrow public method or property on the owning class.
+
+---
+
+## Test paths
+
+- Do not hardcode `/tmp`, `/var/tmp`, or platform-specific temporary paths in
+  tests or BDD steps.
+- Use `tempfile`, `tmp_path`, or repository-provided temporary fixtures for
+  temporary files and directories.
+- Literal path strings are acceptable only when the path is domain data being
+  parsed or validated, not when the test needs a real temporary location.
 
 ---
 

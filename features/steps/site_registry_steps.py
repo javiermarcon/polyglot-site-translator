@@ -59,12 +59,15 @@ class BehaveSiteRegistryContext(Protocol):
             Documented attribute exposed by this type.
         settings_temp_dir:
             Documented attribute exposed by this type.
+        configured_database_directory:
+            Documented attribute exposed by this type.
         created_site_id:
             Documented attribute exposed by this type.
     """
 
     shell: FrontendShell
     settings_temp_dir: tempfile.TemporaryDirectory[str]
+    configured_database_directory: str
     created_site_id: str
 
 
@@ -160,6 +163,8 @@ def step_invalid_database_settings(context: object) -> None:
     settings_service = build_default_settings_service(
         config_dir=Path(typed_context.settings_temp_dir.name)
     )
+    database_directory = Path(typed_context.settings_temp_dir.name) / "polyglot-db"
+    typed_context.configured_database_directory = str(database_directory)
     settings_service.settings_path.parent.mkdir(parents=True, exist_ok=True)
     settings_service.settings_path.write_text(
         (
@@ -171,7 +176,7 @@ def step_invalid_database_settings(context: object) -> None:
             'last_opened_screen = "dashboard"\n'
             "developer_mode = false\n"
             'ui_language = "en"\n'
-            'database_directory = "/tmp/polyglot-db"\n'
+            f'database_directory = "{database_directory}"\n'
             'database_filename = ""\n'
         ),
         encoding="utf-8",
@@ -477,7 +482,26 @@ def step_set_database_directory(context: object, directory: str) -> None:
             Structured value returned by this callable.
     """
     typed_context = _context_with_shell(context)
+    typed_context.configured_database_directory = directory
     typed_context.shell.set_settings_database_directory(directory)
+
+
+@when("the operator sets the database directory to a temporary directory")
+def step_set_temporary_database_directory(context: object) -> None:
+    """Run the BDD step for setting a temporary database directory.
+
+    Args:
+        context:
+            Value supplied to this callable.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
+    typed_context = _context_with_shell(context)
+    directory = Path(typed_context.settings_temp_dir.name) / "polyglot-db"
+    typed_context.configured_database_directory = str(directory)
+    typed_context.shell.set_settings_database_directory(str(directory))
 
 
 @when('the operator sets the database filename to "{filename}"')
@@ -1668,7 +1692,7 @@ def step_assert_database_directory(context: object) -> None:
         _raise_bdd_expectation_failure("features/steps/site_registry_steps.py:1598")
     if (
         typed_context.shell.settings_state.app_settings.database_directory
-        != "/tmp/polyglot-db"
+        != typed_context.configured_database_directory
     ):
         _raise_bdd_expectation_failure("features/steps/site_registry_steps.py:1599")
 
