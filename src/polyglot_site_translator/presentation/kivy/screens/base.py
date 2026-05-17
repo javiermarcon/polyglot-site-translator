@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from kivy.core.window import Window
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.dropdown import DropDown
 from kivy.uix.gridlayout import GridLayout
@@ -20,6 +21,7 @@ from polyglot_site_translator.presentation.kivy.widgets.common import (
     WrappedLabel,
     apply_theme_to_widget_tree,
 )
+from polyglot_site_translator.presentation.ui_localization import tr
 
 
 class BaseShellScreen(Screen):  # type: ignore[misc]
@@ -79,17 +81,19 @@ class BaseShellScreen(Screen):  # type: ignore[misc]
         )
         self._title_block = BoxLayout(orientation="vertical", spacing=SPACING.xs)
         self._app_title = WrappedLabel(
-            text="Polyglot Site Translator",
+            text=tr("Polyglot Site Translator"),
             font_size=TYPOGRAPHY.caption,
             color_role="text_muted",
         )
+        self._title_msgid = title
+        self._subtitle_msgid = subtitle
         self._screen_title = WrappedLabel(
-            text=title,
+            text=tr(title),
             font_size=TYPOGRAPHY.screen_title,
             bold=True,
         )
         self._screen_subtitle = WrappedLabel(
-            text=subtitle,
+            text=tr(subtitle),
             font_size=TYPOGRAPHY.caption,
             color_role="text_muted",
         )
@@ -97,7 +101,7 @@ class BaseShellScreen(Screen):  # type: ignore[misc]
         self._title_block.add_widget(self._screen_title)
         self._title_block.add_widget(self._screen_subtitle)
         self._menu_button = AppButton(
-            text="Application Menu",
+            text=tr("Application Menu"),
             primary=False,
             size_hint=(None, None),
             width=188,
@@ -151,8 +155,10 @@ class BaseShellScreen(Screen):  # type: ignore[misc]
             value:
                 Structured value returned by this callable.
         """
-        self._screen_title.text = title
-        self._screen_subtitle.text = subtitle
+        self._screen_title.text = tr(title)
+        self._screen_subtitle.text = tr(subtitle)
+        self._title_msgid = title
+        self._subtitle_msgid = subtitle
 
     def clear_content(self) -> None:
         """Remove widgets from the content area.
@@ -265,6 +271,10 @@ class BaseShellScreen(Screen):  # type: ignore[misc]
                 Structured value returned by this callable.
         """
         apply_theme_to_widget_tree(self._container)
+        self._app_title.text = tr("Polyglot Site Translator")
+        self._screen_title.text = tr(self._title_msgid)
+        self._screen_subtitle.text = tr(self._subtitle_msgid)
+        self._menu_button.text = tr("Application Menu")
 
     def _open_application_menu(self, *_args: object) -> None:
         """Open application menu.
@@ -280,7 +290,11 @@ class BaseShellScreen(Screen):  # type: ignore[misc]
                 Structured value returned by this callable.
         """
         self._shell.open_application_menu()
-        dropdown = DropDown(auto_width=False, width=COMPONENT_SIZES.menu_width)
+        dropdown = DropDown(
+            auto_width=False,
+            width=COMPONENT_SIZES.menu_width,
+            max_height=max(Window.height - COMPONENT_SIZES.header_height, 240),
+        )
         for section in self._shell.navigation_menu.sections:
             header = AppButton(
                 text=section.title,

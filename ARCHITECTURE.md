@@ -29,6 +29,10 @@ The codebase should be organized around these layers:
    - typed settings state and editable draft settings
    - translation defaults persisted in a dedicated settings section and reused by create-project flows
    - Kivy runtime settings applier for theme and window behavior
+   - gettext-backed UI localization with packaged `.po` and `.mo` catalogs
+   - dynamic UI-language options discovered from packaged presentation catalogs
+   - presentation-time translation of visible workflow summaries, adapter
+     evidence, and status messages before Kivy renders them
    - runtime theme palette tokens for light and dark frontend modes
    - responsive layout rules for compact and desktop settings screens
    - navigation router and selected-project context

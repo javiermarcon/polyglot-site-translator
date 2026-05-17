@@ -377,3 +377,33 @@ The garden widget provides a clearer layout (shortcuts, list/icon tabs, integrat
 - Directory-only workflows (for example project `local_path` and SQLite directory) combine `dirselect=True`, `filter_dirs=True`, and a callable filter that keeps directory entries in the listing so regular files are not offered as first-class picks.
 - File picking for SQLite filename continues to use the same widget in file-selection mode without that listing restriction.
 - The dependency must remain explicit under `requirements/` and mypy may ignore missing stubs for `kivy_garden.filebrowser` via `pyproject.toml` overrides.
+
+---
+
+## AD-018: Gettext catalogs for presentation localization
+
+**Decision**
+Use packaged gettext `.po` and `.mo` catalogs for operator-facing Kivy UI
+strings, with English as the default language and a dynamic settings selector
+derived from the catalogs that are present in the package.
+
+**Why**
+The UI language setting must affect visible application copy without embedding
+translation dictionaries or hardcoded language lists in Kivy screens. Gettext
+keeps source strings reviewable, allows translators to add languages by adding
+catalogs, and lets reusable widgets translate static labels without moving
+domain, persistence, FTP, or PO-processing behavior into the UI layer.
+
+**Implications**
+
+- Presentation owns UI copy and catalog discovery.
+- Kivy screens and widgets must call the presentation localization helper or
+  route static copy through reusable widgets that do so.
+- Presentation summaries, adapter evidence rendered in the UI, status labels,
+  and workflow metrics must be translated at the presentation boundary before
+  display.
+- Settings validation accepts only languages with packaged compiled catalogs.
+- New languages require a `.po` file and compiled `.mo` file under
+  `presentation/locale/<language>/LC_MESSAGES/`.
+- The gettext catalogs localize the application UI only; project PO-processing
+  services remain a separate domain capability.

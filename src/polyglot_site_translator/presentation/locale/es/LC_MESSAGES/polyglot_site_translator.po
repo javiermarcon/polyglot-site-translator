@@ -1,0 +1,785 @@
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: polyglot-site-translator 0.1.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-05-16 00:00+0000\n"
+"PO-Revision-Date: 2026-05-16 00:00+0000\n"
+"Last-Translator: Polyglot Site Translator\n"
+"Language-Team: Spanish\n"
+"Language: es\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+msgid "language.name"
+msgstr "Castellano"
+
+msgid "Polyglot Site Translator"
+msgstr "Polyglot Site Translator"
+
+msgid "Dashboard"
+msgstr "Inicio"
+
+msgid "Main entry point for projects, operations and system configuration."
+msgstr ""
+"Punto de entrada principal para proyectos, operaciones y configuracion."
+
+msgid "Open Projects"
+msgstr "Abrir proyectos"
+
+msgid "Open Settings"
+msgstr "Abrir configuracion"
+
+msgid "Projects"
+msgstr "Proyectos"
+
+msgid "Browse the managed sites and applications registry."
+msgstr "Explora el registro de sitios y aplicaciones administradas."
+
+msgid "Back to Dashboard"
+msgstr "Volver al inicio"
+
+msgid "Register Project"
+msgstr "Registrar proyecto"
+
+msgid "No projects registered"
+msgstr "No hay proyectos registrados"
+
+msgid "Project Detail"
+msgstr "Detalle del proyecto"
+
+msgid "Contextual actions for the currently selected project."
+msgstr "Acciones contextuales para el proyecto seleccionado."
+
+msgid "No project selected"
+msgstr "No hay proyecto seleccionado"
+
+msgid "Choose a project from the registry before running workflows."
+msgstr "Elegir un proyecto del registro antes de ejecutar flujos."
+
+msgid "Back to Projects"
+msgstr "Volver a proyectos"
+
+msgid "Edit Project"
+msgstr "Editar proyecto"
+
+msgid "Sync Remote to Local"
+msgstr "Sincronizar remoto a local"
+
+msgid "Sync Local to Remote"
+msgstr "Sincronizar local a remoto"
+
+msgid "Run Audit"
+msgstr "Ejecutar auditoria"
+
+msgid "Translate"
+msgstr "Traducir"
+
+msgid "Available actions: {actions}"
+msgstr "Acciones disponibles: {actions}"
+
+msgid "Application Menu"
+msgstr "Menu de aplicacion"
+
+msgid "Settings"
+msgstr "Configuracion"
+
+msgid "Theme Mode"
+msgstr "Modo visual"
+
+msgid ""
+"Choose the visual appearance that the Kivy shell should use by default."
+msgstr "Elegir la apariencia visual que la interfaz Kivy usara por defecto."
+
+msgid "System"
+msgstr "Sistema"
+
+msgid "Light"
+msgstr "Claro"
+
+msgid "Dark"
+msgstr "Oscuro"
+
+msgid "UI Language"
+msgstr "Idioma de la interfaz"
+
+msgid "Choose the language used by the application interface."
+msgstr "Elegir el idioma usado por la interfaz de la aplicacion."
+
+msgid "Settings loaded."
+msgstr "Configuracion cargada."
+
+msgid "Settings saved."
+msgstr "Configuracion guardada."
+
+msgid "Settings restored to defaults."
+msgstr "Configuracion restaurada a valores por defecto."
+
+msgid "Back to Project"
+msgstr "Volver al proyecto"
+
+msgid "Sync not started"
+msgstr "Sincronizacion no iniciada"
+
+msgid "Start a sync workflow from the project detail screen."
+msgstr "Iniciar un flujo de sincronizacion desde el detalle del proyecto."
+
+msgid "Audit not started"
+msgstr "Auditoria no iniciada"
+
+msgid "Run an audit from the project detail screen."
+msgstr "Ejecutar una auditoria desde el detalle del proyecto."
+
+msgid "Translation not started"
+msgstr "Traduccion no iniciada"
+
+msgid "Run translation from the project detail screen."
+msgstr "Ejecutar traduccion desde el detalle del proyecto."
+
+msgid "Sync Progress"
+msgstr "Progreso de sincronizacion"
+
+msgid "Sync Progress: {project_name}"
+msgstr "Progreso de sincronizacion: {project_name}"
+
+msgid "No sync started yet."
+msgstr "Todavia no se inicio ninguna sincronizacion."
+
+msgid "Trust SSH Host Key and Retry"
+msgstr "Confiar en host key SSH y reintentar"
+
+msgid "Waiting for sync commands."
+msgstr "Esperando comandos de sincronizacion."
+
+msgid "Close"
+msgstr "Cerrar"
+
+msgid "No sync action started."
+msgstr "No se inicio ninguna sincronizacion."
+
+msgid "No audit action started."
+msgstr "No se inicio ninguna auditoria."
+
+msgid "No translation action started."
+msgstr "No se inicio ninguna traduccion."
+
+msgid "Settings Sections"
+msgstr "Secciones de configuracion"
+
+msgid "Project Settings Sections"
+msgstr "Secciones de configuracion del proyecto"
+
+msgid "Save Changes"
+msgstr "Guardar cambios"
+
+msgid "Restore Defaults"
+msgstr "Restaurar valores predeterminados"
+
+msgid "Cancel"
+msgstr "Cancelar"
+
+msgid "Test Connection"
+msgstr "Probar conexion"
+
+msgid "Is Active"
+msgstr "Activo"
+
+msgid "Enable this site in the primary registry listing."
+msgstr "Habilita este sitio en el listado principal del registro."
+
+msgid "Compile MO Files"
+msgstr "Compilar archivos MO"
+
+msgid "Use External Translator"
+msgstr "Usar traductor externo"
+
+msgid "Use Translation Cache"
+msgstr "Usar cache de traduccion"
+
+msgid "Only Fuzzy Entries"
+msgstr "Solo entradas fuzzy"
+
+msgid "Stats Only"
+msgstr "Solo estadisticas"
+
+msgid "Report Inconsistencies"
+msgstr "Reportar inconsistencias"
+
+msgid "Dry-run"
+msgstr "Simulacion"
+
+msgid "Compute translation changes without writing PO or MO files."
+msgstr "Calcula cambios de traduccion sin escribir archivos PO ni MO."
+
+msgid "Collect translation workflow statistics without writing files."
+msgstr "Recolecta estadisticas del flujo de traduccion sin escribir archivos."
+
+msgid "Report differing translated values across locale variants."
+msgstr "Reporta valores traducidos diferentes entre variantes de idioma."
+
+msgid "Remote Connection Test"
+msgstr "Prueba de conexion remota"
+
+msgid "Resolved Sync Scope"
+msgstr "Scope de sincronizacion resuelto"
+
+msgid "Refresh Sync Scope"
+msgstr "Actualizar scope de sincronizacion"
+
+msgid "No adapter or project sync rules are currently available."
+msgstr "No hay reglas de sincronizacion de adapter o proyecto disponibles."
+
+msgid "Enabled"
+msgstr "Habilitado"
+
+msgid "Disabled"
+msgstr "Deshabilitado"
+
+msgid "Remove"
+msgstr "Eliminar"
+
+msgid "Project Sync Rule Overrides"
+msgstr "Overrides de reglas de sincronizacion del proyecto"
+
+msgid "Add Project Rule"
+msgstr "Agregar regla de proyecto"
+
+msgid "Use Adapter Sync Filters"
+msgstr "Usar filtros de sincronizacion del adapter"
+
+msgid "Default Project Locale"
+msgstr "Idioma predeterminado del proyecto"
+
+msgid "Enable default dry-run mode for new projects."
+msgstr "Habilita la simulacion predeterminada para proyectos nuevos."
+
+msgid "Enable translation cache for new projects."
+msgstr "Habilita la cache de traduccion para proyectos nuevos."
+
+msgid "Process only fuzzy entries for new projects."
+msgstr "Procesa solo entradas fuzzy para proyectos nuevos."
+
+msgid "Translation Cache Path"
+msgstr "Ruta de cache de traduccion"
+
+msgid "Enable default stats-only mode for new projects."
+msgstr "Habilita solo estadisticas por defecto para proyectos nuevos."
+
+msgid "Enable inconsistency reporting for new projects."
+msgstr "Habilita el reporte de inconsistencias para proyectos nuevos."
+
+msgid "Database Directory"
+msgstr "Directorio de base de datos"
+
+msgid "Database Filename"
+msgstr "Nombre de archivo de base de datos"
+
+msgid "Maximum Stored Operations"
+msgstr "Operaciones almacenadas maximas"
+
+msgid "No configured rules."
+msgstr "No hay reglas configuradas."
+
+msgid "Disable"
+msgstr "Deshabilitar"
+
+msgid "Enable"
+msgstr "Habilitar"
+
+msgid "Create a rule applied to every project sync scope."
+msgstr ""
+"Crea una regla aplicada al scope de sincronizacion de todos los proyectos."
+
+msgid "Directory"
+msgstr "Directorio"
+
+msgid "Exclude"
+msgstr "Excluir"
+
+msgid "Relative Path or Pattern"
+msgstr "Ruta relativa o patron"
+
+msgid "Description"
+msgstr "Descripcion"
+
+msgid "Add Global Rule"
+msgstr "Agregar regla global"
+
+msgid "Create a rule applied to projects of a specific framework type."
+msgstr "Crea una regla aplicada a proyectos de un framework especifico."
+
+msgid "Framework Type"
+msgstr "Tipo de framework"
+
+msgid "Add Framework Rule"
+msgstr "Agregar regla de framework"
+
+msgid "Browse..."
+msgstr "Explorar..."
+
+msgid "Trust and Retry"
+msgstr "Confiar y reintentar"
+
+msgid "Remote to Local"
+msgstr "Remoto a local"
+
+msgid "Local to Remote"
+msgstr "Local a remoto"
+
+msgid "Browse…"
+msgstr "Explorar…"
+
+msgid "Open "
+msgstr "Abrir "
+
+msgid "Open {project_name}"
+msgstr "Abrir {project_name}"
+
+msgid "Status: "
+msgstr "Estado: "
+
+msgid "Status: {status}"
+msgstr "Estado: {status}"
+
+msgid "Findings: "
+msgstr "Hallazgos: "
+
+msgid "Findings:"
+msgstr "Hallazgos:"
+
+msgid "Files:"
+msgstr "Archivos:"
+
+msgid "Error Code:"
+msgstr "Codigo de error:"
+
+msgid "Families:"
+msgstr "Familias:"
+
+msgid "Progress:"
+msgstr "Progreso:"
+
+msgid "Completed entries:"
+msgstr "Entradas completadas:"
+
+msgid "Processed families: "
+msgstr "Familias procesadas: "
+
+msgid "Current file: "
+msgstr "Archivo actual: "
+
+msgid "Current entry: "
+msgstr "Entrada actual: "
+
+msgid "Downloading remote file "
+msgstr "Descargando archivo remoto "
+
+msgid "Uploading local file "
+msgstr "Subiendo archivo local "
+
+msgid "Preparing local workspace at "
+msgstr "Preparando workspace local en "
+
+msgid "Created local workspace directories under "
+msgstr "Directorios del workspace local creados bajo "
+
+msgid "Listing local files under "
+msgstr "Listando archivos locales bajo "
+
+msgid "Discovered local file "
+msgstr "Archivo local descubierto "
+
+msgid "Discovered remote file "
+msgstr "Archivo remoto descubierto "
+
+msgid "Remote connection: none configured"
+msgstr "Conexion remota: no configurada"
+
+msgid "Remote connection: None"
+msgstr "Conexion remota: ninguna"
+
+msgid "Framework detection:"
+msgstr "Deteccion de framework:"
+
+msgid "No framework detected."
+msgstr "No se detecto framework."
+
+msgid "No supported framework markers were detected."
+msgstr "No se detectaron marcadores de framework soportados."
+
+msgid "Connection type:"
+msgstr "Tipo de conexion:"
+
+msgid "Remote user:"
+msgstr "Usuario remoto:"
+
+msgid "Framework:"
+msgstr "Framework:"
+
+msgid "Locale:"
+msgstr "Idioma:"
+
+msgid "Compile MO:"
+msgstr "Compilar MO:"
+
+msgid "External translator:"
+msgstr "Traductor externo:"
+
+msgid "Translation cache:"
+msgstr "Cache de traduccion:"
+
+msgid "Only fuzzy:"
+msgstr "Solo fuzzy:"
+
+msgid "Dry-run:"
+msgstr "Simulacion:"
+
+msgid "Stats only:"
+msgstr "Solo estadisticas:"
+
+msgid "Report inconsistencies:"
+msgstr "Reportar inconsistencias:"
+
+msgid "Remote:"
+msgstr "Remoto:"
+
+msgid "Path:"
+msgstr "Ruta:"
+
+msgid "Sync mode:"
+msgstr "Modo de sincronizacion:"
+
+msgid "Actions:"
+msgstr "Acciones:"
+
+msgid "enabled"
+msgstr "habilitado"
+
+msgid "disabled"
+msgstr "deshabilitado"
+
+msgid "filtered"
+msgstr "filtrado"
+
+msgid "full"
+msgstr "completo"
+
+msgid "running"
+msgstr "en ejecucion"
+
+msgid "completed"
+msgstr "completado"
+
+msgid "failed"
+msgstr "fallido"
+
+msgid "Active"
+msgstr "Activo"
+
+msgid "Inactive"
+msgstr "Inactivo"
+
+msgid "Workspace"
+msgstr "Workspace"
+
+msgid "Operations"
+msgstr "Operaciones"
+
+msgid "Overview and entry points for the application."
+msgstr "Resumen y puntos de entrada de la aplicacion."
+
+msgid "Open the registry of managed projects and sites."
+msgstr "Abre el registro de proyectos y sitios administrados."
+
+msgid "Project-scoped synchronization workflow."
+msgstr "Flujo de sincronizacion del proyecto."
+
+msgid "Project-scoped audit workflow summary."
+msgstr "Resumen de auditoria del proyecto."
+
+msgid "Project-scoped translation workflow summary."
+msgstr "Resumen de traduccion del proyecto."
+
+msgid "Application, UI and future system configuration."
+msgstr "Configuracion de aplicacion, UI y sistema futuro."
+
+msgid "App / UI / Kivy Settings"
+msgstr "Configuracion de App / UI / Kivy"
+
+msgid "Frontend behavior, navigation and window defaults."
+msgstr "Comportamiento del frontend, navegacion y ventana."
+
+msgid "Translation Settings"
+msgstr "Configuracion de traduccion"
+
+msgid "Locale defaults and translation workflow behavior."
+msgstr "Idiomas predeterminados y comportamiento de traduccion."
+
+msgid "Framework / Adapter Settings"
+msgstr "Configuracion de framework / adapter"
+
+msgid "Shared sync filters, framework rules and gitignore integration."
+msgstr ""
+"Filtros compartidos de sync, reglas por framework e integracion gitignore."
+
+msgid "FTP / Reporting Settings"
+msgstr "Configuracion FTP / reportes"
+
+msgid "Reserved for future sync and reporting configuration."
+msgstr "Reservado para futura configuracion de sync y reportes."
+
+msgid "Save Project"
+msgstr "Guardar proyecto"
+
+msgid "Create Project"
+msgstr "Crear proyecto"
+
+msgid "File"
+msgstr "Archivo"
+
+msgid "Include"
+msgstr "Incluir"
+
+msgid "General Settings"
+msgstr "Configuracion general"
+
+msgid "Core project identity, framework and active state."
+msgstr "Identidad del proyecto, framework y estado activo."
+
+msgid "Remote Connection Settings"
+msgstr "Configuracion de conexion remota"
+
+msgid "Connection credentials and remote project path."
+msgstr "Credenciales de conexion y ruta remota del proyecto."
+
+msgid "Sync Settings"
+msgstr "Configuracion de sincronizacion"
+
+msgid "Adapter filters and project-specific sync overrides."
+msgstr "Filtros del adapter y overrides de sync del proyecto."
+
+msgid "Translate Project"
+msgstr "Traducir proyecto"
+
+msgid ""
+"Choose the locales to use for translation. Use a single locale or a comma-"
+"separated list."
+msgstr ""
+"Elegir los idiomas para la traduccion. Usar un idioma o una lista separada "
+"por comas."
+
+msgid "Locales"
+msgstr "Idiomas"
+
+msgid "Compile gettext MO files after successful runs."
+msgstr "Compila archivos MO de gettext despues de corridas exitosas."
+
+msgid "Call the configured external translator for missing strings."
+msgstr "Llama al traductor externo configurado para textos faltantes."
+
+msgid "Reuse cached external translations before calling the provider."
+msgstr ""
+"Reutiliza traducciones externas cacheadas antes de llamar al proveedor."
+
+msgid "Restrict translation attempts to gettext entries flagged as fuzzy."
+msgstr ""
+"Restringe los intentos de traduccion a entradas gettext marcadas como fuzzy."
+
+msgid "Preview changes without writing PO or MO files."
+msgstr "Previsualiza cambios sin escribir archivos PO ni MO."
+
+msgid "Collect translation metrics without writing PO or MO files."
+msgstr "Recolecta metricas de traduccion sin escribir archivos PO ni MO."
+
+msgid "Report conflicting translations across locale variants."
+msgstr "Reporta traducciones conflictivas entre variantes de idioma."
+
+msgid ""
+"Project-scoped translation workflow summary and prepared locale families."
+msgstr ""
+"Resumen del flujo de traduccion del proyecto y familias de idiomas "
+"preparadas."
+
+msgid "Project-scoped audit overview and normalized findings summary."
+msgstr "Resumen de auditoria del proyecto y hallazgos normalizados."
+
+msgid "manage.py is present at the project root."
+msgstr "manage.py esta presente en la raiz del proyecto."
+
+msgid "settings.py was found in the Django configuration package."
+msgstr "settings.py se encontro en el paquete de configuracion de Django."
+
+msgid "wsgi.py was found in the Django configuration package."
+msgstr "wsgi.py se encontro en el paquete de configuracion de Django."
+
+msgid "asgi.py was found in the Django configuration package."
+msgstr "asgi.py se encontro en el paquete de configuracion de Django."
+
+msgid "locale/ directory is present."
+msgstr "El directorio locale/ esta presente."
+
+msgid ""
+"Partial Django evidence was found, but manage.py and a settings entrypoint "
+"were not both available."
+msgstr ""
+"Se encontro evidencia parcial de Django, pero manage.py y un entrypoint de "
+"settings no estaban disponibles al mismo tiempo."
+
+msgid "wp-config.php is present at the project root."
+msgstr "wp-config.php esta presente en la raiz del proyecto."
+
+msgid "wp-content/ is present."
+msgstr "wp-content/ esta presente."
+
+msgid "wp-includes/ is present."
+msgstr "wp-includes/ esta presente."
+
+msgid "wp-admin/ is present."
+msgstr "wp-admin/ esta presente."
+
+msgid ""
+"Partial WordPress evidence was found, but the layout is insufficient to "
+"confirm the framework."
+msgstr ""
+"Se encontro evidencia parcial de WordPress, pero la estructura no alcanza "
+"para confirmar el framework."
+
+msgid "app.py contains Flask application markers."
+msgstr "app.py contiene marcadores de aplicacion Flask."
+
+msgid "wsgi.py contains Flask application markers."
+msgstr "wsgi.py contiene marcadores de aplicacion Flask."
+
+msgid "app/__init__.py contains Flask factory markers."
+msgstr "app/__init__.py contiene marcadores de factory Flask."
+
+msgid "babel.cfg is present."
+msgstr "babel.cfg esta presente."
+
+msgid "translations/ directory is present."
+msgstr "El directorio translations/ esta presente."
+
+msgid ""
+"Partial Flask evidence was found, but the project layout is insufficient to "
+"confirm the framework."
+msgstr ""
+"Se encontro evidencia parcial de Flask, pero la estructura del proyecto no "
+"alcanza para confirmar el framework."
+
+msgid "Files found:"
+msgstr "Archivos encontrados:"
+
+msgid "Families found:"
+msgstr "Familias encontradas:"
+
+msgid "Families processed:"
+msgstr "Familias procesadas:"
+
+msgid "PO files discovered:"
+msgstr "Archivos PO descubiertos:"
+
+msgid "Total entries:"
+msgstr "Entradas totales:"
+
+msgid "Missing entries:"
+msgstr "Entradas faltantes:"
+
+msgid "Fuzzy entries:"
+msgstr "Entradas fuzzy:"
+
+msgid "Completed from initial sync:"
+msgstr "Completadas desde sincronizacion inicial:"
+
+msgid "Reused from other variant:"
+msgstr "Reutilizadas desde otra variante:"
+
+msgid "Synchronized entries:"
+msgstr "Entradas sincronizadas:"
+
+msgid "Translated entries:"
+msgstr "Entradas traducidas:"
+
+msgid "Translated from cache:"
+msgstr "Traducidas desde cache:"
+
+msgid "Translated via provider:"
+msgstr "Traducidas via proveedor:"
+
+msgid "Skipped by sync-only:"
+msgstr "Omitidas por solo sincronizacion:"
+
+msgid "Failed entries:"
+msgstr "Entradas fallidas:"
+
+msgid "Written PO files:"
+msgstr "Archivos PO escritos:"
+
+msgid "Compiled MO files:"
+msgstr "Archivos MO compilados:"
+
+msgid "Translation cache path:"
+msgstr "Ruta de cache de traduccion:"
+
+msgid "Translation inconsistencies:"
+msgstr "Inconsistencias de traduccion:"
+
+msgid "Variant differences found:"
+msgstr "Diferencias entre variantes encontradas:"
+
+msgid "Variant difference details:"
+msgstr "Detalle de diferencias entre variantes:"
+
+msgid "Failed items:"
+msgstr "Items fallidos:"
+
+msgid "Failed MO files:"
+msgstr "Archivos MO fallidos:"
+
+msgid "PO processing service is not configured in this runtime."
+msgstr "El servicio de procesamiento PO no esta configurado en este runtime."
+
+msgid "Local workspace is empty. No files were uploaded."
+msgstr "El workspace local esta vacio. No se subieron archivos."
+
+msgid "Remote workspace is empty. No files were downloaded."
+msgstr "El workspace remoto esta vacio. No se descargaron archivos."
+
+msgid "Downloaded"
+msgstr "Descargados"
+
+msgid "Uploaded"
+msgstr "Subidos"
+
+msgid "files into"
+msgstr "archivos en"
+
+msgid "files from"
+msgstr "archivos desde"
+
+msgid "via"
+msgstr "mediante"
+
+msgid "django_adapter"
+msgstr "adaptador_django"
+
+msgid "wordpress_adapter"
+msgstr "adaptador_wordpress"
+
+msgid "flask_adapter"
+msgstr "adaptador_flask"
+
+msgid "Translation"
+msgstr "Traduccion"
+
+msgid "Sync"
+msgstr "Sincronizacion"
+
+msgid "Audit"
+msgstr "Auditoria"
+
+msgid "completed_with_errors"
+msgstr "completado con errores"
+
+msgid "Running translation workflow for locales: "
+msgstr "Ejecutando flujo de traduccion para idiomas: "

@@ -59,6 +59,12 @@ FTP connection logic, download logic, and path normalization must remain central
 Connection-type selectors must be loaded from the discoverable remote connection registry through services.
 Do not duplicate the supported connection list across widgets, screens, or tests that can consume the typed catalog.
 
+### 8c. Do not hardcode UI language catalogs in screens
+
+UI language selectors must be derived from packaged gettext catalogs through
+the presentation localization helper. Kivy screens and widgets must not keep
+parallel language lists or inline translation dictionaries.
+
 ### 9. Do not change entrypoints silently
 
 If CLI, service entrypoints, UI navigation entrypoints, or adapter registration points change:
@@ -123,6 +129,13 @@ Update:
 - `AGENTS.md`
 - `STYLE.md`
 - `TESTING.md` if validation-related
+
+### User/developer-facing behavior or workflow documentation
+
+Update both:
+
+- `README.md` in English
+- `README_es.md` in Spanish
 
 ---
 

@@ -17,6 +17,7 @@ from polyglot_site_translator.presentation.kivy.widgets.surfaces import (
     EmptyStatePanel,
     SectionHeader,
 )
+from polyglot_site_translator.presentation.ui_localization import tr
 from polyglot_site_translator.presentation.view_models import (
     TranslationWorkflowRequestViewModel,
 )
@@ -206,19 +207,19 @@ class ProjectDetailScreen(BaseShellScreen):
         detail = self._shell.project_detail_state
         if detail is None:
             empty_panel = EmptyStatePanel(
-                title="No project selected",
-                body="Choose a project from the registry before running workflows.",
+                title=tr("No project selected"),
+                body=tr("Choose a project from the registry before running workflows."),
             )
-            self._detail_label = WrappedLabel(text="No project selected.")
+            self._detail_label = WrappedLabel(text=f"{tr('No project selected')}.")
             self._content.add_widget(empty_panel)
         else:
             nav_actions = ActionRow()
             back_button = build_action_button(
-                text="Back to Projects",
+                text=tr("Back to Projects"),
                 intent=ActionIntent.SECONDARY,
             )
             edit_button = build_action_button(
-                text="Edit Project",
+                text=tr("Edit Project"),
                 intent=ActionIntent.SECONDARY,
             )
             back_button.bind(on_release=self._back_to_projects)
@@ -228,16 +229,16 @@ class ProjectDetailScreen(BaseShellScreen):
             self._content.add_widget(nav_actions)
 
             workflow_actions = ActionRow()
-            sync_button = build_action_button(text="Sync Remote to Local")
+            sync_button = build_action_button(text=tr("Sync Remote to Local"))
             upload_button = build_action_button(
-                text="Sync Local to Remote",
+                text=tr("Sync Local to Remote"),
                 intent=ActionIntent.SECONDARY,
             )
             audit_button = build_action_button(
-                text="Run Audit",
+                text=tr("Run Audit"),
                 intent=ActionIntent.SECONDARY,
             )
-            translate_button = build_action_button(text="Translate")
+            translate_button = build_action_button(text=tr("Translate"))
             sync_button.bind(on_release=self._start_sync)
             upload_button.bind(on_release=self._start_sync_to_remote)
             audit_button.bind(on_release=self._start_audit)
@@ -248,7 +249,7 @@ class ProjectDetailScreen(BaseShellScreen):
             workflow_actions.add_widget(translate_button)
             self._content.add_widget(workflow_actions)
 
-            action_labels = ", ".join(action.label for action in detail.actions)
+            action_labels = ", ".join(tr(action.label) for action in detail.actions)
             action_line = f"\nActions: {action_labels}" if action_labels else ""
             detail_card = AppCard()
             detail_card.add_widget(
@@ -276,7 +277,9 @@ class ProjectDetailScreen(BaseShellScreen):
             if action_labels:
                 detail_card.add_widget(
                     WrappedLabel(
-                        text=f"Available actions: {action_labels}",
+                        text=tr("Available actions: {actions}").format(
+                            actions=action_labels
+                        ),
                         font_size=15,
                     )
                 )

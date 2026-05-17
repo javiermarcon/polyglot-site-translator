@@ -41,6 +41,8 @@ package-dir = {"" = "src"}
 polyglot_site_translator = [
   "presentation/kivy/assets/fonts/*.ttf",
   "presentation/kivy/assets/fonts/NOTICE.txt",
+  "presentation/locale/*/LC_MESSAGES/*.po",
+  "presentation/locale/*/LC_MESSAGES/*.mo",
 ]
 
 [tool.setuptools.packages.find]

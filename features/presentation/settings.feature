@@ -17,6 +17,15 @@ Feature: Frontend settings management
     Then the settings draft uses the default window size
     And the settings draft keeps remember last screen disabled
     And the settings screen shows a single theme selector with explanations
+    And the settings screen lists UI languages from packaged gettext catalogs
+
+  Scenario: Persist a localized UI language choice
+    Given the frontend shell is wired with seeded frontend test doubles
+    And the operator has opened the settings screen
+    When the operator sets the UI language to "es"
+    And the operator applies the settings changes
+    Then the settings screen shows the changes as saved
+    And the saved settings keep UI language "es"
 
   Scenario: Modify settings and save them
     Given the frontend shell is wired with seeded frontend test doubles

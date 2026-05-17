@@ -234,7 +234,7 @@ def test_settings_screen_handles_section_selectio_defa_9336() -> None:
     settings_screen._toggle_remember_last_screen(None, True, remember_label)
     settings_screen._toggle_developer_mode(None, True, developer_label)
     settings_screen._on_theme_mode_selected(None, "Light")
-    settings_screen._on_ui_language_selected(None, "Spanish")
+    settings_screen._on_ui_language_selected(None, "Castellano")
 
     assert settings_screen._draft_settings is not None
     assert settings_screen._draft_settings.remember_last_screen is True

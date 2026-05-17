@@ -151,12 +151,15 @@ Screens must use:
 - explicit empty, loading, success, warning, and error states
 - responsive layouts that remain usable at narrow desktop widths
 - theme tokens from `presentation/kivy/theme.py`, not ad hoc colors
+- static operator-facing copy routed through the presentation localization
+  helper or reusable widgets backed by gettext catalogs
 
 Avoid:
 
 - raw unstyled `BoxLayout` screens with dense controls
 - magic numbers repeated across screens
 - hardcoded colors inside individual widgets
+- hardcoded UI language lists or inline translation dictionaries in screens
 - mixing status messages, forms, and actions without grouping
 - screens that only “work” but do not communicate state clearly
 
@@ -239,6 +242,15 @@ unless the role is genuinely generic and justified.
 - Centralize configuration.
 - Avoid scattering path constants, environment assumptions, or default values without clear ownership.
 - Platform-specific behavior must be isolated and documented.
+
+---
+
+## Documentation
+
+- Keep documentation factual and current.
+- Keep `README.md` in English and `README_es.md` in Spanish.
+- Update both README files in the same patch when a change affects setup,
+  commands, workflows, visible behavior, or contributor expectations.
 
 ---
 

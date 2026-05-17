@@ -30,6 +30,9 @@ from polyglot_site_translator.infrastructure.database_location import (
 )
 from polyglot_site_translator.presentation.errors import ControlledServiceError
 from polyglot_site_translator.presentation.router import RouteName
+from polyglot_site_translator.presentation.ui_localization import (
+    is_supported_ui_language,
+)
 from polyglot_site_translator.presentation.view_models import (
     AppSettingsViewModel,
     SettingsStateViewModel,
@@ -42,7 +45,6 @@ APP_CONFIG_DIRNAME = "polyglot-site-translator"
 SETTINGS_FILENAME = "settings.toml"
 SETTINGS_SCHEMA_VERSION = 1
 _ALLOWED_THEME_MODES = {"system", "light", "dark"}
-_ALLOWED_UI_LANGUAGES = {"en", "es"}
 _ALLOWED_ROUTE_NAMES = {route_name.value for route_name in RouteName}
 
 
@@ -511,7 +513,7 @@ def _validate_app_settings(app_settings: AppSettingsViewModel) -> AppSettingsVie
     if app_settings.window_width <= 0 or app_settings.window_height <= 0:
         msg = "Window dimensions must be positive integers."
         raise ControlledServiceError(msg)
-    if app_settings.ui_language not in _ALLOWED_UI_LANGUAGES:
+    if not is_supported_ui_language(app_settings.ui_language):
         msg = f"Unsupported UI language: {app_settings.ui_language}"
         raise ControlledServiceError(msg)
     if app_settings.last_opened_screen not in _ALLOWED_ROUTE_NAMES:

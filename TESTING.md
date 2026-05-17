@@ -23,6 +23,9 @@ Validation expectations for every non-trivial change remain explicit:
 - mypy
 - the repository docstring audit for public and private symbols
 - pytest for the affected scope
+- documentation alignment for both `README.md` in English and `README_es.md`
+  in Spanish when behavior, setup, commands, workflows, or visible
+  capabilities change
 
 The repository uses an explicit 88-character Python line-length limit. Changes are not complete if
 they rely on a wider local wrapping style than the configured Ruff formatter/linter limit.
@@ -62,6 +65,14 @@ Canonical validation commands now include:
 - `python -m mypy .`
 - `python tests/run_docstring_audit.py`
 - `python -m pytest`
+
+Documentation validation for user-visible or developer-visible changes must
+include a manual check that:
+
+- `README.md` is English
+- `README_es.md` is Spanish
+- both files describe the same current behavior, setup, commands, and visible
+  capabilities affected by the patch
 
 ---
 
@@ -144,6 +155,9 @@ Cover:
 
 - design-token resolution
 - responsive layout decisions
+- UI localization catalog discovery and static reusable-widget translation
+- UI localization of visible dynamic summaries, adapter evidence, workflow
+  statuses, and metrics before they are rendered
 - button/action classification helpers
 - empty/loading/error state view-model rendering decisions
 - reusable widget factory behavior when it is pure enough to test
@@ -406,7 +420,9 @@ xvfb-run -a python -m pytest
 ```
 
 If the project later formalizes dedicated commands, update this file and the repository maps.
-If command changes also affect the normal contributor workflow, installation, or validation entrypoints, update `README.md` in the same patch as required by `AGENTS.md`.
+If command changes also affect the normal contributor workflow, installation,
+or validation entrypoints, update `README.md` and `README_es.md` in the same
+patch as required by `AGENTS.md`.
 
 ---
 

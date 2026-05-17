@@ -41,7 +41,8 @@ If a section does not apply, explicitly say so.
 - Do not break CLI or service entrypoints if they already exist.
 - Do not introduce a new module or subsystem without updating repository documentation.
 - Do not introduce a new external dependency without declaring it in the `requirements/` directory using the repository split defined below.
-- Do not leave `README.md` outdated when a task changes behavior, installation, usage, testing commands, architecture visible to contributors, or user/developer-facing capabilities.
+- Do not leave `README.md` or `README_es.md` outdated when a task changes behavior, installation, usage, testing commands, architecture visible to contributors, or user/developer-facing capabilities.
+- Keep `README.md` in English and `README_es.md` in Spanish; update both files in the same patch whenever either one applies.
 - Do not keep production fake bundles for workflows that already have a real implementation.
 - Do not change architecture without updating:
   - `ARCHITECTURE.md`
@@ -81,7 +82,7 @@ A task is not done unless all of the following are true:
 - Error handling is explicit and concrete.
 - Documentation affected by the change is updated in the same patch.
 - Any new external dependency is declared in the correct file under `requirements/`, or explicitly avoided because it belongs to the Python standard library.
-- `README.md` reflects the real current behavior whenever the task changed installation, setup, commands, workflows, visible features, or other user/developer-facing behavior.
+- `README.md` and `README_es.md` reflect the real current behavior whenever the task changed installation, setup, commands, workflows, visible features, or other user/developer-facing behavior.
 - The repository remains coherent for future Codex/agent iterations.
 
 ---
@@ -99,7 +100,7 @@ Before finishing any non-trivial change, verify explicitly:
 - pytest passes for the affected scope.
 - Documentation is aligned with the final code.
 - New dependencies, if any, are declared in the correct `requirements/` file and nowhere inconsistent.
-- `README.md` is aligned with the final installation, usage, testing, configuration, and feature set affected by the task.
+- `README.md` and `README_es.md` are aligned with the final installation, usage, testing, configuration, and feature set affected by the task.
 - No `except Exception` was introduced.
 - No domain logic was pushed into presentation-only modules.
 - No persistence logic was duplicated across UI and services.
@@ -198,17 +199,19 @@ If a task requires a new third-party library:
 - a dependency must not be used in code, tests, scripts, or tooling setup unless it is declared in the appropriate `requirements/` file
 - Python standard-library modules such as `ftplib`, `sqlite3`, `pathlib`, `json`, and similar modules must not be added to `requirements/`
 - if a new dependency affects CI, automation, or workflows, the relevant CI/workflow files must be updated in the same change
-- if a new dependency affects installation, setup, commands, or user/developer expectations, `README.md` must be updated in the same change
+- if a new dependency affects installation, setup, commands, or user/developer expectations, `README.md` and `README_es.md` must be updated in the same change
 
 Do not rely on “it is probably installed already”.
 Do not leave undeclared dependencies for future cleanup.
 
 ### README alignment policy
 
-`README.md` is a required operational document, not optional project marketing text.
-It must describe the real current state of the repository.
+`README.md` and `README_es.md` are required operational documents, not optional
+project marketing text. `README.md` must be written in English and
+`README_es.md` must be written in Spanish. Both must describe the real current
+state of the repository.
 
-Update `README.md` in the same patch whenever a task:
+Update both `README.md` and `README_es.md` in the same patch whenever a task:
 
 - changes observable system behavior
 - adds, removes, or materially changes a feature
@@ -218,8 +221,9 @@ Update `README.md` in the same patch whenever a task:
 - changes primary usage flows, operator workflows, or visible project capabilities
 - adds a dependency or capability whose impact should be visible to users or contributors
 
-`README.md` must not remain desynchronized from the codebase.
-If the way to run, test, configure, install, or use the system changed, `README.md` must reflect it before the task is considered done.
+Neither README file may remain desynchronized from the codebase or from each
+other. If the way to run, test, configure, install, or use the system changed,
+both files must reflect it before the task is considered done.
 
 ### If adding a new domain service
 
@@ -262,7 +266,7 @@ Update:
 Update:
 
 - the correct file under `requirements/`
-- `README.md` if installation, setup, commands, capabilities, or expectations changed
+- `README.md` and `README_es.md` if installation, setup, commands, capabilities, or expectations changed
 - CI/workflow files if automation or environment setup changed
 
 ---

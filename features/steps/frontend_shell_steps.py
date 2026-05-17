@@ -486,6 +486,24 @@ def step_set_theme_mode(context: object, theme_mode: str) -> None:
     typed_context.shell.set_settings_theme_mode(theme_mode)
 
 
+@when('the operator sets the UI language to "{ui_language}"')
+def step_set_ui_language(context: object, ui_language: str) -> None:
+    """Run the BDD step for set ui language.
+
+    Args:
+        context:
+            Value supplied to this callable.
+        ui_language:
+            Value supplied to this callable.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
+    typed_context = _context_with_shell(context)
+    typed_context.shell.set_settings_ui_language(ui_language)
+
+
 @when('the operator sets the default project locale to "{default_locale}"')
 def step_set_default_project_locale(context: object, default_locale: str) -> None:
     """Run the BDD step for set default project locale.
@@ -1479,6 +1497,25 @@ def step_assert_theme_selector(context: object) -> None:
     assert typed_context.shell.settings_state.theme_mode_field.help_text != ""
 
 
+@then("the settings screen lists UI languages from packaged gettext catalogs")
+def step_assert_ui_language_catalog_options(context: object) -> None:
+    """Run the BDD step for assert ui language catalog options.
+
+    Args:
+        context:
+            Value supplied to this callable.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
+    typed_context = _context_with_shell(context)
+    assert typed_context.shell.settings_state is not None
+    options = typed_context.shell.settings_state.ui_language_field.options
+    assert [option.value for option in options] == ["en", "es"]
+    assert [option.label for option in options] == ["English", "Castellano"]
+
+
 @then("the settings screen shows the changes as saved")
 def step_assert_settings_saved(context: object) -> None:
     """Run the BDD step for assert settings saved.
@@ -1552,6 +1589,25 @@ def step_assert_saved_window_size(context: object) -> None:
         typed_context.shell.settings_state.app_settings.window_height
         == CUSTOM_WINDOW_HEIGHT
     )
+
+
+@then('the saved settings keep UI language "{ui_language}"')
+def step_assert_saved_ui_language(context: object, ui_language: str) -> None:
+    """Run the BDD step for assert saved ui language.
+
+    Args:
+        context:
+            Value supplied to this callable.
+        ui_language:
+            Value supplied to this callable.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
+    typed_context = _context_with_shell(context)
+    assert typed_context.shell.settings_state is not None
+    assert typed_context.shell.settings_state.app_settings.ui_language == ui_language
 
 
 @then("the saved settings keep the compact window size")

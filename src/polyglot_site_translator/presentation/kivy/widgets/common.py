@@ -25,6 +25,7 @@ from polyglot_site_translator.presentation.kivy.theme import (
     ColorTuple,
     get_active_theme,
 )
+from polyglot_site_translator.presentation.ui_localization import tr_ui_text
 
 
 def apply_theme_to_widget_tree(root_widget: Widget) -> None:
@@ -68,6 +69,24 @@ def _resolve_color(
     palette = get_active_theme()
     role_name = color_role or fallback_role
     return cast(ColorTuple, getattr(palette, role_name))
+
+
+def _translate_text_kwarg(kwargs: dict[str, object]) -> dict[str, object]:
+    """Translate a Kivy text keyword when it contains static UI copy.
+
+    Args:
+        kwargs:
+            Keyword arguments passed to a Kivy widget constructor.
+
+    Returns:
+        value:
+            Shallow copy with ``text`` translated when it is a string.
+    """
+    resolved_kwargs = dict(kwargs)
+    text = resolved_kwargs.get("text")
+    if isinstance(text, str):
+        resolved_kwargs["text"] = tr_ui_text(text)
+    return resolved_kwargs
 
 
 class SurfaceBoxLayout(BoxLayout):  # type: ignore[misc]
@@ -227,6 +246,7 @@ class WrappedLabel(Label):  # type: ignore[misc]
             value:
                 Structured value returned by this callable.
         """
+        resolved_kwargs = _translate_text_kwarg(dict(kwargs))
         self._color = color
         self._color_role = color_role
         super().__init__(
@@ -236,7 +256,7 @@ class WrappedLabel(Label):  # type: ignore[misc]
             color=_resolve_color(color, color_role, "text_primary"),
             font_size=font_size,
             bold=bold,
-            **kwargs,
+            **resolved_kwargs,
         )
         self.bind(width=self._sync_text_size, texture_size=self._sync_height)
         self._sync_text_size()
@@ -315,7 +335,7 @@ class AppButton(Button):  # type: ignore[misc]
             value:
                 Structured value returned by this callable.
         """
-        resolved_kwargs = dict(kwargs)
+        resolved_kwargs = _translate_text_kwarg(dict(kwargs))
         self._primary = primary
         self._uses_theme_background = "background_color" not in resolved_kwargs
         self._uses_theme_text = "color" not in resolved_kwargs

@@ -34,6 +34,7 @@ Manage the local record of sites or projects known to the application.
 
 - UI rendering details
 - raw screen state
+- UI language catalog discovery and operator-facing copy translation
 - report formatting
 - SQLite path composition inside widgets
 
@@ -218,6 +219,8 @@ Provide the graphical user experience through Kivy.
 - typed settings sections and editable draft settings
 - user-triggered actions
 - display of progress, summaries, errors, and outputs
+- gettext-backed localization of visible UI copy, workflow summaries, adapter
+  evidence, status labels, and metrics
 
 ### Excludes
 

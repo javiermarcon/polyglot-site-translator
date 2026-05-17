@@ -51,6 +51,7 @@ reports/
 # Translations
 *.mo
 *.pot
+!src/polyglot_site_translator/presentation/locale/*/LC_MESSAGES/*.mo
 
 # Django stuff:
 staticfiles/

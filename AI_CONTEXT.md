@@ -58,6 +58,8 @@ When changing this codebase, prioritize:
 - Put target-specific rules into adapters/plugins.
 - Add tests with every meaningful feature or bugfix.
 - Update architectural docs whenever structure or flows change.
+- Keep `README.md` in English and `README_es.md` in Spanish, and update both
+  when user/developer-facing behavior changes.
 - Keep docstrings multi-line and structured for public and private symbols; the repository now
   validates that requirement with a dedicated docstring audit script in addition to Ruff and mypy.
 
@@ -131,6 +133,8 @@ The current Kivy frontend base is organized around:
 - `polyglot_site_translator/presentation/frontend_shell.py` for stateful UI orchestration
 - `polyglot_site_translator/presentation/contracts.py` for UI-facing protocols
 - `polyglot_site_translator/presentation/view_models.py` for typed screen state
+- `polyglot_site_translator/presentation/ui_localization.py` for gettext
+  catalog discovery, active UI translation, and dynamic language options
 - `polyglot_site_translator/presentation/fakes.py` for deterministic in-memory services
 - `polyglot_site_translator/presentation/kivy/` for thin screen rendering
 - `polyglot_site_translator/presentation/kivy/widgets/path_picker.py` for Kivy Garden `FileBrowser` path entry (directory listings can be folder-only; still no domain or SQL in that module)
@@ -151,6 +155,8 @@ The frontend baseline now also includes:
 - fake in-memory settings persistence for isolated tests and local doubles
 - a grouped application menu that separates workspace, operations, and system navigation
 - a Kivy runtime theme module for light/dark palette application
+- gettext-backed UI localization with English as the default language and
+  selectable languages discovered from packaged `.po`/`.mo` catalogs
 - runtime application of saved window size and theme mode after successful settings saves
 - startup loading of persisted theme, window size, and safe remembered screens
 - responsive settings layout rules so narrow windows switch to a stacked compact layout
