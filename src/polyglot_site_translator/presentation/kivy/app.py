@@ -15,6 +15,10 @@ from polyglot_site_translator.presentation.errors import ControlledServiceError
 from polyglot_site_translator.presentation.frontend_shell import FrontendShell
 from polyglot_site_translator.presentation.kivy.root import build_root_widget
 from polyglot_site_translator.presentation.kivy.theme import set_active_theme_mode
+from polyglot_site_translator.presentation.ui_localization import (
+    set_active_ui_language,
+    tr,
+)
 from polyglot_site_translator.presentation.view_models import (
     AppSettingsViewModel,
     SettingsStateViewModel,
@@ -27,7 +31,9 @@ class PolyglotSiteTranslatorApp(App):  # type: ignore[misc]
     """Thin Kivy application wrapper around the presentation shell.
 
     Attributes:
-        None: This type does not declare class-level attributes.
+        title:
+            Window title exposed by the Kivy base class and initialized by
+            this wrapper before later runtime language refreshes.
     """
 
     def __init__(self, shell: FrontendShell, **kwargs: object) -> None:
@@ -46,6 +52,7 @@ class PolyglotSiteTranslatorApp(App):  # type: ignore[misc]
                 Structured value returned by this callable.
         """
         super().__init__(**kwargs)
+        self.title = tr("Polyglot Site Translator")
         self._shell = shell
         self._built_root: Any | None = None
         self._previous_excepthook = sys.excepthook
@@ -63,7 +70,6 @@ class PolyglotSiteTranslatorApp(App):  # type: ignore[misc]
             value:
                 Structured value returned by this callable.
         """
-        self.title = "Polyglot Site Translator"
         self._install_runtime_error_handlers()
         self._open_initial_route()
         self._built_root = build_root_widget(self._shell, self.apply_runtime_settings)
@@ -99,6 +105,8 @@ class PolyglotSiteTranslatorApp(App):  # type: ignore[misc]
                 Structured value returned by this callable.
         """
         set_active_theme_mode(app_settings.theme_mode)
+        set_active_ui_language(app_settings.ui_language)
+        self.title = tr("Polyglot Site Translator")
         Window.size = (app_settings.window_width, app_settings.window_height)
         root = self.root or self._built_root
         if root is None:
@@ -149,7 +157,13 @@ class PolyglotSiteTranslatorApp(App):  # type: ignore[misc]
                 Structured value returned by this callable.
         """
         try:
-            state = self._shell.services.settings.load_settings()
+            loaded_state = self._shell.services.settings.load_settings()
+            set_active_ui_language(loaded_state.app_settings.ui_language)
+            state = build_settings_state(
+                app_settings=loaded_state.app_settings,
+                status=loaded_state.status,
+                status_message=loaded_state.status_message,
+            )
             self._shell.settings_state = state
             self._shell.latest_error = None
         except ControlledServiceError as error:

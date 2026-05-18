@@ -18,6 +18,10 @@ from polyglot_site_translator.domain.sync.models import (
 from polyglot_site_translator.presentation.contracts import FrontendServices
 from polyglot_site_translator.presentation.errors import ControlledServiceError
 from polyglot_site_translator.presentation.router import FrontendRouter, RouteName
+from polyglot_site_translator.presentation.ui_localization import (
+    is_supported_ui_language,
+    set_active_ui_language,
+)
 from polyglot_site_translator.presentation.view_models import (
     AppSettingsViewModel,
     AuditSummaryViewModel,
@@ -529,7 +533,13 @@ class FrontendShell:
                 Structured value returned by this callable.
         """
         try:
-            self.settings_state = self.services.settings.load_settings()
+            loaded_state = self.services.settings.load_settings()
+            set_active_ui_language(loaded_state.app_settings.ui_language)
+            self.settings_state = build_settings_state(
+                app_settings=loaded_state.app_settings,
+                status=loaded_state.status,
+                status_message=loaded_state.status_message,
+            )
             self.latest_error = None
         except ControlledServiceError as error:
             self.settings_state = build_settings_state(
@@ -711,8 +721,7 @@ class FrontendShell:
                 Raised when this callable hits the corresponding error path.
         """
         state = self._require_settings_state()
-        allowed_languages = {"en", "es"}
-        if ui_language not in allowed_languages:
+        if not is_supported_ui_language(ui_language):
             msg = f"Unsupported UI language: {ui_language}"
             raise ValueError(msg)
         self.settings_state = replace(
@@ -1051,6 +1060,7 @@ class FrontendShell:
         state = self._require_settings_state()
         try:
             saved_state = self.services.settings.save_settings(state.app_settings)
+            set_active_ui_language(saved_state.app_settings.ui_language)
             self.settings_state = build_settings_state(
                 app_settings=saved_state.app_settings,
                 status=saved_state.status,
@@ -1081,6 +1091,7 @@ class FrontendShell:
         state = self._require_settings_state()
         try:
             reset_state = self.services.settings.reset_settings()
+            set_active_ui_language(reset_state.app_settings.ui_language)
             self.settings_state = build_settings_state(
                 app_settings=reset_state.app_settings,
                 status=reset_state.status,

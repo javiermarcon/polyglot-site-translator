@@ -158,6 +158,7 @@ Current settings orchestration entrypoints:
 - `FrontendShell.open_settings`
 - `FrontendShell.open_application_menu`
 - `FrontendShell.open_route_from_menu`
+- `FrontendShell.set_settings_ui_language`
 - `FrontendShell.set_settings_default_project_locale`
 - `FrontendShell.set_settings_default_compile_mo`
 - `FrontendShell.set_settings_default_use_external_translator`
@@ -175,6 +176,14 @@ Current settings orchestration entrypoints:
 - `polyglot_site_translator.presentation.kivy.screens.settings.SettingsScreen`
 - `FrontendShell.start_sync_async` resolves the configured sync command-log limit before opening progress state for the popup
 - `FrontendShell.start_sync_to_remote_async` resolves the same limit before starting the upload popup state
+
+Current UI localization entrypoints:
+
+- `polyglot_site_translator.presentation.ui_localization.available_ui_language_options`
+- `polyglot_site_translator.presentation.ui_localization.set_active_ui_language`
+- `polyglot_site_translator.presentation.ui_localization.tr`
+- `polyglot_site_translator.presentation.ui_localization.tr_ui_text`
+- `polyglot_site_translator.presentation.locale`
 
 Current project-registry orchestration entrypoints:
 
@@ -337,3 +346,41 @@ If no CLI exists yet, update this document when one is introduced.
 ## Maintenance rule
 
 If a new screen, service, adapter, command, or major subsystem is introduced, update this file in the same patch.
+
+---
+
+## Workflow ownership rules
+
+Presentation entrypoints:
+
+- validate user intent
+- collect input
+- trigger workflows
+- display progress and results
+- surface controlled errors
+
+Service entrypoints:
+
+- orchestrate workflows
+- coordinate adapters and infrastructure
+- normalize operational results
+- keep long-running workflows explicit and observable
+
+Infrastructure entrypoints:
+
+- expose typed operational capabilities
+- avoid presentation coupling
+- normalize dependency, transport, persistence, and filesystem failures
+
+---
+
+## Background workflow rules
+
+Background workflows must:
+
+- expose observable progress
+- surface partial failures
+- avoid silent retries
+- preserve deterministic state transitions
+- avoid hidden global mutable state
+- document retry/idempotency behavior when duplicate execution is possible

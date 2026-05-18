@@ -85,6 +85,12 @@ def test_update_and_save_settings_persists_fake_state() -> None:
     shell.set_settings_default_project_locale("es_ES, es_AR")
     shell.set_settings_default_compile_mo(False)
     shell.set_settings_default_use_external_translator(False)
+    shell.set_settings_default_use_translation_cache(False)
+    shell.set_settings_default_only_fuzzy(True)
+    shell.set_settings_translation_cache_path("/workspace/cache/translations")
+    shell.set_settings_default_dry_run(True)
+    shell.set_settings_default_stats_only(True)
+    shell.set_settings_default_report_inconsistencies(True)
     shell.update_settings_draft(
         replace(shell.settings_state.app_settings, sync_progress_log_limit=25)
     )
@@ -104,6 +110,15 @@ def test_update_and_save_settings_persists_fake_state() -> None:
     assert shell.settings_state.app_settings.default_project_locale == "es_ES,es_AR"
     assert shell.settings_state.app_settings.default_compile_mo is False
     assert shell.settings_state.app_settings.default_use_external_translator is False
+    assert shell.settings_state.app_settings.default_use_translation_cache is False
+    assert shell.settings_state.app_settings.default_only_fuzzy is True
+    assert (
+        shell.settings_state.app_settings.translation_cache_path
+        == "/workspace/cache/translations"
+    )
+    assert shell.settings_state.app_settings.default_dry_run is True
+    assert shell.settings_state.app_settings.default_stats_only is True
+    assert shell.settings_state.app_settings.default_report_inconsistencies is True
     assert shell.settings_state.app_settings.sync_progress_log_limit == 25
     assert shell.settings_state.status == "loaded"
 

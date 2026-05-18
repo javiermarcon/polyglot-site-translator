@@ -121,26 +121,26 @@ def test_project_detail_screen_refresh_edit_sync_and_audit_actions_navigate() ->
 
     detail_screen._start_sync()
     assert root.current == "project_detail"
-    assert detail_screen._sync_progress_popup is not None
-    existing_sync_popup = detail_screen._sync_progress_popup
+    assert detail_screen.sync_progress_popup is not None
+    existing_sync_popup = detail_screen.sync_progress_popup
 
     shell.select_project("wp-site")
     root.current = "project_detail"
     detail_screen._start_sync()
-    assert detail_screen._sync_progress_popup is existing_sync_popup
+    assert detail_screen.sync_progress_popup is existing_sync_popup
 
     shell.select_project("wp-site")
     root.current = "project_detail"
     detail_screen._start_sync_to_remote()
     assert root.current == "project_detail"
-    assert detail_screen._sync_progress_popup is not None
-    assert detail_screen._sync_progress_popup is existing_sync_popup
+    assert detail_screen.sync_progress_popup is not None
+    assert detail_screen.sync_progress_popup is existing_sync_popup
 
-    detail_screen._sync_progress_popup = None
+    detail_screen.clear_sync_progress_popup()
     shell.select_project("wp-site")
     root.current = "project_detail"
     detail_screen._start_sync_to_remote()
-    assert detail_screen._sync_progress_popup is not None
+    assert detail_screen.sync_progress_popup is not None
 
     shell.select_project("wp-site")
     root.current = "project_detail"
@@ -264,6 +264,11 @@ def test_workflow_screens_render_empty_and_loaded_states_and_return_to_detail() 
     assert "Progress: 0/0" in po_screen._summary_label.text
     assert "Completed entries: 0/0" in po_screen._summary_label.text
     assert po_screen._progress_bar.value == 1
+    po_screen._back_to_project()
+    assert root.current == "project_detail"
+
+    shell.project_detail_state = None
+    root.current = "po_processing"
     po_screen._back_to_project()
     assert root.current == "project_detail"
 

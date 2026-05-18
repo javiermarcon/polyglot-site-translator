@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 from dataclasses import dataclass
+import re
 from typing import Any
 
 import pytest
@@ -18,7 +19,9 @@ from polyglot_site_translator.domain.po_processing.errors import (
 from polyglot_site_translator.infrastructure.po_translator_googletrans import (
     GoogleTransPOTranslationProvider,
     _base_language,
+    _load_googletrans_translator_class,
     _sanitize_text,
+    _transport_error_types,
 )
 
 
@@ -243,6 +246,10 @@ def test_googletrans_provider_translates_to_target_base_language() -> None:
     Returns:
         value:
             Structured value returned by this callable.
+
+    Raises:
+        POTranslationProviderConfigurationError:
+            Expected from the exercised loader branch.
     """
     translator = _StubTranslator(translated_text="Hola {{name}} %1$s")
     provider = GoogleTransPOTranslationProvider(translator=translator)
@@ -262,6 +269,10 @@ def test_googletrans_provider_wraps_translation_failures() -> None:
     Returns:
         value:
             Structured value returned by this callable.
+
+    Raises:
+        ModuleNotFoundError:
+            Raised by the controlled optional module import branch.
     """
     provider = GoogleTransPOTranslationProvider(translator=_FailingTranslator())
 
@@ -277,6 +288,10 @@ def test_googletrans_provider_rejects_multiple_results_for_single_request() -> N
     Returns:
         value:
             Structured value returned by this callable.
+
+    Raises:
+        POTranslationProviderConfigurationError:
+            Expected from the exercised loader branch.
     """
     provider = GoogleTransPOTranslationProvider(translator=_ListTranslator())
 
@@ -342,6 +357,10 @@ def test_googletrans_provider_wraps_http_protocol_errors() -> None:
     Returns:
         value:
             Structured value returned by this callable.
+
+    Raises:
+        ModuleNotFoundError:
+            Raised by the controlled optional module import branch.
     """
     provider = GoogleTransPOTranslationProvider(translator=_ProtocolFailingTranslator())
 
@@ -355,6 +374,10 @@ def test_googletrans_provider_wraps_configuration_errors() -> None:
     Returns:
         value:
             Structured value returned by this callable.
+
+    Raises:
+        POTranslationProviderConfigurationError:
+            Expected from the exercised loader branch.
     """
     provider = GoogleTransPOTranslationProvider(translator=_MisconfiguredTranslator())
 
@@ -368,6 +391,10 @@ def test_googletrans_provider_translation_errors_keep_base_type() -> None:
     Returns:
         value:
             Structured value returned by this callable.
+
+    Raises:
+        ModuleNotFoundError:
+            Raised by the controlled optional module import branch.
     """
     provider = GoogleTransPOTranslationProvider(translator=_FailingTranslator())
 
@@ -452,6 +479,166 @@ def test_googletrans_provider_reuses_thread_local_translator_and_recreates_close
     recreated_loop = provider._loop()
     assert recreated_loop is not loop
     recreated_loop.close()
+
+
+def test_googletrans_loader_rejects_missing_dependency(
+    monkeypatch: MonkeyPatch,
+) -> None:
+    """Verify googletrans loader rejects missing dependency.
+
+    Args:
+        monkeypatch:
+            Value supplied to this callable.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+
+    Raises:
+        POTranslationProviderConfigurationError:
+            Expected from the exercised loader branch.
+    """
+
+    def missing_googletrans(module_name: str) -> object:
+        """Raise a missing dependency error for googletrans.
+
+        Args:
+            module_name:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+
+        Raises:
+            ModuleNotFoundError:
+                Raised when googletrans is imported.
+        """
+        if module_name == "googletrans":
+            raise ModuleNotFoundError(module_name)
+        return __import__(module_name)
+
+    monkeypatch.setattr(
+        "polyglot_site_translator.infrastructure.po_translator_googletrans."
+        "importlib.import_module",
+        missing_googletrans,
+    )
+
+    with pytest.raises(
+        POTranslationProviderConfigurationError,
+        match=re.escape("googletrans is not installed."),
+    ):
+        _load_googletrans_translator_class()
+
+
+def test_googletrans_loader_rejects_missing_translator_class(
+    monkeypatch: MonkeyPatch,
+) -> None:
+    """Verify googletrans loader rejects invalid translator class.
+
+    Args:
+        monkeypatch:
+            Value supplied to this callable.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
+    module = type("GoogleTransModule", (), {"Translator": None})()
+
+    monkeypatch.setattr(
+        "polyglot_site_translator.infrastructure.po_translator_googletrans."
+        "importlib.import_module",
+        lambda _module_name: module,
+    )
+
+    with pytest.raises(
+        POTranslationProviderConfigurationError,
+        match=re.escape("googletrans.Translator is unavailable."),
+    ):
+        _load_googletrans_translator_class()
+
+
+def test_googletrans_loader_returns_available_translator_class(
+    monkeypatch: MonkeyPatch,
+) -> None:
+    """Verify googletrans loader returns the dependency translator class.
+
+    Args:
+        monkeypatch:
+            Pytest helper used to isolate import resolution from installed
+            third-party packages.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
+    translator_class = type("_FakeGoogleTransTranslator", (), {})
+    module = type(
+        "_FakeGoogleTransModule",
+        (),
+        {"Translator": translator_class},
+    )
+
+    monkeypatch.setattr(
+        "polyglot_site_translator.infrastructure.po_translator_googletrans."
+        "importlib.import_module",
+        lambda module_name: module,
+    )
+
+    assert _load_googletrans_translator_class() is translator_class
+
+
+def test_transport_error_types_ignore_missing_modules_and_invalid_attributes(
+    monkeypatch: MonkeyPatch,
+) -> None:
+    """Verify transport error type discovery handles optional dependencies.
+
+    Args:
+        monkeypatch:
+            Value supplied to this callable.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+
+    Raises:
+        ModuleNotFoundError:
+            Raised by the controlled optional module import branch.
+    """
+
+    def import_optional_transport_module(module_name: str) -> object:
+        """Return controlled optional transport modules.
+
+        Args:
+            module_name:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Structured value returned by this callable.
+
+        Raises:
+            ModuleNotFoundError:
+                Raised for missing optional modules.
+        """
+        if module_name == "httpcore":
+            raise ModuleNotFoundError(module_name)
+        if module_name == "httpx":
+            return type("HttpxModule", (), {"HTTPError": "not-an-error"})()
+        return __import__(module_name)
+
+    monkeypatch.setattr(
+        "polyglot_site_translator.infrastructure.po_translator_googletrans."
+        "importlib.import_module",
+        import_optional_transport_module,
+    )
+
+    error_types = _transport_error_types()
+
+    assert OSError in error_types
+    assert RuntimeError in error_types
+    assert all(isinstance(error_type, type) for error_type in error_types)
 
 
 def test_googletrans_helpers_cover_locale_and_text_sanitization() -> None:

@@ -58,8 +58,9 @@ def test_po_locale_selection_popup_preloads_default_locales() -> None:
     assert popup._report_inconsistencies_switch.active is True
     assert tuple(popup.size_hint) == (0.86, 0.9)
     assert len(popup._toggle_rows) == 7
-    assert popup._toggle_rows[0].height == 58
+    assert popup._toggle_rows[0].height == 74
     assert popup._toggle_rows[0].children[-1].children[-1].text == "Compile MO Files"
+    assert popup._options_scroll.children[0] is popup._options_container
 
 
 def test_po_locale_selection_popup_normalizes_and_confirms_locales(
@@ -180,4 +181,5 @@ def test_po_locale_selection_popup_builds_consistent_toggle_row_copy() -> None:
         "Stats Only",
         "Report Inconsistencies",
     ]
-    assert popup.content.children[-1] is popup._options_container
+    assert popup._options_scroll.children[0] is popup._options_container
+    assert popup.content.children[-1] is popup._options_scroll

@@ -39,9 +39,17 @@ If a section does not apply, explicitly say so.
 - Do not duplicate heuristics, scanning logic, or validation rules.
 - Do not hardcode framework-specific rules into shared services when they belong in an adapter or plugin.
 - Do not break CLI or service entrypoints if they already exist.
+- Do not introduce instance attributes outside `__init__`; initialize class instance state in the constructor before later methods mutate it.
+- Do not use Python `assert` statements outside pytest tests under `tests/`; runtime code, scripts, and BDD steps must raise explicit exceptions instead because optimized bytecode removes assertions.
+- Do not hardcode `/tmp` or other temporary filesystem paths in tests or BDD steps; use `tempfile`, `tmp_path`, or repository-provided temporary fixtures.
+- Do not access protected members of another class from production code, BDD steps, or integration tests; expose a small public API when external observation is needed.
+- Do not use mutable global runtime state; use dependency injection, explicit state holders, or context-local state instead.
+- Do not call `next()` without an explicit fallback or a concrete exception path; handle missing values deliberately.
+- Do not leave instance-independent methods as instance methods; use `@staticmethod` when a method does not use `self` or class state.
 - Do not introduce a new module or subsystem without updating repository documentation.
 - Do not introduce a new external dependency without declaring it in the `requirements/` directory using the repository split defined below.
-- Do not leave `README.md` outdated when a task changes behavior, installation, usage, testing commands, architecture visible to contributors, or user/developer-facing capabilities.
+- Do not leave `README.md` or `README_es.md` outdated when a task changes behavior, installation, usage, testing commands, architecture visible to contributors, or user/developer-facing capabilities.
+- Keep `README.md` in English and `README_es.md` in Spanish; update both files in the same patch whenever either one applies.
 - Do not keep production fake bundles for workflows that already have a real implementation.
 - Do not change architecture without updating:
   - `ARCHITECTURE.md`
@@ -81,7 +89,7 @@ A task is not done unless all of the following are true:
 - Error handling is explicit and concrete.
 - Documentation affected by the change is updated in the same patch.
 - Any new external dependency is declared in the correct file under `requirements/`, or explicitly avoided because it belongs to the Python standard library.
-- `README.md` reflects the real current behavior whenever the task changed installation, setup, commands, workflows, visible features, or other user/developer-facing behavior.
+- `README.md` and `README_es.md` reflect the real current behavior whenever the task changed installation, setup, commands, workflows, visible features, or other user/developer-facing behavior.
 - The repository remains coherent for future Codex/agent iterations.
 
 ---
@@ -99,7 +107,7 @@ Before finishing any non-trivial change, verify explicitly:
 - pytest passes for the affected scope.
 - Documentation is aligned with the final code.
 - New dependencies, if any, are declared in the correct `requirements/` file and nowhere inconsistent.
-- `README.md` is aligned with the final installation, usage, testing, configuration, and feature set affected by the task.
+- `README.md` and `README_es.md` are aligned with the final installation, usage, testing, configuration, and feature set affected by the task.
 - No `except Exception` was introduced.
 - No domain logic was pushed into presentation-only modules.
 - No persistence logic was duplicated across UI and services.
@@ -198,17 +206,19 @@ If a task requires a new third-party library:
 - a dependency must not be used in code, tests, scripts, or tooling setup unless it is declared in the appropriate `requirements/` file
 - Python standard-library modules such as `ftplib`, `sqlite3`, `pathlib`, `json`, and similar modules must not be added to `requirements/`
 - if a new dependency affects CI, automation, or workflows, the relevant CI/workflow files must be updated in the same change
-- if a new dependency affects installation, setup, commands, or user/developer expectations, `README.md` must be updated in the same change
+- if a new dependency affects installation, setup, commands, or user/developer expectations, `README.md` and `README_es.md` must be updated in the same change
 
 Do not rely on “it is probably installed already”.
 Do not leave undeclared dependencies for future cleanup.
 
 ### README alignment policy
 
-`README.md` is a required operational document, not optional project marketing text.
-It must describe the real current state of the repository.
+`README.md` and `README_es.md` are required operational documents, not optional
+project marketing text. `README.md` must be written in English and
+`README_es.md` must be written in Spanish. Both must describe the real current
+state of the repository.
 
-Update `README.md` in the same patch whenever a task:
+Update both `README.md` and `README_es.md` in the same patch whenever a task:
 
 - changes observable system behavior
 - adds, removes, or materially changes a feature
@@ -218,8 +228,9 @@ Update `README.md` in the same patch whenever a task:
 - changes primary usage flows, operator workflows, or visible project capabilities
 - adds a dependency or capability whose impact should be visible to users or contributors
 
-`README.md` must not remain desynchronized from the codebase.
-If the way to run, test, configure, install, or use the system changed, `README.md` must reflect it before the task is considered done.
+Neither README file may remain desynchronized from the codebase or from each
+other. If the way to run, test, configure, install, or use the system changed,
+both files must reflect it before the task is considered done.
 
 ### If adding a new domain service
 
@@ -262,7 +273,7 @@ Update:
 Update:
 
 - the correct file under `requirements/`
-- `README.md` if installation, setup, commands, capabilities, or expectations changed
+- `README.md` and `README_es.md` if installation, setup, commands, capabilities, or expectations changed
 - CI/workflow files if automation or environment setup changed
 
 ---
@@ -382,3 +393,100 @@ Every change must explicitly respect:
 Do not assume those standards are optional just because a specific file already existed in a
 weaker state. New and modified code must move the repository toward explicit compliance, not away
 from it.
+
+---
+
+## Static-analysis safety rules
+
+These rules are mandatory for production code, tests, BDD steps, scripts, and
+agent-authored changes unless a narrower repository document explicitly gives a
+stricter rule.
+
+Forbidden:
+
+- mutable default arguments
+- hidden runtime monkeypatching
+- dynamic runtime attribute injection
+- dead code and unreachable branches
+- broad analyzer suppressions without justification
+- `eval`, `exec`, or unsafe deserialization
+- shell command construction from untrusted input
+- filesystem path concatenation with string interpolation
+- unsafe subprocess shell interpolation
+- unsafe YAML loading or unsafe pickle-style deserialization
+
+Required:
+
+- use `pathlib.Path` for filesystem operations when practical
+- prefer explicit typed models over loosely typed dictionaries
+- preserve deterministic behavior in tests
+- keep suppressions local, specific, and narrowly justified
+- use `yaml.safe_load()` for untrusted YAML
+- prefer subprocess argument lists over shell command strings
+- use `secrets` instead of `random` for security-sensitive token generation
+- prefer SHA-256 or stronger algorithms for security-sensitive hashing
+
+---
+
+## Runtime side-effect rules
+
+All side effects must remain explicit, documented, and testable when they affect
+observable behavior.
+
+Forbidden:
+
+- database writes hidden in property accessors
+- filesystem writes hidden in getters
+- network access triggered implicitly during rendering
+- adapter discovery with hidden import-time side effects
+- UI-triggered workflows that mutate runtime state silently
+- logging calls that trigger expensive traversal, serialization, or IO
+
+Rules:
+
+- expensive operations must remain observable and reviewable
+- infrastructure access must stay explicit in orchestration flows
+- side effects must be documented in docstrings when behaviorally significant
+- import-time behavior must not perform database access, network access, or
+  mutable runtime initialization
+
+---
+
+## Architectural mutation rules
+
+Forbidden:
+
+- hidden behavior changes during refactors
+- changing adapter ownership boundaries implicitly
+- moving responsibilities from services into UI code
+- introducing abstractions without active reuse pressure
+- introducing caching layers without explicit invalidation strategy and tests
+
+Rules:
+
+- refactors must preserve observable behavior
+- extension should prefer existing service and adapter boundaries
+- architecture changes require synchronized documentation updates
+- new abstractions must remove real duplication or protect a clear extension
+  boundary already present in the codebase
+
+---
+
+## Performance and materialization rules
+
+Forbidden:
+
+- eager full-tree filesystem traversal when bounded iteration is possible
+- repeated SQLite lookups inside loops when batching is possible
+- repeated remote round-trips inside iterative workflows
+- loading entire PO catalogs repeatedly when shared state can be reused
+- rebuilding expensive UI summaries on every render cycle
+- hiding expensive lazy IO inside rendering helpers or properties
+
+Rules:
+
+- prefer incremental processing
+- keep expensive iteration visible in orchestration layers
+- cache only through explicit contracts
+- make materialization boundaries explicit in services or infrastructure
+- tests should protect critical performance-sensitive workflows when practical

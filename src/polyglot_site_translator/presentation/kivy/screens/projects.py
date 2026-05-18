@@ -20,6 +20,7 @@ from polyglot_site_translator.presentation.kivy.widgets.surfaces import (
     EmptyStatePanel,
     SectionHeader,
 )
+from polyglot_site_translator.presentation.ui_localization import tr
 
 
 class ProjectsScreen(BaseShellScreen):
@@ -118,11 +119,11 @@ class ProjectsScreen(BaseShellScreen):
         self._project_buttons = []
         actions = ActionRow()
         dashboard_button = build_action_button(
-            text="Back to Dashboard",
+            text=tr("Back to Dashboard"),
             intent=ActionIntent.SECONDARY,
         )
         register_button = build_action_button(
-            text="Register Project",
+            text=tr("Register Project"),
             intent=ActionIntent.PRIMARY,
         )
         dashboard_button.bind(on_release=self._go_dashboard)
@@ -141,7 +142,7 @@ class ProjectsScreen(BaseShellScreen):
                     )
                 )
                 button = build_action_button(
-                    text=f"Open {project.name}",
+                    text=tr("Open {project_name}").format(project_name=project.name),
                     intent=ActionIntent.SECONDARY,
                 )
                 button.bind(
@@ -152,7 +153,7 @@ class ProjectsScreen(BaseShellScreen):
                 self._content.add_widget(card)
         else:
             empty_panel = EmptyStatePanel(
-                title="No projects registered",
+                title=tr("No projects registered"),
                 body=self._shell.projects_state.empty_message or "",
             )
             self._list_label = empty_panel.body_label

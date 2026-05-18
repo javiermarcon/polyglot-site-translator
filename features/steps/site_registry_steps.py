@@ -6,7 +6,7 @@ from collections.abc import Callable
 from dataclasses import replace
 from pathlib import Path
 import tempfile
-from typing import Protocol, TypeVar, cast
+from typing import NoReturn, Protocol, TypeVar, cast
 
 import behave as behave_module  # type: ignore[import-untyped]
 
@@ -31,6 +31,26 @@ when = cast(Callable[[str], Callable[[StepFunction], StepFunction]], behave_modu
 then = cast(Callable[[str], Callable[[StepFunction], StepFunction]], behave_module.then)
 
 
+def _raise_bdd_expectation_failure(location: str) -> NoReturn:
+    """Raise an explicit Behave expectation failure.
+
+    Args:
+        location:
+            Source location of the failed BDD expectation.
+
+    Returns:
+        value:
+            This helper never returns; it always raises AssertionError.
+
+    Raises:
+        AssertionError:
+            Raised every time this helper is called so Behave reports the
+            step as failed without relying on optimized-away assertions.
+    """
+    message = f"BDD expectation failed at {location}."
+    raise AssertionError(message)
+
+
 class BehaveSiteRegistryContext(Protocol):
     """BDD helper for BehaveSiteRegistryContext.
 
@@ -39,12 +59,15 @@ class BehaveSiteRegistryContext(Protocol):
             Documented attribute exposed by this type.
         settings_temp_dir:
             Documented attribute exposed by this type.
+        configured_database_directory:
+            Documented attribute exposed by this type.
         created_site_id:
             Documented attribute exposed by this type.
     """
 
     shell: FrontendShell
     settings_temp_dir: tempfile.TemporaryDirectory[str]
+    configured_database_directory: str
     created_site_id: str
 
 
@@ -115,7 +138,8 @@ def step_registered_site(context: object) -> None:
             is_active=True,
         )
     )
-    assert typed_context.shell.project_detail_state is not None
+    if typed_context.shell.project_detail_state is None:
+        _raise_bdd_expectation_failure("features/steps/site_registry_steps.py:118")
     typed_context.created_site_id = typed_context.shell.project_detail_state.project.id
 
 
@@ -139,6 +163,8 @@ def step_invalid_database_settings(context: object) -> None:
     settings_service = build_default_settings_service(
         config_dir=Path(typed_context.settings_temp_dir.name)
     )
+    database_directory = Path(typed_context.settings_temp_dir.name) / "polyglot-db"
+    typed_context.configured_database_directory = str(database_directory)
     settings_service.settings_path.parent.mkdir(parents=True, exist_ok=True)
     settings_service.settings_path.write_text(
         (
@@ -150,7 +176,7 @@ def step_invalid_database_settings(context: object) -> None:
             'last_opened_screen = "dashboard"\n'
             "developer_mode = false\n"
             'ui_language = "en"\n'
-            'database_directory = "/tmp/polyglot-db"\n'
+            f'database_directory = "{database_directory}"\n'
             'database_filename = ""\n'
         ),
         encoding="utf-8",
@@ -231,7 +257,8 @@ def step_submit_new_site(context: object) -> None:
             is_active=True,
         )
     )
-    assert typed_context.shell.project_detail_state is not None
+    if typed_context.shell.project_detail_state is None:
+        _raise_bdd_expectation_failure("features/steps/site_registry_steps.py:234")
     typed_context.created_site_id = typed_context.shell.project_detail_state.project.id
 
 
@@ -268,7 +295,8 @@ def step_submit_new_site_with_adapter_sync_filters(context: object) -> None:
             use_adapter_sync_filters=True,
         )
     )
-    assert typed_context.shell.project_detail_state is not None
+    if typed_context.shell.project_detail_state is None:
+        _raise_bdd_expectation_failure("features/steps/site_registry_steps.py:271")
     typed_context.created_site_id = typed_context.shell.project_detail_state.project.id
 
 
@@ -304,7 +332,8 @@ def step_submit_new_site_with_spaced_default_locale_list(context: object) -> Non
             is_active=True,
         )
     )
-    assert typed_context.shell.project_detail_state is not None
+    if typed_context.shell.project_detail_state is None:
+        _raise_bdd_expectation_failure("features/steps/site_registry_steps.py:307")
     typed_context.created_site_id = typed_context.shell.project_detail_state.project.id
 
 
@@ -373,7 +402,8 @@ def step_submit_django_site_with_custom_sync_rule_overrides(context: object) -> 
         use_adapter_sync_filters=True,
     )
     typed_context.shell.preview_project_editor(draft)
-    assert typed_context.shell.project_editor_state is not None
+    if typed_context.shell.project_editor_state is None:
+        _raise_bdd_expectation_failure("features/steps/site_registry_steps.py:376")
     adjusted_items = (
         *(
             item
@@ -411,7 +441,8 @@ def step_submit_django_site_with_custom_sync_rule_overrides(context: object) -> 
             }
         )
     )
-    assert typed_context.shell.project_detail_state is not None
+    if typed_context.shell.project_detail_state is None:
+        _raise_bdd_expectation_failure("features/steps/site_registry_steps.py:414")
     typed_context.created_site_id = typed_context.shell.project_detail_state.project.id
 
 
@@ -451,7 +482,26 @@ def step_set_database_directory(context: object, directory: str) -> None:
             Structured value returned by this callable.
     """
     typed_context = _context_with_shell(context)
+    typed_context.configured_database_directory = directory
     typed_context.shell.set_settings_database_directory(directory)
+
+
+@when("the operator sets the database directory to a temporary directory")
+def step_set_temporary_database_directory(context: object) -> None:
+    """Run the BDD step for setting a temporary database directory.
+
+    Args:
+        context:
+            Value supplied to this callable.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
+    typed_context = _context_with_shell(context)
+    directory = Path(typed_context.settings_temp_dir.name) / "polyglot-db"
+    typed_context.configured_database_directory = str(directory)
+    typed_context.shell.set_settings_database_directory(str(directory))
 
 
 @when('the operator sets the database filename to "{filename}"')
@@ -600,9 +650,8 @@ def step_assert_created_project_route(context: object) -> None:
             Structured value returned by this callable.
     """
     typed_context = _context_with_shell(context)
-    assert (
-        typed_context.shell.router.current.project_id == typed_context.created_site_id
-    )
+    if typed_context.shell.router.current.project_id != typed_context.created_site_id:
+        _raise_bdd_expectation_failure("features/steps/site_registry_steps.py:603")
 
 
 @then("the project detail shows the persisted site registry values")
@@ -618,8 +667,10 @@ def step_assert_site_detail(context: object) -> None:
             Structured value returned by this callable.
     """
     typed_context = _context_with_shell(context)
-    assert typed_context.shell.project_detail_state is not None
-    assert typed_context.shell.project_detail_state.project.name == "Marketing Site"
+    if typed_context.shell.project_detail_state is None:
+        _raise_bdd_expectation_failure("features/steps/site_registry_steps.py:621")
+    if typed_context.shell.project_detail_state.project.name != "Marketing Site":
+        _raise_bdd_expectation_failure("features/steps/site_registry_steps.py:622")
 
 
 @then('the project detail shows the persisted default locale "{default_locale}"')
@@ -641,7 +692,8 @@ def step_assert_persisted_default_locale(context: object, default_locale: str) -
             Raised when this callable hits the corresponding error path.
     """
     typed_context = _context_with_shell(context)
-    assert typed_context.shell.project_detail_state is not None
+    if typed_context.shell.project_detail_state is None:
+        _raise_bdd_expectation_failure("features/steps/site_registry_steps.py:644")
     if (
         f"Locale: {default_locale}"
         not in typed_context.shell.project_detail_state.configuration_summary
@@ -662,9 +714,10 @@ def step_assert_persisted_site_list(context: object) -> None:
             Structured value returned by this callable.
     """
     typed_context = _context_with_shell(context)
-    assert [
-        project.name for project in typed_context.shell.projects_state.projects
-    ] == ["Marketing Site"]
+    if [project.name for project in typed_context.shell.projects_state.projects] != [
+        "Marketing Site"
+    ]:
+        _raise_bdd_expectation_failure("features/steps/site_registry_steps.py:665")
 
 
 @then("the project detail shows the updated persisted site registry values")
@@ -680,10 +733,13 @@ def step_assert_updated_site_detail(context: object) -> None:
             Structured value returned by this callable.
     """
     typed_context = _context_with_shell(context)
-    assert typed_context.shell.project_detail_state is not None
-    assert typed_context.shell.project_detail_state.project.local_path == (
-        "/workspace/marketing-site-v2"
-    )
+    if typed_context.shell.project_detail_state is None:
+        _raise_bdd_expectation_failure("features/steps/site_registry_steps.py:683")
+    if (
+        typed_context.shell.project_detail_state.project.local_path
+        != "/workspace/marketing-site-v2"
+    ):
+        _raise_bdd_expectation_failure("features/steps/site_registry_steps.py:684")
 
 
 @then("reopening the persisted site editor shows the updated remote connection values")
@@ -700,21 +756,26 @@ def step_assert_updated_remote_connection(context: object) -> None:
     """
     typed_context = _context_with_shell(context)
     typed_context.shell.open_project_editor_edit(typed_context.created_site_id)
-    assert typed_context.shell.project_editor_state is not None
-    assert typed_context.shell.project_editor_state.editor.connection_type == "ftp"
-    assert (
+    if typed_context.shell.project_editor_state is None:
+        _raise_bdd_expectation_failure("features/steps/site_registry_steps.py:703")
+    if typed_context.shell.project_editor_state.editor.connection_type != "ftp":
+        _raise_bdd_expectation_failure("features/steps/site_registry_steps.py:704")
+    if (
         typed_context.shell.project_editor_state.editor.remote_host
-        == "ftp-v2.example.com"
-    )
-    assert typed_context.shell.project_editor_state.editor.remote_port == "21"
-    assert typed_context.shell.project_editor_state.editor.remote_username == "deployer"
-    assert (
+        != "ftp-v2.example.com"
+    ):
+        _raise_bdd_expectation_failure("features/steps/site_registry_steps.py:705")
+    if typed_context.shell.project_editor_state.editor.remote_port != "21":
+        _raise_bdd_expectation_failure("features/steps/site_registry_steps.py:709")
+    if typed_context.shell.project_editor_state.editor.remote_username != "deployer":
+        _raise_bdd_expectation_failure("features/steps/site_registry_steps.py:710")
+    if (
         typed_context.shell.project_editor_state.editor.remote_password
-        == "super-secret-v2"
-    )
-    assert (
-        typed_context.shell.project_editor_state.editor.remote_path == "/public_html/v2"
-    )
+        != "super-secret-v2"
+    ):
+        _raise_bdd_expectation_failure("features/steps/site_registry_steps.py:711")
+    if typed_context.shell.project_editor_state.editor.remote_path != "/public_html/v2":
+        _raise_bdd_expectation_failure("features/steps/site_registry_steps.py:715")
 
 
 @then(
@@ -740,7 +801,8 @@ def step_assert_reopened_default_locale(context: object, default_locale: str) ->
     """
     typed_context = _context_with_shell(context)
     typed_context.shell.open_project_editor_edit(typed_context.created_site_id)
-    assert typed_context.shell.project_editor_state is not None
+    if typed_context.shell.project_editor_state is None:
+        _raise_bdd_expectation_failure("features/steps/site_registry_steps.py:743")
     if typed_context.shell.project_editor_state.editor.default_locale != default_locale:
         raise AssertionError
 
@@ -766,7 +828,8 @@ def step_assert_create_editor_default_locale(
             Raised when this callable hits the corresponding error path.
     """
     typed_context = _context_with_shell(context)
-    assert typed_context.shell.project_editor_state is not None
+    if typed_context.shell.project_editor_state is None:
+        _raise_bdd_expectation_failure("features/steps/site_registry_steps.py:769")
     if typed_context.shell.project_editor_state.editor.default_locale != default_locale:
         raise AssertionError
 
@@ -788,7 +851,8 @@ def step_assert_create_editor_compile_mo_disabled(context: object) -> None:
             Raised when this callable hits the corresponding error path.
     """
     typed_context = _context_with_shell(context)
-    assert typed_context.shell.project_editor_state is not None
+    if typed_context.shell.project_editor_state is None:
+        _raise_bdd_expectation_failure("features/steps/site_registry_steps.py:791")
     if typed_context.shell.project_editor_state.editor.compile_mo is not False:
         raise AssertionError
 
@@ -810,7 +874,8 @@ def step_assert_create_editor_external_translator_disabled(context: object) -> N
             Raised when this callable hits the corresponding error path.
     """
     typed_context = _context_with_shell(context)
-    assert typed_context.shell.project_editor_state is not None
+    if typed_context.shell.project_editor_state is None:
+        _raise_bdd_expectation_failure("features/steps/site_registry_steps.py:813")
     if (
         typed_context.shell.project_editor_state.editor.use_external_translator
         is not False
@@ -835,7 +900,8 @@ def step_assert_create_editor_translation_cache_disabled(context: object) -> Non
             Raised when this callable hits the corresponding error path.
     """
     typed_context = _context_with_shell(context)
-    assert typed_context.shell.project_editor_state is not None
+    if typed_context.shell.project_editor_state is None:
+        _raise_bdd_expectation_failure("features/steps/site_registry_steps.py:838")
     if (
         typed_context.shell.project_editor_state.editor.use_translation_cache
         is not False
@@ -860,7 +926,8 @@ def step_assert_create_editor_only_fuzzy_enabled(context: object) -> None:
             Raised when this callable hits the corresponding error path.
     """
     typed_context = _context_with_shell(context)
-    assert typed_context.shell.project_editor_state is not None
+    if typed_context.shell.project_editor_state is None:
+        _raise_bdd_expectation_failure("features/steps/site_registry_steps.py:863")
     if typed_context.shell.project_editor_state.editor.only_fuzzy is not True:
         raise AssertionError
 
@@ -882,7 +949,8 @@ def step_assert_create_editor_dry_run_enabled(context: object) -> None:
             Raised when this callable hits the corresponding error path.
     """
     typed_context = _context_with_shell(context)
-    assert typed_context.shell.project_editor_state is not None
+    if typed_context.shell.project_editor_state is None:
+        _raise_bdd_expectation_failure("features/steps/site_registry_steps.py:885")
     if typed_context.shell.project_editor_state.editor.dry_run is not True:
         raise AssertionError
 
@@ -904,7 +972,8 @@ def step_assert_create_editor_stats_only_enabled(context: object) -> None:
             Raised when this callable hits the corresponding error path.
     """
     typed_context = _context_with_shell(context)
-    assert typed_context.shell.project_editor_state is not None
+    if typed_context.shell.project_editor_state is None:
+        _raise_bdd_expectation_failure("features/steps/site_registry_steps.py:907")
     if typed_context.shell.project_editor_state.editor.stats_only is not True:
         raise AssertionError
 
@@ -926,7 +995,8 @@ def step_assert_create_editor_inconsistency_reporting_enabled(context: object) -
             Raised when this callable hits the corresponding error path.
     """
     typed_context = _context_with_shell(context)
-    assert typed_context.shell.project_editor_state is not None
+    if typed_context.shell.project_editor_state is None:
+        _raise_bdd_expectation_failure("features/steps/site_registry_steps.py:929")
     if (
         typed_context.shell.project_editor_state.editor.report_inconsistencies
         is not True
@@ -953,7 +1023,8 @@ def step_assert_persisted_sync_mode(context: object, mode: str) -> None:
             Raised when this callable hits the corresponding error path.
     """
     typed_context = _context_with_shell(context)
-    assert typed_context.shell.project_detail_state is not None
+    if typed_context.shell.project_detail_state is None:
+        _raise_bdd_expectation_failure("features/steps/site_registry_steps.py:956")
     if (
         f"Sync mode: {mode}"
         not in typed_context.shell.project_detail_state.configuration_summary
@@ -979,7 +1050,8 @@ def step_assert_persisted_adapter_sync_filters(context: object) -> None:
     """
     typed_context = _context_with_shell(context)
     typed_context.shell.open_project_editor_edit(typed_context.created_site_id)
-    assert typed_context.shell.project_editor_state is not None
+    if typed_context.shell.project_editor_state is None:
+        _raise_bdd_expectation_failure("features/steps/site_registry_steps.py:982")
     if (
         typed_context.shell.project_editor_state.editor.use_adapter_sync_filters
         is not True
@@ -1018,7 +1090,8 @@ def step_submit_new_site_with_compile_mo_disabled(context: object) -> None:
             is_active=True,
         )
     )
-    assert typed_context.shell.project_detail_state is not None
+    if typed_context.shell.project_detail_state is None:
+        _raise_bdd_expectation_failure("features/steps/site_registry_steps.py:1021")
     typed_context.created_site_id = typed_context.shell.project_detail_state.project.id
 
 
@@ -1055,7 +1128,8 @@ def step_submit_new_site_with_external_translator_disabled(context: object) -> N
             is_active=True,
         )
     )
-    assert typed_context.shell.project_detail_state is not None
+    if typed_context.shell.project_detail_state is None:
+        _raise_bdd_expectation_failure("features/steps/site_registry_steps.py:1058")
     typed_context.created_site_id = typed_context.shell.project_detail_state.project.id
 
 
@@ -1091,7 +1165,8 @@ def step_submit_new_site_with_translation_cache_disabled(context: object) -> Non
             is_active=True,
         )
     )
-    assert typed_context.shell.project_detail_state is not None
+    if typed_context.shell.project_detail_state is None:
+        _raise_bdd_expectation_failure("features/steps/site_registry_steps.py:1094")
     typed_context.created_site_id = typed_context.shell.project_detail_state.project.id
 
 
@@ -1133,7 +1208,8 @@ def step_submit_new_site_with_translation_preview_settings(context: object) -> N
             is_active=True,
         )
     )
-    assert typed_context.shell.project_detail_state is not None
+    if typed_context.shell.project_detail_state is None:
+        _raise_bdd_expectation_failure("features/steps/site_registry_steps.py:1136")
     typed_context.created_site_id = typed_context.shell.project_detail_state.project.id
 
 
@@ -1169,7 +1245,8 @@ def step_submit_new_site_with_only_fuzzy(context: object) -> None:
             is_active=True,
         )
     )
-    assert typed_context.shell.project_detail_state is not None
+    if typed_context.shell.project_detail_state is None:
+        _raise_bdd_expectation_failure("features/steps/site_registry_steps.py:1172")
     typed_context.created_site_id = typed_context.shell.project_detail_state.project.id
 
 
@@ -1190,7 +1267,8 @@ def step_assert_project_detail_compile_mo_disabled(context: object) -> None:
             Raised when this callable hits the corresponding error path.
     """
     typed_context = _context_with_shell(context)
-    assert typed_context.shell.project_detail_state is not None
+    if typed_context.shell.project_detail_state is None:
+        _raise_bdd_expectation_failure("features/steps/site_registry_steps.py:1193")
     if (
         "Compile MO: disabled"
         not in typed_context.shell.project_detail_state.configuration_summary
@@ -1216,7 +1294,8 @@ def step_assert_persisted_compile_mo_disabled(context: object) -> None:
     """
     typed_context = _context_with_shell(context)
     typed_context.shell.open_project_editor_edit(typed_context.created_site_id)
-    assert typed_context.shell.project_editor_state is not None
+    if typed_context.shell.project_editor_state is None:
+        _raise_bdd_expectation_failure("features/steps/site_registry_steps.py:1219")
     if typed_context.shell.project_editor_state.editor.compile_mo is not False:
         raise AssertionError
 
@@ -1238,7 +1317,8 @@ def step_assert_project_detail_external_translator_disabled(context: object) -> 
             Raised when this callable hits the corresponding error path.
     """
     typed_context = _context_with_shell(context)
-    assert typed_context.shell.project_detail_state is not None
+    if typed_context.shell.project_detail_state is None:
+        _raise_bdd_expectation_failure("features/steps/site_registry_steps.py:1241")
     if (
         "External translator: disabled"
         not in typed_context.shell.project_detail_state.configuration_summary
@@ -1263,7 +1343,8 @@ def step_assert_project_detail_translation_cache_disabled(context: object) -> No
             Raised when this callable hits the corresponding error path.
     """
     typed_context = _context_with_shell(context)
-    assert typed_context.shell.project_detail_state is not None
+    if typed_context.shell.project_detail_state is None:
+        _raise_bdd_expectation_failure("features/steps/site_registry_steps.py:1266")
     if (
         "Translation cache: disabled"
         not in typed_context.shell.project_detail_state.configuration_summary
@@ -1288,7 +1369,8 @@ def step_assert_project_detail_only_fuzzy_enabled(context: object) -> None:
             Raised when this callable hits the corresponding error path.
     """
     typed_context = _context_with_shell(context)
-    assert typed_context.shell.project_detail_state is not None
+    if typed_context.shell.project_detail_state is None:
+        _raise_bdd_expectation_failure("features/steps/site_registry_steps.py:1291")
     if (
         "Only fuzzy: enabled"
         not in typed_context.shell.project_detail_state.configuration_summary
@@ -1313,7 +1395,8 @@ def step_assert_project_detail_dry_run_enabled(context: object) -> None:
             Raised when this callable hits the corresponding error path.
     """
     typed_context = _context_with_shell(context)
-    assert typed_context.shell.project_detail_state is not None
+    if typed_context.shell.project_detail_state is None:
+        _raise_bdd_expectation_failure("features/steps/site_registry_steps.py:1316")
     if (
         "Dry-run: enabled"
         not in typed_context.shell.project_detail_state.configuration_summary
@@ -1338,7 +1421,8 @@ def step_assert_project_detail_stats_only_enabled(context: object) -> None:
             Raised when this callable hits the corresponding error path.
     """
     typed_context = _context_with_shell(context)
-    assert typed_context.shell.project_detail_state is not None
+    if typed_context.shell.project_detail_state is None:
+        _raise_bdd_expectation_failure("features/steps/site_registry_steps.py:1341")
     if (
         "Stats only: enabled"
         not in typed_context.shell.project_detail_state.configuration_summary
@@ -1363,7 +1447,8 @@ def step_assert_project_detail_inconsistency_reporting_enabled(context: object) 
             Raised when this callable hits the corresponding error path.
     """
     typed_context = _context_with_shell(context)
-    assert typed_context.shell.project_detail_state is not None
+    if typed_context.shell.project_detail_state is None:
+        _raise_bdd_expectation_failure("features/steps/site_registry_steps.py:1366")
     if "Report inconsistencies: enabled" not in (
         typed_context.shell.project_detail_state.configuration_summary
     ):
@@ -1388,7 +1473,8 @@ def step_assert_persisted_external_translator_disabled(context: object) -> None:
     """
     typed_context = _context_with_shell(context)
     typed_context.shell.open_project_editor_edit(typed_context.created_site_id)
-    assert typed_context.shell.project_editor_state is not None
+    if typed_context.shell.project_editor_state is None:
+        _raise_bdd_expectation_failure("features/steps/site_registry_steps.py:1391")
     if (
         typed_context.shell.project_editor_state.editor.use_external_translator
         is not False
@@ -1414,7 +1500,8 @@ def step_assert_persisted_translation_cache_disabled(context: object) -> None:
     """
     typed_context = _context_with_shell(context)
     typed_context.shell.open_project_editor_edit(typed_context.created_site_id)
-    assert typed_context.shell.project_editor_state is not None
+    if typed_context.shell.project_editor_state is None:
+        _raise_bdd_expectation_failure("features/steps/site_registry_steps.py:1417")
     if (
         typed_context.shell.project_editor_state.editor.use_translation_cache
         is not False
@@ -1440,7 +1527,8 @@ def step_assert_persisted_only_fuzzy_enabled(context: object) -> None:
     """
     typed_context = _context_with_shell(context)
     typed_context.shell.open_project_editor_edit(typed_context.created_site_id)
-    assert typed_context.shell.project_editor_state is not None
+    if typed_context.shell.project_editor_state is None:
+        _raise_bdd_expectation_failure("features/steps/site_registry_steps.py:1443")
     if typed_context.shell.project_editor_state.editor.only_fuzzy is not True:
         raise AssertionError
 
@@ -1463,7 +1551,8 @@ def step_assert_persisted_dry_run_enabled(context: object) -> None:
     """
     typed_context = _context_with_shell(context)
     typed_context.shell.open_project_editor_edit(typed_context.created_site_id)
-    assert typed_context.shell.project_editor_state is not None
+    if typed_context.shell.project_editor_state is None:
+        _raise_bdd_expectation_failure("features/steps/site_registry_steps.py:1466")
     if typed_context.shell.project_editor_state.editor.dry_run is not True:
         raise AssertionError
 
@@ -1486,7 +1575,8 @@ def step_assert_persisted_stats_only_enabled(context: object) -> None:
     """
     typed_context = _context_with_shell(context)
     typed_context.shell.open_project_editor_edit(typed_context.created_site_id)
-    assert typed_context.shell.project_editor_state is not None
+    if typed_context.shell.project_editor_state is None:
+        _raise_bdd_expectation_failure("features/steps/site_registry_steps.py:1489")
     if typed_context.shell.project_editor_state.editor.stats_only is not True:
         raise AssertionError
 
@@ -1509,7 +1599,8 @@ def step_assert_persisted_inconsistency_reporting_enabled(context: object) -> No
     """
     typed_context = _context_with_shell(context)
     typed_context.shell.open_project_editor_edit(typed_context.created_site_id)
-    assert typed_context.shell.project_editor_state is not None
+    if typed_context.shell.project_editor_state is None:
+        _raise_bdd_expectation_failure("features/steps/site_registry_steps.py:1512")
     if (
         typed_context.shell.project_editor_state.editor.report_inconsistencies
         is not True
@@ -1539,7 +1630,8 @@ def step_assert_persisted_custom_sync_rule(context: object, relative_path: str) 
     """
     typed_context = _context_with_shell(context)
     typed_context.shell.open_project_editor_edit(typed_context.created_site_id)
-    assert typed_context.shell.project_editor_state is not None
+    if typed_context.shell.project_editor_state is None:
+        _raise_bdd_expectation_failure("features/steps/site_registry_steps.py:1542")
     if relative_path not in [
         item.relative_path
         for item in typed_context.shell.project_editor_state.editor.sync_rule_items
@@ -1572,7 +1664,8 @@ def step_assert_persisted_disabled_adapter_rule(
     """
     typed_context = _context_with_shell(context)
     typed_context.shell.open_project_editor_edit(typed_context.created_site_id)
-    assert typed_context.shell.project_editor_state is not None
+    if typed_context.shell.project_editor_state is None:
+        _raise_bdd_expectation_failure("features/steps/site_registry_steps.py:1575")
     matching_rules = [
         item
         for item in typed_context.shell.project_editor_state.editor.sync_rule_items
@@ -1595,10 +1688,13 @@ def step_assert_database_directory(context: object) -> None:
             Structured value returned by this callable.
     """
     typed_context = _context_with_shell(context)
-    assert typed_context.shell.settings_state is not None
-    assert typed_context.shell.settings_state.app_settings.database_directory == (
-        "/tmp/polyglot-db"
-    )
+    if typed_context.shell.settings_state is None:
+        _raise_bdd_expectation_failure("features/steps/site_registry_steps.py:1598")
+    if (
+        typed_context.shell.settings_state.app_settings.database_directory
+        != typed_context.configured_database_directory
+    ):
+        _raise_bdd_expectation_failure("features/steps/site_registry_steps.py:1599")
 
 
 @then("the settings draft shows the configured database filename")
@@ -1614,11 +1710,13 @@ def step_assert_database_filename(context: object) -> None:
             Structured value returned by this callable.
     """
     typed_context = _context_with_shell(context)
-    assert typed_context.shell.settings_state is not None
-    assert (
+    if typed_context.shell.settings_state is None:
+        _raise_bdd_expectation_failure("features/steps/site_registry_steps.py:1617")
+    if (
         typed_context.shell.settings_state.app_settings.database_filename
-        == "registry.sqlite3"
-    )
+        != "registry.sqlite3"
+    ):
+        _raise_bdd_expectation_failure("features/steps/site_registry_steps.py:1618")
 
 
 @then("the frontend shell shows the controlled site registry error message")
@@ -1634,7 +1732,8 @@ def step_assert_registry_error(context: object) -> None:
             Structured value returned by this callable.
     """
     typed_context = _context_with_shell(context)
-    assert typed_context.shell.latest_error is not None
+    if typed_context.shell.latest_error is None:
+        _raise_bdd_expectation_failure("features/steps/site_registry_steps.py:1637")
 
 
 @then(
@@ -1657,7 +1756,8 @@ def step_assert_reopened_editor_without_remote_connection(context: object) -> No
     """
     typed_context = _context_with_shell(context)
     typed_context.shell.open_project_editor_edit(typed_context.created_site_id)
-    assert typed_context.shell.project_editor_state is not None
+    if typed_context.shell.project_editor_state is None:
+        _raise_bdd_expectation_failure("features/steps/site_registry_steps.py:1660")
     editor = typed_context.shell.project_editor_state.editor
     if editor.connection_type != "none":
         raise AssertionError
@@ -1690,13 +1790,16 @@ def step_assert_duplicate_site_name_validation_error(context: object) -> None:
             Raised when this callable hits the corresponding error path.
     """
     typed_context = _context_with_shell(context)
-    assert typed_context.shell.project_editor_state is not None
+    if typed_context.shell.project_editor_state is None:
+        _raise_bdd_expectation_failure("features/steps/site_registry_steps.py:1693")
     if typed_context.shell.project_editor_state.status != "failed":
         raise AssertionError
-    assert typed_context.shell.project_editor_state.status_message is not None
+    if typed_context.shell.project_editor_state.status_message is None:
+        _raise_bdd_expectation_failure("features/steps/site_registry_steps.py:1696")
     if "already exists" not in typed_context.shell.project_editor_state.status_message:
         raise AssertionError
-    assert typed_context.shell.latest_error != ""
+    if typed_context.shell.latest_error == "":
+        _raise_bdd_expectation_failure("features/steps/site_registry_steps.py:1699")
 
 
 @then("the project editor shows the default locale validation error")
@@ -1716,7 +1819,8 @@ def step_assert_default_locale_validation_error(context: object) -> None:
             Raised when this callable hits the corresponding error path.
     """
     typed_context = _context_with_shell(context)
-    assert typed_context.shell.project_editor_state is not None
+    if typed_context.shell.project_editor_state is None:
+        _raise_bdd_expectation_failure("features/steps/site_registry_steps.py:1719")
     if typed_context.shell.project_editor_state.status != "failed":
         raise AssertionError
     if typed_context.shell.project_editor_state.status_message != (

@@ -17,6 +17,7 @@ from polyglot_site_translator.presentation.kivy.widgets.surfaces import (
     StatusTone,
     status_tone_from_workflow_status,
 )
+from polyglot_site_translator.presentation.ui_localization import tr
 
 
 class SyncScreen(BaseShellScreen):
@@ -82,7 +83,7 @@ class SyncScreen(BaseShellScreen):
         self.clear_content()
         actions = ActionRow()
         back_button = build_action_button(
-            text="Back to Project",
+            text=tr("Back to Project"),
             intent=ActionIntent.SECONDARY,
         )
         back_button.bind(on_release=self._back_to_project)
@@ -94,8 +95,8 @@ class SyncScreen(BaseShellScreen):
             self._summary_label = WrappedLabel(text="No sync action started.")
             self._content.add_widget(
                 StatusBanner(
-                    title="Sync not started",
-                    body="Start a sync workflow from the project detail screen.",
+                    title=tr("Sync not started"),
+                    body=tr("Start a sync workflow from the project detail screen."),
                     tone=StatusTone.EMPTY,
                 )
             )

@@ -34,6 +34,7 @@ Manage the local record of sites or projects known to the application.
 
 - UI rendering details
 - raw screen state
+- UI language catalog discovery and operator-facing copy translation
 - report formatting
 - SQLite path composition inside widgets
 
@@ -218,6 +219,8 @@ Provide the graphical user experience through Kivy.
 - typed settings sections and editable draft settings
 - user-triggered actions
 - display of progress, summaries, errors, and outputs
+- gettext-backed localization of visible UI copy, workflow summaries, adapter
+  evidence, status labels, and metrics
 
 ### Excludes
 
@@ -262,3 +265,59 @@ Store and retrieve application-owned data locally.
 - Remote transport logic is infrastructure and must stay isolated behind service boundaries.
 - Shared translation services and source auditing are related but distinct domains.
 - Framework adapters/plugins isolate target-specific behavior from shared services.
+
+---
+
+## Cross-domain interaction rules
+
+Allowed:
+
+- service orchestration
+- typed contracts
+- normalized workflow results
+- explicit adapter contracts
+- infrastructure access through owning services
+
+Forbidden:
+
+- presentation-driven cross-domain mutation
+- direct infrastructure coupling between unrelated domains
+- duplicated normalization rules across domains
+- framework-specific rules inside shared services unless the shared service is
+  explicitly an adapter boundary
+
+---
+
+## Ownership expectations
+
+Translation services own:
+
+- PO orchestration
+- translation-memory reuse
+- translation-provider coordination
+- translation-cache coordination
+- structured PO workflow results
+
+Adapters own:
+
+- framework conventions
+- project detection
+- target-specific extraction rules
+- framework-specific sync rules
+- adapter evidence and warnings
+
+Presentation owns:
+
+- rendering
+- interaction
+- workflow triggering
+- user-facing progress state
+- controlled display of errors and partial results
+
+Infrastructure owns:
+
+- SQLite persistence
+- filesystem operations
+- remote provider sessions
+- encryption/decryption
+- provider-specific failure normalization
