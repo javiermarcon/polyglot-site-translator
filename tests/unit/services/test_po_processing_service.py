@@ -40,6 +40,7 @@ from polyglot_site_translator.services.po_processing import (
     _resolve_processing_locales,
     _synchronize_family,
     _translate_missing_entries,
+    _translate_text,
 )
 
 
@@ -742,6 +743,27 @@ def test_process_site_collects_cache_failures_and_continues(tmp_path: Path) -> N
     assert result.entries_failed == 1
     assert result.failures[0].error_message == "cache write failed"
     assert cast(polib.POEntry, translated_po.find("Save")).msgstr == ""
+
+
+def test_translate_text_without_cache_uses_provider_only() -> None:
+    """Verify direct translation without cache skips cache branches.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
+    provider = StubTranslationProvider({("es_AR", "Save"): "Guardar"})
+
+    translated_text, source = _translate_text(
+        text="Save",
+        locale="es_AR",
+        translation_provider=provider,
+        translation_cache=None,
+    )
+
+    assert translated_text == "Guardar"
+    assert source == "provider"
+    assert provider.requests == [("es_AR", "Save")]
 
 
 def test_process_site_dry_run_reports_changes_without_writing_files(

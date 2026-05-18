@@ -267,6 +267,11 @@ def test_workflow_screens_render_empty_and_loaded_states_and_return_to_detail() 
     po_screen._back_to_project()
     assert root.current == "project_detail"
 
+    shell.project_detail_state = None
+    root.current = "po_processing"
+    po_screen._back_to_project()
+    assert root.current == "project_detail"
+
 
 def test_sync_and_audit_screens_back_navigation_without_selected_project() -> None:
     """Verify sync and audit screens back navigation without selected project.

@@ -315,6 +315,9 @@ def test_settings_screen_can_edit_translation_defaults(tmp_path: Path) -> None:
 
     settings_screen._shell.open_settings()
     root.current = "settings"
+    settings_screen._translation_cache_path_input = None
+    assert settings_screen._translation_cache_browse_hint() == ""
+
     settings_screen._select_settings_section("translation")
 
     translation_input = settings_screen._require_text_input(
@@ -325,7 +328,8 @@ def test_settings_screen_can_edit_translation_defaults(tmp_path: Path) -> None:
     settings_screen._default_use_external_translator_switch.active = False
     settings_screen._default_use_translation_cache_switch.active = False
     cache_path = tmp_path / "polyglot-cache" / "runtime-cache"
-    settings_screen._translation_cache_path_input.text = str(cache_path)
+    settings_screen._translation_cache_path_input.text = f" {cache_path} "
+    assert settings_screen._translation_cache_browse_hint() == str(cache_path)
     settings_screen._default_dry_run_switch.active = True
     settings_screen._default_stats_only_switch.active = True
     settings_screen._default_report_inconsistencies_switch.active = True

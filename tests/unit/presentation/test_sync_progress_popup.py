@@ -130,6 +130,8 @@ def test_sync_progress_popup_renders_empty_and_populated_states() -> None:
     popup.refresh()
     assert popup.title == "Sync Progress: Marketing Site"
     assert popup._status_label.text == "Status: completed"
+    assert popup.status_text == "Status: completed"
+    assert popup.message_text == "Remote sync completed."
     assert popup._progress_bar.max == 1
     assert popup._progress_bar.value == 1
     assert popup._command_log_label.text == "Waiting for sync commands."
@@ -157,6 +159,7 @@ def test_sync_progress_popup_renders_empty_and_populated_states() -> None:
     popup.refresh()
     assert popup._progress_bar.max == 2
     assert popup._progress_bar.value == 1
+    assert "SFTP LIST /srv/app" in popup.command_log_text
     assert "SFTP LIST /srv/app" in popup._command_log_label.text
     assert "SFTP GET /srv/app/locale/es.po" in popup._command_log_label.text
 
@@ -266,6 +269,7 @@ def test_sync_progress_popup_offers_host_key_trust_only_for_unknown_ssh_hosts() 
         error_code="unknown_ssh_host_key",
     )
     popup.refresh()
+    assert popup.can_trust_host_key is True
     assert popup._trust_host_key_button.disabled is False
     assert popup._trust_host_key_button.opacity == 1
 
@@ -276,8 +280,7 @@ def test_sync_progress_popup_offers_host_key_trust_only_for_unknown_ssh_hosts() 
         error_code="ssh_authentication_failed",
     )
     popup.refresh()
-    assert popup._trust_host_key_button.opacity == 0
-    assert popup._trust_host_key_button.disabled is True
+    assert popup.can_trust_host_key is False
 
 
 def test_sync_progress_popup_hides_host_key_trust_while_retry_is_running() -> None:

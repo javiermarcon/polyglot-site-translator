@@ -8,6 +8,11 @@ from polyglot_site_translator.domain.remote_connections.models import (
     RemoteConnectionTypeDescriptor,
 )
 from polyglot_site_translator.presentation.view_models import (
+    ProjectActionViewModel,
+    ProjectDetailStateViewModel,
+    ProjectDetailViewModel,
+    ProjectSummaryViewModel,
+    SiteEditorViewModel,
     build_connection_type_options,
     build_default_app_settings,
     build_default_site_editor,
@@ -117,6 +122,136 @@ def test_select_project_editor_section_updates_only_the_selected_tab() -> None:
     assert translation_state.selected_section_title == "Translation Settings"
     assert translation_state.editor.default_locale == "es_ES"
     assert translation_state.editor is state.editor
+
+
+def test_project_detail_translation_options_reflect_all_toggles() -> None:
+    """Verify project detail translation options reflect all toggles.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
+    detail = ProjectDetailStateViewModel(
+        project=ProjectSummaryViewModel(
+            id="site-1",
+            name="Marketing",
+            framework="Django",
+            local_path="/workspace/site",
+            status="Active",
+        ),
+        default_locale="es_ES",
+        configuration_summary="Configured.",
+        metadata_summary="Detected.",
+        actions=[
+            ProjectActionViewModel(
+                key="translation",
+                label="Translate",
+                description="Run translation.",
+            )
+        ],
+        compile_mo=False,
+        use_external_translator=False,
+        use_translation_cache=False,
+        only_fuzzy=True,
+        dry_run=True,
+        stats_only=True,
+        report_inconsistencies=True,
+    )
+
+    options = detail.translation_options
+
+    assert options.compile_mo is False
+    assert options.use_external_translator is False
+    assert options.use_translation_cache is False
+    assert options.only_fuzzy is True
+    assert options.dry_run is True
+    assert options.stats_only is True
+    assert options.report_inconsistencies is True
+
+
+def test_project_detail_view_translation_options_reflect_all_toggles() -> None:
+    """Verify base project detail view options reflect all toggles.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
+    detail = ProjectDetailViewModel(
+        project=ProjectSummaryViewModel(
+            id="site-1",
+            name="Marketing",
+            framework="Django",
+            local_path="/workspace/site",
+            status="Active",
+        ),
+        default_locale="es_ES",
+        configuration_summary="Configured.",
+        metadata_summary="Detected.",
+        actions=[
+            ProjectActionViewModel(
+                key="translation",
+                label="Translate",
+                description="Run translation.",
+            )
+        ],
+        compile_mo=False,
+        use_external_translator=False,
+        use_translation_cache=False,
+        only_fuzzy=True,
+        dry_run=True,
+        stats_only=True,
+        report_inconsistencies=True,
+    )
+
+    options = detail.translation_options
+
+    assert options.compile_mo is False
+    assert options.use_external_translator is False
+    assert options.use_translation_cache is False
+    assert options.only_fuzzy is True
+    assert options.dry_run is True
+    assert options.stats_only is True
+    assert options.report_inconsistencies is True
+
+
+def test_site_editor_translation_options_reflect_all_toggles() -> None:
+    """Verify site editor translation options reflect all toggles.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
+    editor = SiteEditorViewModel(
+        site_id=None,
+        name="Marketing",
+        framework_type="django",
+        local_path="/workspace/site",
+        default_locale="es_ES",
+        connection_type="none",
+        remote_host="",
+        remote_port="",
+        remote_username="",
+        remote_password="",
+        remote_path="",
+        is_active=True,
+        compile_mo=False,
+        use_external_translator=False,
+        use_translation_cache=False,
+        only_fuzzy=True,
+        dry_run=True,
+        stats_only=True,
+        report_inconsistencies=True,
+    )
+
+    options = editor.translation_options
+
+    assert options.compile_mo is False
+    assert options.use_external_translator is False
+    assert options.use_translation_cache is False
+    assert options.only_fuzzy is True
+    assert options.dry_run is True
+    assert options.stats_only is True
+    assert options.report_inconsistencies is True
 
 
 def test_select_project_editor_section_rejects_unknown_section_keys() -> None:

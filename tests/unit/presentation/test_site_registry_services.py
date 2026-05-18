@@ -27,6 +27,7 @@ from polyglot_site_translator.domain.po_processing.models import (
     POFileData,
     POProcessingCacheSettings,
     POProcessingProgress,
+    POProcessingResult,
 )
 from polyglot_site_translator.domain.remote_connections.models import (
     RemoteConnectionConfig,
@@ -1617,6 +1618,103 @@ def test_workflow_service_builds_po_processing_preview(tmp_path: Path) -> None:
     assert "Translated from cache: 0" in preview.summary
     assert "Skipped by sync-only: 0" in preview.summary
     assert "Translation cache: enabled" in preview.summary
+
+
+def test_workflow_service_uses_settings_cache_path_for_po_processing(
+    tmp_path: Path,
+) -> None:
+    """Verify workflow service passes configured cache path to PO processing.
+
+    Args:
+        tmp_path:
+            Value supplied to this callable.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
+
+    class _CapturingPOService:
+        """Test helper for CapturingPOService.
+
+        Attributes:
+            cache_settings:
+                Documented attribute exposed by this type.
+        """
+
+        def __init__(self) -> None:
+            """Initialize the test helper state.
+
+            Args:
+                self:
+                    Value supplied to this callable.
+
+            Returns:
+                value:
+                    Structured value returned by this callable.
+            """
+            self.cache_settings: POProcessingCacheSettings | None = None
+
+        def process_site(
+            self,
+            site: RegisteredSite,
+            cache_settings: POProcessingCacheSettings | None = None,
+            progress_callback: Callable[[POProcessingProgress], None] | None = None,
+        ) -> POProcessingResult:
+            """Capture cache settings and return an empty processing result.
+
+            Args:
+                self:
+                    Value supplied to this callable.
+                site:
+                    Value supplied to this callable.
+                cache_settings:
+                    Value supplied to this callable.
+                progress_callback:
+                    Value supplied to this callable.
+
+            Returns:
+                value:
+                    Empty processing result.
+            """
+            self.cache_settings = cache_settings
+            return POProcessingResult(
+                files_discovered=0,
+                families_processed=0,
+                entries_pending=0,
+                entries_synchronized=0,
+                entries_translated=0,
+                entries_failed=0,
+                files_written=0,
+                mo_files_compiled=0,
+                failures=(),
+            )
+
+    repository = InMemorySiteRegistryRepository()
+    site_service = _build_domain_service(repository)
+    site = site_service.create_site(_build_registration(local_path=str(tmp_path)))
+    settings_service = TomlSettingsService(tmp_path / "settings.toml")
+    cache_path = tmp_path / "configured-cache"
+    settings_service.save_settings(
+        replace(
+            build_default_app_settings(database_directory=str(tmp_path)),
+            translation_cache_path=str(cache_path),
+        )
+    )
+    po_service = _CapturingPOService()
+    workflow = SiteRegistryPresentationWorkflowService(
+        service=site_service,
+        project_sync_service=SyncStub(),
+        po_processing_service=cast(Any, po_service),
+        settings_service=settings_service,
+    )
+
+    workflow.start_po_processing(site.id)
+
+    assert po_service.cache_settings == POProcessingCacheSettings(
+        enabled=True,
+        cache_path=str(cache_path),
+    )
 
 
 def test_workflow_service_processes_po_variants_from_site_workspace(
