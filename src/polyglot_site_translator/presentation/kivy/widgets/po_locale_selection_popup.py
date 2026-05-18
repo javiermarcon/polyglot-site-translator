@@ -6,6 +6,7 @@ from collections.abc import Callable
 
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.popup import Popup
+from kivy.uix.scrollview import ScrollView
 from kivy.uix.switch import Switch
 from kivy.uix.textinput import TextInput
 from kivy.uix.widget import Widget
@@ -16,6 +17,10 @@ from polyglot_site_translator.domain.site_registry.errors import (
 from polyglot_site_translator.domain.site_registry.locales import (
     normalize_default_locale,
 )
+from polyglot_site_translator.presentation.kivy.design_tokens import (
+    COMPONENT_SIZES,
+    SPACING,
+)
 from polyglot_site_translator.presentation.kivy.site_editor_form import (
     build_site_editor_field_card,
     build_site_editor_text_input,
@@ -25,6 +30,7 @@ from polyglot_site_translator.presentation.kivy.widgets.common import (
     SurfaceBoxLayout,
     WrappedLabel,
 )
+from polyglot_site_translator.presentation.ui_localization import tr
 from polyglot_site_translator.presentation.view_models import (
     TranslationOptionsViewModel,
     TranslationWorkflowRequestViewModel,
@@ -62,7 +68,7 @@ class POLocaleSelectionPopup(Popup):  # type: ignore[misc]
                 Structured value returned by this callable.
         """
         super().__init__(
-            title="Translate Project",
+            title=tr("Translate Project"),
             size_hint=(0.86, 0.9),
             auto_dismiss=False,
         )
@@ -106,13 +112,18 @@ class POLocaleSelectionPopup(Popup):  # type: ignore[misc]
         self._error_label = WrappedLabel(text="", color_role="error_text", font_size=14)
         container = SurfaceBoxLayout(
             orientation="vertical",
-            spacing=12,
-            padding=16,
+            spacing=SPACING.md,
+            padding=SPACING.md,
             background_role="card_background",
+        )
+        self._options_scroll = ScrollView(
+            scroll_type=["bars", "content"],
+            bar_width=8,
+            do_scroll_x=False,
         )
         self._options_container = BoxLayout(
             orientation="vertical",
-            spacing=8,
+            spacing=SPACING.sm,
             size_hint_y=None,
             padding=(0, 0, 0, 4),
         )
@@ -134,9 +145,7 @@ class POLocaleSelectionPopup(Popup):  # type: ignore[misc]
         self._toggle_rows = (
             self._build_toggle_row(
                 title="Compile MO Files",
-                description=(
-                    "Compile gettext MO files after successful translation runs."
-                ),
+                description="Compile gettext MO files after successful runs.",
                 toggle=self._compile_mo_switch,
             ),
             self._build_toggle_row(
@@ -180,10 +189,14 @@ class POLocaleSelectionPopup(Popup):  # type: ignore[misc]
         )
         for row in self._toggle_rows:
             self._options_container.add_widget(row)
-        container.add_widget(self._options_container)
+        self._options_scroll.add_widget(self._options_container)
+        container.add_widget(self._options_scroll)
         container.add_widget(self._error_label)
         actions = BoxLayout(
-            orientation="horizontal", spacing=12, size_hint_y=None, height=48
+            orientation="horizontal",
+            spacing=SPACING.md,
+            size_hint_y=None,
+            height=COMPONENT_SIZES.button_height,
         )
         cancel_button = AppButton(text="Cancel", primary=False)
         process_button = AppButton(text="Translate", primary=True)
@@ -217,13 +230,13 @@ class POLocaleSelectionPopup(Popup):  # type: ignore[misc]
         """
         row = SurfaceBoxLayout(
             orientation="horizontal",
-            spacing=12,
-            padding=14,
+            spacing=SPACING.md,
+            padding=SPACING.md,
             size_hint_y=None,
-            height=58,
+            height=74,
             background_role="card_subtle_background",
         )
-        copy_column = BoxLayout(orientation="vertical", spacing=2)
+        copy_column = BoxLayout(orientation="vertical", spacing=SPACING.xs)
         copy_column.add_widget(WrappedLabel(text=title, font_size=15, bold=True))
         copy_column.add_widget(
             WrappedLabel(text=description, font_size=13, color_role="text_muted")

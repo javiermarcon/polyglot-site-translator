@@ -6,7 +6,7 @@ Feature: SQLite-backed site registry management
   Scenario: Configure the SQLite database location from general settings
     Given the frontend shell is wired with SQLite-backed site registry services
     And the operator has opened the settings screen
-    When the operator sets the database directory to "/tmp/polyglot-db"
+    When the operator sets the database directory to a temporary directory
     And the operator sets the database filename to "registry.sqlite3"
     And the operator applies the settings changes
     And the operator restarts the SQLite-backed frontend shell

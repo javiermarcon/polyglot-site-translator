@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Any, cast
 
 from kivy.core.window import Window
@@ -58,12 +59,9 @@ class FailingResetSettingsService(InMemorySettingsService):
         None: This type does not declare class-level attributes.
     """
 
-    def reset_settings(self) -> SettingsStateViewModel:
+    @staticmethod
+    def reset_settings() -> SettingsStateViewModel:
         """Handle reset settings.
-
-        Args:
-            self:
-                Value supplied to this callable.
 
         Returns:
             value:
@@ -234,7 +232,7 @@ def test_settings_screen_handles_section_selectio_defa_9336() -> None:
     settings_screen._toggle_remember_last_screen(None, True, remember_label)
     settings_screen._toggle_developer_mode(None, True, developer_label)
     settings_screen._on_theme_mode_selected(None, "Light")
-    settings_screen._on_ui_language_selected(None, "Spanish")
+    settings_screen._on_ui_language_selected(None, "Castellano")
 
     assert settings_screen._draft_settings is not None
     assert settings_screen._draft_settings.remember_last_screen is True
@@ -300,8 +298,12 @@ def test_settings_screen_shows_planned_section_placeho_c536() -> None:
     assert "FTP / Reporting Settings will be available later." in texts
 
 
-def test_settings_screen_can_edit_translation_defaults() -> None:
+def test_settings_screen_can_edit_translation_defaults(tmp_path: Path) -> None:
     """Verify settings screen can edit translation defaults.
+
+    Args:
+        tmp_path:
+            Value supplied to this callable.
 
     Returns:
         value:
@@ -313,6 +315,9 @@ def test_settings_screen_can_edit_translation_defaults() -> None:
 
     settings_screen._shell.open_settings()
     root.current = "settings"
+    settings_screen._translation_cache_path_input = None
+    assert settings_screen._translation_cache_browse_hint() == ""
+
     settings_screen._select_settings_section("translation")
 
     translation_input = settings_screen._require_text_input(
@@ -322,9 +327,9 @@ def test_settings_screen_can_edit_translation_defaults() -> None:
     settings_screen._default_compile_mo_switch.active = False
     settings_screen._default_use_external_translator_switch.active = False
     settings_screen._default_use_translation_cache_switch.active = False
-    settings_screen._translation_cache_path_input.text = (
-        "/tmp/polyglot-cache/runtime-cache"
-    )
+    cache_path = tmp_path / "polyglot-cache" / "runtime-cache"
+    settings_screen._translation_cache_path_input.text = f" {cache_path} "
+    assert settings_screen._translation_cache_browse_hint() == str(cache_path)
     settings_screen._default_dry_run_switch.active = True
     settings_screen._default_stats_only_switch.active = True
     settings_screen._default_report_inconsistencies_switch.active = True
@@ -350,7 +355,7 @@ def test_settings_screen_can_edit_translation_defaults() -> None:
     )
     assert (
         settings_screen._shell.settings_state.app_settings.translation_cache_path
-        == "/tmp/polyglot-cache/runtime-cache"
+        == str(cache_path)
     )
     assert settings_screen._shell.settings_state.app_settings.default_dry_run is True
     assert settings_screen._shell.settings_state.app_settings.default_stats_only is True
@@ -636,8 +641,12 @@ def test_settings_screen_can_toggle_and_save_gitignore_exclusions() -> None:
     )
 
 
-def test_settings_screen_database_hint_runtime_callbac_948d() -> None:
+def test_settings_screen_database_hint_runtime_callbac_948d(tmp_path: Path) -> None:
     """Verify settings screen database hint and runtime callbacks cover remaining paths.
+
+    Args:
+        tmp_path:
+            Value supplied to this callable.
 
     Returns:
         value:
@@ -680,13 +689,14 @@ def test_settings_screen_database_hint_runtime_callbac_948d() -> None:
         settings_screen._database_filename_input
     )
 
-    directory_input.text = "/tmp/polyglot"
+    database_directory = tmp_path / "polyglot"
+    directory_input.text = str(database_directory)
     filename_input.text = ""
-    assert settings_screen._database_file_browse_hint() == "/tmp/polyglot"
+    assert settings_screen._database_file_browse_hint() == str(database_directory)
 
     filename_input.text = "app.sqlite3"
     assert settings_screen._database_file_browse_hint().endswith(
-        "/tmp/polyglot/app.sqlite3"
+        str(database_directory / "app.sqlite3")
     )
 
     directory_input.text = ""

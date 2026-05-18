@@ -21,6 +21,7 @@ from polyglot_site_translator.presentation.kivy.widgets.surfaces import (
     StatusTone,
     status_tone_from_workflow_status,
 )
+from polyglot_site_translator.presentation.ui_localization import tr
 
 
 class POProcessingScreen(BaseShellScreen):
@@ -96,7 +97,7 @@ class POProcessingScreen(BaseShellScreen):
         self.clear_content()
         actions = ActionRow()
         back_button = build_action_button(
-            text="Back to Project",
+            text=tr("Back to Project"),
             intent=ActionIntent.SECONDARY,
         )
         back_button.bind(on_release=self._back_to_project)
@@ -114,8 +115,8 @@ class POProcessingScreen(BaseShellScreen):
             self._summary_label = WrappedLabel(text="No translation action started.")
             self._content.add_widget(
                 StatusBanner(
-                    title="Translation not started",
-                    body="Run translation from the project detail screen.",
+                    title=tr("Translation not started"),
+                    body=tr("Run translation from the project detail screen."),
                     tone=StatusTone.EMPTY,
                 )
             )

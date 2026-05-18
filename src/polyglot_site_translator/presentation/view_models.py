@@ -17,6 +17,10 @@ from polyglot_site_translator.domain.sync.scope import (
     AdapterSyncScopeSettings,
     build_default_sync_scope_settings,
 )
+from polyglot_site_translator.presentation.ui_localization import (
+    available_ui_language_options,
+    tr,
+)
 
 
 @dataclass(frozen=True)
@@ -877,28 +881,28 @@ def build_settings_sections() -> list[SettingsSectionViewModel]:
     return [
         SettingsSectionViewModel(
             key="app-ui-kivy",
-            title="App / UI / Kivy Settings",
-            description="Frontend behavior, navigation and window defaults.",
+            title=tr("App / UI / Kivy Settings"),
+            description=tr("Frontend behavior, navigation and window defaults."),
             is_available=True,
         ),
         SettingsSectionViewModel(
             key="translation",
-            title="Translation Settings",
-            description="Locale defaults and translation workflow behavior.",
+            title=tr("Translation Settings"),
+            description=tr("Locale defaults and translation workflow behavior."),
             is_available=True,
         ),
         SettingsSectionViewModel(
             key="frameworks",
-            title="Framework / Adapter Settings",
+            title=tr("Framework / Adapter Settings"),
             description=(
-                "Shared sync filters, framework rules and gitignore integration."
+                tr("Shared sync filters, framework rules and gitignore integration.")
             ),
             is_available=True,
         ),
         SettingsSectionViewModel(
             key="ftp-reporting",
-            title="FTP / Reporting Settings",
-            description="Reserved for future sync and reporting configuration.",
+            title=tr("FTP / Reporting Settings"),
+            description=tr("Reserved for future sync and reporting configuration."),
             is_available=False,
         ),
     ]
@@ -928,54 +932,60 @@ def build_navigation_menu_state(
         sections=[
             NavigationMenuSectionViewModel(
                 key="workspace",
-                title="Workspace",
+                title=tr("Workspace"),
                 items=[
                     NavigationMenuItemViewModel(
                         key="dashboard",
-                        title="Dashboard",
-                        description="Overview and entry points for the application.",
+                        title=tr("Dashboard"),
+                        description=tr(
+                            "Overview and entry points for the application."
+                        ),
                         is_enabled=True,
                     ),
                     NavigationMenuItemViewModel(
                         key="projects",
-                        title="Projects",
-                        description="Open the registry of managed projects and sites.",
+                        title=tr("Projects"),
+                        description=tr(
+                            "Open the registry of managed projects and sites."
+                        ),
                         is_enabled=True,
                     ),
                 ],
             ),
             NavigationMenuSectionViewModel(
                 key="operations",
-                title="Operations",
+                title=tr("Operations"),
                 items=[
                     NavigationMenuItemViewModel(
                         key="sync",
-                        title="Sync",
-                        description="Project-scoped synchronization workflow.",
+                        title=tr("Sync"),
+                        description=tr("Project-scoped synchronization workflow."),
                         is_enabled=operations_enabled,
                     ),
                     NavigationMenuItemViewModel(
                         key="audit",
-                        title="Audit",
-                        description="Project-scoped audit workflow summary.",
+                        title=tr("Audit"),
+                        description=tr("Project-scoped audit workflow summary."),
                         is_enabled=operations_enabled,
                     ),
                     NavigationMenuItemViewModel(
                         key="po-processing",
-                        title="Translation",
-                        description="Project-scoped translation workflow summary.",
+                        title=tr("Translation"),
+                        description=tr("Project-scoped translation workflow summary."),
                         is_enabled=operations_enabled,
                     ),
                 ],
             ),
             NavigationMenuSectionViewModel(
                 key="system",
-                title="System",
+                title=tr("System"),
                 items=[
                     NavigationMenuItemViewModel(
                         key="settings",
-                        title="Settings",
-                        description="Application, UI and future system configuration.",
+                        title=tr("Settings"),
+                        description=tr(
+                            "Application, UI and future system configuration."
+                        ),
                         is_enabled=True,
                     ),
                 ],
@@ -1177,8 +1187,8 @@ def build_project_editor_state(  # noqa: PLR0913
     if mode == "edit":
         return ProjectEditorStateViewModel(
             mode=mode,
-            title="Edit Project",
-            submit_label="Save Project",
+            title=tr("Edit Project"),
+            submit_label=tr("Save Project"),
             sections=build_project_editor_sections(),
             selected_section_key=selected_section.key,
             selected_section_title=selected_section.title,
@@ -1197,8 +1207,8 @@ def build_project_editor_state(  # noqa: PLR0913
         )
     return ProjectEditorStateViewModel(
         mode=mode,
-        title="Register Project",
-        submit_label="Create Project",
+        title=tr("Register Project"),
+        submit_label=tr("Create Project"),
         sections=build_project_editor_sections(),
         selected_section_key=selected_section.key,
         selected_section_title=selected_section.title,
@@ -1270,8 +1280,8 @@ def build_sync_rule_filter_type_options() -> list[SettingsOptionViewModel]:
             Structured value returned by this callable.
     """
     return [
-        SettingsOptionViewModel(value="directory", label="Directory"),
-        SettingsOptionViewModel(value="file", label="File"),
+        SettingsOptionViewModel(value="directory", label=tr("Directory")),
+        SettingsOptionViewModel(value="file", label=tr("File")),
     ]
 
 
@@ -1283,8 +1293,8 @@ def build_sync_rule_behavior_options() -> list[SettingsOptionViewModel]:
             Structured value returned by this callable.
     """
     return [
-        SettingsOptionViewModel(value="include", label="Include"),
-        SettingsOptionViewModel(value="exclude", label="Exclude"),
+        SettingsOptionViewModel(value="include", label=tr("Include")),
+        SettingsOptionViewModel(value="exclude", label=tr("Exclude")),
     ]
 
 
@@ -1298,23 +1308,23 @@ def build_project_editor_sections() -> list[ProjectEditorSectionViewModel]:
     return [
         ProjectEditorSectionViewModel(
             key="general",
-            title="General Settings",
-            description="Core project identity, framework and active state.",
+            title=tr("General Settings"),
+            description=tr("Core project identity, framework and active state."),
         ),
         ProjectEditorSectionViewModel(
             key="translation",
-            title="Translation Settings",
-            description="Locale defaults inherited from application settings.",
+            title=tr("Translation Settings"),
+            description=tr("Locale defaults inherited from application settings."),
         ),
         ProjectEditorSectionViewModel(
             key="remote",
-            title="Remote Connection Settings",
-            description="Connection credentials and remote project path.",
+            title=tr("Remote Connection Settings"),
+            description=tr("Connection credentials and remote project path."),
         ),
         ProjectEditorSectionViewModel(
             key="sync",
-            title="Sync Settings",
-            description="Adapter filters and project-specific sync overrides.",
+            title=tr("Sync Settings"),
+            description=tr("Adapter filters and project-specific sync overrides."),
         ),
     ]
 
@@ -1372,15 +1382,18 @@ def build_theme_mode_field() -> SettingsFieldViewModel:
     """
     return SettingsFieldViewModel(
         key="theme_mode",
-        label="Theme Mode",
+        label=tr("Theme Mode"),
         help_text=(
-            "Choose the visual appearance that the Kivy shell should use by default."
+            tr(
+                "Choose the visual appearance that the Kivy shell should use by "
+                "default."
+            )
         ),
         control_type="choice",
         options=[
-            SettingsOptionViewModel(value="system", label="System"),
-            SettingsOptionViewModel(value="light", label="Light"),
-            SettingsOptionViewModel(value="dark", label="Dark"),
+            SettingsOptionViewModel(value="system", label=tr("System")),
+            SettingsOptionViewModel(value="light", label=tr("Light")),
+            SettingsOptionViewModel(value="dark", label=tr("Dark")),
         ],
     )
 
@@ -1394,15 +1407,12 @@ def build_ui_language_field() -> SettingsFieldViewModel:
     """
     return SettingsFieldViewModel(
         key="ui_language",
-        label="UI Language",
-        help_text=(
-            "Prepare the frontend for future localization without wiring "
-            "translations yet."
-        ),
+        label=tr("UI Language"),
+        help_text=tr("Choose the language used by the application interface."),
         control_type="choice",
         options=[
-            SettingsOptionViewModel(value="en", label="English"),
-            SettingsOptionViewModel(value="es", label="Spanish"),
+            SettingsOptionViewModel(value=option.value, label=option.label)
+            for option in available_ui_language_options()
         ],
     )
 

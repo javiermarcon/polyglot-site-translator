@@ -11,6 +11,7 @@ from polyglot_site_translator.presentation.kivy.widgets.actions import (
     ActionRow,
     build_action_button,
 )
+from polyglot_site_translator.presentation.ui_localization import tr
 
 
 class DashboardScreen(BaseShellScreen):
@@ -92,11 +93,11 @@ class DashboardScreen(BaseShellScreen):
         self.clear_content()
         actions = ActionRow()
         projects_button = build_action_button(
-            text="Open Projects",
+            text=tr("Open Projects"),
             intent=ActionIntent.PRIMARY,
         )
         settings_button = build_action_button(
-            text="Open Settings",
+            text=tr("Open Settings"),
             intent=ActionIntent.SECONDARY,
         )
         projects_button.bind(on_release=self._open_projects)

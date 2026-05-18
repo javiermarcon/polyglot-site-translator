@@ -377,3 +377,74 @@ The garden widget provides a clearer layout (shortcuts, list/icon tabs, integrat
 - Directory-only workflows (for example project `local_path` and SQLite directory) combine `dirselect=True`, `filter_dirs=True`, and a callable filter that keeps directory entries in the listing so regular files are not offered as first-class picks.
 - File picking for SQLite filename continues to use the same widget in file-selection mode without that listing restriction.
 - The dependency must remain explicit under `requirements/` and mypy may ignore missing stubs for `kivy_garden.filebrowser` via `pyproject.toml` overrides.
+
+---
+
+## AD-018: Gettext catalogs for presentation localization
+
+**Decision**
+Use packaged gettext `.po` and `.mo` catalogs for operator-facing Kivy UI
+strings, with English as the default language and a dynamic settings selector
+derived from the catalogs that are present in the package.
+
+**Why**
+The UI language setting must affect visible application copy without embedding
+translation dictionaries or hardcoded language lists in Kivy screens. Gettext
+keeps source strings reviewable, allows translators to add languages by adding
+catalogs, and lets reusable widgets translate static labels without moving
+domain, persistence, FTP, or PO-processing behavior into the UI layer.
+
+**Implications**
+
+- Presentation owns UI copy and catalog discovery.
+- Kivy screens and widgets must call the presentation localization helper or
+  route static copy through reusable widgets that do so.
+- Presentation summaries, adapter evidence rendered in the UI, status labels,
+  and workflow metrics must be translated at the presentation boundary before
+  display.
+- Settings validation accepts only languages with packaged compiled catalogs.
+- New languages require a `.po` file and compiled `.mo` file under
+  `presentation/locale/<language>/LC_MESSAGES/`.
+- The gettext catalogs localize the application UI only; project PO-processing
+  services remain a separate domain capability.
+
+---
+
+## AD-020: Typed operational failures across infrastructure boundaries
+
+**Decision**
+Normalize filesystem, SQLite, remote transport, translation-provider, and
+adapter failures into typed repository/domain-specific exceptions or structured
+workflow results before they reach presentation code.
+
+**Why**
+Raw infrastructure exceptions leak implementation details into presentation and
+orchestration layers and make workflow recovery inconsistent.
+
+**Implications**
+
+- Infrastructure adapters must wrap operational failures.
+- Presentation workflows should consume typed failures or structured results.
+- Tests must validate failure normalization behavior.
+- New integrations must define explicit operational failure contracts.
+
+---
+
+## AD-021: Explicit orchestration over hidden lazy behavior
+
+**Decision**
+Keep expensive workflows explicit in orchestration layers instead of hiding them
+behind properties, rendering helpers, import-time initialization, or implicit
+lazy behavior.
+
+**Why**
+The repository combines filesystem traversal, PO processing, synchronization,
+translation providers, persistence, and UI rendering. Hidden expensive behavior
+is difficult to reason about and destabilizes performance.
+
+**Implications**
+
+- Expensive operations stay visible in services.
+- Rendering helpers must avoid hidden IO.
+- Caching must remain explicit and testable.
+- Orchestration flows remain observable and independently testable.

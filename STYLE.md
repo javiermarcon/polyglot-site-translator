@@ -78,6 +78,12 @@ Interpretation for this repository:
 - Never use `except Exception`.
 - Catch concrete exceptions only.
 - Do not ignore failures silently.
+- Use Python `assert` statements only in pytest tests under `tests/`.
+- Outside pytest tests, including Behave steps, use explicit exceptions because
+  optimized bytecode removes `assert` statements.
+- Do not use `next()` without an explicit fallback or deliberate exception
+  path. Missing items must fail with clear context instead of implicit
+  `StopIteration`.
 - Error messages must be actionable.
 - Prefer explicit validation over late failure.
 - If logging an unexpected failure, prefer `logger.exception(...)`.
@@ -101,6 +107,24 @@ Interpretation for this repository:
 - Avoid giant service classes with unrelated responsibilities.
 - Prefer composable helpers/services instead of monoliths.
 - Keep Kivy screens/widgets focused on presentation and orchestration.
+- Introduce instance attributes only in `__init__`; later methods may mutate
+  existing state but must not create new attributes on demand.
+- Mark methods as `@staticmethod` when they do not use instance or class state.
+- Avoid mutable global runtime state. Prefer dependency injection, explicit
+  state objects, or context-local state for process-wide presentation settings.
+- Do not access protected members of another class. If a workflow or test needs
+  to observe state, add a narrow public method or property on the owning class.
+
+---
+
+## Test paths
+
+- Do not hardcode `/tmp`, `/var/tmp`, or platform-specific temporary paths in
+  tests or BDD steps.
+- Use `tempfile`, `tmp_path`, or repository-provided temporary fixtures for
+  temporary files and directories.
+- Literal path strings are acceptable only when the path is domain data being
+  parsed or validated, not when the test needs a real temporary location.
 
 ---
 
@@ -151,12 +175,15 @@ Screens must use:
 - explicit empty, loading, success, warning, and error states
 - responsive layouts that remain usable at narrow desktop widths
 - theme tokens from `presentation/kivy/theme.py`, not ad hoc colors
+- static operator-facing copy routed through the presentation localization
+  helper or reusable widgets backed by gettext catalogs
 
 Avoid:
 
 - raw unstyled `BoxLayout` screens with dense controls
 - magic numbers repeated across screens
 - hardcoded colors inside individual widgets
+- hardcoded UI language lists or inline translation dictionaries in screens
 - mixing status messages, forms, and actions without grouping
 - screens that only “work” but do not communicate state clearly
 
@@ -242,6 +269,15 @@ unless the role is genuinely generic and justified.
 
 ---
 
+## Documentation
+
+- Keep documentation factual and current.
+- Keep `README.md` in English and `README_es.md` in Spanish.
+- Update both README files in the same patch when a change affects setup,
+  commands, workflows, visible behavior, or contributor expectations.
+
+---
+
 ## Forbidden shortcuts
 
 The following are forbidden unless explicitly justified and documented:
@@ -254,3 +290,89 @@ The following are forbidden unless explicitly justified and documented:
 - duplicating framework-specific rules across adapters
 - embedding business logic directly in Kivy callbacks
 - architecture changes without doc updates
+
+---
+
+## Static-analysis safety rules
+
+Forbidden:
+
+- mutable default arguments
+- unused expressions and unreachable code
+- unsafe deserialization
+- `eval` or `exec`
+- broad analyzer suppressions
+- unsafe subprocess shell interpolation
+- string-based filesystem path concatenation
+- hardcoded secrets, credentials, tokens, API keys, or test-looking secrets
+- comparison to `True`, `False`, or `None` using `==` or `!=`
+
+Required:
+
+- use `pathlib.Path` for filesystem paths when practical
+- use context managers for files, locks, cursors, and network resources
+- use explicit encodings for text file operations unless binary mode is intended
+- use `yaml.safe_load()` for untrusted YAML
+- use `secrets` instead of `random` for security-sensitive token generation
+- prefer SHA-256 or stronger algorithms for security-sensitive hashing
+- preserve deterministic tests where randomness exists
+- prefer explicit typed structures over dynamic dictionaries
+- keep suppressions local, specific, and justified
+
+---
+
+## Side-effect visibility
+
+Behaviorally significant side effects must be:
+
+- explicit
+- documented
+- testable
+
+Functions must not hide:
+
+- filesystem writes
+- SQLite mutations
+- remote synchronization
+- translation-provider invocation
+- encryption/decryption side effects
+- adapter discovery side effects
+
+---
+
+## Runtime lifecycle rules
+
+Forbidden:
+
+- hidden runtime mutation
+- import-time operational side effects
+- dynamic runtime attribute creation
+- mutable process-global orchestration state
+- hidden lazy IO in rendering helpers or properties
+
+Rules:
+
+- runtime state should remain explicit and typed
+- initialization behavior must be predictable
+- use timezone-aware datetimes where datetime behavior matters
+- prefer framework/runtime timezone helpers when available
+- use `default_factory` for mutable dataclass fields
+
+---
+
+## Logging rules
+
+- Prefer lazy logger formatting over f-strings in logging calls.
+- Logging calls must not trigger expensive filesystem traversal, SQLite access,
+  remote synchronization, PO parsing, translation-provider invocation, or PO
+  serialization.
+- Never log credentials, tokens, encrypted secrets, decrypted secrets, or remote
+  connection passwords.
+
+---
+
+## Exception wrapping rules
+
+- Preserve exception context with `raise ... from exc` when wrapping exceptions.
+- Do not convert typed operational failures into generic exceptions.
+- Error messages must remain actionable and must not leak credentials or secrets.

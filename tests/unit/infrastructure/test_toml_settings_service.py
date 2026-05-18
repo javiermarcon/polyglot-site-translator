@@ -369,6 +369,23 @@ def test_load_settings_rejects_invalid_translation_section_shapes(
         service.load_settings()
 
 
+def test_read_translation_default_only_fuzzy_rejects_invalid_section() -> None:
+    """Verify default only-fuzzy reader rejects invalid section shape.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
+    with pytest.raises(
+        ControlledServiceError,
+        match=r"The \[translation\] settings section must be a TOML table\.",
+    ):
+        SETTINGS_MODULE._read_translation_default_only_fuzzy(
+            {"translation": "invalid"},
+            False,
+        )
+
+
 def test_save_settings_normalizes_default_project_locale_spacing(
     tmp_path: Path,
 ) -> None:

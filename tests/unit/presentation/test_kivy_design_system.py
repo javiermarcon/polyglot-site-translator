@@ -10,11 +10,16 @@ from polyglot_site_translator.presentation.kivy.design_tokens import (
     TYPOGRAPHY,
     resolve_spacing,
 )
+from polyglot_site_translator.presentation.kivy.theme import get_active_theme
 from polyglot_site_translator.presentation.kivy.widgets.actions import (
     ActionIntent,
+    build_action_button,
     resolve_button_style,
 )
+from polyglot_site_translator.presentation.kivy.widgets.common import WrappedLabel
+from polyglot_site_translator.presentation.kivy.widgets.forms import LabeledFieldCard
 from polyglot_site_translator.presentation.kivy.widgets.surfaces import (
+    SectionHeader,
     StatusTone,
     resolve_status_surface_roles,
     status_tone_from_workflow_status,
@@ -72,6 +77,23 @@ def test_button_style_resolution_maps_intents_to_theme_roles() -> None:
     assert destructive.background_role == "destructive_button_background"
 
 
+def test_build_action_button_covers_destructive_intent() -> None:
+    """Verify destructive action buttons use explicit semantic styling.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
+    button = build_action_button(text="Delete", intent=ActionIntent.DESTRUCTIVE)
+    palette = get_active_theme()
+
+    assert button.text == "Delete"
+    assert tuple(button.background_color) == tuple(
+        palette.destructive_button_background
+    )
+    assert tuple(button.color) == tuple(palette.destructive_button_text)
+
+
 def test_status_surface_roles_cover_empty_loading_error_and_success() -> None:
     """Verify status role resolution covers visible workflow states.
 
@@ -84,6 +106,8 @@ def test_status_surface_roles_cover_empty_loading_error_and_success() -> None:
     )
     assert resolve_status_surface_roles(StatusTone.LOADING).accent_role == "info_text"
     assert resolve_status_surface_roles(StatusTone.ERROR).text_role == "error_text"
+    assert resolve_status_surface_roles(StatusTone.WARNING).text_role == "warning_text"
+    assert resolve_status_surface_roles(StatusTone.INFO).accent_role == "info_text"
     assert resolve_status_surface_roles(StatusTone.SUCCESS).accent_role == (
         "success_text"
     )
@@ -100,3 +124,23 @@ def test_status_tone_from_workflow_status_maps_common_statuses() -> None:
     assert status_tone_from_workflow_status("running") == StatusTone.LOADING
     assert status_tone_from_workflow_status("completed") == StatusTone.SUCCESS
     assert status_tone_from_workflow_status("queued") == StatusTone.INFO
+
+
+def test_field_row_and_section_header_optional_content_branches() -> None:
+    """Verify optional form and section text branches are covered.
+
+    Returns:
+        value:
+            Structured value returned by this callable.
+    """
+    field = WrappedLabel(text="Field")
+    row_with_help = LabeledFieldCard(
+        label="Locale",
+        field=field,
+        help_text="Use en_US.",
+    )
+    empty_header = SectionHeader(title="Section", description="")
+
+    assert row_with_help.help_widget is not None
+    assert row_with_help.help_widget.text == "Use en_US."
+    assert empty_header.description_label.parent is None

@@ -41,7 +41,11 @@ Update it whenever the structure changes.
   Repository license.
 
 - `README.md`
-  High-level user/developer-facing introduction if present.
+  English user/developer-facing operational documentation.
+
+- `README_es.md`
+  Spanish user/developer-facing operational documentation. Update this file
+  alongside `README.md` whenever README alignment is required.
 
 - `AGENTS.md`
   Operational rules for agents and contributors, including mandatory documentation alignment and dependency-declaration policy.
@@ -158,6 +162,18 @@ Current frontend base:
 
 - `polyglot_site_translator/presentation/view_models.py`
   Typed dataclasses for dashboard, project list/detail, sync, audit, translation workflow state, settings, translation defaults, translation-run option payloads, and project-editor section/sync-rule state.
+
+- `polyglot_site_translator/presentation/ui_localization.py`
+  Gettext-backed presentation localization helpers, including packaged catalog
+  discovery, dynamic UI-language option building, validation of supported
+  language codes, the active translation used by Kivy widgets, and
+  presentation-boundary translation of visible dynamic UI summaries.
+
+- `polyglot_site_translator/presentation/locale/`
+  Packaged UI gettext catalogs. Each language lives under
+  `<language>/LC_MESSAGES/polyglot_site_translator.po` with a compiled sibling
+  `.mo`; adding a new language there makes it available in the UI-language
+  selector after packaging.
 
 - `polyglot_site_translator/presentation/frontend_shell.py`
   Navigation menu state, settings editing, project editor orchestration, project-editor preview refreshes, sync background execution state, route-safe CRUD wiring, and visible surfacing of recoverable unhandled runtime failures independent from Kivy rendering.
@@ -382,3 +398,46 @@ Current BDD frontend coverage lives in:
 
 - `features/presentation/`
 - `features/steps/`
+
+---
+
+## Layering expectations
+
+The repository structure is intentionally layered.
+
+Presentation modules must not:
+
+- directly perform filesystem IO
+- directly access SQLite
+- directly call remote providers
+- directly parse PO files
+- directly invoke translation providers
+- own adapter discovery or framework-specific parsing
+
+Infrastructure modules must not:
+
+- render UI state
+- contain presentation workflow orchestration
+- contain Kivy dependencies
+- format user-facing summaries
+
+Service modules should:
+
+- orchestrate workflows
+- coordinate domain and infrastructure contracts
+- expose typed results for presentation
+- keep expensive work visible and testable
+
+---
+
+## Test-support boundaries
+
+Test doubles, fixtures, stubs, and fake workflows must remain under:
+
+- `tests/`
+- `tests/support/`
+- `features/steps/`
+
+Production runtime packages under `src/` must not retain fake implementations
+once real workflows exist. Runtime fakes are acceptable only for explicitly
+unfinished workflows and must be documented as temporary limitations.

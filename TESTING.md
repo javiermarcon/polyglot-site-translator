@@ -23,6 +23,9 @@ Validation expectations for every non-trivial change remain explicit:
 - mypy
 - the repository docstring audit for public and private symbols
 - pytest for the affected scope
+- documentation alignment for both `README.md` in English and `README_es.md`
+  in Spanish when behavior, setup, commands, workflows, or visible
+  capabilities change
 
 The repository uses an explicit 88-character Python line-length limit. Changes are not complete if
 they rely on a wider local wrapping style than the configured Ruff formatter/linter limit.
@@ -62,6 +65,22 @@ Canonical validation commands now include:
 - `python -m mypy .`
 - `python tests/run_docstring_audit.py`
 - `python -m pytest`
+
+Static regression coverage must keep Python `assert` statements limited to
+pytest tests under `tests/`. Runtime code, scripts, and Behave steps must use
+explicit exceptions so behavior does not change under optimized bytecode.
+Tests and BDD steps must use `tempfile`, `tmp_path`, or repository-provided
+fixtures for temporary filesystem locations instead of hardcoded `/tmp` paths.
+Integration tests and BDD steps must exercise public APIs rather than protected
+members of client classes.
+
+Documentation validation for user-visible or developer-visible changes must
+include a manual check that:
+
+- `README.md` is English
+- `README_es.md` is Spanish
+- both files describe the same current behavior, setup, commands, and visible
+  capabilities affected by the patch
 
 ---
 
@@ -144,6 +163,9 @@ Cover:
 
 - design-token resolution
 - responsive layout decisions
+- UI localization catalog discovery and static reusable-widget translation
+- UI localization of visible dynamic summaries, adapter evidence, workflow
+  statuses, and metrics before they are rendered
 - button/action classification helpers
 - empty/loading/error state view-model rendering decisions
 - reusable widget factory behavior when it is pure enough to test
@@ -406,7 +428,9 @@ xvfb-run -a python -m pytest
 ```
 
 If the project later formalizes dedicated commands, update this file and the repository maps.
-If command changes also affect the normal contributor workflow, installation, or validation entrypoints, update `README.md` in the same patch as required by `AGENTS.md`.
+If command changes also affect the normal contributor workflow, installation,
+or validation entrypoints, update `README.md` and `README_es.md` in the same
+patch as required by `AGENTS.md`.
 
 ---
 
@@ -580,3 +604,77 @@ Refactoring is allowed only after:
 - implementation brings the suite back to green
 
 Refactoring must preserve behavior and keep the full suite green.
+
+---
+
+## Mandatory workflow for non-trivial changes
+
+For meaningful functionality changes:
+
+1. define use cases
+2. define acceptance criteria
+3. add failing tests first
+4. confirm failure against previous behavior
+5. implement minimum code
+6. reach green
+7. refactor after green
+8. update documentation
+
+Implementation-first followed by test backfill is forbidden for non-trivial
+behavior changes.
+
+---
+
+## Regression testing rules
+
+Every bug fix should include a regression test whenever practical.
+
+The regression should:
+
+- fail before the fix
+- pass after the fix
+- protect the exact failure path
+- avoid testing only adjacent behavior
+
+---
+
+## Infrastructure failure coverage
+
+Tests should explicitly cover:
+
+- filesystem failures
+- SQLite failures
+- invalid encrypted secrets
+- corrupted persisted configuration
+- remote transport failures
+- malformed remote listings
+- translation-provider protocol failures
+- adapter ambiguity failures
+- partial workflow failures
+- cancellation/interruption behavior when applicable
+- typed failure wrapping for adapter, persistence, transport, and provider
+  boundaries
+
+---
+
+## Fake workflow restrictions
+
+Tests must not pass because production fake implementations bypass the real
+workflow.
+
+If a real workflow exists:
+
+- tests should exercise the real orchestration path
+- mocks/stubs should isolate only true external boundaries
+- fake runtime bundles must not replace production orchestration
+- test doubles must live in test-only support paths
+
+---
+
+## Determinism and flakiness rules
+
+- Avoid real-time sleeps when synchronization primitives, polling helpers,
+  mocks, or deterministic coordination mechanisms can be used.
+- Tests using randomness must control seeds or use deterministic fixtures.
+- UI tests should prefer pure helpers, view models, and service orchestration
+  over brittle timing-sensitive widget assertions.

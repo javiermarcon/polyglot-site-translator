@@ -18,6 +18,7 @@ from polyglot_site_translator.presentation.kivy.widgets.common import (
     SurfaceBoxLayout,
     WrappedLabel,
 )
+from polyglot_site_translator.presentation.ui_localization import tr, tr_ui_text
 
 from .ssh_host_key_trust_dialog import open_ssh_host_key_trust_confirmation
 
@@ -43,7 +44,7 @@ class SyncProgressPopup(Popup):  # type: ignore[misc]
                 Structured value returned by this callable.
         """
         super().__init__(
-            title="Sync Progress",
+            title=tr("Sync Progress"),
             size_hint=(0.92, 0.85),
             auto_dismiss=False,
         )
@@ -58,7 +59,7 @@ class SyncProgressPopup(Popup):  # type: ignore[misc]
             border_role="border_color",
         )
         self._status_label = WrappedLabel(
-            text="No sync started yet.",
+            text=tr("No sync started yet."),
             font_size=TYPOGRAPHY.label,
             bold=True,
         )
@@ -70,7 +71,7 @@ class SyncProgressPopup(Popup):  # type: ignore[misc]
         )
         self._message_label = WrappedLabel(text="", font_size=TYPOGRAPHY.caption)
         self._trust_host_key_button = AppButton(
-            text="Trust SSH Host Key and Retry",
+            text=tr("Trust SSH Host Key and Retry"),
             primary=True,
             size_hint_y=None,
             height=COMPONENT_SIZES.button_height,
@@ -78,12 +79,12 @@ class SyncProgressPopup(Popup):  # type: ignore[misc]
         self._trust_host_key_button.bind(on_release=self._open_host_key_confirmation)
         command_scroll = ScrollView(scroll_type=["bars", "content"], bar_width=8)
         self._command_log_label = WrappedLabel(
-            text="Waiting for sync commands.",
+            text=tr("Waiting for sync commands."),
             font_size=TYPOGRAPHY.caption,
         )
         command_scroll.add_widget(self._command_log_label)
         close_button = AppButton(
-            text="Close",
+            text=tr("Close"),
             primary=False,
             size_hint_y=None,
             height=COMPONENT_SIZES.button_height,
@@ -97,6 +98,65 @@ class SyncProgressPopup(Popup):  # type: ignore[misc]
         container.add_widget(command_scroll)
         container.add_widget(close_button)
         self.content = container
+
+    @property
+    def command_log_text(self) -> str:
+        """Return the currently rendered command log text.
+
+        Args:
+            self:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Text rendered in the command log label.
+        """
+        return str(self._command_log_label.text)
+
+    @property
+    def status_text(self) -> str:
+        """Return the currently rendered status text.
+
+        Args:
+            self:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Text rendered in the status label.
+        """
+        return str(self._status_label.text)
+
+    @property
+    def message_text(self) -> str:
+        """Return the currently rendered sync message text.
+
+        Args:
+            self:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                Text rendered in the message label.
+        """
+        return str(self._message_label.text)
+
+    @property
+    def can_trust_host_key(self) -> bool:
+        """Return whether the host-key trust action is available.
+
+        Args:
+            self:
+                Value supplied to this callable.
+
+        Returns:
+            value:
+                ``True`` when the trust button is visible and enabled.
+        """
+        return (
+            self._trust_host_key_button.opacity == 1
+            and not self._trust_host_key_button.disabled
+        )
 
     def open_for_sync(self) -> None:
         """Open the popup and keep it refreshed while sync state changes.
@@ -128,17 +188,21 @@ class SyncProgressPopup(Popup):  # type: ignore[misc]
         """
         state = self._shell.sync_progress_state
         if state is None:
-            self._status_label.text = "No sync started yet."
+            self._status_label.text = tr("No sync started yet.")
             self._message_label.text = ""
             self._progress_bar.max = 1
             self._progress_bar.value = 0
             self._trust_host_key_button.disabled = True
             self._trust_host_key_button.opacity = 0
-            self._command_log_label.text = "Waiting for sync commands."
+            self._command_log_label.text = tr("Waiting for sync commands.")
             return
-        self.title = f"Sync Progress: {state.project_name}"
-        self._status_label.text = f"Status: {state.status}"
-        self._message_label.text = state.message
+        self.title = tr("Sync Progress: {project_name}").format(
+            project_name=state.project_name
+        )
+        self._status_label.text = tr("Status: {status}").format(
+            status=tr_ui_text(state.status)
+        )
+        self._message_label.text = tr_ui_text(state.message)
         progress_max = state.progress_total if state.progress_total > 0 else 1
         progress_value = state.progress_current
         if not state.progress_is_indeterminate and state.progress_total == 0:
@@ -150,7 +214,7 @@ class SyncProgressPopup(Popup):  # type: ignore[misc]
                 entry.command_text for entry in state.command_log
             )
         else:
-            self._command_log_label.text = "Waiting for sync commands."
+            self._command_log_label.text = tr("Waiting for sync commands.")
         can_trust_host_key = (
             state.status == "failed"
             and self._shell.sync_state is not None
