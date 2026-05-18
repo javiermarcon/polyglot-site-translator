@@ -398,3 +398,46 @@ Current BDD frontend coverage lives in:
 
 - `features/presentation/`
 - `features/steps/`
+
+---
+
+## Layering expectations
+
+The repository structure is intentionally layered.
+
+Presentation modules must not:
+
+- directly perform filesystem IO
+- directly access SQLite
+- directly call remote providers
+- directly parse PO files
+- directly invoke translation providers
+- own adapter discovery or framework-specific parsing
+
+Infrastructure modules must not:
+
+- render UI state
+- contain presentation workflow orchestration
+- contain Kivy dependencies
+- format user-facing summaries
+
+Service modules should:
+
+- orchestrate workflows
+- coordinate domain and infrastructure contracts
+- expose typed results for presentation
+- keep expensive work visible and testable
+
+---
+
+## Test-support boundaries
+
+Test doubles, fixtures, stubs, and fake workflows must remain under:
+
+- `tests/`
+- `tests/support/`
+- `features/steps/`
+
+Production runtime packages under `src/` must not retain fake implementations
+once real workflows exist. Runtime fakes are acceptable only for explicitly
+unfinished workflows and must be documented as temporary limitations.

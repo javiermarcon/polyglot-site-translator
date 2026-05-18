@@ -201,3 +201,78 @@ Before refactoring:
 - confirm acceptance coverage exists
 - confirm unit/integration coverage exists
 - keep the suite green throughout
+
+---
+
+### Do not hide expensive IO behind helpers or properties
+
+Forbidden:
+
+- filesystem traversal inside simple property accessors
+- implicit SQLite access during rendering
+- remote provider access during UI rendering
+- implicit PO parsing inside view-model getters
+- hidden network calls during widget refresh
+- logging calls that trigger expensive IO, traversal, or serialization
+
+Rules:
+
+- expensive operations must remain explicit
+- orchestration layers own expensive workflows
+- UI rendering must consume prepared state
+- view models should carry prepared values, not trigger workflow execution
+
+---
+
+### Do not introduce hidden runtime state
+
+Forbidden:
+
+- dynamic runtime attribute injection
+- mutable hidden singleton state
+- module-level mutable orchestration state
+- hidden cross-screen state mutation
+- import-time operational side effects
+
+Rules:
+
+- runtime state must remain explicit and typed
+- state transitions should be observable and testable
+- initialization behavior must be predictable
+
+---
+
+### Do not introduce speculative abstractions
+
+Forbidden:
+
+- abstraction layers without active reuse pressure
+- plugin systems without multiple concrete use cases
+- service indirection that only forwards calls
+- adapters that duplicate shared service behavior
+
+Rules:
+
+- prefer small composable helpers
+- extend existing contracts before introducing new layers
+- optimize for maintainability, not theoretical purity
+
+---
+
+### Static and security safety guardrails
+
+Forbidden:
+
+- unsafe deserialization of untrusted input
+- `eval` or `exec`
+- `subprocess` command strings built from untrusted input
+- broad analyzer suppressions without narrow justification
+- hardcoded secrets, credentials, tokens, or test-looking secrets
+- mutable defaults in functions or dataclasses
+
+Rules:
+
+- use `default_factory` for mutable dataclass fields
+- use safe loaders for structured input
+- use `secrets` for security-sensitive token generation
+- preserve exception context with `raise ... from exc` when wrapping failures

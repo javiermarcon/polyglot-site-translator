@@ -393,3 +393,100 @@ Every change must explicitly respect:
 Do not assume those standards are optional just because a specific file already existed in a
 weaker state. New and modified code must move the repository toward explicit compliance, not away
 from it.
+
+---
+
+## Static-analysis safety rules
+
+These rules are mandatory for production code, tests, BDD steps, scripts, and
+agent-authored changes unless a narrower repository document explicitly gives a
+stricter rule.
+
+Forbidden:
+
+- mutable default arguments
+- hidden runtime monkeypatching
+- dynamic runtime attribute injection
+- dead code and unreachable branches
+- broad analyzer suppressions without justification
+- `eval`, `exec`, or unsafe deserialization
+- shell command construction from untrusted input
+- filesystem path concatenation with string interpolation
+- unsafe subprocess shell interpolation
+- unsafe YAML loading or unsafe pickle-style deserialization
+
+Required:
+
+- use `pathlib.Path` for filesystem operations when practical
+- prefer explicit typed models over loosely typed dictionaries
+- preserve deterministic behavior in tests
+- keep suppressions local, specific, and narrowly justified
+- use `yaml.safe_load()` for untrusted YAML
+- prefer subprocess argument lists over shell command strings
+- use `secrets` instead of `random` for security-sensitive token generation
+- prefer SHA-256 or stronger algorithms for security-sensitive hashing
+
+---
+
+## Runtime side-effect rules
+
+All side effects must remain explicit, documented, and testable when they affect
+observable behavior.
+
+Forbidden:
+
+- database writes hidden in property accessors
+- filesystem writes hidden in getters
+- network access triggered implicitly during rendering
+- adapter discovery with hidden import-time side effects
+- UI-triggered workflows that mutate runtime state silently
+- logging calls that trigger expensive traversal, serialization, or IO
+
+Rules:
+
+- expensive operations must remain observable and reviewable
+- infrastructure access must stay explicit in orchestration flows
+- side effects must be documented in docstrings when behaviorally significant
+- import-time behavior must not perform database access, network access, or
+  mutable runtime initialization
+
+---
+
+## Architectural mutation rules
+
+Forbidden:
+
+- hidden behavior changes during refactors
+- changing adapter ownership boundaries implicitly
+- moving responsibilities from services into UI code
+- introducing abstractions without active reuse pressure
+- introducing caching layers without explicit invalidation strategy and tests
+
+Rules:
+
+- refactors must preserve observable behavior
+- extension should prefer existing service and adapter boundaries
+- architecture changes require synchronized documentation updates
+- new abstractions must remove real duplication or protect a clear extension
+  boundary already present in the codebase
+
+---
+
+## Performance and materialization rules
+
+Forbidden:
+
+- eager full-tree filesystem traversal when bounded iteration is possible
+- repeated SQLite lookups inside loops when batching is possible
+- repeated remote round-trips inside iterative workflows
+- loading entire PO catalogs repeatedly when shared state can be reused
+- rebuilding expensive UI summaries on every render cycle
+- hiding expensive lazy IO inside rendering helpers or properties
+
+Rules:
+
+- prefer incremental processing
+- keep expensive iteration visible in orchestration layers
+- cache only through explicit contracts
+- make materialization boundaries explicit in services or infrastructure
+- tests should protect critical performance-sensitive workflows when practical

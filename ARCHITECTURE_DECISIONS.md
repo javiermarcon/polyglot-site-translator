@@ -407,3 +407,44 @@ domain, persistence, FTP, or PO-processing behavior into the UI layer.
   `presentation/locale/<language>/LC_MESSAGES/`.
 - The gettext catalogs localize the application UI only; project PO-processing
   services remain a separate domain capability.
+
+---
+
+## AD-020: Typed operational failures across infrastructure boundaries
+
+**Decision**
+Normalize filesystem, SQLite, remote transport, translation-provider, and
+adapter failures into typed repository/domain-specific exceptions or structured
+workflow results before they reach presentation code.
+
+**Why**
+Raw infrastructure exceptions leak implementation details into presentation and
+orchestration layers and make workflow recovery inconsistent.
+
+**Implications**
+
+- Infrastructure adapters must wrap operational failures.
+- Presentation workflows should consume typed failures or structured results.
+- Tests must validate failure normalization behavior.
+- New integrations must define explicit operational failure contracts.
+
+---
+
+## AD-021: Explicit orchestration over hidden lazy behavior
+
+**Decision**
+Keep expensive workflows explicit in orchestration layers instead of hiding them
+behind properties, rendering helpers, import-time initialization, or implicit
+lazy behavior.
+
+**Why**
+The repository combines filesystem traversal, PO processing, synchronization,
+translation providers, persistence, and UI rendering. Hidden expensive behavior
+is difficult to reason about and destabilizes performance.
+
+**Implications**
+
+- Expensive operations stay visible in services.
+- Rendering helpers must avoid hidden IO.
+- Caching must remain explicit and testable.
+- Orchestration flows remain observable and independently testable.

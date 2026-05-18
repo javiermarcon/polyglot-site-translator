@@ -604,3 +604,77 @@ Refactoring is allowed only after:
 - implementation brings the suite back to green
 
 Refactoring must preserve behavior and keep the full suite green.
+
+---
+
+## Mandatory workflow for non-trivial changes
+
+For meaningful functionality changes:
+
+1. define use cases
+2. define acceptance criteria
+3. add failing tests first
+4. confirm failure against previous behavior
+5. implement minimum code
+6. reach green
+7. refactor after green
+8. update documentation
+
+Implementation-first followed by test backfill is forbidden for non-trivial
+behavior changes.
+
+---
+
+## Regression testing rules
+
+Every bug fix should include a regression test whenever practical.
+
+The regression should:
+
+- fail before the fix
+- pass after the fix
+- protect the exact failure path
+- avoid testing only adjacent behavior
+
+---
+
+## Infrastructure failure coverage
+
+Tests should explicitly cover:
+
+- filesystem failures
+- SQLite failures
+- invalid encrypted secrets
+- corrupted persisted configuration
+- remote transport failures
+- malformed remote listings
+- translation-provider protocol failures
+- adapter ambiguity failures
+- partial workflow failures
+- cancellation/interruption behavior when applicable
+- typed failure wrapping for adapter, persistence, transport, and provider
+  boundaries
+
+---
+
+## Fake workflow restrictions
+
+Tests must not pass because production fake implementations bypass the real
+workflow.
+
+If a real workflow exists:
+
+- tests should exercise the real orchestration path
+- mocks/stubs should isolate only true external boundaries
+- fake runtime bundles must not replace production orchestration
+- test doubles must live in test-only support paths
+
+---
+
+## Determinism and flakiness rules
+
+- Avoid real-time sleeps when synchronization primitives, polling helpers,
+  mocks, or deterministic coordination mechanisms can be used.
+- Tests using randomness must control seeds or use deterministic fixtures.
+- UI tests should prefer pure helpers, view models, and service orchestration
+  over brittle timing-sensitive widget assertions.

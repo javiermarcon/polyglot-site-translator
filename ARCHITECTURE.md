@@ -459,3 +459,69 @@ Current site registry runtime flow:
 3. `SqliteSiteRegistryRepository` ensures the schema and persists typed `RegisteredSite` records.
 4. `SiteRegistryPresentationCatalogService` and `SiteRegistryPresentationManagementService` adapt CRUD use cases to UI-facing view models.
 5. Kivy screens invoke the presentation shell only; they do not import or execute SQL.
+
+---
+
+## Dependency direction
+
+Allowed:
+
+Presentation -> Services -> Domain -> Infrastructure
+
+Forbidden:
+
+Infrastructure -> Presentation
+Adapters -> Kivy UI
+Kivy widgets -> Infrastructure internals
+Domain models -> Presentation state
+Infrastructure -> Kivy runtime types
+
+---
+
+## Workflow orchestration rules
+
+Long-running workflows must:
+
+- expose structured progress
+- surface partial failures explicitly
+- preserve deterministic state transitions
+- avoid hidden background mutations
+- tolerate interruption safely when possible
+- avoid silent retries that mask operational failures
+
+Remote synchronization and translation workflows should prefer resumable,
+incremental, or bounded behavior when feasible.
+
+---
+
+## Infrastructure boundaries
+
+Infrastructure modules must not:
+
+- render UI state
+- format user-facing summaries
+- contain presentation workflow orchestration
+- own adapter selection decisions
+- depend on Kivy types or widgets
+
+Infrastructure modules should:
+
+- expose typed contracts
+- normalize operational failures
+- remain independently testable
+- make resource lifecycles explicit with context managers or equivalent contracts
+
+---
+
+## Runtime and transaction-style consistency
+
+Workflows that mutate multiple persistent resources or combine local persistence
+with external side effects must define their consistency boundary explicitly.
+
+Required:
+
+- use atomic persistence patterns where partial writes would corrupt state
+- keep irreversible external side effects outside persistence-critical sections
+  unless an idempotency or compensation strategy exists
+- document idempotency guards for sync, upload, translation-provider, and
+  persistence workflows that may be retried

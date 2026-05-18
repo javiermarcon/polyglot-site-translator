@@ -206,3 +206,66 @@ The frontend baseline now also includes:
 - `polib`-backed PO repository wiring in runtime frontend services (instead of fixed preview placeholders)
 
 When extending the frontend, keep new behavior behind those boundaries unless the architecture docs are intentionally updated.
+
+---
+
+## Ownership philosophy
+
+The repository is organized around explicit ownership boundaries.
+
+Presentation owns:
+
+- rendering
+- navigation
+- user interaction
+- workflow triggering
+- user-facing progress and error state
+
+Services own:
+
+- orchestration
+- workflow coordination
+- validation sequencing
+- adapter dispatch
+- translation/sync/audit workflow composition
+
+Domain layers own:
+
+- typed models
+- business rules
+- normalization
+- workflow contracts
+- explicit domain errors
+
+Infrastructure owns:
+
+- persistence
+- filesystem IO
+- transport integration
+- encryption/decryption
+- external providers
+- failure normalization around operational dependencies
+
+---
+
+## Workflow efficiency expectations
+
+The repository must avoid repeated expensive operations inside loops.
+
+Examples:
+
+- repeated filesystem reads
+- repeated SQLite queries
+- repeated PO parsing
+- repeated adapter discovery
+- repeated remote provider reconnects
+- repeated translation-cache loads
+- repeated expensive UI summary rebuilding
+
+Expensive operations should be:
+
+- batched
+- reused
+- cached behind explicit contracts
+- orchestrated in service layers
+- surfaced through structured progress when long-running

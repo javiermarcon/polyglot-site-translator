@@ -290,3 +290,89 @@ The following are forbidden unless explicitly justified and documented:
 - duplicating framework-specific rules across adapters
 - embedding business logic directly in Kivy callbacks
 - architecture changes without doc updates
+
+---
+
+## Static-analysis safety rules
+
+Forbidden:
+
+- mutable default arguments
+- unused expressions and unreachable code
+- unsafe deserialization
+- `eval` or `exec`
+- broad analyzer suppressions
+- unsafe subprocess shell interpolation
+- string-based filesystem path concatenation
+- hardcoded secrets, credentials, tokens, API keys, or test-looking secrets
+- comparison to `True`, `False`, or `None` using `==` or `!=`
+
+Required:
+
+- use `pathlib.Path` for filesystem paths when practical
+- use context managers for files, locks, cursors, and network resources
+- use explicit encodings for text file operations unless binary mode is intended
+- use `yaml.safe_load()` for untrusted YAML
+- use `secrets` instead of `random` for security-sensitive token generation
+- prefer SHA-256 or stronger algorithms for security-sensitive hashing
+- preserve deterministic tests where randomness exists
+- prefer explicit typed structures over dynamic dictionaries
+- keep suppressions local, specific, and justified
+
+---
+
+## Side-effect visibility
+
+Behaviorally significant side effects must be:
+
+- explicit
+- documented
+- testable
+
+Functions must not hide:
+
+- filesystem writes
+- SQLite mutations
+- remote synchronization
+- translation-provider invocation
+- encryption/decryption side effects
+- adapter discovery side effects
+
+---
+
+## Runtime lifecycle rules
+
+Forbidden:
+
+- hidden runtime mutation
+- import-time operational side effects
+- dynamic runtime attribute creation
+- mutable process-global orchestration state
+- hidden lazy IO in rendering helpers or properties
+
+Rules:
+
+- runtime state should remain explicit and typed
+- initialization behavior must be predictable
+- use timezone-aware datetimes where datetime behavior matters
+- prefer framework/runtime timezone helpers when available
+- use `default_factory` for mutable dataclass fields
+
+---
+
+## Logging rules
+
+- Prefer lazy logger formatting over f-strings in logging calls.
+- Logging calls must not trigger expensive filesystem traversal, SQLite access,
+  remote synchronization, PO parsing, translation-provider invocation, or PO
+  serialization.
+- Never log credentials, tokens, encrypted secrets, decrypted secrets, or remote
+  connection passwords.
+
+---
+
+## Exception wrapping rules
+
+- Preserve exception context with `raise ... from exc` when wrapping exceptions.
+- Do not convert typed operational failures into generic exceptions.
+- Error messages must remain actionable and must not leak credentials or secrets.

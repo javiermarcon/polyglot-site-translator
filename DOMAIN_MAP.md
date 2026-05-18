@@ -265,3 +265,59 @@ Store and retrieve application-owned data locally.
 - Remote transport logic is infrastructure and must stay isolated behind service boundaries.
 - Shared translation services and source auditing are related but distinct domains.
 - Framework adapters/plugins isolate target-specific behavior from shared services.
+
+---
+
+## Cross-domain interaction rules
+
+Allowed:
+
+- service orchestration
+- typed contracts
+- normalized workflow results
+- explicit adapter contracts
+- infrastructure access through owning services
+
+Forbidden:
+
+- presentation-driven cross-domain mutation
+- direct infrastructure coupling between unrelated domains
+- duplicated normalization rules across domains
+- framework-specific rules inside shared services unless the shared service is
+  explicitly an adapter boundary
+
+---
+
+## Ownership expectations
+
+Translation services own:
+
+- PO orchestration
+- translation-memory reuse
+- translation-provider coordination
+- translation-cache coordination
+- structured PO workflow results
+
+Adapters own:
+
+- framework conventions
+- project detection
+- target-specific extraction rules
+- framework-specific sync rules
+- adapter evidence and warnings
+
+Presentation owns:
+
+- rendering
+- interaction
+- workflow triggering
+- user-facing progress state
+- controlled display of errors and partial results
+
+Infrastructure owns:
+
+- SQLite persistence
+- filesystem operations
+- remote provider sessions
+- encryption/decryption
+- provider-specific failure normalization
